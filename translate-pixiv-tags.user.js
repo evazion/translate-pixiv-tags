@@ -107,11 +107,15 @@ $("head").append(`
     }
 
     .ex-translated-tag-category-4 {
-        color: #0A0;
+        color: #0A0 !important;
     }
 
     .ex-translated-tag-category-3 {
-        color: #A0A;
+        color: #A0A !important;
+    }
+
+    .ex-translated-tag-category-0 {
+        color: #0073ff !important;
     }
 
     .tag-list li {
