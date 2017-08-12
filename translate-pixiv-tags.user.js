@@ -1,12 +1,14 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20170811233214
+// @version      20170812012341
 // @match        *://www.pixiv.net/*
 // @match        *://dic.pixiv.net/*
 // @match        *://nijie.info/*
+// @match        *://seiga.nicovideo.jp/*
 // @grant        GM_xmlhttpRequest
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js
+// @require      https://raw.githubusercontent.com/rafaelw/mutation-summary/421110f84178aa9e4098b38df83f727e5aea3d97/src/mutation-summary.js
 // @connect      donmai.us
 // ==/UserScript==
 
@@ -158,6 +160,18 @@ $("head").append(`
     body.nijie #seiten_dic .ex-translated-tags {
        font-size: 32px;
     }
+
+    /* Fix tags in http://seiga.nicovideo.jp/seiga/im6950870 */
+    body.seiga .illust_tag .tag .ex-translated-tags {
+       float: left;
+    }
+
+    /* Fix tags in http://seiga.nicovideo.jp/tag/艦これ */
+    body.seiga #ko_tagwatch .ex-translated-tags {
+        font-size: 233.4%;
+        line-height: 120%;
+        vertical-align: middle;
+    }
 </style>
 `);
 
@@ -198,6 +212,8 @@ if (location.host === "www.pixiv.net" || location.host === "dic.pixiv.net") {
     $("body").addClass("pixiv");
 } else if (location.host === "nijie.info") {
     $("body").addClass("nijie");
+} else if (location.host === "seiga.nicovideo.jp") {
+    $("body").addClass("seiga");
 }
 
 // Add links to Danbooru tags after every Pixiv tag.
@@ -209,13 +225,14 @@ const selectors = [
   "body.pixiv #wrapper div.layout-body h1.column-title a", // https://www.pixiv.net/search.php?s_mode=s_tag&word=touhou
   "body.nijie .tag .tag_name a:first-child",               // http://nijie.info/view.php?id=208491
   "body.nijie #seiten_dic h1#dic_title",                   // https://nijie.info/dic/seiten/d/東方
+  "body.seiga #ko_tagwatch > div > h1",
 ];
 
 $(selectors.join(", ")).each((i, e) => {
-    const $pixivTag = $(e);
+    const $tag = $(e);
 
-    translateTag($pixivTag.text()).done(danbooruTags => {
-        addDanbooruTags($pixivTag, danbooruTags);
+    translateTag($tag.text()).done(danbooruTags => {
+        addDanbooruTags($tag, danbooruTags);
     });
 });
 
@@ -227,3 +244,20 @@ $("body.pixiv .tag-cloud .tag").each((i, e) => {
         addDanbooruTags($pixivTag, danbooruTags);
     });
 });
+
+if (location.host === "seiga.nicovideo.jp") {
+    const observer = new MutationSummary({
+        queries: [{ element: '.tag' }],
+        callback: function (summaries) {
+            const summary = summaries[0];
+
+            summary.added.each(tag => {
+                const $tag = $(tag).find("> a");
+
+                translateTag($tag.text()).done(danbooruTags => {
+                    addDanbooruTags($tag, danbooruTags);
+                });
+            });
+        }
+    });
+}
