@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20170811230348
+// @version      20170811230809
 // @match        *://www.pixiv.net/*
 // @match        *://dic.pixiv.net/*
 // @match        *://nijie.info/*
@@ -138,6 +138,10 @@ $("head").append(`
     body.nijie .tag .tag_name a.dic {
        float: right !important;
     }
+
+    body.nijie #seiten_dic .ex-translated-tags {
+       font-size: 32px;
+    }
 </style>
 `);
 
@@ -188,6 +192,7 @@ const selectors = [
   "body.pixiv #content_title #article-name",               // https://dic.pixiv.net/a/touhou
   "body.pixiv #wrapper div.layout-body h1.column-title a", // https://www.pixiv.net/search.php?s_mode=s_tag&word=touhou
   "body.nijie .tag .tag_name a:first-child",               // http://nijie.info/view.php?id=208491
+  "body.nijie #seiten_dic h1#dic_title",                   // https://nijie.info/dic/seiten/d/東方
 ];
 
 $(selectors.join(", ")).each((i, e) => {
