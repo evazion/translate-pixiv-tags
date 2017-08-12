@@ -165,7 +165,15 @@ function addDanbooruTags($target, tags) {
 // .tag-cloud .tag - https://www.pixiv.net/bookmark_add.php?type=illust&illust_id=1234
 // #wrapper > div.layout-body h1.column-title a - https://www.pixiv.net/search.php?s_mode=s_tag&word=touhou
 // .tags-portal-header .title - https://www.pixiv.net/tags.php?tag=touhou
-$(`.tags li .text, .tag-list li .tag-name, .tags-portal-header .title, #content_title #article-name, #wrapper div.layout-body h1.column-title a`).each((i, e) => {
+const selectors = [
+  ".tags li .text",
+  ".tag-list li .tag-name",
+  ".tags-portal-header .title",
+  "#content_title #article-name",
+  "#wrapper div.layout-body h1.column-title a",
+];
+
+$(selectors.join(", ")).each((i, e) => {
     const $pixivTag = $(e);
 
     translateTag($pixivTag.text()).done(danbooruTags => {
