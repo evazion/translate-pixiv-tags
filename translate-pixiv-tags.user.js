@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20170811224829
+// @version      20170811230348
 // @match        *://www.pixiv.net/*
 // @match        *://dic.pixiv.net/*
 // @match        *://nijie.info/*
@@ -124,18 +124,18 @@ $("head").append(`
         color: #0073ff !important;
     }
 
-    .tag-list li {
+    /* Fix https://www.pixiv.net/tags.php to display tags as vertical list. */
+    body.pixiv .tag-list li {
         display: block;
     }
 
-    #content_title #article-name {
+    /* Fix https://dic.pixiv.net/a/東方 to display Danbooru tag next to article title. */
+    body.pixiv #content_title #article-name {
        display: inline-block;
     }
 
-    /* Nijie */
-
-    /* Move Nijie dictionary link to right of Danbooru tag links. */
-    #main #view-tag .tag .tag_name a.dic {
+    /* Position Nijie dictionary links to the right of Danbooru tag links. */
+    body.nijie .tag .tag_name a.dic {
        float: right !important;
     }
 </style>
@@ -174,17 +174,20 @@ function addDanbooruTags($target, tags) {
     });
 }
 
+if (location.host === "www.pixiv.net" || location.host === "dic.pixiv.net") {
+    $("body").addClass("pixiv");
+} else if (location.host === "nijie.info") {
+    $("body").addClass("nijie");
+}
+
 // Add links to Danbooru tags after every Pixiv tag.
-// .tag-cloud .tag - https://www.pixiv.net/bookmark_add.php?type=illust&illust_id=1234
-// #wrapper > div.layout-body h1.column-title a - https://www.pixiv.net/search.php?s_mode=s_tag&word=touhou
-// .tags-portal-header .title - https://www.pixiv.net/tags.php?tag=touhou
 const selectors = [
-  ".tags li .text",
-  ".tag-list li .tag-name",
-  ".tags-portal-header .title",
-  "#content_title #article-name",
-  "#wrapper div.layout-body h1.column-title a",
-  ".tag .tag_name a:first-child",
+  "body.pixiv .tags li .text",                             // https://www.pixiv.net/member_illust.php?mode=medium&illust_id=64362862
+  "body.pixiv .tag-list li .tag-name",                     // https://www.pixiv.net/tags.php
+  "body.pixiv .tags-portal-header .title",                 // https://www.pixiv.net/tags.php?tag=touhou
+  "body.pixiv #content_title #article-name",               // https://dic.pixiv.net/a/touhou
+  "body.pixiv #wrapper div.layout-body h1.column-title a", // https://www.pixiv.net/search.php?s_mode=s_tag&word=touhou
+  "body.nijie .tag .tag_name a:first-child",               // http://nijie.info/view.php?id=208491
 ];
 
 $(selectors.join(", ")).each((i, e) => {
@@ -195,7 +198,8 @@ $(selectors.join(", ")).each((i, e) => {
     });
 });
 
-$(`.tag-cloud .tag`).each((i, e) => {
+// https://www.pixiv.net/bookmark_add.php?type=illust&illust_id=1234
+$("body.pixiv .tag-cloud .tag").each((i, e) => {
     const $pixivTag = $(e);
 
     translateTag($pixivTag.data("tag")).done(danbooruTags => {
