@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20170812012341
+// @version      20170812015923
 // @match        *://www.pixiv.net/*
 // @match        *://dic.pixiv.net/*
 // @match        *://nijie.info/*
@@ -176,7 +176,7 @@ $("head").append(`
 `);
 
 function translateTag(pixivTag) {
-    pixivTag = pixivTag.replace(/\d+users入り$/, "");
+    pixivTag = pixivTag.trim().normalize("NFKC").replace(/\d+users入り$/, "");
     const request = $.getJSON(`https://danbooru.donmai.us/wiki_pages.json?search[other_names_match]=${encodeURIComponent(pixivTag)}`);
 
     return request.then(wikiPages => {
