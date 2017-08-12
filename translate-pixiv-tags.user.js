@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20170811230809
+// @version      20170811233214
 // @match        *://www.pixiv.net/*
 // @match        *://dic.pixiv.net/*
 // @match        *://nijie.info/*
@@ -102,6 +102,11 @@ $("head").append(`
     .ex-translated-tags * {
         display: inline !important;
         float: none !important;
+        background: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        text-decoration: none !important;
+        white-space: nowrap;
     }
 
     .ex-translated-tags::before {
@@ -134,9 +139,20 @@ $("head").append(`
        display: inline-block;
     }
 
+    body.nijie .ex-translated-tags {
+       font-size: 12px;
+       font-family: Verdana, Helvetica, sans-serif;
+    }
+
     /* Position Nijie dictionary links to the right of Danbooru tag links. */
     body.nijie .tag .tag_name a.dic {
        float: right !important;
+    }
+
+    /* Fix tag lists in http://nijie.info/view.php?id=203787 pages. */
+    body.nijie #dojin_left #view-tag .tag {
+      white-space: nowrap;
+      border: 0;
     }
 
     body.nijie #seiten_dic .ex-translated-tags {
