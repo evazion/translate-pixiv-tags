@@ -1,9 +1,10 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20170811220325
+// @version      20170811224829
 // @match        *://www.pixiv.net/*
 // @match        *://dic.pixiv.net/*
+// @match        *://nijie.info/*
 // @grant        GM_xmlhttpRequest
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js
 // @connect      donmai.us
@@ -98,6 +99,11 @@ $("head").append(`
         margin: 0 0.5em;
     }
 
+    .ex-translated-tags * {
+        display: inline !important;
+        float: none !important;
+    }
+
     .ex-translated-tags::before {
         content: "(";
     }
@@ -124,6 +130,13 @@ $("head").append(`
 
     #content_title #article-name {
        display: inline-block;
+    }
+
+    /* Nijie */
+
+    /* Move Nijie dictionary link to right of Danbooru tag links. */
+    #main #view-tag .tag .tag_name a.dic {
+       float: right !important;
     }
 </style>
 `);
@@ -171,6 +184,7 @@ const selectors = [
   ".tags-portal-header .title",
   "#content_title #article-name",
   "#wrapper div.layout-body h1.column-title a",
+  ".tag .tag_name a:first-child",
 ];
 
 $(selectors.join(", ")).each((i, e) => {
