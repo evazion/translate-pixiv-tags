@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20170812015923
+// @version      20170812221052
 // @match        *://www.pixiv.net/*
 // @match        *://dic.pixiv.net/*
 // @match        *://nijie.info/*
 // @match        *://seiga.nicovideo.jp/*
+// @match        *://www.tinami.com/*
 // @grant        GM_xmlhttpRequest
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js
 // @require      https://raw.githubusercontent.com/rafaelw/mutation-summary/421110f84178aa9e4098b38df83f727e5aea3d97/src/mutation-summary.js
@@ -172,6 +173,17 @@ $("head").append(`
         line-height: 120%;
         vertical-align: middle;
     }
+
+    body.tinami .tag > span {
+        display: inline;
+        float: none;
+    }
+
+    body.tinami .ex-translated-tags {
+        font-family: Verdana, Helvetica, sans-serif;
+        float: none !important;
+        display: inline !important;
+    }
 </style>
 `);
 
@@ -214,6 +226,8 @@ if (location.host === "www.pixiv.net" || location.host === "dic.pixiv.net") {
     $("body").addClass("nijie");
 } else if (location.host === "seiga.nicovideo.jp") {
     $("body").addClass("seiga");
+} else if (location.host === "www.tinami.com") {
+    $("body").addClass("tinami");
 }
 
 // Add links to Danbooru tags after every Pixiv tag.
@@ -226,6 +240,7 @@ const selectors = [
   "body.nijie .tag .tag_name a:first-child",               // http://nijie.info/view.php?id=208491
   "body.nijie #seiten_dic h1#dic_title",                   // https://nijie.info/dic/seiten/d/東方
   "body.seiga #ko_tagwatch > div > h1",
+  "body.tinami .tag > span > a:nth-child(2)",
 ];
 
 $(selectors.join(", ")).each((i, e) => {
