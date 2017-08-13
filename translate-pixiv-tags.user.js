@@ -13,6 +13,8 @@
 // @connect      donmai.us
 // ==/UserScript==
 
+const BOORU = "http://sonohara.donmai.us"
+
 // https://gist.github.com/monperrus/999065
 // This is an shim that adapts jQuery's ajax methods to use GM_xmlhttpRequest. This allows us to use $.getJSON instead of using GM_xmlhttpRequest directly.
 function GM_XHR() {
@@ -189,7 +191,7 @@ $("head").append(`
 
 function translateTag(pixivTag) {
     pixivTag = pixivTag.trim().normalize("NFKC").replace(/\d+users入り$/, "");
-    const request = $.getJSON(`https://danbooru.donmai.us/wiki_pages.json?search[other_names_match]=${encodeURIComponent(pixivTag)}`);
+    const request = $.getJSON(`${BOORU}/wiki_pages.json?search[other_names_match]=${encodeURIComponent(pixivTag)}`);
 
     return request.then(wikiPages => {
         return $.map(wikiPages, wikiPage => {
@@ -211,7 +213,7 @@ function addDanbooruTags($target, tags) {
     $target.after($tagsContainer);
 
     $.each(tags, (i, tag) => {
-        const danbooruTagLink = $(`<a class="ex-translated-tag-category-${tag.category}" href="https://danbooru.donmai.us/posts?tags=${encodeURIComponent(tag.name)}">`).text(tag.prettyName);
+        const danbooruTagLink = $(`<a class="ex-translated-tag-category-${tag.category}" href="${BOORU}/posts?tags=${encodeURIComponent(tag.name)}">`).text(tag.prettyName);
         $tagsContainer.append(danbooruTagLink);
 
         if (i < tags.length - 1) {
