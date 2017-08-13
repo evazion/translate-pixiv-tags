@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20170812221052
+// @version      20170813172841
 // @match        *://www.pixiv.net/*
 // @match        *://dic.pixiv.net/*
 // @match        *://nijie.info/*
@@ -220,47 +220,52 @@ function addDanbooruTags($target, tags) {
     });
 }
 
-if (location.host === "www.pixiv.net" || location.host === "dic.pixiv.net") {
+function initializeTranslatedTags() {
+    const selectors = [
+        "body.pixiv .tags li .text",                             // https://www.pixiv.net/member_illust.php?mode=medium&illust_id=64362862
+        "body.pixiv .tag-list li .tag-name",                     // https://www.pixiv.net/tags.php
+        "body.pixiv .tags-portal-header .title",                 // https://www.pixiv.net/tags.php?tag=touhou
+        "body.pixiv #content_title #article-name",               // https://dic.pixiv.net/a/touhou
+        "body.pixiv #wrapper div.layout-body h1.column-title a", // https://www.pixiv.net/search.php?s_mode=s_tag&word=touhou
+        "body.nijie .tag .tag_name a:first-child",               // http://nijie.info/view.php?id=208491
+        "body.nijie #seiten_dic h1#dic_title",                   // https://nijie.info/dic/seiten/d/東方
+        "body.seiga #ko_tagwatch > div > h1",
+        "body.tinami .tag > span > a:nth-child(2)",
+    ];
+
+    $(selectors.join(", ")).each((i, e) => {
+        const $tag = $(e);
+
+        translateTag($tag.text()).done(danbooruTags => {
+            addDanbooruTags($tag, danbooruTags);
+        });
+    });
+}
+
+function initializePixiv() {
     $("body").addClass("pixiv");
-} else if (location.host === "nijie.info") {
+
+    // https://www.pixiv.net/bookmark_add.php?type=illust&illust_id=1234
+    $("body.pixiv .tag-cloud .tag").each((i, e) => {
+        const $pixivTag = $(e);
+
+        translateTag($pixivTag.data("tag")).done(danbooruTags => {
+            addDanbooruTags($pixivTag, danbooruTags);
+        });
+    });
+}
+
+function initializeNijie() {
     $("body").addClass("nijie");
-} else if (location.host === "seiga.nicovideo.jp") {
-    $("body").addClass("seiga");
-} else if (location.host === "www.tinami.com") {
+}
+
+function initializeTinami() {
     $("body").addClass("tinami");
 }
 
-// Add links to Danbooru tags after every Pixiv tag.
-const selectors = [
-  "body.pixiv .tags li .text",                             // https://www.pixiv.net/member_illust.php?mode=medium&illust_id=64362862
-  "body.pixiv .tag-list li .tag-name",                     // https://www.pixiv.net/tags.php
-  "body.pixiv .tags-portal-header .title",                 // https://www.pixiv.net/tags.php?tag=touhou
-  "body.pixiv #content_title #article-name",               // https://dic.pixiv.net/a/touhou
-  "body.pixiv #wrapper div.layout-body h1.column-title a", // https://www.pixiv.net/search.php?s_mode=s_tag&word=touhou
-  "body.nijie .tag .tag_name a:first-child",               // http://nijie.info/view.php?id=208491
-  "body.nijie #seiten_dic h1#dic_title",                   // https://nijie.info/dic/seiten/d/東方
-  "body.seiga #ko_tagwatch > div > h1",
-  "body.tinami .tag > span > a:nth-child(2)",
-];
+function initializeNicoSeiga() {
+    $("body").addClass("seiga");
 
-$(selectors.join(", ")).each((i, e) => {
-    const $tag = $(e);
-
-    translateTag($tag.text()).done(danbooruTags => {
-        addDanbooruTags($tag, danbooruTags);
-    });
-});
-
-// https://www.pixiv.net/bookmark_add.php?type=illust&illust_id=1234
-$("body.pixiv .tag-cloud .tag").each((i, e) => {
-    const $pixivTag = $(e);
-
-    translateTag($pixivTag.data("tag")).done(danbooruTags => {
-        addDanbooruTags($pixivTag, danbooruTags);
-    });
-});
-
-if (location.host === "seiga.nicovideo.jp") {
     const observer = new MutationSummary({
         queries: [{ element: '.tag' }],
         callback: function (summaries) {
@@ -276,3 +281,19 @@ if (location.host === "seiga.nicovideo.jp") {
         }
     });
 }
+
+function initialize() {
+    if (location.host === "www.pixiv.net" || location.host === "dic.pixiv.net") {
+        initializePixiv();
+    } else if (location.host === "nijie.info") {
+        initializeNijie();
+    } else if (location.host === "seiga.nicovideo.jp") {
+        initializeNicoSeiga();
+    } else if (location.host === "www.tinami.com") {
+        initializeTinami();
+    }
+
+    initializeTranslatedTags();
+}
+
+initialize();
