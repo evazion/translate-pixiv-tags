@@ -12,7 +12,7 @@
 // @require      https://raw.githubusercontent.com/rafaelw/mutation-summary/421110f84178aa9e4098b38df83f727e5aea3d97/src/mutation-summary.js
 // ==/UserScript==
 
-const BOORU = "http://sonohara.donmai.us"
+const BOORU = "https://danbooru.donmai.us"
 
 $("head").append(`
 <style>
