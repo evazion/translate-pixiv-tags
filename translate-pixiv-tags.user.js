@@ -51,59 +51,59 @@ $("head").append(`
     }
 
     /* Fix https://www.pixiv.net/tags.php to display tags as vertical list. */
-    body.pixiv .tag-list li {
+    body.ex-pixiv .tag-list li {
         display: block;
     }
 
     /* Fix https://dic.pixiv.net/a/東方 to display Danbooru tag next to article title. */
-    body.pixiv #content_title #article-name {
+    body.ex-pixiv #content_title #article-name {
        display: inline-block;
     }
 
-    body.nijie .ex-translated-tags {
+    body.ex-nijie .ex-translated-tags {
        font-size: 12px;
        font-family: Verdana, Helvetica, sans-serif;
     }
 
     /* Position Nijie dictionary links to the right of Danbooru tag links. */
-    body.nijie .tag .tag_name a.dic {
+    body.ex-nijie .tag .tag_name a.dic {
        float: right !important;
     }
 
     /* Fix tag lists in http://nijie.info/view.php?id=203787 pages. */
-    body.nijie #dojin_left #view-tag .tag {
+    body.ex-nijie #dojin_left #view-tag .tag {
       white-space: nowrap;
       border: 0;
     }
 
-    body.nijie #seiten_dic .ex-translated-tags {
+    body.ex-nijie #seiten_dic .ex-translated-tags {
        font-size: 32px;
     }
 
     /* Fix tags in http://seiga.nicovideo.jp/seiga/im6950870 */
-    body.seiga .illust_tag .tag .ex-translated-tags {
+    body.ex-seiga .illust_tag .tag .ex-translated-tags {
        float: left;
     }
 
     /* Fix tags in http://seiga.nicovideo.jp/tag/艦これ */
-    body.seiga #ko_tagwatch .ex-translated-tags {
+    body.ex-seiga #ko_tagwatch .ex-translated-tags {
         font-size: 233.4%;
         line-height: 120%;
         vertical-align: middle;
     }
 
-    body.tinami .tag > span {
+    body.ex-tinami .tag > span {
         display: inline;
         float: none;
     }
 
-    body.tinami .ex-translated-tags {
+    body.ex-tinami .ex-translated-tags {
         font-family: Verdana, Helvetica, sans-serif;
         float: none !important;
         display: inline !important;
     }
 
-    body.bcy .tag > a > div {
+    body.ex-bcy .tag > a > div {
         display: inline !important;
     }
 </style>
@@ -144,16 +144,16 @@ function addDanbooruTags($target, tags) {
 
 function initializeTranslatedTags() {
     const selectors = [
-        "body.pixiv .tags li .text",                             // https://www.pixiv.net/member_illust.php?mode=medium&illust_id=64362862
-        "body.pixiv .tag-list li .tag-name",                     // https://www.pixiv.net/tags.php
-        "body.pixiv .tags-portal-header .title",                 // https://www.pixiv.net/tags.php?tag=touhou
-        "body.pixiv #content_title #article-name",               // https://dic.pixiv.net/a/touhou
-        "body.pixiv #wrapper div.layout-body h1.column-title a", // https://www.pixiv.net/search.php?s_mode=s_tag&word=touhou
-        "body.nijie .tag .tag_name a:first-child",               // http://nijie.info/view.php?id=208491
-        "body.nijie #seiten_dic h1#dic_title",                   // https://nijie.info/dic/seiten/d/東方
-        "body.seiga #ko_tagwatch > div > h1",
-        "body.tinami .tag > span > a:nth-child(2)",
-        "body.bcy .tag > a > div",
+        "body.ex-pixiv .tags li .text",                             // https://www.pixiv.net/member_illust.php?mode=medium&illust_id=64362862
+        "body.ex-pixiv .tag-list li .tag-name",                     // https://www.pixiv.net/tags.php
+        "body.ex-pixiv .tags-portal-header .title",                 // https://www.pixiv.net/tags.php?tag=touhou
+        "body.ex-pixiv #content_title #article-name",               // https://dic.pixiv.net/a/touhou
+        "body.ex-pixiv #wrapper div.layout-body h1.column-title a", // https://www.pixiv.net/search.php?s_mode=s_tag&word=touhou
+        "body.ex-nijie .tag .tag_name a:first-child",               // http://nijie.info/view.php?id=208491
+        "body.ex-nijie #seiten_dic h1#dic_title",                   // https://nijie.info/dic/seiten/d/東方
+        "body.ex-seiga #ko_tagwatch > div > h1",
+        "body.ex-tinami .tag > span > a:nth-child(2)",
+        "body.ex-bcy .tag > a > div",
     ];
 
     $(selectors.join(", ")).each((i, e) => {
@@ -166,10 +166,10 @@ function initializeTranslatedTags() {
 }
 
 function initializePixiv() {
-    $("body").addClass("pixiv");
+    $("body").addClass("ex-pixiv");
 
     // https://www.pixiv.net/bookmark_add.php?type=illust&illust_id=1234
-    $("body.pixiv .tag-cloud .tag").each((i, e) => {
+    $("body.ex-pixiv .tag-cloud .tag").each((i, e) => {
         const $pixivTag = $(e);
 
         translateTag($pixivTag.data("tag")).done(danbooruTags => {
@@ -179,15 +179,15 @@ function initializePixiv() {
 }
 
 function initializeNijie() {
-    $("body").addClass("nijie");
+    $("body").addClass("ex-nijie");
 }
 
 function initializeTinami() {
-    $("body").addClass("tinami");
+    $("body").addClass("ex-tinami");
 }
 
 function initializeNicoSeiga() {
-    $("body").addClass("seiga");
+    $("body").addClass("ex-seiga");
 
     const observer = new MutationSummary({
         queries: [{ element: '.tag' }],
@@ -206,7 +206,7 @@ function initializeNicoSeiga() {
 }
 
 function initializeBCY() {
-    $("body").addClass("bcy");
+    $("body").addClass("ex-bcy");
 }
 
 function initialize() {
