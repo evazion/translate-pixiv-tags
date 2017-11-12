@@ -7,6 +7,7 @@
 // @match        *://nijie.info/*
 // @match        *://seiga.nicovideo.jp/*
 // @match        *://www.tinami.com/*
+// @match        *://bcy.net/*
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js
 // @require      https://raw.githubusercontent.com/rafaelw/mutation-summary/421110f84178aa9e4098b38df83f727e5aea3d97/src/mutation-summary.js
 // ==/UserScript==
@@ -101,6 +102,10 @@ $("head").append(`
         float: none !important;
         display: inline !important;
     }
+
+    body.bcy .tag > a > div {
+        display: inline !important;
+    }
 </style>
 `);
 
@@ -148,6 +153,7 @@ function initializeTranslatedTags() {
         "body.nijie #seiten_dic h1#dic_title",                   // https://nijie.info/dic/seiten/d/東方
         "body.seiga #ko_tagwatch > div > h1",
         "body.tinami .tag > span > a:nth-child(2)",
+        "body.bcy .tag > a > div",
     ];
 
     $(selectors.join(", ")).each((i, e) => {
@@ -199,6 +205,10 @@ function initializeNicoSeiga() {
     });
 }
 
+function initializeBCY() {
+    $("body").addClass("bcy");
+}
+
 function initialize() {
     if (location.host === "www.pixiv.net" || location.host === "dic.pixiv.net") {
         initializePixiv();
@@ -208,6 +218,8 @@ function initialize() {
         initializeNicoSeiga();
     } else if (location.host === "www.tinami.com") {
         initializeTinami();
+    } else if (location.host === "bcy.net") {
+        initializeBCY();
     }
 
     initializeTranslatedTags();
