@@ -109,19 +109,15 @@ $("head").append(`
 </style>
 `);
 
-function translateTag(pixivTag) {
-    pixivTag = pixivTag.trim().normalize("NFKC").replace(/\d+users入り$/, "");
-    const request = $.getJSON(`${BOORU}/wiki_pages.json?search[other_names_match]=${encodeURIComponent(pixivTag)}`);
+async function translateTag(pixivTag) {
+    const normalizedTag = pixivTag.trim().normalize("NFKC").replace(/\d+users入り$/, "");
+    const wikiPages = await $.getJSON(`${BOORU}/wiki_pages.json?search[other_names_match]=${encodeURIComponent(normalizedTag)}`);
 
-    return request.then(wikiPages => {
-        return $.map(wikiPages, wikiPage => {
-            return {
-                name: wikiPage.title,
-                prettyName: wikiPage.title.replace(/_/g, " "),
-                category: wikiPage.category_name,
-            };
-        });
-    });
+    return wikiPages.map(wikiPage => new Object({
+        name: wikiPage.title,
+        prettyName: wikiPage.title.replace(/_/g, " "),
+        category: wikiPage.category_name,
+    }));
 }
 
 function addDanbooruTags($target, tags) {
@@ -142,6 +138,11 @@ function addDanbooruTags($target, tags) {
     });
 }
 
+async function addTranslation($element, tag = $element.text()) {
+    const danbooruTags = await translateTag(tag);
+    addDanbooruTags($element, danbooruTags);
+}
+
 function initializeTranslatedTags() {
     const selectors = [
         "body.ex-pixiv .tags li .text",                             // https://www.pixiv.net/member_illust.php?mode=medium&illust_id=64362862
@@ -157,11 +158,7 @@ function initializeTranslatedTags() {
     ];
 
     $(selectors.join(", ")).each((i, e) => {
-        const $tag = $(e);
-
-        translateTag($tag.text()).done(danbooruTags => {
-            addDanbooruTags($tag, danbooruTags);
-        });
+        addTranslation($(e));
     });
 }
 
@@ -170,11 +167,7 @@ function initializePixiv() {
 
     // https://www.pixiv.net/bookmark_add.php?type=illust&illust_id=1234
     $("body.ex-pixiv .tag-cloud .tag").each((i, e) => {
-        const $pixivTag = $(e);
-
-        translateTag($pixivTag.data("tag")).done(danbooruTags => {
-            addDanbooruTags($pixivTag, danbooruTags);
-        });
+        addTranslation($(e), $(e).data("tag"));
     });
 }
 
@@ -196,10 +189,7 @@ function initializeNicoSeiga() {
 
             summary.added.each(tag => {
                 const $tag = $(tag).find("> a");
-
-                translateTag($tag.text()).done(danbooruTags => {
-                    addDanbooruTags($tag, danbooruTags);
-                });
+                addTranslation($tag);
             });
         }
     });
