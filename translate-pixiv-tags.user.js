@@ -41,6 +41,9 @@ $("head").append(`
     .ex-translated-tags::after {
         content: ")";
     }
+    .ex-translated-tag-category-5 {
+        color: #F80 !important;
+    }
 
     .ex-translated-tag-category-4 {
         color: #0A0 !important;
