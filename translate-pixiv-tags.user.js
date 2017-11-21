@@ -50,8 +50,17 @@ $("head").append(`
         color: #A0A !important;
     }
 
+    .ex-translated-tag-category-1 {
+        color: #A00 !important;
+    }
+
     .ex-translated-tag-category-0 {
         color: #0073ff !important;
+    }
+
+    .ex-artist-tag {
+        color: #A00 !important;
+        display: block;
     }
 
     /* Fix https://www.pixiv.net/tags.php to display tags as vertical list. */
@@ -172,6 +181,15 @@ function initializePixiv() {
     // https://www.pixiv.net/bookmark_add.php?type=illust&illust_id=1234
     $("body.ex-pixiv .tag-cloud .tag").each((i, e) => {
         addTranslation($(e), $(e).data("tag"));
+    });
+
+    $(".profile .user-name, .ui-profile-popup").each(async (i, e) => {
+        const profileUrl = $(e).prop("href").replace(/member_illust/, "member");
+        const artists = await $.getJSON(`${BOORU}/artists.json?search[url_matches]=${encodeURIComponent(profileUrl)}`);
+
+        artists.forEach(artist => {
+            $(e).after(`<a class="ex-artist-tag" href="${BOORU}/artists/${artist.id}">${artist.name.replace(/_/, " ")}</a>`);
+        });
     });
 }
 
