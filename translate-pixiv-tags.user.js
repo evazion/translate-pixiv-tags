@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20171112120029
+// @version      20171120024443
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
