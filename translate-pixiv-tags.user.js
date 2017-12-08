@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20171208092053
+// @version      20171208093713
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -174,6 +174,17 @@ function dynamicAddTranslation(tagElement, tagLink = "> a") {
     });
 }
 
+function addTranslatedArtists(element, toProfileUrl) {
+    $(element).each(async (i, e) => {
+        const profileUrl = toProfileUrl($(e));
+
+        const artists = await $.getJSON(`${BOORU}/artists.json?search[url_matches]=${encodeURIComponent(profileUrl)}`);
+        artists.forEach(artist => {
+            $(e).after(`<a class="ex-artist-tag" href="${BOORU}/artists/${artist.id}">${artist.name.replace(/_/, " ")}</a>`);
+        });
+    });
+}
+
 function initializeTranslatedTags() {
     const selectors = [
         "body.ex-pixiv .tags li .text",                             // https://www.pixiv.net/member_illust.php?mode=medium&illust_id=64362862
@@ -202,14 +213,9 @@ function initializePixiv() {
         addTranslation($(e), $(e).data("tag"));
     });
 
-    $(".profile .user-name, .ui-profile-popup").each(async (i, e) => {
-        const profileUrl = $(e).prop("href").replace(/member_illust/, "member");
-        const artists = await $.getJSON(`${BOORU}/artists.json?search[url_matches]=${encodeURIComponent(profileUrl)}`);
-
-        artists.forEach(artist => {
-            $(e).after(`<a class="ex-artist-tag" href="${BOORU}/artists/${artist.id}">${artist.name.replace(/_/, " ")}</a>`);
-        });
-    });
+    let profileContainer = ".profile .user-name, .ui-profile-popup";
+    let toProfileUrl = (e => $(e).prop("href").replace(/member_illust/, "member"));
+    addTranslatedArtists(profileContainer, toProfileUrl);
 }
 
 function initializeNijie() {
@@ -232,6 +238,9 @@ function initializeBCY() {
 function initializeMonappy() {
     $("body").addClass("ex-monappy");
     dynamicAddTranslation('.picpr-tag');
+
+    let twitterProfileLink = ".picpre-container > div:nth-child(2) > div:nth-child(1) .inline-form > a:nth-child(2)";
+    addTranslatedArtists(twitterProfileLink, e => e.prop("href"));
 }
 
 function initialize() {
