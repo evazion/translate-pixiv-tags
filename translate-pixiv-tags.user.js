@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20171208172747
+// @version      20171208172851
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, BCY, and Monappy to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -272,7 +272,10 @@ function initializeMonappy() {
     $("body").addClass("ex-monappy");
     asyncAddTranslation('.picpr-tag');
 
-    let twitterProfileLink = ".picpre-container > div:nth-child(2) > div:nth-child(1) .inline-form > a:nth-child(2)";
+    let twitterProfileLink = `
+        .picpre-container > div:nth-child(2) > div:nth-child(1) .inline-form > a:nth-child(2),
+        .container > .row > .col-md-3.text-center > .inline-form > a:nth-child(3)
+    `;
     addTranslatedArtists(twitterProfileLink, e => e.prop("href").toLowerCase());
 }
 
