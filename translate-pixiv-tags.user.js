@@ -65,6 +65,7 @@ $("head").append(`
     .ex-artist-tag {
         color: #A00 !important;
         display: block;
+        white-space: nowrap;
     }
 
     .ex-artist-tag::before {
@@ -176,7 +177,7 @@ function addTranslatedArtists(element, toProfileUrl) {
 
         const artists = await $.getJSON(`${BOORU}/artists.json?search[url_matches]=${encodeURIComponent(profileUrl)}`);
         artists.forEach(artist => {
-            $(e).after(`<a class="ex-artist-tag" href="${BOORU}/artists/${artist.id}">${artist.name.replace(/_/, " ")}</a>`);
+            $(e).after(`<a class="ex-artist-tag" href="${BOORU}/artists/${artist.id}">${artist.name.replace(/_/g, " ")}</a>`);
         });
     });
 }
