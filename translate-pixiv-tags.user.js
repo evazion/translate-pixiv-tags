@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20171208093713
+// @version      20171208105103
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -126,6 +126,11 @@ $("head").append(`
 </style>
 `);
 
+async function addTranslation($element, tag = $element.text()) {
+    const danbooruTags = await translateTag(tag);
+    addDanbooruTags($element, danbooruTags);
+}
+
 async function translateTag(pixivTag) {
     const normalizedTag = pixivTag.trim().normalize("NFKC").replace(/\d+users入り$/, "");
     const wikiPages = await $.getJSON(`${BOORU}/wiki_pages.json?search[other_names_match]=${encodeURIComponent(normalizedTag)}`);
@@ -155,25 +160,6 @@ function addDanbooruTags($target, tags) {
     });
 }
 
-async function addTranslation($element, tag = $element.text()) {
-    const danbooruTags = await translateTag(tag);
-    addDanbooruTags($element, danbooruTags);
-}
-
-function dynamicAddTranslation(tagElement, tagLink = "> a") {
-    const observer = new MutationSummary({
-        queries: [{ element: tagElement }],
-        callback: function (summaries) {
-            const summary = summaries[0];
-
-            summary.added.forEach(tag => {
-                const $tag = $(tag).find(tagLink);
-                addTranslation($tag);
-            });
-        }
-    });
-}
-
 function addTranslatedArtists(element, toProfileUrl) {
     $(element).each(async (i, e) => {
         const profileUrl = toProfileUrl($(e));
@@ -182,6 +168,24 @@ function addTranslatedArtists(element, toProfileUrl) {
         artists.forEach(artist => {
             $(e).after(`<a class="ex-artist-tag" href="${BOORU}/artists/${artist.id}">${artist.name.replace(/_/, " ")}</a>`);
         });
+    });
+}
+
+function asyncAddTranslation(tagSelector, tagLink = "> a") {
+    onElementsAdded(tagSelector, tag => {
+        const $tag = $(tag).find(tagLink);
+        addTranslation($tag);
+    });
+}
+
+function onElementsAdded(selector, callback) {
+    const observer = new MutationSummary({
+        queries: [{ element: selector }],
+        callback: function (summaries) {
+            const summary = summaries[0];
+
+            summary.added.forEach(callback);
+        }
     });
 }
 
@@ -228,7 +232,7 @@ function initializeTinami() {
 
 function initializeNicoSeiga() {
     $("body").addClass("ex-seiga");
-    dynamicAddTranslation('.picpr-tag');
+    asyncAddTranslation('.tag');
 }
 
 function initializeBCY() {
@@ -237,7 +241,7 @@ function initializeBCY() {
 
 function initializeMonappy() {
     $("body").addClass("ex-monappy");
-    dynamicAddTranslation('.picpr-tag');
+    asyncAddTranslation('.picpr-tag');
 
     let twitterProfileLink = ".picpre-container > div:nth-child(2) > div:nth-child(1) .inline-form > a:nth-child(2)";
     addTranslatedArtists(twitterProfileLink, e => e.prop("href"));
