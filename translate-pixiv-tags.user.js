@@ -67,6 +67,16 @@ $("head").append(`
         display: block;
     }
 
+    .ex-artist-tag::before {
+        content: "";
+        display: inline-block;
+        background: url('https://danbooru.donmai.us/favicon.ico') no-repeat;
+        background-size: 12px;
+        width: 16px;
+        height: 16px;
+        vertical-align: middle;
+    }
+
     /* Fix https://www.pixiv.net/tags.php to display tags as vertical list. */
     body.ex-pixiv .tag-list li {
         display: block;
