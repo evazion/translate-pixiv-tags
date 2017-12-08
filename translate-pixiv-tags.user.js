@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20171120024443
+// @version      20171208092053
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -12,6 +12,7 @@
 // @match        *://seiga.nicovideo.jp/*
 // @match        *://www.tinami.com/*
 // @match        *://bcy.net/*
+// @match        *://monappy.jp/*
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js
 // @require      https://raw.githubusercontent.com/rafaelw/mutation-summary/421110f84178aa9e4098b38df83f727e5aea3d97/src/mutation-summary.js
 // ==/UserScript==
@@ -159,6 +160,20 @@ async function addTranslation($element, tag = $element.text()) {
     addDanbooruTags($element, danbooruTags);
 }
 
+function dynamicAddTranslation(tagElement, tagLink = "> a") {
+    const observer = new MutationSummary({
+        queries: [{ element: tagElement }],
+        callback: function (summaries) {
+            const summary = summaries[0];
+
+            summary.added.forEach(tag => {
+                const $tag = $(tag).find(tagLink);
+                addTranslation($tag);
+            });
+        }
+    });
+}
+
 function initializeTranslatedTags() {
     const selectors = [
         "body.ex-pixiv .tags li .text",                             // https://www.pixiv.net/member_illust.php?mode=medium&illust_id=64362862
@@ -171,6 +186,7 @@ function initializeTranslatedTags() {
         "body.ex-seiga #ko_tagwatch > div > h1",
         "body.ex-tinami .tag > span > a:nth-child(2)",
         "body.ex-bcy .tag > a > div",
+        "body.ex-monappy span.picpr-tag > a",                       // https://monappy.jp/picture_places/view/13663
     ];
 
     $(selectors.join(", ")).each((i, e) => {
@@ -206,22 +222,16 @@ function initializeTinami() {
 
 function initializeNicoSeiga() {
     $("body").addClass("ex-seiga");
-
-    const observer = new MutationSummary({
-        queries: [{ element: '.tag' }],
-        callback: function (summaries) {
-            const summary = summaries[0];
-
-            summary.added.each(tag => {
-                const $tag = $(tag).find("> a");
-                addTranslation($tag);
-            });
-        }
-    });
+    dynamicAddTranslation('.picpr-tag');
 }
 
 function initializeBCY() {
     $("body").addClass("ex-bcy");
+}
+
+function initializeMonappy() {
+    $("body").addClass("ex-monappy");
+    dynamicAddTranslation('.picpr-tag');
 }
 
 function initialize() {
@@ -235,6 +245,8 @@ function initialize() {
         initializeTinami();
     } else if (location.host === "bcy.net") {
         initializeBCY();
+    } else if (location.host === "monappy.jp") {
+        initializeMonappy();
     }
 
     initializeTranslatedTags();
