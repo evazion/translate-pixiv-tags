@@ -1,6 +1,8 @@
 # Translate Pixiv Tags
 
-A userscript that translates tags on [Pixiv](https://www.pixiv.net) (as well as [Nijie](https://nijie.info), [NicoSeiga](https://seiga.nicovideo.jp), [Tinami](https://www.tinami.com), and [BCY](https://bcy.net)) to their corresponding Danbooru tags.
+A userscript that translates tags on [Pixiv](https://www.pixiv.net) (as well as [Nijie](https://nijie.info), [NicoSeiga](https://seiga.nicovideo.jp), [Tinami](https://www.tinami.com), [BCY](https://bcy.net), and [Monappy](https://monappy.jp)) to their corresponding Danbooru tags.
+
+Artist names are also translated into Danbooru artist tags.
 
 # Installation
 
@@ -21,6 +23,6 @@ Often you'll find tags that aren't translated. In these cases you can add the tr
 * In the `Other names` field, add the untranslated tag.
 * Click `Submit` to save your changes.
 
-Sometimes a tag will translate to multiple Danbooru tags. For example, `黒タイツ` ("black tights") on Pixiv corresponds to `pantyhose` and `black_legwear` on Danbooru. In these cases the Pixiv tag should be added to each corresponding Danbooru wiki entry.
+Sometimes a tag will translate to multiple Danbooru tags. For example, `黒タイツ` ("black tights") on Pixiv corresponds to `pantyhose` and `black_legwear` on Danbooru. In these cases the Pixiv tag should be added to *each* corresponding Danbooru wiki entry.
 
 Sometimes tags on other sites don't have an equivalent Danbooru tag. This is usually because the tag is too subjective ("cute", "sexy", "beautiful"), or too generic ("girl", "anime", "fanart", "illustration"). These tags can't be translated.
