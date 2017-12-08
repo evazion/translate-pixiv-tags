@@ -213,7 +213,7 @@ function initializePixiv() {
         addTranslation($(e), $(e).data("tag"));
     });
 
-    let profileContainer = ".profile .user-name, .ui-profile-popup";
+    let profileContainer = ".profile .user-name, .user .ui-profile-popup, .image-item .ui-profile-popup";
     let toProfileUrl = (e => $(e).prop("href").replace(/member_illust/, "member"));
     addTranslatedArtists(profileContainer, toProfileUrl);
 }
