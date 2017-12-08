@@ -5,7 +5,7 @@
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
-// @updateURL    https://github.com/evazion/translate-pixiv-tags/raw/stable/translate-pixiv-tags.user.js
+// @updateURL    http://localhost:10000/translate-pixiv-tags.user.js
 // @match        *://www.pixiv.net/*
 // @match        *://dic.pixiv.net/*
 // @match        *://nijie.info/*
@@ -247,11 +247,21 @@ function initializeNijie() {
 
 function initializeTinami() {
     $("body").addClass("ex-tinami");
+
+    /*
+    addTranslatedArtists(".cre_name > p:nth-child(2) > img", e => {
+        // https://img.tinami.com//creator/profile/sticker/62414.gif
+        let userId = $(e).prop("src").match(/^https?:\/\/img\.tinami\.com\/\/creator\/profile\/sticker\/(\d+)\.gif$/)[1];
+        return `http://www.tinami.com/creator/profile/${userId}`;
+    });
+    */
 }
 
 function initializeNicoSeiga() {
     $("body").addClass("ex-seiga");
     asyncAddTranslation('.tag');
+    // addTranslatedArtists(".user_info h1 a", e => $(e).prop("href"));
+    // addTranslatedArtists(".user_link > a", e => $(e).prop("href"));
 }
 
 function initializeBCY() {
