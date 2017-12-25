@@ -62,9 +62,8 @@ $("head").append(`
         color: #0073ff !important;
     }
 
-    .ex-artist-tag {
+    .ex-artist-tag a {
         color: #A00 !important;
-        display: block;
         white-space: nowrap;
     }
 
@@ -76,6 +75,10 @@ $("head").append(`
         width: 16px;
         height: 16px;
         vertical-align: middle;
+    }
+
+    .ex-banned-artist-tag a::after {
+        content: " (banned)";
     }
 
     /* Fix https://www.pixiv.net/tags.php to display tags as vertical list. */
@@ -177,7 +180,14 @@ function addTranslatedArtists(element, toProfileUrl) {
 
         const artists = await $.getJSON(`${BOORU}/artists.json?search[url_matches]=${encodeURIComponent(profileUrl)}`);
         artists.forEach(artist => {
-            $(e).after(`<a class="ex-artist-tag" href="${BOORU}/artists/${artist.id}">${artist.name.replace(/_/g, " ")}</a>`);
+            let classes = artist.is_banned ? "ex-artist-tag ex-banned-artist-tag" : "ex-artist-tag";
+            let prettyName = artist.name.replace(/_/g, " ");
+
+            $(e).after(`
+                <div class="${classes}">
+                    <a href="${BOORU}/artists/${artist.id}">${prettyName}</a>
+                </div>
+            `);
         });
     });
 }
@@ -258,8 +268,8 @@ function initializeTinami() {
     // triggers on http://www.tinami.com/view/934323 pages
     addTranslatedArtists('body.ex-tinami a[href^="/creator/profile/"] strong', e => {
         // e: '<a href="/creator/profile/10262"><strong>松永紅葉</strong></a>'
-	let $strong = $(e);
-	let $a = $(e).parent();
+        let $strong = $(e);
+        let $a = $(e).parent();
         let userId = $a.prop("href").match(/\/creator\/profile\/(\d+)$/)[1];
         return `http://www.tinami.com/creator/profile/${userId}`;
     });
