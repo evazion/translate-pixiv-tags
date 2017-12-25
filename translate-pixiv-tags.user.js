@@ -14,11 +14,101 @@
 // @match        *://bcy.net/*
 // @match        *://monappy.jp/*
 // @match        *://*.deviantart.com/*
+// @grant        GM_xmlhttpRequest
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js
 // @require      https://raw.githubusercontent.com/rafaelw/mutation-summary/421110f84178aa9e4098b38df83f727e5aea3d97/src/mutation-summary.js
+// @connect      donmai.us
 // ==/UserScript==
 
 const BOORU = "https://danbooru.donmai.us"
+
+// https://gist.github.com/monperrus/999065
+// This is a shim that adapts jQuery's ajax methods to use GM_xmlhttpRequest.
+// This allows us to use $.getJSON instead of using GM_xmlhttpRequest directly.
+//
+// This is necessary because some sites (e.g. Twitter, DeviantArt) have a
+// Content Security Policy that blocks us from making cross-origin requests to
+// Danbooru. Tampermonkey allows us to bypass the CSP, but only if we use GM_xmlhttpRequest.
+function GM_XHR() {
+    this.type = null;
+    this.url = null;
+    this.async = null;
+    this.username = null;
+    this.password = null;
+    this.status = null;
+    this.readyState = null;
+    this.headers = {};
+
+    this.abort = function() {
+        this.readyState = 0;
+    };
+
+    this.getAllResponseHeaders = function(name) {
+        if (this.readyState!=4) return "";
+        return this.responseHeaders;
+    };
+
+    this.getResponseHeader = function(name) {
+        var regexp = new RegExp('^'+name+': (.*)$','im');
+        var match = regexp.exec(this.responseHeaders);
+        if (match) { return match[1]; }
+        return '';
+    };
+
+    this.open = function(type, url, async, username, password) {
+        this.type = type ? type : null;
+        this.url = url ? url : null;
+        this.async = async ? async : null;
+        this.username = username ? username : null;
+        this.password = password ? password : null;
+        this.readyState = 1;
+    };
+
+    this.setRequestHeader = function(name, value) {
+        this.headers[name] = value;
+    };
+
+    this.send = function(data) {
+        this.data = data;
+        var that = this;
+        // http://wiki.greasespot.net/GM_xmlhttpRequest
+        GM_xmlhttpRequest({
+            method: this.type,
+            url: this.url,
+            headers: this.headers,
+            data: this.data,
+            responseType: this.responseType,
+            onload: function(rsp) {
+                // Populate wrapper object with returned data
+                // including the Greasemonkey specific "responseHeaders"
+                for (var k in rsp) {
+                    that[k] = rsp[k];
+                }
+                // now we call onreadystatechange
+                if (that.onload) {
+                    that.onload();
+                } else {
+                    that.onreadystatechange();
+                }
+            },
+            onerror: function(rsp) {
+                for (var k in rsp) {
+                    that[k] = rsp[k];
+                }
+                // now we call onreadystatechange
+                if (that.onerror) {
+                    that.onerror();
+                } else {
+                    that.onreadystatechange();
+                }
+            }
+        });
+    };
+}
+
+$.ajaxSetup({
+    xhr: function () { return new GM_XHR(); },
+});
 
 $("head").append(`
 <style>
