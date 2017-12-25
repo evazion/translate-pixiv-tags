@@ -260,8 +260,8 @@ function initializeTinami() {
 function initializeNicoSeiga() {
     $("body").addClass("ex-seiga");
     asyncAddTranslation('.tag');
-    // addTranslatedArtists(".user_info h1 a", e => $(e).prop("href"));
-    // addTranslatedArtists(".user_link > a", e => $(e).prop("href"));
+    addTranslatedArtists(".user_info h1 a", e => $(e).prop("href"));
+    addTranslatedArtists(".user_link > a", e => $(e).prop("href"));
 }
 
 function initializeBCY() {
