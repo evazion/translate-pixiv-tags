@@ -248,13 +248,21 @@ function initializeNijie() {
 function initializeTinami() {
     $("body").addClass("ex-tinami");
 
-    /*
-    addTranslatedArtists(".cre_name > p:nth-child(2) > img", e => {
+    // triggers on http://www.tinami.com/creator/profile/10262 pages
+    addTranslatedArtists('body.ex-tinami img[src*="/creator/profile/sticker/"]', e => {
         // https://img.tinami.com//creator/profile/sticker/62414.gif
-        let userId = $(e).prop("src").match(/^https?:\/\/img\.tinami\.com\/\/creator\/profile\/sticker\/(\d+)\.gif$/)[1];
+        let userId = $(e).prop("src").match(/\/creator\/profile\/sticker\/(\d+)\.gif$/)[1];
         return `http://www.tinami.com/creator/profile/${userId}`;
     });
-    */
+
+    // triggers on http://www.tinami.com/view/934323 pages
+    addTranslatedArtists('body.ex-tinami a[href^="/creator/profile/"] strong', e => {
+        // e: '<a href="/creator/profile/10262"><strong>松永紅葉</strong></a>'
+	let $strong = $(e);
+	let $a = $(e).parent();
+        let userId = $a.prop("href").match(/\/creator\/profile\/(\d+)$/)[1];
+        return `http://www.tinami.com/creator/profile/${userId}`;
+    });
 }
 
 function initializeNicoSeiga() {
