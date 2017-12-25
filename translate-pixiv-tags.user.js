@@ -153,6 +153,7 @@ $("head").append(`
         color: #0073ff !important;
     }
 
+    #ex-deviantart .ex-artist-tag a,
     .ex-artist-tag a {
         color: #A00 !important;
         white-space: nowrap;
