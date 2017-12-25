@@ -395,6 +395,10 @@ function initializeDeviantArt() {
     // triggers on https://sakimichan.deviantart.com/art/Horoscope-series-Libra-641842522 pages
     addTranslatedArtists(".dev-title-container .author .username", e => $(e).prop("href"));
 
+    // triggers on https://sakimichan.deviantart.com/art/Horoscope-series-Libra-641842522 pages
+    $("#ex-deviantart .dev-about-tags-cc .discoverytag").each((i, e) => {
+        addTranslation($(e), $(e).data("canonical-tag"));
+    });
 }
 
 function initialize() {
