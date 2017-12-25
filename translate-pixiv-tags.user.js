@@ -173,59 +173,59 @@ $("head").append(`
     }
 
     /* Fix https://www.pixiv.net/tags.php to display tags as vertical list. */
-    body.ex-pixiv .tag-list li {
+    #ex-pixiv .tag-list li {
         display: block;
     }
 
     /* Fix https://dic.pixiv.net/a/東方 to display Danbooru tag next to article title. */
-    body.ex-pixiv #content_title #article-name {
+    #ex-pixiv #content_title #article-name {
        display: inline-block;
     }
 
-    body.ex-nijie .ex-translated-tags {
+    #ex-nijie .ex-translated-tags {
        font-size: 12px;
        font-family: Verdana, Helvetica, sans-serif;
     }
 
     /* Position Nijie dictionary links to the right of Danbooru tag links. */
-    body.ex-nijie .tag .tag_name a.dic {
+    #ex-nijie .tag .tag_name a.dic {
        float: right !important;
     }
 
     /* Fix tag lists in http://nijie.info/view.php?id=203787 pages. */
-    body.ex-nijie #dojin_left #view-tag .tag {
+    #ex-nijie #dojin_left #view-tag .tag {
       white-space: nowrap;
       border: 0;
     }
 
-    body.ex-nijie #seiten_dic .ex-translated-tags {
+    #ex-nijie #seiten_dic .ex-translated-tags {
        font-size: 32px;
     }
 
     /* Fix tags in http://seiga.nicovideo.jp/seiga/im6950870 */
-    body.ex-seiga .illust_tag .tag .ex-translated-tags {
+    #ex-seiga .illust_tag .tag .ex-translated-tags {
        float: left;
     }
 
     /* Fix tags in http://seiga.nicovideo.jp/tag/艦これ */
-    body.ex-seiga #ko_tagwatch .ex-translated-tags {
+    #ex-seiga #ko_tagwatch .ex-translated-tags {
         font-size: 233.4%;
         line-height: 120%;
         vertical-align: middle;
     }
 
-    body.ex-tinami .tag > span {
+    #ex-tinami .tag > span {
         display: inline;
         float: none;
     }
 
-    body.ex-tinami .ex-translated-tags {
+    #ex-tinami .ex-translated-tags {
         font-family: Verdana, Helvetica, sans-serif;
         float: none !important;
         display: inline !important;
     }
 
-    body.ex-bcy .tag > a > div {
+    #ex-bcy .tag > a > div {
         display: inline !important;
     }
 </style>
@@ -309,18 +309,17 @@ function onElementsAdded(selector, callback) {
 
 function initializeTranslatedTags() {
     const selectors = [
-        "body.ex-pixiv .tags li .text",                             // https://www.pixiv.net/member_illust.php?mode=medium&illust_id=64362862
-        "body.ex-pixiv .tag-list li .tag-name",                     // https://www.pixiv.net/tags.php
-        "body.ex-pixiv .tags-portal-header .title",                 // https://www.pixiv.net/tags.php?tag=touhou
-        "body.ex-pixiv #content_title #article-name",               // https://dic.pixiv.net/a/touhou
-        "body.ex-pixiv #wrapper div.layout-body h1.column-title a", // https://www.pixiv.net/search.php?s_mode=s_tag&word=touhou
-        "body.ex-nijie .tag .tag_name a:first-child",               // http://nijie.info/view.php?id=208491
-        "body.ex-nijie #seiten_dic h1#dic_title",                   // https://nijie.info/dic/seiten/d/東方
-        "body.ex-seiga #ko_tagwatch > div > h1",
-        "body.ex-tinami .tag > span > a:nth-child(2)",
-        "body.ex-bcy .tag > a > div",
-        "body.ex-monappy span.picpr-tag > a",                       // https://monappy.jp/picture_places/view/13663
-        "body.ex-deviantart .dev-about-tags-cc .discoverytag",      // https://serafleur.deviantart.com/art/Libra-The-Star-Sign-641373944
+        "#ex-pixiv .tags li .text",                             // https://www.pixiv.net/member_illust.php?mode=medium&illust_id=64362862
+        "#ex-pixiv .tag-list li .tag-name",                     // https://www.pixiv.net/tags.php
+        "#ex-pixiv .tags-portal-header .title",                 // https://www.pixiv.net/tags.php?tag=touhou
+        "#ex-pixiv #content_title #article-name",               // https://dic.pixiv.net/a/touhou
+        "#ex-pixiv #wrapper div.layout-body h1.column-title a", // https://www.pixiv.net/search.php?s_mode=s_tag&word=touhou
+        "#ex-nijie .tag .tag_name a:first-child",               // http://nijie.info/view.php?id=208491
+        "#ex-nijie #seiten_dic h1#dic_title",                   // https://nijie.info/dic/seiten/d/東方
+        "#ex-seiga #ko_tagwatch > div > h1",
+        "#ex-tinami .tag > span > a:nth-child(2)",
+        "#ex-bcy .tag > a > div",
+        "#ex-monappy span.picpr-tag > a",                       // https://monappy.jp/picture_places/view/13663
     ];
 
     $(selectors.join(", ")).each((i, e) => {
@@ -329,10 +328,10 @@ function initializeTranslatedTags() {
 }
 
 function initializePixiv() {
-    $("body").addClass("ex-pixiv");
+    $("body").attr("id", "ex-pixiv");
 
     // https://www.pixiv.net/bookmark_add.php?type=illust&illust_id=1234
-    $("body.ex-pixiv .tag-cloud .tag").each((i, e) => {
+    $(".tag-cloud .tag").each((i, e) => {
         addTranslation($(e), $(e).data("tag"));
     });
 
@@ -343,22 +342,22 @@ function initializePixiv() {
 }
 
 function initializeNijie() {
-    $("body").addClass("ex-nijie");
+    $("body").attr("id", "ex-nijie");
     addTranslatedArtists("#pro .user_icon .name, .popup_member > a", e => $(e).prop("href"));
 }
 
 function initializeTinami() {
-    $("body").addClass("ex-tinami");
+    $("body").attr("id", "ex-tinami");
 
     // triggers on http://www.tinami.com/creator/profile/10262 pages
-    addTranslatedArtists('body.ex-tinami img[src*="/creator/profile/sticker/"]', e => {
+    addTranslatedArtists('img[src*="/creator/profile/sticker/"]', e => {
         // https://img.tinami.com//creator/profile/sticker/62414.gif
         let userId = $(e).prop("src").match(/\/creator\/profile\/sticker\/(\d+)\.gif$/)[1];
         return `http://www.tinami.com/creator/profile/${userId}`;
     });
 
     // triggers on http://www.tinami.com/view/934323 pages
-    addTranslatedArtists('body.ex-tinami a[href^="/creator/profile/"] strong', e => {
+    addTranslatedArtists('a[href^="/creator/profile/"] strong', e => {
         // e: '<a href="/creator/profile/10262"><strong>松永紅葉</strong></a>'
         let $strong = $(e);
         let $a = $(e).parent();
@@ -368,18 +367,19 @@ function initializeTinami() {
 }
 
 function initializeNicoSeiga() {
-    $("body").addClass("ex-seiga");
+    $("body").attr("id", "ex-seiga");
+
     asyncAddTranslation('.tag');
     addTranslatedArtists(".user_info h1 a", e => $(e).prop("href"));
     addTranslatedArtists(".user_link > a", e => $(e).prop("href"));
 }
 
 function initializeBCY() {
-    $("body").addClass("ex-bcy");
+    $("body").attr("id", "ex-bcy");
 }
 
 function initializeMonappy() {
-    $("body").addClass("ex-monappy");
+    $("body").attr("id", "ex-monappy");
     asyncAddTranslation('.picpr-tag');
 
     let twitterProfileLink = `
@@ -390,10 +390,11 @@ function initializeMonappy() {
 }
 
 function initializeDeviantArt() {
-    $("body").addClass("ex-deviantart");
+    $("body").attr("id", "ex-deviantart");
 
     // triggers on https://sakimichan.deviantart.com/art/Horoscope-series-Libra-641842522 pages
-    addTranslatedArtists(".ex-deviantart .dev-title-container .author .username", e => $(e).prop("href"));
+    addTranslatedArtists(".dev-title-container .author .username", e => $(e).prop("href"));
+
 }
 
 function initialize() {
