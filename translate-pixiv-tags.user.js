@@ -13,6 +13,7 @@
 // @match        *://www.tinami.com/*
 // @match        *://bcy.net/*
 // @match        *://monappy.jp/*
+// @match        *://*.deviantart.com/*
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js
 // @require      https://raw.githubusercontent.com/rafaelw/mutation-summary/421110f84178aa9e4098b38df83f727e5aea3d97/src/mutation-summary.js
 // ==/UserScript==
@@ -229,6 +230,7 @@ function initializeTranslatedTags() {
         "body.ex-tinami .tag > span > a:nth-child(2)",
         "body.ex-bcy .tag > a > div",
         "body.ex-monappy span.picpr-tag > a",                       // https://monappy.jp/picture_places/view/13663
+        "body.ex-deviantart .dev-about-tags-cc .discoverytag",      // https://serafleur.deviantart.com/art/Libra-The-Star-Sign-641373944
     ];
 
     $(selectors.join(", ")).each((i, e) => {
@@ -297,6 +299,13 @@ function initializeMonappy() {
     addTranslatedArtists(twitterProfileLink, e => e.prop("href").toLowerCase());
 }
 
+function initializeDeviantArt() {
+    $("body").addClass("ex-deviantart");
+
+    // triggers on https://sakimichan.deviantart.com/art/Horoscope-series-Libra-641842522 pages
+    addTranslatedArtists(".ex-deviantart .dev-title-container .author .username", e => $(e).prop("href"));
+}
+
 function initialize() {
     if (location.host === "www.pixiv.net" || location.host === "dic.pixiv.net") {
         initializePixiv();
@@ -310,6 +319,8 @@ function initialize() {
         initializeBCY();
     } else if (location.host === "monappy.jp") {
         initializeMonappy();
+    } else if (location.host.match(/deviantart\.com/)) {
+        initializeDeviantArt();
     }
 
     initializeTranslatedTags();
