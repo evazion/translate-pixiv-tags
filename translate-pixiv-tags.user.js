@@ -318,9 +318,11 @@ function asyncAddTranslation(tagSelector, tagLink = "> a") {
     });
 }
 
-function asyncAddTranslatedArtists(selector, toProfileUrl) {
+function asyncAddTranslatedArtists(selector, toProfileUrl, predicate = (x) => true) {
     onElementsAdded(selector, artist => {
-        addTranslatedArtists(artist, toProfileUrl);
+        if (predicate(artist)) {
+            addTranslatedArtists(artist, toProfileUrl);
+        }
     });
 }
 
@@ -422,6 +424,9 @@ function initializeDeviantArt() {
 
     // triggers on https://sakimichan.deviantart.com/art/Horoscope-series-Libra-641842522 pages
     addTranslatedArtists(".dev-title-container .author .username", e => $(e).prop("href"));
+    asyncAddTranslatedArtists(".username", e => $(e).prop("href"), artist => {
+        return $(artist).is(".dev-title-container .author .username");
+    });
 
     // triggers on https://sakimichan.deviantart.com/art/Horoscope-series-Libra-641842522 pages
     $("#ex-deviantart .dev-about-tags-cc .discoverytag").each((i, e) => {
