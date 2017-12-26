@@ -164,8 +164,8 @@ $("head").append(`
         display: inline-block;
         background: url('https://danbooru.donmai.us/favicon.ico') no-repeat;
         background-size: 12px;
-        width: 16px;
-        height: 16px;
+        width: 12px;
+        height: 12px;
         vertical-align: middle;
     }
 
