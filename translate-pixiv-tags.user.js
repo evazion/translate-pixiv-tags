@@ -293,7 +293,7 @@ function addDanbooruTags($target, tags) {
     });
 }
 
-function addTranslatedArtists(element, toProfileUrl) {
+function addTranslatedArtists(element, toProfileUrl = (e) => $(e).prop("href")) {
     $(element).each(async (i, e) => {
         const profileUrl = toProfileUrl($(e));
 
@@ -365,6 +365,7 @@ function initializePixiv() {
         addTranslation($(e), $(e).data("tag"));
     });
 
+    // https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
     let profileContainer = ".profile .user-name, .user .ui-profile-popup, .image-item .ui-profile-popup";
     let toProfileUrl = (e => $(e).prop("href").replace(/member_illust/, "member"));
     addTranslatedArtists(profileContainer, toProfileUrl);
@@ -373,7 +374,9 @@ function initializePixiv() {
 
 function initializeNijie() {
     $("body").attr("id", "ex-nijie");
-    addTranslatedArtists("#pro .user_icon .name, .popup_member > a", e => $(e).prop("href"));
+
+    // http://nijie.info/view.php?id=233339
+    addTranslatedArtists("#pro .user_icon .name, .popup_member > a");
 }
 
 function initializeTinami() {
@@ -399,21 +402,24 @@ function initializeTinami() {
 function initializeNicoSeiga() {
     $("body").attr("id", "ex-seiga");
 
+    // http://seiga.nicovideo.jp/seiga/im7741859
     asyncAddTranslation('.tag');
-    addTranslatedArtists(".user_info h1 a", e => $(e).prop("href"));
-    addTranslatedArtists(".user_link > a", e => $(e).prop("href"));
+    addTranslatedArtists(".user_info h1 a");
+    addTranslatedArtists(".user_link > a");
 }
 
 function initializeBCY() {
     $("body").attr("id", "ex-bcy");
 
-    addTranslatedArtists('.js-userTpl .fz14', e => $(e).prop("href"));
+    // https://bcy.net/illust/detail/66626/1824973
+    addTranslatedArtists('.js-userTpl .fz14');
 }
 
 function initializeMonappy() {
     $("body").attr("id", "ex-monappy");
     asyncAddTranslation('.picpr-tag');
 
+    // https://monappy.jp/picture_places/view/22693
     let twitterProfileLink = `
         .picpre-container > div:nth-child(2) > div:nth-child(1) .inline-form > a:nth-child(2),
         .container > .row > .col-md-3.text-center > .inline-form > a:nth-child(3)
@@ -425,7 +431,7 @@ function initializeDeviantArt() {
     $("body").attr("id", "ex-deviantart");
 
     // triggers on https://sakimichan.deviantart.com/art/Horoscope-series-Libra-641842522 pages
-    addTranslatedArtists(".dev-title-container .author .username", e => $(e).prop("href"));
+    addTranslatedArtists(".dev-title-container .author .username");
     asyncAddTranslatedArtists(".username", e => $(e).prop("href"), artist => {
         return $(artist).is(".dev-title-container .author .username");
     });
@@ -440,10 +446,10 @@ function initializeHentaiFoundry() {
     $("body").attr("id", "ex-hentaifoundry");
 
     // triggers on https://www.hentai-foundry.com/pictures/user/firolian/560377/Miss-Marvel---Selfie
-    addTranslatedArtists("#picBox .boxtitle a", e => $(e).prop("href"));
+    addTranslatedArtists("#picBox .boxtitle a");
 
     // triggers on https://www.hentai-foundry.com/user/Calm/profile
-    addTranslatedArtists(".galleryViewTable .thumb_square > a:nth-child(4)", e => $(e).prop("href"));
+    addTranslatedArtists(".galleryViewTable .thumb_square > a:nth-child(4)");
 }
 
 function initialize() {
