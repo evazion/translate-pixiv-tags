@@ -1,8 +1,12 @@
 # Translate Pixiv Tags
 
-A userscript that translates tags on [Pixiv](https://www.pixiv.net) (as well as [Nijie](https://nijie.info), [NicoSeiga](https://seiga.nicovideo.jp), [Tinami](https://www.tinami.com), [BCY](https://bcy.net), and [Monappy](https://monappy.jp)) to their corresponding Danbooru tags.
-
-Artist names are also translated into Danbooru artist tags.
+A userscript that translates tags and artist names on
+[Pixiv](https://www.pixiv.net) (as well as on [Nijie](https://nijie.info),
+[NicoSeiga](https://seiga.nicovideo.jp), [Tinami](https://www.tinami.com),
+[BCY](https://bcy.net), [Monappy](https://monappy.jp),
+[Twitter](https://twitter.com), [DeviantArt](https://www.deviantart.com), and
+[Hentai-Foundry](https://www.hentai-foundry.com)) to their corresponding
+Danbooru tags.
 
 # Installation
 
