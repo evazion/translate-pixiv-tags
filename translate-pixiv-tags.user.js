@@ -14,6 +14,7 @@
 // @match        *://bcy.net/*
 // @match        *://monappy.jp/*
 // @match        *://*.deviantart.com/*
+// @match        *://*.hentai-foundry.com/*
 // @grant        GM_xmlhttpRequest
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js
 // @require      https://raw.githubusercontent.com/rafaelw/mutation-summary/421110f84178aa9e4098b38df83f727e5aea3d97/src/mutation-summary.js
@@ -229,6 +230,11 @@ $("head").append(`
     #ex-bcy .tag > a > div {
         display: inline !important;
     }
+
+    /* Render the Danbooru artist tag on the same line as the HF artist name. */
+    #ex-hentaifoundry .ex-artist-tag {
+        display: inline-block;
+    }
 </style>
 `);
 
@@ -402,6 +408,16 @@ function initializeDeviantArt() {
     });
 }
 
+function initializeHentaiFoundry() {
+    $("body").attr("id", "ex-hentaifoundry");
+
+    // triggers on https://www.hentai-foundry.com/pictures/user/firolian/560377/Miss-Marvel---Selfie
+    addTranslatedArtists("#picBox .boxtitle a", e => $(e).prop("href"));
+
+    // triggers on https://www.hentai-foundry.com/user/Calm/profile
+    addTranslatedArtists(".galleryViewTable .thumb_square > a:nth-child(4)", e => $(e).prop("href"));
+}
+
 function initialize() {
     if (location.host === "www.pixiv.net" || location.host === "dic.pixiv.net") {
         initializePixiv();
@@ -415,6 +431,8 @@ function initialize() {
         initializeBCY();
     } else if (location.host === "monappy.jp") {
         initializeMonappy();
+    } else if (location.host == "www.hentai-foundry.com") {
+        initializeHentaiFoundry();
     } else if (location.host.match(/deviantart\.com/)) {
         initializeDeviantArt();
     }
