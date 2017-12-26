@@ -1,3 +1,13 @@
+# Release 2017.12.26 17:05:26
+
+* Add artist tag translation support for twitter.com, nicoseiga.jp, bcy.net,
+  tinami.com, deviantart.com, and hentaifoundry.net.
+* Add "(banned)" after the artist name for banned artists.
+
+## Fixes
+
+* Pixiv: fixed "5000users入り" tags returning bogus matches.
+
 # Release 2017.12.08 13:33:01
 
 * Monappy: add tag translation support.
