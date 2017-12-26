@@ -15,6 +15,7 @@
 // @match        *://monappy.jp/*
 // @match        *://*.deviantart.com/*
 // @match        *://*.hentai-foundry.com/*
+// @match        *://*.twitter.com/*
 // @grant        GM_xmlhttpRequest
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js
 // @require      https://raw.githubusercontent.com/rafaelw/mutation-summary/421110f84178aa9e4098b38df83f727e5aea3d97/src/mutation-summary.js
@@ -251,6 +252,11 @@ $("head").append(`
     #ex-deviantart .ex-artist-tag a {
         color: #A00 !important;
     }
+
+    /* Add some space between twitter username and danbooru artist tag. */
+    #ex-twitter .js-user-profile-link .ex-artist-tag {
+        margin-left: 0.5em;
+    }
 </style>
 `);
 
@@ -461,6 +467,14 @@ function initializeHentaiFoundry() {
     addTranslatedArtists(".galleryViewTable .thumb_square > a:nth-child(4)");
 }
 
+function initializeTwitter() {
+    $("body").attr("id", "ex-twitter");
+
+    asyncAddTranslatedArtists(".ProfileHeaderCard-screennameLink");
+    asyncAddTranslatedArtists(".ProfileCard-screennameLink")
+    asyncAddTranslatedArtists(".username", ".js-user-profile-link .username", e => "https://twitter.com/" + $(e).find("b").text());
+}
+
 function initialize() {
     if (location.host === "www.pixiv.net" || location.host === "dic.pixiv.net") {
         initializePixiv();
@@ -476,6 +490,8 @@ function initialize() {
         initializeMonappy();
     } else if (location.host == "www.hentai-foundry.com") {
         initializeHentaiFoundry();
+    } else if (location.host == "twitter.com") {
+        initializeTwitter();
     } else if (location.host.match(/deviantart\.com/)) {
         initializeDeviantArt();
     }
