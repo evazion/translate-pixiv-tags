@@ -319,7 +319,18 @@ function asyncAddTranslation(tagSelector, tagLink = "> a") {
     });
 }
 
-function asyncAddTranslatedArtists(selector, toProfileUrl, predicate = (x) => true) {
+function asyncAddTranslatedArtists(selector, predicate = selector, toProfileUrl = (e) => $(e).prop("href")) {
+    if (typeof predicate === "string") {
+        const predicateSelector = predicate;
+        predicate = (e) => $(e).is(predicateSelector);
+    }
+
+    $(selector).each((i, artist) => {
+        if (predicate(artist)) {
+            addTranslatedArtists(artist, toProfileUrl);
+        }
+    });
+
     onElementsAdded(selector, artist => {
         if (predicate(artist)) {
             addTranslatedArtists(artist, toProfileUrl);
@@ -370,7 +381,7 @@ function initializePixiv() {
     let profileContainer = ".profile .user-name, .user .ui-profile-popup, .image-item .ui-profile-popup";
     let toProfileUrl = (e => $(e).prop("href").replace(/member_illust/, "member"));
     addTranslatedArtists(profileContainer, toProfileUrl);
-    asyncAddTranslatedArtists(".ui-profile-popup", toProfileUrl);
+    asyncAddTranslatedArtists(".ui-profile-popup", ".ui-profile-popup", toProfileUrl);
 }
 
 function initializeNijie() {
@@ -432,10 +443,7 @@ function initializeDeviantArt() {
     $("body").attr("id", "ex-deviantart");
 
     // triggers on https://sakimichan.deviantart.com/art/Horoscope-series-Libra-641842522 pages
-    addTranslatedArtists(".dev-title-container .author .username");
-    asyncAddTranslatedArtists(".username", e => $(e).prop("href"), artist => {
-        return $(artist).is(".dev-title-container .author .username");
-    });
+    asyncAddTranslatedArtists(".username", ".dev-title-container .author .username");
 
     // triggers on https://sakimichan.deviantart.com/art/Horoscope-series-Libra-641842522 pages
     $("#ex-deviantart .dev-about-tags-cc .discoverytag").each((i, e) => {
