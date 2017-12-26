@@ -406,6 +406,8 @@ function initializeNicoSeiga() {
 
 function initializeBCY() {
     $("body").attr("id", "ex-bcy");
+
+    addTranslatedArtists('.js-userTpl .fz14', e => $(e).prop("href"));
 }
 
 function initializeMonappy() {
