@@ -208,6 +208,14 @@ $("head").append(`
        float: left;
     }
 
+    /* Fix artist tag in http://seiga.nicovideo.jp/seiga/im6950870 */
+    #ex-seiga .im_head_bar .ex-artist-tag a {
+        display: inline-block;
+        border: none;
+        background: none;
+        padding: 5px 0;
+    }
+
     /* Fix tags in http://seiga.nicovideo.jp/tag/艦これ */
     #ex-seiga #ko_tagwatch .ex-translated-tags {
         font-size: 233.4%;
