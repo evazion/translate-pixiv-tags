@@ -260,6 +260,12 @@ async function addTranslation($element, tag = $element.text()) {
 
 async function translateTag(pixivTag) {
     const normalizedTag = pixivTag.trim().normalize("NFKC").replace(/\d+users入り$/, "");
+
+    /* tags like "5000users入り$" become empty after normalization; don't search for empty tags. */
+    if (normalizedTag.length === 0) {
+        return [];
+    }
+
     const wikiPages = await $.getJSON(`${BOORU}/wiki_pages.json?search[other_names_match]=${encodeURIComponent(normalizedTag)}`);
 
     return wikiPages.map(wikiPage => new Object({
