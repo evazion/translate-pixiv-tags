@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20171226170526
+// @version      20171227115725
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, BCY, and Monappy to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -17,6 +17,7 @@
 // @match        *://*.hentai-foundry.com/*
 // @match        *://*.twitter.com/*
 // @grant        GM_xmlhttpRequest
+// @grant        GM.xmlHttpRequest
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js
 // @require      https://raw.githubusercontent.com/rafaelw/mutation-summary/421110f84178aa9e4098b38df83f727e5aea3d97/src/mutation-summary.js
 // @connect      donmai.us
@@ -31,7 +32,7 @@ const BOORU = "https://danbooru.donmai.us"
 // This is necessary because some sites (e.g. Twitter, DeviantArt) have a
 // Content Security Policy that blocks us from making cross-origin requests to
 // Danbooru. Tampermonkey allows us to bypass the CSP, but only if we use GM_xmlhttpRequest.
-function GM_XHR() {
+function GM_XHR(xmlhttpRequest) {
     this.type = null;
     this.url = null;
     this.async = null;
@@ -40,13 +41,14 @@ function GM_XHR() {
     this.status = null;
     this.readyState = null;
     this.headers = {};
+    this.xmlhttpRequest = xmlhttpRequest;
 
     this.abort = function() {
         this.readyState = 0;
     };
 
     this.getAllResponseHeaders = function(name) {
-        if (this.readyState!=4) return "";
+        if (this.readyState != 4) return "";
         return this.responseHeaders;
     };
 
@@ -70,47 +72,47 @@ function GM_XHR() {
         this.headers[name] = value;
     };
 
+    this.onresponse = function (handler) {
+        let xhr = this;
+
+        return function (resp) {
+            xhr.readyState = resp.readyState;
+            xhr.responseHeaders = resp.responseHeaders;
+            xhr.responseText = resp.responseText;
+            xhr.status = resp.status;
+            xhr.statusText = resp.statusText;
+
+            if (xhr[handler]) {           // if (xhr.onload) {
+                xhr[handler].call(xhr);   //     xhr.onload();
+            } else {
+                xhr.onreadystatechange();
+            }
+        };
+    };
+
     this.send = function(data) {
         this.data = data;
-        var that = this;
-        // http://wiki.greasespot.net/GM_xmlhttpRequest
-        GM_xmlhttpRequest({
+
+        this.xmlhttpRequest({
             method: this.type,
             url: this.url,
             headers: this.headers,
             data: this.data,
             responseType: this.responseType,
-            onload: function(rsp) {
-                // Populate wrapper object with returned data
-                // including the Greasemonkey specific "responseHeaders"
-                for (var k in rsp) {
-                    that[k] = rsp[k];
-                }
-                // now we call onreadystatechange
-                if (that.onload) {
-                    that.onload();
-                } else {
-                    that.onreadystatechange();
-                }
-            },
-            onerror: function(rsp) {
-                for (var k in rsp) {
-                    that[k] = rsp[k];
-                }
-                // now we call onreadystatechange
-                if (that.onerror) {
-                    that.onerror();
-                } else {
-                    that.onreadystatechange();
-                }
-            }
+            onload: this.onresponse("onload"),
+            onerror: this.onresponse("onerror"),
         });
     };
 }
 
-$.ajaxSetup({
-    xhr: function () { return new GM_XHR(); },
-});
+// https://www.greasespot.net/2017/09/greasemonkey-4-for-script-authors.html
+// In Greasemonkey 4+ / Tampermonkey 4.5+, use GM.xmlHttpRequest. In earlier
+// versions, use GM_xmlhttpRequest.
+if (typeof GM !== "undefined" && GM.xmlHttpRequest !== undefined) {
+    $.ajaxSetup({ xhr: () => new GM_XHR(GM.xmlHttpRequest) });
+} else {
+    $.ajaxSetup({ xhr: () => new GM_XHR(GM_xmlhttpRequest) });
+}
 
 $("head").append(`
 <style>
