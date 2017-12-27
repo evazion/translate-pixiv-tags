@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20171227115725
+// @version      20171227123426
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, BCY, and Monappy to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -450,10 +450,13 @@ function initializeMonappy() {
 function initializeDeviantArt() {
     $("body").attr("id", "ex-deviantart");
 
-    // triggers on https://sakimichan.deviantart.com/art/Horoscope-series-Libra-641842522 pages
-    asyncAddTranslatedArtists(".username", ".dev-title-container .author .username");
+    let usernameSelectors = [
+      ".dev-title-container .author .username",  // https://sakimichan.deviantart.com/art/Horoscope-series-Libra-641842522 pages
+      "#gmi-Gruser .gruserbadge .username",      // https://sakimichan.deviantart.com
+    ];
 
-    // triggers on https://sakimichan.deviantart.com/art/Horoscope-series-Libra-641842522 pages
+    asyncAddTranslatedArtists(".username", usernameSelectors.join(", "));
+
     $("#ex-deviantart .dev-about-tags-cc .discoverytag").each((i, e) => {
         addTranslation($(e), $(e).data("canonical-tag"));
     });
