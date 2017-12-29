@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20171227123426
+// @version      20171229175233
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, BCY, and Monappy to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -378,6 +378,15 @@ function initializeTranslatedTags() {
 }
 
 function initializePixiv() {
+    // HACK: Don't run if we're inside an iframe.
+    //
+    // Endless Pixiv Pages loads pages inside an iframe, which causes
+    // asyncAddTranslatedArtists to run twice: first on the page inside the
+    // iframe, then again after the iframe's content is moved into the main window. 
+    if (window.location != window.parent.location) {
+        return;
+    }
+
     $("body").attr("id", "ex-pixiv");
 
     // https://www.pixiv.net/bookmark_add.php?type=illust&illust_id=1234
@@ -389,7 +398,7 @@ function initializePixiv() {
     let profileContainer = ".profile .user-name, .user .ui-profile-popup, .image-item .ui-profile-popup";
     let toProfileUrl = (e => $(e).prop("href").replace(/member_illust/, "member"));
     addTranslatedArtists(profileContainer, toProfileUrl);
-    asyncAddTranslatedArtists(".ui-profile-popup", ".ui-profile-popup", toProfileUrl);
+    asyncAddTranslatedArtists(".ui-profile-popup", "._1-dF98p .ui-profile-popup", toProfileUrl);
 }
 
 function initializeNijie() {
