@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20171229175233
+// @version      20180121195428
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, BCY, and Monappy to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -207,9 +207,15 @@ $("head").append(`
        font-size: 32px;
     }
 
-    /* Fix tags in http://seiga.nicovideo.jp/seiga/im6950870 */
-    #ex-seiga .illust_tag .tag .ex-translated-tags {
-       float: left;
+    /* Fix tags in http://seiga.nicovideo.jp/seiga/im7626097 */
+    #ex-seiga .illust_tag .tag {
+        background: #ebebeb;
+        height: auto;
+        margin: 0 10px 5px 0;
+    }
+
+    #ex-seiga .illust_tag .tag ul {
+        display: none;
     }
 
     /* Fix artist tag in http://seiga.nicovideo.jp/seiga/im6950870 */
