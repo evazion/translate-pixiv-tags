@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20180121195428
+// @version      20180401171112
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, BCY, and Monappy to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -20,10 +20,34 @@
 // @grant        GM.xmlHttpRequest
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js
 // @require      https://raw.githubusercontent.com/rafaelw/mutation-summary/421110f84178aa9e4098b38df83f727e5aea3d97/src/mutation-summary.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/qtip2/3.0.3/jquery.qtip.js
 // @connect      donmai.us
 // ==/UserScript==
 
 const BOORU = "https://danbooru.donmai.us"
+
+// Number of recent posts to show in artist tooltips.
+const ARTIST_POST_PREVIEW_LIMIT = 3;
+
+// Settings for artist tooltips.
+const ARTIST_QTIP_SETTINGS = {
+    style: {
+        classes: "qtip-light ex-artist-tooltip",
+    },
+    position: {
+        my: "top center",
+        at: "bottom center",
+        viewport: true,
+    },
+    show: {
+        delay: 150,
+        solo: true,
+    },
+    hide: {
+        delay: 250,
+        fixed: true,
+    },
+};
 
 // https://gist.github.com/monperrus/999065
 // This is a shim that adapts jQuery's ajax methods to use GM_xmlhttpRequest.
@@ -296,6 +320,148 @@ $("head").append(`
     #ex-mobile-twitter .ex-artist-tag {
 	display: inline;
     }
+
+    .ex-artist-tooltip {
+        max-width: 520px !important;
+    }
+
+    .ex-artist-tooltip .qtip-content {
+        font-family: Verdana, Helvetica, sans-serif;
+        padding: 10px;
+    }
+
+    .ex-artist-tooltip section {
+        margin-bottom: 15px;
+    }
+
+    .ex-artist-tooltip-artist-name {
+        font-size: 20px;
+    }
+
+    .ex-artist-tooltip-post-count {
+        color: #CCC;
+        margin-left: 3px;
+    }
+
+    .ex-artist-tooltip-other-names {
+        margin-top: 5px;
+        line-height: 24px;
+    }
+
+    .ex-artist-tooltip-other-names li {
+        display: inline;
+    }
+
+    .ex-artist-tooltip-other-names li a {
+        background-color: #EEE;
+        padding: 3px;
+        border-radius: 3px;
+    }
+
+    .ex-artist-tooltip h2 {
+        font-size: 14px;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .ex-artist-tooltip-urls ul {
+        list-style: disc inside;
+    }
+`);
+
+const preview_has_children_color = "#0F0";
+const preview_has_parent_color = "#CC0";
+const preview_deleted_color = "#000";
+const preview_pending_color = "#00F";
+const preview_flagged_color = "#F00";
+
+// Post thumbnails CSS (copied from Danbooru)
+$("head").append(`
+<style>
+    article.ex-post-preview {
+        height: 154px;
+        width: 154px;
+        margin: 0 10px 10px 0;
+        float: left;
+        overflow: hidden;
+        text-align: center;
+        position: relative;
+    }
+
+    article.ex-post-preview img {
+        margin: auto;
+        border: 2px solid transparent;
+    }
+
+    article.ex-post-preview.post-status-has-children img {
+        border-color: ${preview_has_children_color};
+    }
+
+    article.ex-post-preview.post-status-has-parent img {
+        border-color: ${preview_has_parent_color};
+    }
+    
+    article.ex-post-preview.post-status-has-children.post-status-has-parent img {
+        border-color: ${preview_has_children_color} ${preview_has_parent_color} ${preview_has_parent_color} ${preview_has_children_color};
+    }
+
+    article.ex-post-preview.post-status-deleted img {
+        border-color: ${preview_deleted_color};
+    }
+
+    article.ex-post-preview.post-status-has-children.post-status-deleted img {
+        border-color: ${preview_has_children_color} ${preview_deleted_color} ${preview_deleted_color} ${preview_has_children_color};
+    }
+
+    article.ex-post-preview.post-status-has-parent.post-status-deleted img {
+        border-color: ${preview_has_parent_color} ${preview_deleted_color} ${preview_deleted_color} ${preview_has_parent_color};
+    }
+
+    article.ex-post-preview.post-status-has-children.post-status-has-parent.post-status-deleted img {
+        border-color: ${preview_has_children_color} ${preview_deleted_color} ${preview_deleted_color} ${preview_has_parent_color};
+    }
+
+    article.ex-post-preview.post-status-pending img,
+    article.ex-post-preview.post-status-flagged img {
+        border-color: ${preview_pending_color};
+    }
+
+    article.ex-post-preview.post-status-has-children.post-status-pending img,
+    article.ex-post-preview.post-status-has-children.post-status-flagged img {
+        border-color: ${preview_has_children_color} ${preview_pending_color} ${preview_pending_color} ${preview_has_children_color};
+    }
+
+    article.ex-post-preview.post-status-has-parent.post-status-pending img,
+    article.ex-post-preview.post-status-has-parent.post-status-flagged img {
+        border-color: ${preview_has_parent_color} ${preview_pending_color} ${preview_pending_color} ${preview_has_parent_color};
+    }
+
+    article.ex-post-preview.post-status-has-children.post-status-has-parent.post-status-pending img,
+    article.ex-post-preview.post-status-has-children.post-status-has-parent.post-status-flagged img {
+        border-color: ${preview_has_children_color} ${preview_pending_color} ${preview_pending_color} ${preview_has_parent_color};
+    }
+
+    article.ex-post-preview[data-tags~=animated]:before {
+        content: "►";
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        color: white; 
+        background-color: rgba(0,0,0,0.5);
+        margin: 2px;
+        text-align: center;
+    }
+
+    article.ex-post-preview[data-has-sound=true]:before {
+        content: "♪";
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        color: white; 
+        background-color: rgba(0,0,0,0.5);
+        margin: 2px;
+        text-align: center;
+    }
 </style>
 `);
 
@@ -346,15 +512,95 @@ function addTranslatedArtists(element, toProfileUrl = (e) => $(e).prop("href")) 
         const artists = await $.getJSON(`${BOORU}/artists.json?search[url_matches]=${encodeURIComponent(profileUrl)}`);
         artists.forEach(artist => {
             let classes = artist.is_banned ? "ex-artist-tag ex-banned-artist-tag" : "ex-artist-tag";
-            let prettyName = artist.name.replace(/_/g, " ");
+            artist.prettyName = artist.name.replace(/_/g, " ");
+            artist.encodedName = encodeURIComponent(artist.name);
 
-            $(e).after(`
+            let artistTag = $(`
                 <div class="${classes}">
-                    <a href="${BOORU}/artists/${artist.id}">${prettyName}</a>
+                    <a href="${BOORU}/artists/${artist.id}">${artist.prettyName}</a>
                 </div>
             `);
+
+            const qtip_settings = Object.assign(ARTIST_QTIP_SETTINGS, { content: { text: buildArtistTooltip(artist) } });
+            $(artistTag).find("a").qtip(qtip_settings);
+
+            $(e).after(artistTag);
         });
     });
+}
+
+async function buildArtistTooltip(artist) {
+    const tags = await $.getJSON(`${BOORU}/tags.json?search[name]=${artist.encodedName}`);
+    const wiki_pages = await $.getJSON(`${BOORU}/wiki_pages.json?search[name]=${artist.encodedName}`);
+    const posts = await $.getJSON(`${BOORU}/posts.json?tags=status:any+${artist.encodedName}&limit=${ARTIST_POST_PREVIEW_LIMIT}`);
+
+    const tag = tags[0] || { name: artist.name, post_count: 0 };
+    const wiki_page = wiki_pages[0] || { title: artist.name, body: "" };
+
+    const tooltip = $(`
+        <section class="ex-artist-tooltip-header">
+            <a class="ex-artist-tooltip-artist-name ex-translated-tag-category-1" href="${BOORU}/artists/${artist.id}">${artist.prettyName}</a>
+            <span class="ex-artist-tooltip-post-count">${tag.post_count}</span>
+
+            <ul class="ex-artist-tooltip-other-names">
+                ${artist.other_names.split(" ").filter(String).sort().map(other_name =>
+                    `<li>
+                        <a href="${BOORU}/artists?search[name]=${encodeURIComponent(other_name)}">${other_name}</a>
+                    </li>`
+                ).join("")}
+            </ul>
+        </section>
+        <section class="ex-artist-tooltip-urls">
+            <h2>
+                URLs
+                (<a href="${BOORU}/artists/${artist.id}/edit">edit</a>)
+            </h2>
+            <ul>
+                ${artist.urls.map(url => url.normalized_url).sort().map(normalized_url =>
+                    `<li><a href="${normalized_url}">${normalized_url}</a></li>`
+                ).join("")}
+            </ul>
+        </section>
+        <section class="ex-artist-tooltip-posts">
+            <h2>
+                Posts
+                <a href="${BOORU}/posts?tags=${artist.encodedName}">»</a>
+            </h2>
+            ${posts.map(post => buildPostPreview(post)).join("")}
+        </section>
+    `);
+
+    return tooltip;
+}
+
+function buildPostPreview(post) {
+    let preview_class = "ex-post-preview";
+    preview_class += post.is_pending           ? " post-status-pending"      : "";
+    preview_class += post.is_flagged           ? " post-status-flagged"      : "";
+    preview_class += post.is_deleted           ? " post-status-deleted"      : "";
+    preview_class += post.parent_id            ? " post-status-has-parent"   : "";
+    preview_class += post.has_visible_children ? " post-status-has-children" : "";
+
+    // XXX escape tag_string
+    const data_attributes = `
+      data-id="${post.id}"
+      data-has-sound="${!!post.tag_string.match(/(video_with_sound|flash_with_sound)/)}"
+      data-tags="${post.tag_string}"
+    `;
+
+    let scale = Math.min(150 / post.image_width, 150 / post.image_height);
+    scale = Math.min(1, scale);
+
+    const [width, height] = [Math.round(post.image_width * scale), Math.round(post.image_height * scale)];
+
+    // XXX escape post.tag_string
+    return `
+        <article itemscope itemtype="http://schema.org/ImageObject" class="${preview_class}" ${data_attributes}>
+            <a href="${BOORU}/posts/${post.id}">
+                <img width="${width}" height="${height}" src="${BOORU}/${post.preview_file_url}" title="${post.tag_string}">
+            </a>
+        </article>
+    `;
 }
 
 function asyncAddTranslation(tagSelector, tagLink = "> a") {
@@ -548,6 +794,8 @@ function initializeMobileTwitter() {
 }
 
 function initialize() {
+    $("head").append(`<link href="https://cdnjs.cloudflare.com/ajax/libs/qtip2/3.0.3/jquery.qtip.css" rel="stylesheet" type="text/css">`);
+
     if (location.host === "www.pixiv.net" || location.host === "dic.pixiv.net") {
         initializePixiv();
     } else if (location.host === "nijie.info") {

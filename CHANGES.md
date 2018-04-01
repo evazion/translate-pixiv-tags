@@ -1,3 +1,16 @@
+# Release 2018.04.01 17:11:12
+
+* Added artist tag tooltips. Hover over an artist tag to see their Danbooru
+  artist entry, plus a preview of their recent posts.
+
+## Fixes
+
+* Pixiv: fix translated tags being broken by Pixiv's new romaji tags.
+* Pixiv: fix artist tags not being translated on search pages.
+* Pixiv: fix artist tags being added twice when using the Endless Pixiv Pages userscript.
+* Nicoseiga: fix spacing issue in long lists of translated tags (http://seiga.nicovideo.jp/seiga/im7626097).
+* BCY: fix tags not being translated on illust pages and on tag search pages.
+
 # Release 2017.12.26 17:05:26
 
 * Add artist tag translation support for twitter.com, nicoseiga.jp, bcy.net,
