@@ -244,8 +244,30 @@ $("head").append(`
         display: inline !important;
     }
 
-    #ex-bcy .tag > a > div {
-        display: inline !important;
+    /* Fix tags in https://bcy.net/illust/detail/77708/2182055 */
+    #ex-bcy ._tag {
+        display: inline-block !important;
+    }
+
+    #ex-bcy .ex-translated-tags {
+	margin: 0;
+	display: inline-block;
+	padding: 4px 10px 3px;
+	border-radius: 0 2px 2px 0;
+	background-color: #f0f4fa;
+	font-size: 13px;
+	vertical-align: top;
+    }
+
+    /* Fix tags in Ta关注的原作 box on https://bcy.net/u/2123332 */
+    #ex-bcy #followWorks ._tag, #ex-bcy #followWorks .ex-translated-tags {
+	float: left;
+	clear: both;
+    }
+
+    /* XXX Hide translated tags on https://bcy.net/illust (badly formatted) */
+    #ex-bcy .js-leftTags .ex-translated-tags {
+	display: none;
     }
 
     /* Render the Danbooru artist tag on the same line as the HF artist name. */
@@ -383,7 +405,6 @@ function initializeTranslatedTags() {
         "#ex-nijie #seiten_dic h1#dic_title",                   // https://nijie.info/dic/seiten/d/東方
         "#ex-seiga #ko_tagwatch > div > h1",
         "#ex-tinami .tag > span > a:nth-child(2)",
-        "#ex-bcy .tag > a > div",
         "#ex-monappy span.picpr-tag > a",                       // https://monappy.jp/picture_places/view/13663
     ];
 
@@ -461,8 +482,17 @@ function initializeNicoSeiga() {
 function initializeBCY() {
     $("body").attr("id", "ex-bcy");
 
-    // https://bcy.net/illust/detail/66626/1824973
+    // translate artists on illust pages (https://bcy.net/illust/detail/66626/1824973)
     addTranslatedArtists('.js-userTpl .fz14');
+
+    // translate artists on search pages (https://bcy.net/tags/name/看板娘)
+    asyncAddTranslatedArtists(".lh40", ".lh40");
+
+    // translate tags on search pages (https://bcy.net/tags/name/看板娘)
+    $("#ex-bcy ._tag").each((i, e) => addTranslation($(e)));
+
+    // translate tags on illust pages (https://bcy.net/illust/detail/77708/2196418)
+    asyncAddTranslation('.tag');
 }
 
 function initializeMonappy() {
