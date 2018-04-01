@@ -403,9 +403,14 @@ function initializePixiv() {
 
     // https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
     let profileContainer = ".profile .user-name, .user .ui-profile-popup, .image-item .ui-profile-popup";
-    let toProfileUrl = (e => $(e).prop("href").replace(/member_illust/, "member"));
+    let toProfileUrl = (e => $(e).prop("href").replace(/member_illust/, "member").replace(/&ref=.*$/, ""));
     addTranslatedArtists(profileContainer, toProfileUrl);
-    asyncAddTranslatedArtists(".ui-profile-popup", "._1-dF98p .ui-profile-popup", toProfileUrl);
+
+    // search pages: https://www.pixiv.net/bookmark_new_illust.php
+    asyncAddTranslatedArtists(".ui-profile-popup", "figcaption._1IP8RNV > ul > li > a.ui-profile-popup", toProfileUrl);
+
+    // ranking pages: https://www.pixiv.net/ranking.php?mode=original
+    asyncAddTranslatedArtists(".ui-profile-popup", ".user-container.ui-profile-popup", toProfileUrl);
 }
 
 function initializeNijie() {
