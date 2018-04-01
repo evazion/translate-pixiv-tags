@@ -265,6 +265,15 @@ $("head").append(`
     #ex-twitter .js-user-profile-link .ex-artist-tag {
         margin-left: 0.5em;
     }
+
+    /* Render the Danbooru artist tag on the same line as the Twitter username. */
+    #ex-mobile-twitter ._2CFyTHU5 {
+	white-space: normal;
+    }
+
+    #ex-mobile-twitter .ex-artist-tag {
+	display: inline;
+    }
 </style>
 `);
 
@@ -501,6 +510,13 @@ function initializeTwitter() {
     asyncAddTranslatedArtists(".username", ".js-user-profile-link .username", e => "https://twitter.com/" + $(e).find("b").text());
 }
 
+function initializeMobileTwitter() {
+    $("body").attr("id", "ex-mobile-twitter");
+
+    // triggers on top profile section of https://mobile.twitter.com/anchobibi_fg
+    asyncAddTranslatedArtists(".Z5IeoGpY", ".Z5IeoGpY", e => "https://twitter.com/" + $(e).text().replace(/^@/, ""));
+}
+
 function initialize() {
     if (location.host === "www.pixiv.net" || location.host === "dic.pixiv.net") {
         initializePixiv();
@@ -518,6 +534,8 @@ function initialize() {
         initializeHentaiFoundry();
     } else if (location.host == "twitter.com") {
         initializeTwitter();
+    } else if (location.host == "mobile.twitter.com") {
+        // initializeMobileTwitter();
     } else if (location.host.match(/deviantart\.com/)) {
         initializeDeviantArt();
     }
