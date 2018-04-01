@@ -394,6 +394,7 @@ function initializePixiv() {
     }
 
     $("body").attr("id", "ex-pixiv");
+    $(".illust-tag-translation").remove();
 
     // https://www.pixiv.net/bookmark_add.php?type=illust&illust_id=1234
     $(".tag-cloud .tag").each((i, e) => {
