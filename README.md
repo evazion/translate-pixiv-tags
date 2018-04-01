@@ -16,8 +16,8 @@ Danbooru tags. Also works on [Nijie](https://nijie.info),
 
 # Screenshots
 
-![translate-pixiv-tags-1](https://user-images.githubusercontent.com/8430473/32701834-3b127f76-c7a2-11e7-99b5-bb4fac0a09ee.png)
-![translate-pixiv-tags-2](https://user-images.githubusercontent.com/8430473/38178147-f266d652-35d1-11e8-89c7-80730fcae865.png)
+<img width="600" src="https://user-images.githubusercontent.com/8430473/32701834-3b127f76-c7a2-11e7-99b5-bb4fac0a09ee.png">
+<img width="600" src="https://user-images.githubusercontent.com/8430473/38178147-f266d652-35d1-11e8-89c7-80730fcae865.png">
 
 # Translating Tags
 
