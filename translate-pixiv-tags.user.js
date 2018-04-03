@@ -321,51 +321,9 @@ $("head").append(`
 	display: inline;
     }
 
-    .ex-artist-tooltip {
-        max-width: 520px !important;
-    }
-
     .ex-artist-tooltip .qtip-content {
-        font-family: Verdana, Helvetica, sans-serif;
-        padding: 10px;
-    }
-
-    .ex-artist-tooltip section {
-        margin-bottom: 15px;
-    }
-
-    .ex-artist-tooltip-artist-name {
-        font-size: 20px;
-    }
-
-    .ex-artist-tooltip-post-count {
-        color: #CCC;
-        margin-left: 3px;
-    }
-
-    .ex-artist-tooltip-other-names {
-        margin-top: 5px;
-        line-height: 24px;
-    }
-
-    .ex-artist-tooltip-other-names li {
-        display: inline;
-    }
-
-    .ex-artist-tooltip-other-names li a {
-        background-color: #EEE;
-        padding: 3px;
-        border-radius: 3px;
-    }
-
-    .ex-artist-tooltip h2 {
-        font-size: 14px;
-        font-weight: bold;
-        margin-bottom: 5px;
-    }
-
-    .ex-artist-tooltip-urls ul {
-        list-style: disc inside;
+        width: 520px !important;
+        background: white;
     }
 `);
 
@@ -374,96 +332,6 @@ const preview_has_parent_color = "#CC0";
 const preview_deleted_color = "#000";
 const preview_pending_color = "#00F";
 const preview_flagged_color = "#F00";
-
-// Post thumbnails CSS (copied from Danbooru)
-$("head").append(`
-<style>
-    article.ex-post-preview {
-        height: 154px;
-        width: 154px;
-        margin: 0 10px 10px 0;
-        float: left;
-        overflow: hidden;
-        text-align: center;
-        position: relative;
-    }
-
-    article.ex-post-preview img {
-        margin: auto;
-        border: 2px solid transparent;
-    }
-
-    article.ex-post-preview.post-status-has-children img {
-        border-color: ${preview_has_children_color};
-    }
-
-    article.ex-post-preview.post-status-has-parent img {
-        border-color: ${preview_has_parent_color};
-    }
-    
-    article.ex-post-preview.post-status-has-children.post-status-has-parent img {
-        border-color: ${preview_has_children_color} ${preview_has_parent_color} ${preview_has_parent_color} ${preview_has_children_color};
-    }
-
-    article.ex-post-preview.post-status-deleted img {
-        border-color: ${preview_deleted_color};
-    }
-
-    article.ex-post-preview.post-status-has-children.post-status-deleted img {
-        border-color: ${preview_has_children_color} ${preview_deleted_color} ${preview_deleted_color} ${preview_has_children_color};
-    }
-
-    article.ex-post-preview.post-status-has-parent.post-status-deleted img {
-        border-color: ${preview_has_parent_color} ${preview_deleted_color} ${preview_deleted_color} ${preview_has_parent_color};
-    }
-
-    article.ex-post-preview.post-status-has-children.post-status-has-parent.post-status-deleted img {
-        border-color: ${preview_has_children_color} ${preview_deleted_color} ${preview_deleted_color} ${preview_has_parent_color};
-    }
-
-    article.ex-post-preview.post-status-pending img,
-    article.ex-post-preview.post-status-flagged img {
-        border-color: ${preview_pending_color};
-    }
-
-    article.ex-post-preview.post-status-has-children.post-status-pending img,
-    article.ex-post-preview.post-status-has-children.post-status-flagged img {
-        border-color: ${preview_has_children_color} ${preview_pending_color} ${preview_pending_color} ${preview_has_children_color};
-    }
-
-    article.ex-post-preview.post-status-has-parent.post-status-pending img,
-    article.ex-post-preview.post-status-has-parent.post-status-flagged img {
-        border-color: ${preview_has_parent_color} ${preview_pending_color} ${preview_pending_color} ${preview_has_parent_color};
-    }
-
-    article.ex-post-preview.post-status-has-children.post-status-has-parent.post-status-pending img,
-    article.ex-post-preview.post-status-has-children.post-status-has-parent.post-status-flagged img {
-        border-color: ${preview_has_children_color} ${preview_pending_color} ${preview_pending_color} ${preview_has_parent_color};
-    }
-
-    article.ex-post-preview[data-tags~=animated]:before {
-        content: "►";
-        position: absolute;
-        width: 20px;
-        height: 20px;
-        color: white; 
-        background-color: rgba(0,0,0,0.5);
-        margin: 2px;
-        text-align: center;
-    }
-
-    article.ex-post-preview[data-has-sound=true]:before {
-        content: "♪";
-        position: absolute;
-        width: 20px;
-        height: 20px;
-        color: white; 
-        background-color: rgba(0,0,0,0.5);
-        margin: 2px;
-        text-align: center;
-    }
-</style>
-`);
 
 async function addTranslation($element, tag = $element.text()) {
     const danbooruTags = await translateTag(tag);
@@ -538,52 +406,209 @@ async function buildArtistTooltip(artist, qtip) {
         return;
     }
 
-    const tags = await $.getJSON(`${BOORU}/tags.json?search[name]=${artist.encodedName}`);
-    const wiki_pages = await $.getJSON(`${BOORU}/wiki_pages.json?search[name]=${artist.encodedName}`);
     const posts = await $.getJSON(`${BOORU}/posts.json?tags=status:any+${artist.encodedName}&limit=${ARTIST_POST_PREVIEW_LIMIT}`);
-
+    const tags = await $.getJSON(`${BOORU}/tags.json?search[name]=${artist.encodedName}`);
     const tag = tags[0] || { name: artist.name, post_count: 0 };
-    const wiki_page = wiki_pages[0] || { title: artist.name, body: "" };
 
-    const tooltip = $(`
-        <section class="ex-artist-tooltip-header">
-            <a class="ex-artist-tooltip-artist-name ex-translated-tag-category-1" href="${BOORU}/artists/${artist.id}">${artist.prettyName}</a>
-            <span class="ex-artist-tooltip-post-count">${tag.post_count}</span>
-
-            <ul class="ex-artist-tooltip-other-names">
-                ${artist.other_names.split(" ").filter(String).sort().map(other_name =>
-                    `<li>
-                        <a href="${BOORU}/artists?search[name]=${encodeURIComponent(other_name)}">${other_name}</a>
-                    </li>`
-                ).join("")}
-            </ul>
-        </section>
-        <section class="ex-artist-tooltip-urls">
-            <h2>
-                URLs
-                (<a href="${BOORU}/artists/${artist.id}/edit">edit</a>)
-            </h2>
-            <ul>
-                ${artist.urls.map(url => url.normalized_url.replace(/\/$/, "")).sort().map(normalized_url =>
-                    `<li><a href="${normalized_url}">${normalized_url}</a></li>`
-                ).join("")}
-            </ul>
-        </section>
-        <section class="ex-artist-tooltip-posts">
-            <h2>
-                Posts
-                <a href="${BOORU}/posts?tags=${artist.encodedName}">»</a>
-            </h2>
-            ${posts.map(post => buildPostPreview(post)).join("")}
-        </section>
-    `);
-
+    const tooltip = buildArtistTooltipHtml(artist, tag, posts);
     const shadowRoot = qtip.elements.content.get(0).attachShadow({ mode: "open" });
     $(shadowRoot).append(tooltip);
 }
 
+function buildArtistTooltipHtml(artist, tag, posts) {
+    return `
+        <style>
+            article.container {
+                font-family: Verdana, Helvetica, sans-serif;
+                padding: 10px;
+            }
+
+            section {
+                margin-bottom: 15px;
+            }
+
+            h2 {
+                font-size: 14px;
+                font-weight: bold;
+                margin-bottom: 5px;
+            }
+
+            a.artist-name {
+                font-size: 20px;
+            }
+
+            .post-count {
+                color: #CCC;
+                margin-left: 3px;
+            }
+
+            ul.other-names {
+                margin-top: 5px;
+                line-height: 24px;
+                padding: 0px;
+            }
+
+            ul.other-names li {
+                display: inline;
+            }
+
+            ul.other-names li a {
+                background-color: #EEE;
+                padding: 3px;
+                border-radius: 3px;
+            }
+
+            section.urls ul {
+                list-style: disc inside;
+                padding: 0px;
+            }
+
+
+
+            /* Basic styles taken from Danbooru */
+            a:link, a:visited {
+                color: #0073FF;
+                text-decoration: none;
+            }
+
+            a:hover {
+                color: #80B9FF;
+            }
+
+            a.tag-category-artist {
+                color: #A00;
+            }
+
+            a.tag-category-artist:hover {
+                color: #B66;
+            }
+
+
+
+            /* Thumbnail styles taken from Danbooru */
+            article.post-preview {
+                height: 154px;
+                width: 154px;
+                margin: 0 10px 10px 0;
+                float: left;
+                overflow: hidden;
+                text-align: center;
+                position: relative;
+            }
+
+            article.post-preview img {
+                margin: auto;
+                border: 2px solid transparent;
+            }
+
+            article.post-preview.post-status-has-children img {
+                border-color: ${preview_has_children_color};
+            }
+
+            article.post-preview.post-status-has-parent img {
+                border-color: ${preview_has_parent_color};
+            }
+            
+            article.post-preview.post-status-has-children.post-status-has-parent img {
+                border-color: ${preview_has_children_color} ${preview_has_parent_color} ${preview_has_parent_color} ${preview_has_children_color};
+            }
+
+            article.post-preview.post-status-deleted img {
+                border-color: ${preview_deleted_color};
+            }
+
+            article.post-preview.post-status-has-children.post-status-deleted img {
+                border-color: ${preview_has_children_color} ${preview_deleted_color} ${preview_deleted_color} ${preview_has_children_color};
+            }
+
+            article.post-preview.post-status-has-parent.post-status-deleted img {
+                border-color: ${preview_has_parent_color} ${preview_deleted_color} ${preview_deleted_color} ${preview_has_parent_color};
+            }
+
+            article.post-preview.post-status-has-children.post-status-has-parent.post-status-deleted img {
+                border-color: ${preview_has_children_color} ${preview_deleted_color} ${preview_deleted_color} ${preview_has_parent_color};
+            }
+
+            article.post-preview.post-status-pending img,
+            article.post-preview.post-status-flagged img {
+                border-color: ${preview_pending_color};
+            }
+
+            article.post-preview.post-status-has-children.post-status-pending img,
+            article.post-preview.post-status-has-children.post-status-flagged img {
+                border-color: ${preview_has_children_color} ${preview_pending_color} ${preview_pending_color} ${preview_has_children_color};
+            }
+
+            article.post-preview.post-status-has-parent.post-status-pending img,
+            article.post-preview.post-status-has-parent.post-status-flagged img {
+                border-color: ${preview_has_parent_color} ${preview_pending_color} ${preview_pending_color} ${preview_has_parent_color};
+            }
+
+            article.post-preview.post-status-has-children.post-status-has-parent.post-status-pending img,
+            article.post-preview.post-status-has-children.post-status-has-parent.post-status-flagged img {
+                border-color: ${preview_has_children_color} ${preview_pending_color} ${preview_pending_color} ${preview_has_parent_color};
+            }
+
+            article.post-preview[data-tags~=animated]:before {
+                content: "►";
+                position: absolute;
+                width: 20px;
+                height: 20px;
+                color: white; 
+                background-color: rgba(0,0,0,0.5);
+                margin: 2px;
+                text-align: center;
+            }
+
+            article.post-preview[data-has-sound=true]:before {
+                content: "♪";
+                position: absolute;
+                width: 20px;
+                height: 20px;
+                color: white; 
+                background-color: rgba(0,0,0,0.5);
+                margin: 2px;
+                text-align: center;
+            }
+        </style>
+
+        <article class="container">
+            <section class="header">
+                <a class="artist-name tag-category-artist" href="${BOORU}/artists/${artist.id}">${artist.prettyName}</a>
+                <span class="post-count">${tag.post_count}</span>
+
+                <ul class="other-names">
+                    ${artist.other_names.split(" ").filter(String).sort().map(other_name =>
+                        `<li>
+                            <a href="${BOORU}/artists?search[name]=${encodeURIComponent(other_name)}">${other_name}</a>
+                        </li>`
+                    ).join("")}
+                </ul>
+            </section>
+            <section class="urls">
+                <h2>
+                    URLs
+                    (<a href="${BOORU}/artists/${artist.id}/edit">edit</a>)
+                </h2>
+                <ul>
+                    ${artist.urls.map(url => url.normalized_url.replace(/\/$/, "")).sort().map(normalized_url =>
+                        `<li><a href="${normalized_url}">${normalized_url}</a></li>`
+                    ).join("")}
+                </ul>
+            </section>
+            <section class="posts">
+                <h2>
+                    Posts
+                    <a href="${BOORU}/posts?tags=${artist.encodedName}">»</a>
+                </h2>
+                ${posts.map(post => buildPostPreview(post)).join("")}
+            </section>
+        </article>
+    `;
+}
+
 function buildPostPreview(post) {
-    let preview_class = "ex-post-preview";
+    let preview_class = "post-preview";
     preview_class += post.is_pending           ? " post-status-pending"      : "";
     preview_class += post.is_flagged           ? " post-status-flagged"      : "";
     preview_class += post.is_deleted           ? " post-status-deleted"      : "";
