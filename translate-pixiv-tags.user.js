@@ -456,6 +456,7 @@ function buildArtistTooltipHtml(artist, tag, posts) {
                 background-color: #EEE;
                 padding: 3px;
                 border-radius: 3px;
+                white-space: nowrap;
             }
 
             section.urls ul {
