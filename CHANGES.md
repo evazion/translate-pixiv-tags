@@ -1,3 +1,11 @@
+# Release 2018.04.02 20:50:44
+
+## Fixes
+
+* Artist tooltips: fix artist URLs not working due to trailing slashes.
+* Artist tooltips: fix tooltip being affected by the host site's CSS.
+* Nico Seiga: fix the "Clip" button in the sidebar overlapping the artist tag.
+
 # Release 2018.04.01 17:11:12
 
 * Added artist tag tooltips. Hover over an artist tag to see their Danbooru
