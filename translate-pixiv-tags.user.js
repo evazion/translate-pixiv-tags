@@ -521,7 +521,11 @@ function addTranslatedArtists(element, toProfileUrl = (e) => $(e).prop("href")) 
                 </div>
             `);
 
-            const qtip_settings = Object.assign(ARTIST_QTIP_SETTINGS, { content: { text: buildArtistTooltip(artist) } });
+            const qtip_settings = Object.assign(ARTIST_QTIP_SETTINGS, {
+                content: {
+                    text: (event, qtip) => buildArtistTooltip(artist, qtip)
+                }
+            });
             $(artistTag).find("a").qtip(qtip_settings);
 
             $(e).after(artistTag);
@@ -529,7 +533,11 @@ function addTranslatedArtists(element, toProfileUrl = (e) => $(e).prop("href")) 
     });
 }
 
-async function buildArtistTooltip(artist) {
+async function buildArtistTooltip(artist, qtip) {
+    if (qtip.elements.content.get(0).shadowRoot) {
+        return;
+    }
+
     const tags = await $.getJSON(`${BOORU}/tags.json?search[name]=${artist.encodedName}`);
     const wiki_pages = await $.getJSON(`${BOORU}/wiki_pages.json?search[name]=${artist.encodedName}`);
     const posts = await $.getJSON(`${BOORU}/posts.json?tags=status:any+${artist.encodedName}&limit=${ARTIST_POST_PREVIEW_LIMIT}`);
@@ -570,7 +578,8 @@ async function buildArtistTooltip(artist) {
         </section>
     `);
 
-    return tooltip;
+    const shadowRoot = qtip.elements.content.get(0).attachShadow({ mode: "open" });
+    $(shadowRoot).append(tooltip);
 }
 
 function buildPostPreview(post) {
