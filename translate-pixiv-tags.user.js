@@ -257,6 +257,11 @@ $("head").append(`
         vertical-align: middle;
     }
 
+    /* Fix Clip button overlapping artist tag on http://seiga.nicovideo.jp/seiga/im8006360 */
+    #ex-seiga .illust_main .illust_side .clip {
+        margin-top: -44px;
+    }
+
     #ex-tinami .tag > span {
         display: inline;
         float: none;
