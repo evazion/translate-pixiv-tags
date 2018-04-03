@@ -24,7 +24,7 @@
 // @connect      donmai.us
 // ==/UserScript==
 
-const BOORU = "https://danbooru.donmai.us"
+const BOORU = "https://danbooru.donmai.us";
 
 // Number of recent posts to show in artist tooltips.
 const ARTIST_POST_PREVIEW_LIMIT = 3;
@@ -279,24 +279,24 @@ $("head").append(`
     }
 
     #ex-bcy .ex-translated-tags {
-	margin: 0;
-	display: inline-block;
-	padding: 4px 10px 3px;
-	border-radius: 0 2px 2px 0;
-	background-color: #f0f4fa;
-	font-size: 13px;
-	vertical-align: top;
+        margin: 0;
+        display: inline-block;
+        padding: 4px 10px 3px;
+        border-radius: 0 2px 2px 0;
+        background-color: #f0f4fa;
+        font-size: 13px;
+        vertical-align: top;
     }
 
     /* Fix tags in Ta关注的原作 box on https://bcy.net/u/2123332 */
     #ex-bcy #followWorks ._tag, #ex-bcy #followWorks .ex-translated-tags {
-	float: left;
-	clear: both;
+        float: left;
+        clear: both;
     }
 
     /* XXX Hide translated tags on https://bcy.net/illust (badly formatted) */
     #ex-bcy .js-leftTags .ex-translated-tags {
-	display: none;
+        display: none;
     }
 
     /* Render the Danbooru artist tag on the same line as the HF artist name. */
@@ -319,11 +319,11 @@ $("head").append(`
 
     /* Render the Danbooru artist tag on the same line as the Twitter username. */
     #ex-mobile-twitter ._2CFyTHU5 {
-	white-space: normal;
+        white-space: normal;
     }
 
     #ex-mobile-twitter .ex-artist-tag {
-	display: inline;
+        display: inline;
     }
 
     .ex-artist-tooltip .qtip-content {
@@ -514,7 +514,7 @@ function buildArtistTooltipHtml(artist, tag, posts) {
             article.post-preview.post-status-has-parent img {
                 border-color: ${preview_has_parent_color};
             }
-            
+
             article.post-preview.post-status-has-children.post-status-has-parent img {
                 border-color: ${preview_has_children_color} ${preview_has_parent_color} ${preview_has_parent_color} ${preview_has_children_color};
             }
@@ -560,7 +560,7 @@ function buildArtistTooltipHtml(artist, tag, posts) {
                 position: absolute;
                 width: 20px;
                 height: 20px;
-                color: white; 
+                color: white;
                 background-color: rgba(0,0,0,0.5);
                 margin: 2px;
                 text-align: center;
@@ -571,7 +571,7 @@ function buildArtistTooltipHtml(artist, tag, posts) {
                 position: absolute;
                 width: 20px;
                 height: 20px;
-                color: white; 
+                color: white;
                 background-color: rgba(0,0,0,0.5);
                 margin: 2px;
                 text-align: center;
@@ -704,7 +704,7 @@ function initializePixiv() {
     //
     // Endless Pixiv Pages loads pages inside an iframe, which causes
     // asyncAddTranslatedArtists to run twice: first on the page inside the
-    // iframe, then again after the iframe's content is moved into the main window. 
+    // iframe, then again after the iframe's content is moved into the main window.
     if (window.location != window.parent.location) {
         return;
     }
