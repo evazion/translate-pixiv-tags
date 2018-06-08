@@ -1,3 +1,10 @@
+# Release 2018.06.08 18:32:14
+
+## Fixes
+
+* Pixiv: fix translated tags for compatibility with Pixiv redesign.
+* Fix HTML escaping issues in tags and artist names.
+
 # Release 2018.04.02 20:50:44
 
 ## Fixes
