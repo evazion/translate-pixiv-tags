@@ -156,10 +156,12 @@ $("head").append(`
 
     .ex-translated-tags::before {
         content: "(";
+        white-space: nowrap;
     }
 
     .ex-translated-tags::after {
         content: ")";
+        white-space: nowrap;
     }
     .ex-translated-tag-category-5 {
         color: #F80 !important;
@@ -209,6 +211,22 @@ $("head").append(`
     /* Fix https://dic.pixiv.net/a/東方 to display Danbooru tag next to article title. */
     #ex-pixiv #content_title #article-name {
        display: inline-block;
+    }
+
+    /* Don't underline translated artist tags */
+    #ex-pixiv .ex-artist-tag a {
+        text-decoration: none;
+    }
+
+    /* Hide Pixiv's translated tags  */
+    #ex-pixiv .gtm-new-work-romaji-tag-event-click,
+    #ex-pixiv .gtm-new-work-translate-tag-event-click {
+        display: none;
+    }
+
+    /* Remove hashtags from translated tags */
+    #ex-pixiv ._1tTPwGC a:before {
+        content: "";
     }
 
     #ex-nijie .ex-translated-tags {
@@ -721,12 +739,16 @@ function initializePixiv() {
     let profileContainer = ".profile .user-name, .user .ui-profile-popup, .image-item .ui-profile-popup";
     let toProfileUrl = (e => $(e).prop("href").replace(/member_illust/, "member").replace(/&ref=.*$/, ""));
     addTranslatedArtists(profileContainer, toProfileUrl);
+    asyncAddTranslatedArtists("._3RqJTSD");
 
     // search pages: https://www.pixiv.net/bookmark_new_illust.php
     asyncAddTranslatedArtists(".ui-profile-popup", "figcaption._1IP8RNV > ul > li > a.ui-profile-popup", toProfileUrl);
 
     // ranking pages: https://www.pixiv.net/ranking.php?mode=original
     asyncAddTranslatedArtists(".ui-profile-popup", ".user-container.ui-profile-popup", toProfileUrl);
+
+    // tags on work pages: https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
+    asyncAddTranslation('._1tTPwGC', '.qE_sxIX');
 }
 
 function initializeNijie() {
