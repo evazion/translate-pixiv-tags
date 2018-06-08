@@ -21,6 +21,7 @@
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js
 // @require      https://raw.githubusercontent.com/rafaelw/mutation-summary/421110f84178aa9e4098b38df83f727e5aea3d97/src/mutation-summary.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/qtip2/3.0.3/jquery.qtip.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore.js
 // @connect      donmai.us
 // ==/UserScript==
 
@@ -408,7 +409,7 @@ function addTranslatedArtists(element, toProfileUrl = (e) => $(e).prop("href")) 
 
             let artistTag = $(`
                 <div class="${classes}">
-                    <a href="${BOORU}/artists/${artist.id}">${artist.prettyName}</a>
+                    <a href="${BOORU}/artists/${artist.id}">${_.escape(artist.prettyName)}</a>
                 </div>
             `);
 
@@ -598,13 +599,13 @@ function buildArtistTooltipHtml(artist, tag, posts) {
 
         <article class="container">
             <section class="header">
-                <a class="artist-name tag-category-artist" href="${BOORU}/artists/${artist.id}">${artist.prettyName}</a>
+                <a class="artist-name tag-category-artist" href="${BOORU}/artists/${artist.id}">${_.escape(artist.prettyName)}</a>
                 <span class="post-count">${tag.post_count}</span>
 
                 <ul class="other-names">
                     ${artist.other_names.split(" ").filter(String).sort().map(other_name =>
                         `<li>
-                            <a href="${BOORU}/artists?search[name]=${encodeURIComponent(other_name)}">${other_name}</a>
+                            <a href="${BOORU}/artists?search[name]=${encodeURIComponent(other_name)}">${_.escape(other_name)}</a>
                         </li>`
                     ).join("")}
                 </ul>
@@ -616,7 +617,7 @@ function buildArtistTooltipHtml(artist, tag, posts) {
                 </h2>
                 <ul>
                     ${artist.urls.map(url => url.normalized_url.replace(/\/$/, "")).sort().map(normalized_url =>
-                        `<li><a href="${normalized_url}">${normalized_url}</a></li>`
+                        `<li><a href="${normalized_url}">${_.escape(normalized_url)}</a></li>`
                     ).join("")}
                 </ul>
             </section>
@@ -639,11 +640,10 @@ function buildPostPreview(post) {
     preview_class += post.parent_id            ? " post-status-has-parent"   : "";
     preview_class += post.has_visible_children ? " post-status-has-children" : "";
 
-    // XXX escape tag_string
     const data_attributes = `
       data-id="${post.id}"
       data-has-sound="${!!post.tag_string.match(/(video_with_sound|flash_with_sound)/)}"
-      data-tags="${post.tag_string}"
+      data-tags="${_.escape(post.tag_string)}"
     `;
 
     let scale = Math.min(150 / post.image_width, 150 / post.image_height);
@@ -651,11 +651,10 @@ function buildPostPreview(post) {
 
     const [width, height] = [Math.round(post.image_width * scale), Math.round(post.image_height * scale)];
 
-    // XXX escape post.tag_string
     return `
         <article itemscope itemtype="http://schema.org/ImageObject" class="${preview_class}" ${data_attributes}>
             <a href="${BOORU}/posts/${post.id}">
-                <img width="${width}" height="${height}" src="${post.preview_file_url}" title="${post.tag_string}">
+                <img width="${width}" height="${height}" src="${post.preview_file_url}" title="${_.escape(post.tag_string)}">
             </a>
         </article>
     `;
