@@ -226,7 +226,7 @@ $("head").append(`
     }
 
     /* Remove hashtags from translated tags */
-    #ex-pixiv ._1tTPwGC a:before {
+    #ex-pixiv .FNBxGia a:before {
         content: "";
     }
 
@@ -747,7 +747,7 @@ function initializePixiv() {
     asyncAddTranslatedArtists(".ui-profile-popup", ".user-container.ui-profile-popup", toProfileUrl);
 
     // tags on work pages: https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
-    asyncAddTranslation('._1tTPwGC', '.qE_sxIX');
+    asyncAddTranslation('.FNBxGia', '.qE_sxIX');
 }
 
 function initializeNijie() {
