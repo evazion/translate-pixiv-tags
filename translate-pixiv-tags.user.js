@@ -742,7 +742,7 @@ function initializePixiv() {
     let profileContainer = ".profile .user-name, .user .ui-profile-popup, .image-item .ui-profile-popup";
     let toProfileUrl = (e => $(e).prop("href").replace(/member_illust/, "member").replace(/&ref=.*$/, ""));
     addTranslatedArtists(profileContainer, toProfileUrl);
-    asyncAddTranslatedArtists("._3RqJTSD");
+    asyncAddTranslatedArtists("._2HApVVD");
 
     // search pages: https://www.pixiv.net/bookmark_new_illust.php
     asyncAddTranslatedArtists(".ui-profile-popup", "figcaption._1IP8RNV > ul > li > a.ui-profile-popup", toProfileUrl);
