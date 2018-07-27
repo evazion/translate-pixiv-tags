@@ -516,6 +516,11 @@ function buildArtistTooltipHtml(artist, tag, posts) {
                 padding: 0px;
             }
 
+            section.urls ul li.artist-url-inactive a {
+                color: red;
+                text-decoration: underline;
+                text-decoration-style: dotted;
+            }
 
 
             /* Basic styles taken from Danbooru */
@@ -644,9 +649,7 @@ function buildArtistTooltipHtml(artist, tag, posts) {
                     (<a href="${BOORU}/artists/${artist.id}/edit">edit</a>)
                 </h2>
                 <ul>
-                    ${artist.urls.map(url => url.normalized_url.replace(/\/$/, "")).sort().map(normalized_url =>
-                        `<li><a href="${normalized_url}">${_.escape(normalized_url)}</a></li>`
-                    ).join("")}
+                    ${buildArtistUrlsHtml(artist)}
                 </ul>
             </section>
             <section class="posts">
@@ -658,6 +661,20 @@ function buildArtistTooltipHtml(artist, tag, posts) {
             </section>
         </article>
     `;
+}
+
+function buildArtistUrlsHtml(artist) {
+    const domainSorter = artist_url => new URL(artist_url.normalized_url).host.match(/[^.]*\.[^.]*$/)[0];
+    const artist_urls = _(artist.urls).chain().uniq('normalized_url').sortBy('normalized_url').sortBy(domainSorter).sortBy(artist_url => !artist_url.is_active);
+
+    const html = artist_urls.map(artist_url => {
+        const normalized_url = artist_url.normalized_url.replace(/\/$/, "");
+        const urlClass = artist_url.is_active ? "artist-url-active" : "artist-url-inactive";
+
+        return `<li class="${urlClass}"><a href="${normalized_url}">${_.escape(normalized_url)}</a></li>`;
+    }).join("");
+
+    return html;
 }
 
 function buildPostPreview(post) {
