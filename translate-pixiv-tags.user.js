@@ -661,6 +661,9 @@ function buildArtistTooltipHtml(artist, tag, posts) {
 }
 
 function buildPostPreview(post) {
+    let [width, height] = [150, 150];
+    let preview_file_url = `${BOORU}/images/download-preview.png`;
+
     let preview_class = "post-preview";
     preview_class += post.is_pending           ? " post-status-pending"      : "";
     preview_class += post.is_flagged           ? " post-status-flagged"      : "";
@@ -677,12 +680,15 @@ function buildPostPreview(post) {
     let scale = Math.min(150 / post.image_width, 150 / post.image_height);
     scale = Math.min(1, scale);
 
-    const [width, height] = [Math.round(post.image_width * scale), Math.round(post.image_height * scale)];
+    if (post.preview_file_url) {
+        [width, height] = [Math.round(post.image_width * scale), Math.round(post.image_height * scale)];
+        preview_file_url = post.preview_file_url;
+    }
 
     return `
         <article itemscope itemtype="http://schema.org/ImageObject" class="${preview_class}" ${data_attributes}>
             <a href="${BOORU}/posts/${post.id}">
-                <img width="${width}" height="${height}" src="${post.preview_file_url}" title="${_.escape(post.tag_string)}">
+                <img width="${width}" height="${height}" src="${preview_file_url}" title="${_.escape(post.tag_string)}">
             </a>
         </article>
     `;
