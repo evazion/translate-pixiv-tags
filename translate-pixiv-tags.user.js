@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20181010215716
+// @version      20181010215752
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, BCY, and Monappy to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -232,6 +232,11 @@ $("head").append(`
     /* Remove hashtags from translated tags */
     #ex-pixiv .FNBxGia a:before {
         content: "";
+    }
+
+    /* Add space between pixiv artist name and danbooru tag in recommended posts section .*/
+    #ex-pixiv .gtm-illust-recommend-user-name + .ex-artist-tag {
+        margin-left: 0.5em;
     }
 
     #ex-nijie .ex-translated-tags {
@@ -746,6 +751,8 @@ function initializePixiv() {
     // artist profile pages: https://www.pixiv.net/member.php?id=29310
     let bookmarkToProfileUrl = (e => $(e).prop("href").replace(/bookmark.php/, "member.php").replace(/&type=user$/, ""));
     asyncAddTranslatedArtists("._13OcQAQ", "._13OcQAQ", bookmarkToProfileUrl);
+
+    asyncAddTranslatedArtists(".gtm-illust-recommend-user-name");
 
     // search pages: https://www.pixiv.net/bookmark_new_illust.php
     asyncAddTranslatedArtists(".ui-profile-popup", "figcaption._1IP8RNV > ul > li > a.ui-profile-popup", toProfileUrl);
