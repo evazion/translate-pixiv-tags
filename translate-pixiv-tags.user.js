@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20181010215752
+// @version      20181010215810
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, BCY, and Monappy to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -26,6 +26,9 @@
 // ==/UserScript==
 
 const BOORU = "https://danbooru.donmai.us";
+
+// How long (in seconds) to cache translated tag lookups. Default: 5 minutes.
+const CACHE_LIFETIME = 60 * 5;
 
 // Inline qtip2 css to avoid CSP issues on twitter.
 // https://cdnjs.cloudflare.com/ajax/libs/qtip2/3.0.3/jquery.qtip.min.css
@@ -366,6 +369,12 @@ const preview_deleted_color = "#000";
 const preview_pending_color = "#00F";
 const preview_flagged_color = "#F00";
 
+async function get(url, params, cache = CACHE_LIFETIME, base_url = BOORU) {
+    const timestamp = Math.round((Date.now() / 1000 / cache));
+    params = { ...params, expiry: 365, timestamp: timestamp };
+    return await $.getJSON(`${base_url}${url}.json`, params);
+}
+
 async function addTranslation($element, tag = $element.text()) {
     const danbooruTags = await translateTag(tag);
     addDanbooruTags($element, danbooruTags);
@@ -379,7 +388,7 @@ async function translateTag(pixivTag) {
         return [];
     }
 
-    const wikiPages = await $.getJSON(`${BOORU}/wiki_pages.json?search[other_names_match]=${encodeURIComponent(normalizedTag)}`);
+    const wikiPages = await get("/wiki_pages", { "search[other_names_match]": normalizedTag });
 
     return wikiPages.map(wikiPage => new Object({
         name: wikiPage.title,
@@ -410,7 +419,7 @@ function addTranslatedArtists(element, toProfileUrl = (e) => $(e).prop("href")) 
     $(element).each(async (i, e) => {
         const profileUrl = toProfileUrl($(e));
 
-        const artists = await $.getJSON(`${BOORU}/artists.json?search[url_matches]=${encodeURIComponent(profileUrl)}`);
+        const artists = await get("/artists", { "search[url_matches]": profileUrl });
         artists.forEach(artist => {
             let classes = artist.is_banned ? "ex-artist-tag ex-banned-artist-tag" : "ex-artist-tag";
             artist.prettyName = artist.name.replace(/_/g, " ");
