@@ -443,18 +443,28 @@ function addTranslatedArtists(element, toProfileUrl = (e) => $(e).prop("href")) 
     });
 }
 
-async function buildArtistTooltip(artist, qtip) {
-    if (qtip.elements.content.get(0).shadowRoot) {
+async function attachShadow(target, callback) {
+    if (target.shadowRoot) {
         return;
+    } else if (!_.isFunction(document.body.attachShadow)) {
+        const element = await callback();
+        $(target).html(element);
+    } else {
+        const shadowRoot = target.attachShadow({ mode: "open" });
+        const element = await callback();
+        $(shadowRoot).append(element);
     }
+}
 
-    const posts = await $.getJSON(`${BOORU}/posts.json?tags=status:any+${artist.encodedName}&limit=${ARTIST_POST_PREVIEW_LIMIT}`);
-    const tags = await $.getJSON(`${BOORU}/tags.json?search[name]=${artist.encodedName}`);
-    const tag = tags[0] || { name: artist.name, post_count: 0 };
+async function buildArtistTooltip(artist, qtip) {
+    attachShadow(qtip.elements.content.get(0), async () => {
+        const posts = await $.getJSON(`${BOORU}/posts.json?tags=status:any+${artist.encodedName}&limit=${ARTIST_POST_PREVIEW_LIMIT}`);
+        const tags = await $.getJSON(`${BOORU}/tags.json?search[name]=${artist.encodedName}`);
+        const tag = tags[0] || { name: artist.name, post_count: 0 };
 
-    const tooltip = buildArtistTooltipHtml(artist, tag, posts);
-    const shadowRoot = qtip.elements.content.get(0).attachShadow({ mode: "open" });
-    $(shadowRoot).append(tooltip);
+        const tooltip = await buildArtistTooltipHtml(artist, tag, posts);
+        return tooltip;
+    });
 }
 
 function buildArtistTooltipHtml(artist, tag, posts) {
