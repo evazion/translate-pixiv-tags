@@ -1,3 +1,22 @@
+# Release 2018.10.11
+
+## Fixes
+
+* Pixiv: Fix artist tags not being translated correctly on work pages.
+* Pixiv: Fix artist tags not being translated on profile pages.
+* Pixiv: Fix artist tags not being translated in the recommended posts section.
+
+## Changes
+
+* Cache tag and artist lookups for five minutes.
+
+# Release 2018.07.17
+
+## Fixes
+
+* Pixiv: fix translated tags not appearing.
+* Twitter: fix tooltips not appearing.
+
 # Release 2018.06.08 18:32:14
 
 ## Fixes
