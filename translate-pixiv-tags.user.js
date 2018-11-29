@@ -787,7 +787,7 @@ function initializePixiv() {
 
     // https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
     let toProfileUrl = (e => $(e).prop("href").replace(/member_illust/, "member").replace(/&ref=.*$/, ""));
-    asyncAddTranslatedArtists(".e165rlrk2");
+    asyncAddTranslatedArtists(".hlCDzM");
 
     // artist profile pages: https://www.pixiv.net/member.php?id=29310
     let bookmarkToProfileUrl = (e => $(e).prop("href").replace(/bookmark.php/, "member.php").replace(/&type=user$/, ""));
