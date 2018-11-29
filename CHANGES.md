@@ -1,3 +1,10 @@
+# Release 2018.11.29
+
+## Fixes
+
+* Pixiv: Fix artist tags not being translated on work pages.
+* Fixed exception when rendering artist names in artist tooltips.
+
 # Release 2018.10.11
 
 ## Fixes
