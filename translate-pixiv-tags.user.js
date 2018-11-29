@@ -636,7 +636,7 @@ function buildArtistTooltipHtml(artist, tag, posts) {
                 <span class="post-count">${tag.post_count}</span>
 
                 <ul class="other-names">
-                    ${artist.other_names.split(" ").filter(String).sort().map(other_name =>
+                    ${artist.other_names.filter(String).sort().map(other_name =>
                         `<li>
                             <a href="${BOORU}/artists?search[name]=${encodeURIComponent(other_name)}">${_.escape(other_name)}</a>
                         </li>`
