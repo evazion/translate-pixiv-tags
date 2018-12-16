@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20181129172602
-// @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, BCY, and Monappy to Danbooru tags.
+// @version      20181204183314
+// @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
 // @updateURL    https://github.com/evazion/translate-pixiv-tags/raw/stable/translate-pixiv-tags.user.js
@@ -12,7 +12,6 @@
 // @match        *://seiga.nicovideo.jp/*
 // @match        *://www.tinami.com/*
 // @match        *://bcy.net/*
-// @match        *://monappy.jp/*
 // @match        *://*.deviantart.com/*
 // @match        *://*.hentai-foundry.com/*
 // @match        *://*.twitter.com/*
@@ -759,7 +758,6 @@ function initializeTranslatedTags() {
         "#ex-nijie #seiten_dic h1#dic_title",                   // https://nijie.info/dic/seiten/d/東方
         "#ex-seiga #ko_tagwatch > div > h1",
         "#ex-tinami .tag > span > a:nth-child(2)",
-        "#ex-monappy span.picpr-tag > a",                       // https://monappy.jp/picture_places/view/13663
     ];
 
     $(selectors.join(", ")).each((i, e) => {
@@ -787,7 +785,7 @@ function initializePixiv() {
 
     // https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
     let toProfileUrl = (e => $(e).prop("href").replace(/member_illust/, "member").replace(/&ref=.*$/, ""));
-    asyncAddTranslatedArtists(".bCAkNJ");
+    asyncAddTranslatedArtists("a", 'div#root > div:nth-child(2) > div > div > aside > section > div:nth-child(1) > div > a[href^="/member.php"]');
 
     // artist profile pages: https://www.pixiv.net/member.php?id=29310
     let bookmarkToProfileUrl = (e => $(e).prop("href").replace(/bookmark.php/, "member.php").replace(/&type=user$/, ""));
@@ -857,18 +855,6 @@ function initializeBCY() {
     asyncAddTranslation('.tag');
 }
 
-function initializeMonappy() {
-    $("body").attr("id", "ex-monappy");
-    asyncAddTranslation('.picpr-tag');
-
-    // https://monappy.jp/picture_places/view/22693
-    let twitterProfileLink = `
-        .picpre-container > div:nth-child(2) > div:nth-child(1) .inline-form > a:nth-child(2),
-        .container > .row > .col-md-3.text-center > .inline-form > a:nth-child(3)
-    `;
-    addTranslatedArtists(twitterProfileLink, e => e.prop("href").toLowerCase());
-}
-
 function initializeDeviantArt() {
     $("body").attr("id", "ex-deviantart");
 
@@ -922,8 +908,6 @@ function initialize() {
         initializeTinami();
     } else if (location.host === "bcy.net") {
         initializeBCY();
-    } else if (location.host === "monappy.jp") {
-        initializeMonappy();
     } else if (location.host == "www.hentai-foundry.com") {
         initializeHentaiFoundry();
     } else if (location.host == "twitter.com") {
