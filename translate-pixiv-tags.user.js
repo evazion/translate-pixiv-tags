@@ -15,6 +15,7 @@
 // @match        *://*.deviantart.com/*
 // @match        *://*.hentai-foundry.com/*
 // @match        *://*.twitter.com/*
+// @match        *://*.artstation.com/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM.xmlHttpRequest
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js
@@ -359,6 +360,33 @@ $("head").append(`
     .ex-artist-tooltip .qtip-content {
         width: 520px !important;
         background: white;
+    }
+
+    #ex-artstation .qtip-content {
+        box-sizing: initial;
+    }
+
+    #ex-artstation .artist-name-and-headline .ex-artist-tag {
+        font-size: 12pt;
+        line-height: 150%;
+    }
+
+    #ex-artstation .hover-card .ex-artist-tag {
+        font-size: 12pt;
+        margin-top: -10px;
+    }
+
+    #ex-artstation a.user .ex-artist-tag {
+        line-height: 100%;
+    }
+
+    #ex-artstation .site-title .ex-artist-tag {
+        font-size: 12pt;
+        line-height: 100%;
+        margin-top: -10px;
+    }
+    #ex-artstation .site-title .ex-artist-tag a {
+        font-size: 12pt;
     }
 `);
 
@@ -747,6 +775,42 @@ function onElementsAdded(selector, callback) {
     });
 }
 
+function asyncAddTranslatedArtists2(
+        selector,
+        selPredicate = selector,
+        attribute = "href",
+        attrPredicate = (e) => (e = $(e).attr("href")) && (e.startsWith("/") || e.startsWith("http")),
+        toProfileUrl = (e) => $(e).prop("href"))
+{
+    if (typeof selPredicate === "string") {
+        const predicateSelector = selPredicate;
+        selPredicate = (e) => $(e).is(predicateSelector);
+    }
+
+    $(selector).each((i, artist) => {
+        if (selPredicate(artist) && attrPredicate(artist)) {
+            addTranslatedArtists(artist, toProfileUrl);
+        }
+    });
+
+    onElementsAddedOrChanged(selector, attribute, artist => {
+        if (selPredicate(artist) && attrPredicate(artist)) {
+            addTranslatedArtists(artist, toProfileUrl);
+        }
+    });
+}
+
+function onElementsAddedOrChanged(selector, attribute, callback) {
+    const observer = new MutationSummary({
+        queries: [{ element: selector, elementAttributes: attribute }],
+        callback: function (summaries) {
+            const summary = summaries[0];
+            summary.added.forEach(callback);
+            summary.attributeChanged[attribute].forEach(callback);
+        }
+    });
+}
+
 function initializeTranslatedTags() {
     const selectors = [
         "#ex-pixiv .tags li .text",                             // https://www.pixiv.net/member_illust.php?mode=medium&illust_id=64362862
@@ -895,6 +959,61 @@ function initializeMobileTwitter() {
     asyncAddTranslatedArtists(".Z5IeoGpY", ".Z5IeoGpY", e => "https://twitter.com/" + $(e).text().replace(/^@/, ""));
 }
 
+function initializeArtStation() {
+    $("body").attr("id", "ex-artstation");
+
+    function toFullURL(url) {
+        if (url && typeof url !== "string") {
+            url = (url[0] || url).getAttribute("href");
+        }
+
+        const getArtistName = (ref) => {
+            if (!ref) {
+                return "";
+            } else if (ref.startsWith("/")) {
+                let word = ref.match(/[a-z0-9_-]+/i);
+                if (word) return word[0];
+            } else if (ref.startsWith("https://www")) {
+                let word = ref.match(/artstation\.com\/([a-z0-9_-]+)/i);
+                if (word) return word[1];
+            } else if (ref.startsWith("https://")) {
+                let word = ref.match(/\/\/([a-z0-9_-]+)\.artstation\.com/i);
+                if (word) return word[1];
+            }
+            return "";
+        }
+
+        let artistName = getArtistName(url) || getArtistName(window.location.href);
+        if (artistName === "artwork") artistName = "";
+        if (!artistName) {
+            return "";
+        }
+
+        return "https://www.artstation.com/" + artistName;
+    };
+
+    // https://www.artstation.com/jubi
+    // https://www.artstation.com/jubi/*
+    asyncAddTranslatedArtists("h1.artist-name", "h1.artist-name", toFullURL);
+    // https://www.artstation.com/artwork/0X40zG
+    asyncAddTranslatedArtists2("a[hover-card]", ".name > a", "href", toFullURL);
+    // hover card
+    asyncAddTranslatedArtists2("a", ".hover-card-name > a");
+    // https://www.artstation.com/jubi/following
+    // https://www.artstation.com/jubi/followers
+    asyncAddTranslatedArtists("h4.name", "h4", e => toFullURL($(e).closest("a")));
+
+    // default personal websites:
+    // https://jubi.artstation.com/
+    // https://snow7a.artstation.com/
+    // customized personal websites:
+    // https://inawong.artstation.com/
+    // https://kastep.artstation.com/
+    // https://tinadraw.artstation.com/
+    // https://dylan-kowalski.artstation.com/
+    addTranslatedArtists(".site-title a", toFullURL);
+}
+
 function initialize() {
     $("head").append(`<style type="text/css">${QTIP_CSS}</style>`);
 
@@ -916,6 +1035,8 @@ function initialize() {
         // initializeMobileTwitter();
     } else if (location.host.match(/deviantart\.com/)) {
         initializeDeviantArt();
+    } else if (location.host.match(/artstation\.com/)) {
+        initializeArtStation();
     }
 
     initializeTranslatedTags();
