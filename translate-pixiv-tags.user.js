@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190112122959
+// @version      20190114210724
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -242,9 +242,15 @@ $("head").append(`
         margin-left: 0.5em;
     }
 
-    /* On the artist profile page, render the danbooru artist tag beneath the pixiv profile image. */
-    #ex-pixiv ._3vdkjk3 {
+    /* On the artist profile page, render the danbooru artist tag between the artist's name and follower count. */
+    #ex-pixiv ._3_qyP5m {
         flex-direction: column;
+        align-items: flex-start;
+    }
+
+    /* On the artist profile page, hide the "premium" link that normally comes after the artist name. */
+    #ex-pixiv ._3_qyP5m a.sc-cJOK.bChNPC {
+        display: none;
     }
 
     #ex-nijie .ex-translated-tags {
@@ -856,8 +862,9 @@ function initializePixiv() {
     let toProfileUrl = (e => $(e).prop("href").replace(/member_illust/, "member").replace(/&ref=.*$/, ""));
     asyncAddTranslatedArtists("a", 'aside a[href^="/member.php?id="]:not(:has(*))');
 
-    // artist profile pages: https://www.pixiv.net/member.php?id=29310
-    asyncAddTranslatedArtists(".kdyWpY", "._3vdkjk3 .kdyWpY");
+    // artist profile pages: https://www.pixiv.net/member.php?id=29310, https://www.pixiv.net/member_illust.php?id=104471&type=illust
+    let normalizePageUrl = () => `https://www.pixiv.net/member.php?id=${new URL(window.location.href).searchParams.get("id")}`;
+    asyncAddTranslatedArtists(".VyO6wL2", ".VyO6wL2", normalizePageUrl);
 
     // search pages: https://www.pixiv.net/bookmark_new_illust.php
     asyncAddTranslatedArtists(".ui-profile-popup", "figcaption._1IP8RNV > ul > li > a.ui-profile-popup", toProfileUrl);
