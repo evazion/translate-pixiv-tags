@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190114210724
+// @version      20190114210739
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -457,7 +457,7 @@ function addTranslatedArtists(element, toProfileUrl = (e) => $(e).prop("href")) 
     $(element).each(async (i, e) => {
         const profileUrl = toProfileUrl($(e));
 
-        const artists = await get("/artists", { "search[url_matches]": profileUrl });
+        const artists = await get("/artists", { "search[url_matches]": profileUrl, "search[is_active]": true });
         artists.forEach(artist => {
             let classes = artist.is_banned ? "ex-artist-tag ex-banned-artist-tag" : "ex-artist-tag";
             artist.prettyName = artist.name.replace(/_/g, " ");
