@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190114210909
+// @version      20190114214046
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -233,7 +233,7 @@ $("head").append(`
     }
 
     /* Remove hashtags from translated tags */
-    #ex-pixiv .FNBxGia a:before {
+    #ex-pixiv .GpJOYWW a:before {
         content: "";
     }
 
@@ -867,13 +867,13 @@ function initializePixiv() {
     asyncAddTranslatedArtists(".VyO6wL2", ".VyO6wL2", normalizePageUrl);
 
     // search pages: https://www.pixiv.net/bookmark_new_illust.php
-    asyncAddTranslatedArtists(".ui-profile-popup", "figcaption._1IP8RNV > ul > li > a.ui-profile-popup", toProfileUrl);
+    asyncAddTranslatedArtists(".ui-profile-popup", "figcaption._3HwPt89 > ul > li > a.ui-profile-popup", toProfileUrl);
 
     // ranking pages: https://www.pixiv.net/ranking.php?mode=original
     asyncAddTranslatedArtists(".ui-profile-popup", ".user-container.ui-profile-popup", toProfileUrl);
 
     // tags on work pages: https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
-    asyncAddTranslation('.FNBxGia', '.qE_sxIX');
+    asyncAddTranslation('.GpJOYWW', '._3Xr7iJv');
 }
 
 function initializeNijie() {
