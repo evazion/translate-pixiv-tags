@@ -1,3 +1,20 @@
+# Release 2019.01.14
+
+## Fixes
+
+* Pixiv: fix artist tag not being translated when the artist has zero followers.
+* Artists: fix matches being returned for deleted artists.
+
+## Changes
+
+* ArtStation: add initial ArtStation support (credit to 7nik)
+
+# Release 2018.12.04
+
+## Changes
+
+* Monappy: drop Monappy support (site is defunct)
+
 # Release 2018.11.29
 
 ## Fixes
