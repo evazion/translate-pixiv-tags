@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190215215046
+// @version      20190220102846
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -246,6 +246,7 @@ $("head").append(`
     #ex-pixiv ._3_qyP5m {
         display: grid;
         grid-auto-rows: 20px;
+        grid-template-columns: auto auto;
     }
     #ex-pixiv ._3_qyP5m .ex-artist-tag {
         grid-row: 2;
@@ -859,7 +860,7 @@ function initializePixiv() {
 
     // https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
     let toProfileUrl = (e => $(e).prop("href").replace(/member_illust/, "member").replace(/&ref=.*$/, ""));
-    asyncAddTranslatedArtists("a", 'aside a[href^="/member.php?id="]:not(:has(*))');
+    asyncAddTranslatedArtists("a", 'aside a[href^="/member.php?id="]:not(:has([role=img]))');
 
     // artist profile pages: https://www.pixiv.net/member.php?id=29310, https://www.pixiv.net/member_illust.php?id=104471&type=illust
     let normalizePageUrl = () => `https://www.pixiv.net/member.php?id=${new URL(window.location.href).searchParams.get("id")}`;
