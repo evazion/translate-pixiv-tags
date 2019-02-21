@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190220104446
+// @version      20190221160346
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -362,6 +362,11 @@ $("head").append(`
         margin-left: 0.5em;
     }
 
+    #ex-twitter .js-retweet-text .ex-artist-tag {
+        display: inline-block;
+        margin: 0 3px;
+    }
+
     /* Render the Danbooru artist tag on the same line as the Twitter username. */
     #ex-mobile-twitter ._2CFyTHU5 {
         white-space: normal;
@@ -465,6 +470,11 @@ function addTranslatedArtists(element, toProfileUrl = (e) => $(e).prop("href")) 
             let classes = artist.is_banned ? "ex-artist-tag ex-banned-artist-tag" : "ex-artist-tag";
             artist.prettyName = artist.name.replace(/_/g, " ");
             artist.encodedName = encodeURIComponent(artist.name);
+
+            if ($(e).nextAll(`.${classes}`).filter((i,e) => e.innerText.trim() == _.escape(artist.prettyName)).length) {
+                console.log("already added");
+                return;
+            }
 
             let artistTag = $(`
                 <div class="${classes}">
@@ -961,7 +971,9 @@ function initializeTwitter() {
 
     asyncAddTranslatedArtists(".ProfileHeaderCard-screennameLink");
     asyncAddTranslatedArtists(".ProfileCard-screennameLink")
-    asyncAddTranslatedArtists(".username", ".js-user-profile-link .username", e => "https://twitter.com/" + $(e).find("b").text());
+    asyncAddTranslatedArtists("a.js-user-profile-link");
+    // quoted tweets
+    asyncAddTranslatedArtists(".username", "div.js-user-profile-link .username", e => "https://twitter.com/" + $(e).find("b").text());
 }
 
 function initializeMobileTwitter() {
