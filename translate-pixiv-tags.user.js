@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190222163746
+// @version      20190222195346
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -23,6 +23,7 @@
 // @require      https://cdnjs.cloudflare.com/ajax/libs/qtip2/3.0.3/jquery.qtip.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore.js
 // @connect      donmai.us
+// @noframes
 // ==/UserScript==
 
 const BOORU = "https://danbooru.donmai.us";
@@ -871,15 +872,6 @@ function initializeTranslatedTags() {
 }
 
 function initializePixiv() {
-    // HACK: Don't run if we're inside an iframe.
-    //
-    // Endless Pixiv Pages loads pages inside an iframe, which causes
-    // asyncAddTranslatedArtists to run twice: first on the page inside the
-    // iframe, then again after the iframe's content is moved into the main window.
-    if (window.location != window.parent.location) {
-        return;
-    }
-
     $("body").attr("id", "ex-pixiv");
     $(".illust-tag-translation").remove();
 
@@ -1084,3 +1076,6 @@ function initialize() {
 }
 
 initialize();
+
+
+console.log("Translate Pixiv Tags: Hi!",window.location.href);
