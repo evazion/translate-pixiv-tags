@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190221160346
+// @version      20190222133746
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -469,16 +469,27 @@ function addTranslatedArtists(element, toProfileUrl = (e) => $(e).prop("href")) 
         artists.forEach(artist => {
             let classes = artist.is_banned ? "ex-artist-tag ex-banned-artist-tag" : "ex-artist-tag";
             artist.prettyName = artist.name.replace(/_/g, " ");
+            artist.escapedName = _.escape(artist.prettyName);
             artist.encodedName = encodeURIComponent(artist.name);
 
-            if ($(e).nextAll(`.${classes}`).filter((i,e) => e.innerText.trim() == _.escape(artist.prettyName)).length) {
-                console.log("already added");
+            let duplicates = $(e).nextAll(".ex-artist-tag").filter((i,el) => el.innerText.trim() == artist.escapedName);
+
+            if (duplicates.length) {
+                // if qtip was remove then add it back
+                if (!$.data(duplicates.find("a")[0]).qtip) {
+                    const qtip_settings = Object.assign(ARTIST_QTIP_SETTINGS, {
+                        content: {
+                            text: (event, qtip) => buildArtistTooltip(artist, qtip)
+                        }
+                    });
+                    $(duplicates).find("a").qtip(qtip_settings);
+                }
                 return;
             }
 
             let artistTag = $(`
                 <div class="${classes}">
-                    <a href="${BOORU}/artists/${artist.id}">${_.escape(artist.prettyName)}</a>
+                    <a href="${BOORU}/artists/${artist.id}">${artist.escapedName}</a>
                 </div>
             `);
 
