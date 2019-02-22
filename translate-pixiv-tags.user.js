@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190222133746
+// @version      20190222133846
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -360,11 +360,6 @@ $("head").append(`
     /* Add some space between twitter username and danbooru artist tag. */
     #ex-twitter .js-user-profile-link .ex-artist-tag {
         margin-left: 0.5em;
-    }
-
-    #ex-twitter .js-retweet-text .ex-artist-tag {
-        display: inline-block;
-        margin: 0 3px;
     }
 
     /* Render the Danbooru artist tag on the same line as the Twitter username. */
@@ -982,7 +977,7 @@ function initializeTwitter() {
 
     asyncAddTranslatedArtists(".ProfileHeaderCard-screennameLink");
     asyncAddTranslatedArtists(".ProfileCard-screennameLink")
-    asyncAddTranslatedArtists("a.js-user-profile-link");
+    asyncAddTranslatedArtists("a.js-user-profile-link", ":not(.js-retweet-text) > a");
     // quoted tweets
     asyncAddTranslatedArtists(".username", "div.js-user-profile-link .username", e => "https://twitter.com/" + $(e).find("b").text());
 }
