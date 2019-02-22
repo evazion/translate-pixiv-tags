@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190222133846
+// @version      20190222163746
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -249,7 +249,8 @@ $("head").append(`
     #ex-pixiv ._3_qyP5m {
         display: grid;
         grid-auto-rows: 20px;
-        grid-template-columns: auto auto;
+        grid-template-columns: auto 1fr;
+        justify-items: start;
     }
     #ex-pixiv ._3_qyP5m .ex-artist-tag {
         grid-row: 2;
@@ -360,6 +361,16 @@ $("head").append(`
     /* Add some space between twitter username and danbooru artist tag. */
     #ex-twitter .js-user-profile-link .ex-artist-tag {
         margin-left: 0.5em;
+    }
+
+    /* On post page locate the artist tag below author's @name. */
+    #ex-twitter .permalink-header {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        height: auto;
+    }
+    #ex-twitter .permalink-header .ex-artist-tag {
+        grid-row: 2;
     }
 
     /* Render the Danbooru artist tag on the same line as the Twitter username. */
