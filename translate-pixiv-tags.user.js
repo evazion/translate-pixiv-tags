@@ -63,6 +63,9 @@ const CORS_IMAGE_DOMAINS = [
     'twitter.com'
 ];
 
+//Memory storage for already rendered artist tooltips
+const rendered_qtips = {};
+
 // https://gist.github.com/monperrus/999065
 // This is a shim that adapts jQuery's ajax methods to use GM_xmlhttpRequest.
 // This allows us to use $.getJSON instead of using GM_xmlhttpRequest directly.
@@ -549,25 +552,28 @@ async function attachShadow(target, callback) {
 
 async function buildArtistTooltip(artist, qtip) {
     attachShadow(qtip.elements.content.get(0), async () => {
-        const posts = await $.getJSON(`${BOORU}/posts.json?tags=status:any+${artist.encodedName}&limit=${ARTIST_POST_PREVIEW_LIMIT}`);
-        const tags = await $.getJSON(`${BOORU}/tags.json?search[name]=${artist.encodedName}`);
-        const tag = tags[0] || { name: artist.name, post_count: 0 };
+        if (!(artist.name in rendered_qtips)) {
+            const posts = await $.getJSON(`${BOORU}/posts.json?tags=status:any+${artist.encodedName}&limit=${ARTIST_POST_PREVIEW_LIMIT}`);
+            const tags = await $.getJSON(`${BOORU}/tags.json?search[name]=${artist.encodedName}`);
+            const tag = tags[0] || { name: artist.name, post_count: 0 };
 
-        const tooltip_html = await buildArtistTooltipHtml(artist, tag, posts);
-        let $tooltip = $(tooltip_html);
-        $("img",$tooltip).each((i,image)=>{
-            let image_source = $(image).data('src');
-            if (CORS_IMAGE_DOMAINS.includes(location.host)) {
-                getImage(image_source).then((blob)=>{
-                    let image_blob = blob.slice(0, blob.size, "image/jpeg");
-                    let blob_url = window.URL.createObjectURL(image_blob);
-                    image.src = blob_url;
-                });
-            } else {
-                image.src = image_source;
-            }
-        });
-        return $tooltip;
+            const tooltip_html = await buildArtistTooltipHtml(artist, tag, posts);
+            let $tooltip = $(tooltip_html);
+            $("img",$tooltip).each((i,image)=>{
+                let image_source = $(image).data('src');
+                if (CORS_IMAGE_DOMAINS.includes(location.host)) {
+                    getImage(image_source).then((blob)=>{
+                        let image_blob = blob.slice(0, blob.size, "image/jpeg");
+                        let blob_url = window.URL.createObjectURL(image_blob);
+                        image.src = blob_url;
+                    });
+                } else {
+                    image.src = image_source;
+                }
+            });
+            rendered_qtips[artist.name] = $tooltip;
+        }
+        return rendered_qtips[artist.name];
     });
 }
 
