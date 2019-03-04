@@ -58,6 +58,11 @@ const ARTIST_QTIP_SETTINGS = {
     },
 };
 
+//Domains where images outside of whitelist are blocked
+const CORS_IMAGE_DOMAINS = [
+    'twitter.com'
+];
+
 // https://gist.github.com/monperrus/999065
 // This is a shim that adapts jQuery's ajax methods to use GM_xmlhttpRequest.
 // This allows us to use $.getJSON instead of using GM_xmlhttpRequest directly.
@@ -427,6 +432,18 @@ const preview_deleted_color = "#000";
 const preview_pending_color = "#00F";
 const preview_flagged_color = "#F00";
 
+function getImage(image_url) {
+    return new Promise((resolve,reject)=>{
+        GM.xmlHttpRequest({
+            method: "GET",
+            url: image_url,
+            responseType: 'blob',
+            onload: function(resp) {resolve(resp.response);},
+            onerror: function(resp) {reject(resp);}
+        });
+    });
+}
+
 async function get(url, params, cache = CACHE_LIFETIME, base_url = BOORU) {
     const timestamp = Math.round((Date.now() / 1000 / cache));
     params = { ...params, expiry: 365, timestamp: timestamp };
@@ -536,8 +553,21 @@ async function buildArtistTooltip(artist, qtip) {
         const tags = await $.getJSON(`${BOORU}/tags.json?search[name]=${artist.encodedName}`);
         const tag = tags[0] || { name: artist.name, post_count: 0 };
 
-        const tooltip = await buildArtistTooltipHtml(artist, tag, posts);
-        return tooltip;
+        const tooltip_html = await buildArtistTooltipHtml(artist, tag, posts);
+        let $tooltip = $(tooltip_html);
+        $("img",$tooltip).each((i,image)=>{
+            let image_source = $(image).data('src');
+            if (CORS_IMAGE_DOMAINS.includes(location.host)) {
+                getImage(image_source).then((blob)=>{
+                    let image_blob = blob.slice(0, blob.size, "image/jpeg");
+                    let blob_url = window.URL.createObjectURL(image_blob);
+                    image.src = blob_url;
+                });
+            } else {
+                image.src = image_source;
+            }
+        });
+        return $tooltip;
     });
 }
 
@@ -779,7 +809,7 @@ function buildPostPreview(post) {
     return `
         <article itemscope itemtype="http://schema.org/ImageObject" class="${preview_class}" ${data_attributes}>
             <a href="${BOORU}/posts/${post.id}">
-                <img width="${width}" height="${height}" src="${preview_file_url}" title="${_.escape(post.tag_string)}">
+                <img width="${width}" height="${height}" data-src="${preview_file_url}" title="${_.escape(post.tag_string)}">
             </a>
         </article>
     `;
