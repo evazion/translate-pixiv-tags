@@ -18,6 +18,17 @@ on [Nijie](https://nijie.info), [NicoSeiga](https://seiga.nicovideo.jp),
 <img width="600" src="https://user-images.githubusercontent.com/8430473/32701834-3b127f76-c7a2-11e7-99b5-bb4fac0a09ee.png">
 <img width="600" src="https://user-images.githubusercontent.com/8430473/38178147-f266d652-35d1-11e8-89c7-80730fcae865.png">
 
+# Settings
+
+Settings can be changed via the **Storage** tab for the userscript. The script will have to run once and the Tampermonkey console refreshed before that tab becomes available.
+
+* **booru:** Danbooru domain to send requests to.
+  * Subdomains include **danbooru**, **kagamihara**, **saitou**, and **shima**.
+* **cache_lifetime:** The amount of time in seconds to cache data from Danbooru before querying again.
+* **preview_limit:** The number of recent posts to show in artist tooltips.
+
+<img width="600" src="https://user-images.githubusercontent.com/21149935/53772259-99ef6700-3e9a-11e9-9c5f-c31ad6aa6e87.png">
+
 # How to add new translations
 
 Often you'll find tags that aren't translated. In these cases you can add the translation yourself:
