@@ -562,11 +562,10 @@ async function attachShadow(target, callback) {
 async function buildArtistTooltip(artist, qtip) {
     attachShadow(qtip.elements.content.get(0), async () => {
         if (!(artist.name in rendered_qtips)) {
-            const posts = await $.getJSON(`${BOORU}/posts.json?tags=status:any+${artist.encodedName}&limit=${ARTIST_POST_PREVIEW_LIMIT}`);
-            const tags = await $.getJSON(`${BOORU}/tags.json?search[name]=${artist.encodedName}`);
-            const tag = tags[0] || { name: artist.name, post_count: 0 };
+            const posts = $.getJSON(`${BOORU}/posts.json?tags=status:any+${artist.encodedName}&limit=${ARTIST_POST_PREVIEW_LIMIT}`);
+            const tags = $.getJSON(`${BOORU}/tags.json?search[name]=${artist.encodedName}`);
 
-            const tooltip_html = await buildArtistTooltipHtml(artist, tag, posts);
+            const tooltip_html = buildArtistTooltipHtml(artist, (await tags)[0] || {post_count:0}, await posts);
             let $tooltip = $(tooltip_html);
             $("img",$tooltip).each((i,image)=>{
                 let image_source = $(image).data('src');
