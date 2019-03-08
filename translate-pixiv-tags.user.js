@@ -1127,5 +1127,3 @@ function initialize() {
 
 initialize();
 
-
-console.log("Translate Pixiv Tags: Hi!",window.location.href);
