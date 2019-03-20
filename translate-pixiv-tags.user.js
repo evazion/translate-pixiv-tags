@@ -461,10 +461,15 @@ function getImage(image_url) {
     });
 }
 
-async function get(url, params, cache = CACHE_LIFETIME, base_url = BOORU) {
+const getJSONMemoized = _.memoize(
+    (url, params) => $.getJSON(url, params),
+    (url, params) => url + $.param(params)
+);
+
+function get(url, params, cache = CACHE_LIFETIME, base_url = BOORU) {
     const timestamp = Math.round((Date.now() / 1000 / cache));
     params = { ...params, expiry: 365, timestamp: timestamp };
-    return await $.getJSON(`${base_url}${url}.json`, params);
+    return getJSONMemoized(`${base_url}${url}.json`, params);
 }
 
 async function addTranslation($element, tag = $element.text()) {
