@@ -840,6 +840,10 @@ function buildPostPreview(post) {
 }
 
 function asyncAddTranslation(tagSelector, tagLink = "> a") {
+    $(tagSelector).each((i, tag) => {
+        const $tag = $(tag).find(tagLink);
+        addTranslation($tag);
+    });
     onElementsAdded(tagSelector, tag => {
         const $tag = $(tag).find(tagLink);
         addTranslation($tag);
