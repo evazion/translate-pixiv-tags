@@ -180,6 +180,10 @@ $("head").append(`
         white-space: nowrap;
     }
 
+    #ex-twitter .ex-translated-tags * {
+        white-space: inherit;
+    }
+
     .ex-translated-tags::before {
         content: "(";
         white-space: nowrap;
@@ -839,14 +843,20 @@ function buildPostPreview(post) {
     `;
 }
 
-function asyncAddTranslation(tagSelector, tagLink = "> a") {
+function getTagPreload(tag, tagLink, isContainer) {
+    if (isContainer) {
+        return [$(tag),$(tag).find(tagLink).text()];
+    } else {
+        return [$(tag).find(tagLink),undefined];
+    }
+}
+
+function asyncAddTranslation(tagSelector, tagLink = "> a", isContainer = false) {
     $(tagSelector).each((i, tag) => {
-        const $tag = $(tag).find(tagLink);
-        addTranslation($tag);
+        addTranslation(...getTagPreload(tag, tagLink, isContainer));
     });
     onElementsAdded(tagSelector, tag => {
-        const $tag = $(tag).find(tagLink);
-        addTranslation($tag);
+        addTranslation(...getTagPreload(tag, tagLink, isContainer));
     });
 }
 
@@ -1040,6 +1050,8 @@ function initializeHentaiFoundry() {
 
 function initializeTwitter() {
     $("body").attr("id", "ex-twitter");
+
+    asyncAddTranslation(".twitter-hashtag", ">b", true);
 
     asyncAddTranslatedArtists(".ProfileHeaderCard-screennameLink");
     asyncAddTranslatedArtists(".ProfileCard-screennameLink")
