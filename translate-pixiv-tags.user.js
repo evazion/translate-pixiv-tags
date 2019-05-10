@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190510211746
+// @version      20190510212646
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -16,6 +16,7 @@
 // @match        *://*.hentai-foundry.com/*
 // @match        *://*.twitter.com/*
 // @match        *://*.artstation.com/*
+// @match        *://saucenao.com/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM.xmlHttpRequest
 // @grant        GM_getValue
@@ -445,6 +446,17 @@ $("head").append(`
     #ex-artstation .site-title .ex-artist-tag a {
         font-size: 12pt;
     }
+
+    #ex-saucenao .ex-artist-tag {
+        display: inline;
+        margin-left: 10px;
+    }
+    #ex-saucenao .ex-translated-tags::before, #ex-saucenao .ex-translated-tags::after {
+        content: none;
+    }
+    #ex-saucenao .ex-translated-tags {
+        margin: 0;
+    }
 `);
 
 const preview_has_children_color = "#0F0";
@@ -529,43 +541,45 @@ function addTranslatedArtists(element, toProfileUrl = (e) => $(e).prop("href")) 
         const profileUrl = toProfileUrl($(e));
 
         const artists = await get("/artists", { "search[url_matches]": profileUrl, "search[is_active]": true });
-        artists.forEach(artist => {
-            let classes = artist.is_banned ? "ex-artist-tag ex-banned-artist-tag" : "ex-artist-tag";
-            artist.prettyName = artist.name.replace(/_/g, " ");
-            artist.escapedName = _.escape(artist.prettyName);
-            artist.encodedName = encodeURIComponent(artist.name);
+        artists.forEach(artist => addDanbooruArtist($(e), artist));
+    });
+}
 
-            let duplicates = $(e).nextAll(".ex-artist-tag").filter((i,el) => el.innerText.trim() == artist.escapedName);
+function addDanbooruArtist($target, artist) {
+    let classes = artist.is_banned ? "ex-artist-tag ex-banned-artist-tag" : "ex-artist-tag";
+    artist.prettyName = artist.name.replace(/_/g, " ");
+    artist.escapedName = _.escape(artist.prettyName);
+    artist.encodedName = encodeURIComponent(artist.name);
 
-            if (duplicates.length) {
-                // if qtip was remove then add it back
-                if (!$.data(duplicates.find("a")[0]).qtip) {
-                    const qtip_settings = Object.assign(ARTIST_QTIP_SETTINGS, {
-                        content: {
-                            text: (event, qtip) => buildArtistTooltip(artist, qtip)
-                        }
-                    });
-                    $(duplicates).find("a").qtip(qtip_settings);
-                }
-                return;
-            }
+    let duplicates = $target.nextAll(".ex-artist-tag").filter((i,el) => el.innerText.trim() == artist.escapedName);
 
-            let artistTag = $(`
-                <div class="${classes}">
-                    <a href="${BOORU}/artists/${artist.id}">${artist.escapedName}</a>
-                </div>
-            `);
-
+    if (duplicates.length) {
+        // if qtip was remove then add it back
+        if (!$.data(duplicates.find("a")[0]).qtip) {
             const qtip_settings = Object.assign(ARTIST_QTIP_SETTINGS, {
                 content: {
                     text: (event, qtip) => buildArtistTooltip(artist, qtip)
                 }
             });
-            $(artistTag).find("a").qtip(qtip_settings);
+            $(duplicates).find("a").qtip(qtip_settings);
+        }
+        return;
+    }
 
-            $(e).after(artistTag);
-        });
+    let artistTag = $(`
+        <div class="${classes}">
+            <a href="${BOORU}/artists/${artist.id}">${artist.escapedName}</a>
+        </div>
+    `);
+
+    const qtip_settings = Object.assign(ARTIST_QTIP_SETTINGS, {
+        content: {
+            text: (event, qtip) => buildArtistTooltip(artist, qtip)
+        }
     });
+    $(artistTag).find("a").qtip(qtip_settings);
+
+    $target.after(artistTag);
 }
 
 async function attachShadow(target, callback) {
@@ -1131,6 +1145,29 @@ function initializeArtStation() {
     addTranslatedArtists(".site-title a", toFullURL);
 }
 
+function initializeSauceNAO() {
+    $("body").attr("id", "ex-saucenao");
+
+    $(".resulttitle, .resultcontentcolumn")
+        .contents()
+        .filter(function(){return this.nodeType==3;}) // get text nodes
+        .wrap("<span class=target>");
+     $(".target:contains(',')")
+        .replaceWith(function(){return this.innerText.split(", ").map(s => `<span class="target">${s}</span>`).join(", ");});
+
+    addTranslatedArtists("strong:contains('Member: ')+a, strong:contains('Author: ')+a");
+    $(".target").each((i, e) => {
+        e = $(e);
+        if (e.prev().text() == "Creator: ") {
+            get("/artists", { "search[name]": e.text().replace(/ /g, "_") })
+                .then(artists => artists.map(artist => addDanbooruArtist(e, artist)).length && e.hide());
+        } else {
+            addTranslation(e, e.text())
+                .then(() => e.next().is(".ex-translated-tags") && e.hide());
+        }
+    });
+}
+
 function initialize() {
     $("head").append(`<style type="text/css">${QTIP_CSS}</style>`);
 
@@ -1154,6 +1191,8 @@ function initialize() {
         initializeDeviantArt();
     } else if (location.host.match(/artstation\.com/)) {
         initializeArtStation();
+    } else if (location.host == "saucenao.com") {
+        initializeSauceNAO();
     }
 
     initializeTranslatedTags();
