@@ -34,6 +34,13 @@ let temp_setting = GM_getValue('booru');
 const BOORU = (typeof temp_setting === "string" && temp_setting.match(/^https?:\/\/(danbooru|kagamihara|saitou|shima)\.donmai\.us$/) ? temp_setting : "https://danbooru.donmai.us")
 GM_setValue('booru',BOORU);
 
+//Values needed from Danbooru API calls using the "only" parameter
+const POST_FIELDS = "id,is_pending,is_flagged,is_deleted,parent_id,has_visible_children,tag_string,image_width,image_height,preview_file_url";
+const POST_COUNT_FIELDS = "post_count";
+const TAG_FIELDS = "name,category";
+const WIKI_FIELDS = "title,category_name";
+const ARTIST_FIELDS = "id,name,is_banned,other_names,urls";
+
 // How long (in seconds) to cache translated tag lookups. Default: 5 minutes.
 temp_setting = GM_getValue('cache_lifetime');
 const CACHE_LIFETIME = (Number.isInteger(temp_setting) ? temp_setting : 60 * 5);
@@ -483,8 +490,10 @@ const getJSONMemoized = _.memoize(
 );
 
 function get(url, params, cache = CACHE_LIFETIME, base_url = BOORU) {
-    const timestamp = Math.round((Date.now() / 1000 / cache));
-    params = { ...params, expiry: 365, timestamp: timestamp };
+    if (cache > 0) {
+        const timestamp = Math.round((Date.now() / 1000 / cache));
+        params = { ...params, expiry: 365, timestamp: timestamp };
+    }
     return getJSONMemoized(`${base_url}${url}.json`, params);
 }
 
@@ -501,9 +510,10 @@ async function translateTag(pixivTag) {
         return [];
     }
 
-    const wikiPages = await get("/wiki_pages", { "search[other_names_match]": normalizedTag });
+    const wikiPages = await get("/wiki_pages", {search: {other_names_match: normalizedTag}, only: WIKI_FIELDS});
     if (wikiPages.length === 0 && normalizedTag.match(/^[\w\s~\(\)\/\.]+$/i)) {
-        const tags = await get("/tags", { "search[name]": normalizedTag });
+        //The index action on the tags endpoint does not support expirations
+        const tags = await get("/tags", {search: {name: normalizedTag}, only: TAG_FIELDS}, 0);
         return tags.map(tag => new Object({
             name: tag.name,
             prettyName: tag.name.replace(/_/g, " "),
@@ -540,7 +550,7 @@ function addTranslatedArtists(element, toProfileUrl = (e) => $(e).prop("href")) 
     $(element).each(async (i, e) => {
         const profileUrl = toProfileUrl($(e));
 
-        const artists = await get("/artists", { "search[url_matches]": profileUrl, "search[is_active]": true });
+        const artists = await get("/artists", {search: {url_matches: profileUrl, is_active: true}, only: ARTIST_FIELDS});
         artists.forEach(artist => addDanbooruArtist($(e), artist));
     });
 }
@@ -598,8 +608,9 @@ async function attachShadow(target, callback) {
 async function buildArtistTooltip(artist, qtip) {
     attachShadow(qtip.elements.content.get(0), async () => {
         if (!(artist.name in rendered_qtips)) {
-            const posts = $.getJSON(`${BOORU}/posts.json?tags=status:any+${artist.encodedName}&limit=${ARTIST_POST_PREVIEW_LIMIT}`);
-            const tags = $.getJSON(`${BOORU}/tags.json?search[name]=${artist.encodedName}`);
+            //The index action on the posts and tags endpoints does not support expirations
+            const posts = get(`/posts`, {tags: `status:any ${artist.name}`, limit: ARTIST_POST_PREVIEW_LIMIT, only: POST_FIELDS}, 0);
+            const tags = get(`/tags`, {search: {name: artist.name}, only: POST_COUNT_FIELDS}, 0);
 
             const tooltip_html = buildArtistTooltipHtml(artist, (await tags)[0] || {post_count:0}, await posts);
             let $tooltip = $(tooltip_html);
@@ -1159,7 +1170,7 @@ function initializeSauceNAO() {
     $(".target").each((i, e) => {
         e = $(e);
         if (e.prev().text() == "Creator: ") {
-            get("/artists", { "search[name]": e.text().replace(/ /g, "_") })
+            get("/artists", {search: {name: e.text().replace(/ /g, "_")}, only: ARTIST_FIELDS})
                 .then(artists => artists.map(artist => addDanbooruArtist(e, artist)).length && e.hide());
         } else {
             addTranslation(e, e.text())
