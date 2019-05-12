@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190510212646
+// @version      20190512210346
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -31,7 +31,7 @@
 
 // Which domain to send requests to
 let temp_setting = GM_getValue('booru');
-const BOORU = (typeof temp_setting === "string" && temp_setting.match(/^https?:\/\/(danbooru|kagamihara|saitou|shima)\.donmai\.us$/) ? temp_setting : "https://danbooru.donmai.us")
+const BOORU = (typeof temp_setting === "string" && temp_setting.match(/^https?:\/\/(danbooru|kagamihara|saitou|shima)\.donmai\.us$/) ? temp_setting : "https://danbooru.donmai.us");
 GM_setValue('booru',BOORU);
 
 //Values needed from Danbooru API calls using the "only" parameter
@@ -511,7 +511,7 @@ async function translateTag(pixivTag) {
     }
 
     const wikiPages = await get("/wiki_pages", {search: {other_names_match: normalizedTag}, only: WIKI_FIELDS});
-    if (wikiPages.length === 0 && normalizedTag.match(/^[\w\s~\(\)\/\.]+$/i)) {
+    if (wikiPages.length === 0 && normalizedTag.match(/^[\x20-\x24\x26-\x29\x2B\x2D-\x7F]+$/)) { // ASCII characters except percent, asterics, and comma
         //The index action on the tags endpoint does not support expirations
         const tags = await get("/tags", {search: {name: normalizedTag}, only: TAG_FIELDS}, 0);
         return tags.map(tag => new Object({
@@ -1088,7 +1088,7 @@ function initializeTwitter() {
     asyncAddTranslation(".twitter-hashtag", ">b", true);
 
     asyncAddTranslatedArtists(".ProfileHeaderCard-screennameLink");
-    asyncAddTranslatedArtists(".ProfileCard-screennameLink")
+    asyncAddTranslatedArtists(".ProfileCard-screennameLink");
     asyncAddTranslatedArtists("a.js-user-profile-link", ":not(.js-retweet-text) > a");
     // quoted tweets
     asyncAddTranslatedArtists(".username", "div.js-user-profile-link .username", e => "https://twitter.com/" + $(e).find("b").text());
@@ -1123,7 +1123,7 @@ function initializeArtStation() {
                 if (word) return word[1];
             }
             return "";
-        }
+        };
 
         let artistName = getArtistName(url) || getArtistName(window.location.href);
         if (artistName === "artwork") artistName = "";
@@ -1132,7 +1132,7 @@ function initializeArtStation() {
         }
 
         return "https://www.artstation.com/" + artistName;
-    };
+    }
 
     // https://www.artstation.com/jubi
     // https://www.artstation.com/jubi/*
