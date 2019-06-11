@@ -551,12 +551,12 @@ function addTranslatedArtists(element, toProfileUrl = (e) => $(e).prop("href")) 
         const profileUrl = toProfileUrl($(e));
 
         const artists = await get("/artists", {search: {url_matches: profileUrl, is_active: true}, only: ARTIST_FIELDS});
-        const pUrl = new URL(profileUrl.replace(/\/$/,""));
+        const pUrl = new URL(profileUrl.replace(/\/$/,"").toLowerCase());
         artists
             // fix of #18: for some unsupported domains, Danbooru returns false-positive results
             .filter(({urls}) => urls
                 .flatMap(({url, normalized_url}) => [url, normalized_url])
-                .map(url => new URL(url.replace(/\/$/,"")))
+                .map(url => new URL(url.replace(/\/$/,"").toLowerCase()))
                 .some(aUrl => (pUrl.host==aUrl.host  && pUrl.pathname==aUrl.pathname  && pUrl.search==aUrl.search)))
             .forEach(artist => addDanbooruArtist($(e), artist));
     });
