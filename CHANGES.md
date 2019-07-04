@@ -1,3 +1,24 @@
+# Release 2019.07.04
+
+## Fixes
+
+* Added ignoring of false-positive results that Danbooru returns for some unsupported domains (bug #18)
+* Sometimes the popup with artist info was empty
+* Artist tag could be added multiple times (bug #9)
+* Fixed running the script in iframes (bug #10)
+* Pixiv: sometimes tags were not translated (bug #15)
+* Twitter: fixed blocked thumbnails (credit to BrokenEagle)
+
+## Changes
+
+* Improved performance by adding caching and the "only" parameter in Danbooru API calls (credit to BrokenEagle)
+* Now tags are also "translated" by their main name
+* Added ability to choose Danbooru server, number of previews, and cache lifetime (credit to BrokenEagle)
+* Twitter: added translating of hastags (credit to BrokenEagle)
+* SauceNAO: added initial support
+* Pawoo: added initial support
+* CSS improvements
+
 # Release 2019.01.14
 
 ## Fixes
