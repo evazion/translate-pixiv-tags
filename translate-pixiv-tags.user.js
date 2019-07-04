@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190611092246
+// @version      20190704164146
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -17,6 +17,7 @@
 // @match        *://*.twitter.com/*
 // @match        *://*.artstation.com/*
 // @match        *://saucenao.com/*
+// @match        *://pawoo.net/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM.xmlHttpRequest
 // @grant        GM_getValue
@@ -463,6 +464,25 @@ $("head").append(`
     }
     #ex-saucenao .ex-translated-tags {
         margin: 0;
+    }
+
+    #ex-pawoo .ex-artist-tag {
+        font-size: 14px;
+        line-height: 100%;
+    }
+    #ex-pawoo .status__display-name .ex-artist-tag {
+        display: inline-block;
+        margin-left: 5px;
+    }
+    #ex-pawoo .account__avatar-wrapper {
+        display: flex;
+        height: 100%;
+    }
+    #ex-pawoo .account__avatar {
+        margin: auto;
+    }
+    #ex-pawoo .ex-artist-tag a {
+        display: inline;
     }
 `);
 
@@ -1186,6 +1206,17 @@ function initializeSauceNAO() {
     });
 }
 
+function initializePawoo() {
+    $("body").attr("id", "ex-pawoo");
+
+    // artist name in his card info
+    addTranslatedArtists(".name .p-name", () => "https://pawoo.net" + window.location.pathname.match(/\/[^\/]+/)[0]);
+    // post author, commentor, users in sidebar
+    addTranslatedArtists("a .display-name span", ($e) => $e.closest("a").prop("href"));
+    // cards of following users and followers
+    addTranslatedArtists(".account-grid-card .name a");
+}
+
 function initialize() {
     $("head").append(`<style type="text/css">${QTIP_CSS}</style>`);
 
@@ -1211,6 +1242,8 @@ function initialize() {
         initializeArtStation();
     } else if (location.host == "saucenao.com") {
         initializeSauceNAO();
+    } else if (location.host == "pawoo.net") {
+        initializePawoo();
     }
 
     initializeTranslatedTags();
