@@ -1192,7 +1192,7 @@ function initializeArtStation() {
     asyncAddTranslatedArtists2("a", ".hover-card-name > a");
     // https://www.artstation.com/jubi/following
     // https://www.artstation.com/jubi/followers
-    asyncAddTranslatedArtists("h4.name", "h4", e => toFullURL($(e).closest("a")));
+    asyncAddTranslatedArtists(".users-grid-name", "div", e => toFullURL($(e).find("a")));
 
     // default personal websites:
     // https://jubi.artstation.com/
