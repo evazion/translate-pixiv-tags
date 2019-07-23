@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190704164146
+// @version      20190723035046
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -409,6 +409,14 @@ $("head").append(`
     #ex-twitter .ReplyingToContextBelowAuthor .ex-artist-tag {
         display: inline-block;
         margin-left: 5px;
+    }
+
+    #ex-twitter .ex-artist-tag {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
+        margin-left: 0.5em;
+    }
+    #ex-twitter .ex-artist-tag a {
+        text-decoration: none;
     }
 
     /* Render the Danbooru artist tag on the same line as the Twitter username. */
@@ -1111,7 +1119,7 @@ function initializeHentaiFoundry() {
 
 function initializeTwitter() {
     $("body").attr("id", "ex-twitter");
-
+    // old dedsign
     asyncAddTranslation(".twitter-hashtag", ">b", true);
 
     asyncAddTranslatedArtists(".ProfileHeaderCard-screennameLink");
@@ -1119,6 +1127,16 @@ function initializeTwitter() {
     asyncAddTranslatedArtists("a.js-user-profile-link", ":not(.js-retweet-text) > a");
     // quoted tweets
     asyncAddTranslatedArtists(".username", "div.js-user-profile-link .username", e => "https://twitter.com/" + $(e).find("b").text());
+
+    // new design
+    // asyncAddTranslation("a.r-1n1174f", "a.r-1n1174f[href^='/hashtag/']", true);
+    onElementsAdded("a.r-1n1174f", tag => {
+        if (tag.matches("a.r-1n1174f[href^='/hashtag/']")) addTranslation($(tag), tag.innerText.substr(1));
+    });
+    asyncAddTranslatedArtists("div.r-xoduu5[role='presentation']", "div", () => "https://twitter.com"+(window.location.pathname.match(/\/\w+/)||[])[0]);
+    asyncAddTranslatedArtists("div.css-1dbjc4n.r-18u37iz.r-1wbh5a2", "div.css-1dbjc4n.r-u8s1d a div.css-1dbjc4n.r-18u37iz.r-1wbh5a2", (e) => $(e).closest("a").prop("href"));
+    asyncAddTranslatedArtists("div.r-1f6r7vd", "a div", (e) => $(e).closest("a").prop("href"));
+
 }
 
 function initializeMobileTwitter() {
@@ -1220,30 +1238,24 @@ function initializePawoo() {
 function initialize() {
     $("head").append(`<style type="text/css">${QTIP_CSS}</style>`);
 
-    if (location.host === "www.pixiv.net" || location.host === "dic.pixiv.net") {
-        initializePixiv();
-    } else if (location.host === "nijie.info") {
-        initializeNijie();
-    } else if (location.host === "seiga.nicovideo.jp") {
-        initializeNicoSeiga();
-    } else if (location.host === "www.tinami.com") {
-        initializeTinami();
-    } else if (location.host === "bcy.net") {
-        initializeBCY();
-    } else if (location.host == "www.hentai-foundry.com") {
-        initializeHentaiFoundry();
-    } else if (location.host == "twitter.com") {
-        initializeTwitter();
-    } else if (location.host == "mobile.twitter.com") {
-        // initializeMobileTwitter();
-    } else if (location.host.match(/deviantart\.com/)) {
-        initializeDeviantArt();
-    } else if (location.host.match(/artstation\.com/)) {
-        initializeArtStation();
-    } else if (location.host == "saucenao.com") {
-        initializeSauceNAO();
-    } else if (location.host == "pawoo.net") {
-        initializePawoo();
+    switch (location.host) {
+        case "www.pixiv.net":          initializePixiv();         break;
+        case "dic.pixiv.net":          initializePixiv();         break;
+        case "nijie.info":             initializeNijie();         break;
+        case "seiga.nicovideo.jp":     initializeNicoSeiga();     break;
+        case "www.tinami.com":         initializeTinami();        break;
+        case "bcy.net":                initializeBCY();           break;
+        case "www.hentai-foundry.com": initializeHentaiFoundry(); break;
+        case "twitter.com":            initializeTwitter();       break;
+        // case "mobile.twitter.com":  initializeMobileTwitter(); break;
+        case "saucenao.com":           initializeSauceNAO();      break;
+        case "pawoo.net":              initializePawoo();         break;
+        case "www.deviantart.com":     initializeDeviantArt();    break;
+        case "www.artstation.com":     initializeArtStation();    break;
+        default:
+            if (location.host.match(/artstation\.com/)) {
+                initializeArtStation();
+            }
     }
 
     initializeTranslatedTags();
