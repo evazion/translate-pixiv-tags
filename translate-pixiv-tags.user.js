@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190723171546
+// @version      20190723232846
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -59,7 +59,7 @@ GM_setValue('preview_limit',ARTIST_POST_PREVIEW_LIMIT);
 // Settings for artist tooltips.
 const ARTIST_QTIP_SETTINGS = {
     style: {
-        classes: "qtip-light ex-artist-tooltip",
+        classes: "ex-artist-tooltip",
     },
     position: {
         my: "top center",
@@ -228,6 +228,7 @@ $("head").append(`
 
     .ex-artist-tag a {
         color: #A00 !important;
+        margin-left: 0.3ch;
     }
 
     .ex-artist-tag::before {
@@ -381,10 +382,12 @@ $("head").append(`
     /* Render the Danbooru artist tag on the same line as the HF artist name. */
     #ex-hentaifoundry .ex-artist-tag {
         display: inline-block;
+        margin-left: 0.5em;
     }
 
     #ex-deviantart .ex-artist-tag {
         display: inline-block;
+        margin-left: 0.5em;
     }
 
     #ex-deviantart .ex-artist-tag a {
@@ -433,10 +436,13 @@ $("head").append(`
 
     .ex-artist-tooltip.qtip {
         max-width: 538px !important;
+        background-color: white;
+    }
+    .ex-artist-tooltip.qtip-dark {
+        background-color: black;
     }
     .ex-artist-tooltip .qtip-content {
         width: 520px !important;
-        background: white;
     }
 
     #ex-artstation .qtip-content {
@@ -601,33 +607,21 @@ function addDanbooruArtist($target, artist) {
 
     let duplicates = $target.nextAll(".ex-artist-tag").filter((i,el) => el.innerText.trim() == artist.escapedName);
 
+    const qtip_settings = Object.assign(ARTIST_QTIP_SETTINGS, {
+        content: { text: (event, qtip) => buildArtistTooltip(artist, qtip) }
+    });
     if (duplicates.length) {
-        // if qtip was remove then add it back
+        // if qtip was removed then add it back
         if (!$.data(duplicates.find("a")[0]).qtip) {
-            const qtip_settings = Object.assign(ARTIST_QTIP_SETTINGS, {
-                content: {
-                    text: (event, qtip) => buildArtistTooltip(artist, qtip)
-                }
-            });
             $(duplicates).find("a").qtip(qtip_settings);
         }
         return;
     }
 
-    let artistTag = $(`
-        <div class="${classes}">
-            <a href="${BOORU}/artists/${artist.id}">${artist.escapedName}</a>
-        </div>
-    `);
-
-    const qtip_settings = Object.assign(ARTIST_QTIP_SETTINGS, {
-        content: {
-            text: (event, qtip) => buildArtistTooltip(artist, qtip)
-        }
-    });
-    $(artistTag).find("a").qtip(qtip_settings);
-
-    $target.after(artistTag);
+    $(`<div class="${classes}"><a href="${BOORU}/artists/${artist.id}">${artist.escapedName}</a></div>`)
+        .insertAfter($target)
+        .find("a")
+        .qtip(qtip_settings);
 }
 
 async function attachShadow(target, callback) {
@@ -669,6 +663,13 @@ async function buildArtistTooltip(artist, qtip) {
         }
         return rendered_qtips[artist.name].clone();
     });
+    // get background color of closest parent element with a bg color
+    let bgcolor = qtip.elements.target.parents().filter((i,el) => $(el).css("background-color")!="rgba(0, 0, 0, 0)").css("background-color");
+    // set dark or light theme depending on the bg color
+    qtip.elements.tooltip.addClass((((([r,g,b]) => (Math.max(r,g,b)+Math.min(r,g,b))/2)(bgcolor.match(/\d+/g)) < 128) ? "qtip-dark" : "qtip-light"));
+    // make the bg color lighter/darker and apply
+    bgcolor = bgcolor.replace(/\d+/g, n => (n=(n-128)/128, (Math.abs(n)**0.7)*Math.sign(n)*128+128));
+    qtip.elements.tooltip.css("background-color", bgcolor);
 }
 
 function buildArtistTooltipHtml(artist, tag, posts) {
@@ -694,7 +695,7 @@ function buildArtistTooltipHtml(artist, tag, posts) {
             }
 
             .post-count {
-                color: #CCC;
+                color: #888;
                 margin-left: 3px;
             }
 
@@ -709,7 +710,7 @@ function buildArtistTooltipHtml(artist, tag, posts) {
             }
 
             ul.other-names li a {
-                background-color: #EEE;
+                background-color: rgba(128,128,128,0.2);
                 padding: 3px;
                 border-radius: 3px;
                 white-space: nowrap;
