@@ -1,3 +1,14 @@
+# Release 2019.07.26
+
+## Fixes
+
+* Twitter: new design support
+* ArtStation: fixed the followers and the following lists
+
+## Changes
+
+* Now the popup window mimics the background color of the sites
+
 # Release 2019.07.04
 
 ## Fixes
