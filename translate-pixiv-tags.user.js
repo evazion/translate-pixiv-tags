@@ -658,7 +658,7 @@ function chooseBackgroundColorScheme($element) {
     });
     let adjusted_color = (adjusted_array.length === 3 ?
                           `rgb(${adjusted_array[0]}, ${adjusted_array[1]}, ${adjusted_array[2]})` :
-                          `rgba(${adjusted_array[0]}, ${adjusted_array[1]}, ${adjusted_array[2]}, , ${adjusted_array[3]})`);
+                          `rgba(${adjusted_array[0]}, ${adjusted_array[1]}, ${adjusted_array[2]}, ${adjusted_array[3]})`);
     return [qtip_class,adjusted_color];
 }
 
