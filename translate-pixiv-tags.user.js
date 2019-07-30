@@ -652,21 +652,19 @@ function chooseBackgroundColorScheme($element) {
 
     // Get background color of closest parent element with a nontransparent background color
     let background_color = $element.parents().filter((i,el) => $(el).css("background-color") !== TRANSPARENT_COLOR).css("background-color");
-    let color_array = background_color.match(/\d+/g).map(Number);
+    let color_array = background_color.match(/\d+/g).map(Number).slice(0, 3); // Ignore alpha
     let median_luminosity = (Math.max(...color_array) + Math.min(...color_array)) / 2;
     let qtip_class = (median_luminosity < MIDDLE_LUMINOSITY ? "qtip-dark" : "qtip-light");
-    let adjusted_array = color_array.map((color)=>{
+    let adjusted_array = color_array.map((color) => {
         let color_scale = (color - MIDDLE_LUMINOSITY) / MIDDLE_LUMINOSITY;
-        let adjusted_color = ((Math.abs(color_scale)**0.7) //Exponentiation to reduce the scale
-                             * Math.sign(color_scale)      //Get original sign back
-                             * MIDDLE_LUMINOSITY)          //Get original amplitude back
-                             + MIDDLE_LUMINOSITY;          //Get back to the RGB color range
+        let adjusted_color = ((Math.abs(color_scale)**0.7) // Exponentiation to reduce the scale
+                             * Math.sign(color_scale)      // Get original sign back
+                             * MIDDLE_LUMINOSITY)          // Get original amplitude back
+                             + MIDDLE_LUMINOSITY;          // Get back to the RGB color range
         return Math.round(adjusted_color);
     });
-    let adjusted_color = (adjusted_array.length === 3 ?
-                          `rgb(${adjusted_array[0]}, ${adjusted_array[1]}, ${adjusted_array[2]})` :
-                          `rgba(${adjusted_array[0]}, ${adjusted_array[1]}, ${adjusted_array[2]}, ${adjusted_array[3]})`);
-    return [qtip_class,adjusted_color];
+    let adjusted_color = `rgb(${adjusted_array.join(", ")})`;
+    return [qtip_class, adjusted_color];
 }
 
 async function buildArtistTooltip(artist, qtip) {
@@ -695,11 +693,9 @@ async function buildArtistTooltip(artist, qtip) {
         }
         return rendered_qtips[artist.name].clone();
     });
-    // select the class and background color based upon the background of surrounding elements
-    let [qtip_class,adjusted_color] = chooseBackgroundColorScheme(qtip.elements.target);
-    // set dark or light theme depending on the bg color
+    // select theme and background color based upon the background of surrounding elements
+    let [qtip_class, adjusted_color] = chooseBackgroundColorScheme(qtip.elements.target);
     qtip.elements.tooltip.addClass(qtip_class);
-    // make the bg color lighter/darker and apply
     qtip.elements.tooltip.css("background-color", adjusted_color);
 }
 
