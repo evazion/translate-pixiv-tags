@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190730021846
+// @version      20190731204446
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -57,6 +57,8 @@ temp_setting = GM_getValue('preview_limit');
 const ARTIST_POST_PREVIEW_LIMIT = (Number.isInteger(temp_setting) ? temp_setting : 3);
 GM_setValue('preview_limit',ARTIST_POST_PREVIEW_LIMIT);
 
+// Container and viewport for qTips
+$(`<div id="qtips" style="position:fixed; width:100vw;  height:100vh; top:0; pointer-events:none;"></div>`).appendTo("body");
 // Settings for artist tooltips.
 const ARTIST_QTIP_SETTINGS = {
     style: {
@@ -65,7 +67,8 @@ const ARTIST_QTIP_SETTINGS = {
     position: {
         my: "top center",
         at: "bottom center",
-        viewport: true,
+        viewport: $("#qtips"),
+        container: $("#qtips"),
     },
     show: {
         delay: 150,
@@ -692,11 +695,14 @@ async function buildArtistTooltip(artist, qtip) {
             return rendered_qtips[artist.name];
         }
         return rendered_qtips[artist.name].clone();
-    });
-    // select theme and background color based upon the background of surrounding elements
-    let [qtip_class, adjusted_color] = chooseBackgroundColorScheme(qtip.elements.target);
-    qtip.elements.tooltip.addClass(qtip_class);
-    qtip.elements.tooltip.css("background-color", adjusted_color);
+    })
+    .then(() => qtip.reposition(null, false));
+    if (!qtip.elements.tooltip.hasClass("qtip-dark") && !qtip.elements.tooltip.hasClass("qtip-light")) {
+        // select theme and background color based upon the background of surrounding elements
+        let [qtip_class, adjusted_color] = chooseBackgroundColorScheme(qtip.elements.target);
+        qtip.elements.tooltip.addClass(qtip_class);
+        qtip.elements.tooltip.css("background-color", adjusted_color);
+    }
 }
 
 function buildArtistTooltipHtml(artist, tag, posts) {
