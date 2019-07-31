@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190731204446
+// @version      20190801013946
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -58,7 +58,7 @@ const ARTIST_POST_PREVIEW_LIMIT = (Number.isInteger(temp_setting) ? temp_setting
 GM_setValue('preview_limit',ARTIST_POST_PREVIEW_LIMIT);
 
 // Container and viewport for qTips
-$(`<div id="qtips" style="position:fixed; width:100vw;  height:100vh; top:0; pointer-events:none;"></div>`).appendTo("body");
+$(`<div id="qtips"></div>`).appendTo("body");
 // Settings for artist tooltips.
 const ARTIST_QTIP_SETTINGS = {
     style: {
@@ -193,10 +193,6 @@ $("head").append(`
         white-space: nowrap;
     }
 
-    #ex-twitter .ex-translated-tags * {
-        white-space: inherit;
-    }
-
     .ex-translated-tags::before {
         content: "(";
         white-space: nowrap;
@@ -248,6 +244,29 @@ $("head").append(`
 
     .ex-banned-artist-tag a::after {
         content: " (banned)";
+    }
+
+    #qtips {
+        position: fixed;
+        width: 100vw;
+        height: 100vh;
+        top: 0;
+        pointer-events: none;
+        z-index: 15000;
+    }
+    #qtips > * {
+        pointer-events: all;
+    }
+
+    .ex-artist-tooltip.qtip {
+        max-width: 538px !important;
+        background-color: white;
+    }
+    .ex-artist-tooltip.qtip-dark {
+        background-color: black;
+    }
+    .ex-artist-tooltip .qtip-content {
+        width: 520px !important;
     }
 
     /* Fix https://www.pixiv.net/tags.php to display tags as vertical list. */
@@ -398,6 +417,10 @@ $("head").append(`
         color: #A00 !important;
     }
 
+    #ex-twitter .ex-translated-tags * {
+        white-space: inherit;
+    }
+
     /* Add some space between twitter username and danbooru artist tag. */
     #ex-twitter .js-user-profile-link .ex-artist-tag {
         margin-left: 0.5em;
@@ -443,17 +466,6 @@ $("head").append(`
 
     #ex-mobile-twitter .ex-artist-tag {
         display: inline;
-    }
-
-    .ex-artist-tooltip.qtip {
-        max-width: 538px !important;
-        background-color: white;
-    }
-    .ex-artist-tooltip.qtip-dark {
-        background-color: black;
-    }
-    .ex-artist-tooltip .qtip-content {
-        width: 520px !important;
     }
 
     #ex-artstation .qtip-content {
