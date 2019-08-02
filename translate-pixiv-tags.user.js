@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190802035246
+// @version      20190802041846
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -683,9 +683,7 @@ async function buildArtistTooltip(artist, qtip) {
             const posts = get(`/posts`, {tags: `status:any ${artist.name}`, limit: ARTIST_POST_PREVIEW_LIMIT, only: POST_FIELDS}, 0);
             const tags = get(`/tags`, {search: {name: artist.name}, only: POST_COUNT_FIELDS}, 0);
 
-            const $tooltip = buildArtistTooltipContent(artist, await tags, await posts);
-            // let $tooltip = $(tooltip_html);
-            rendered_qtips[artist.name] = $tooltip;
+            rendered_qtips[artist.name] = buildArtistTooltipContent(artist, await tags, await posts);
             return rendered_qtips[artist.name];
         }
         return rendered_qtips[artist.name].clone();
@@ -699,7 +697,7 @@ async function buildArtistTooltip(artist, qtip) {
     }
 }
 
-function buildArtistTooltipContent(artist, tag = [{post_count:0}], posts = []) {
+function buildArtistTooltipContent(artist, [tag = {post_count:0}], posts = []) {
     let $content = $(`
         <style>
             :root {
