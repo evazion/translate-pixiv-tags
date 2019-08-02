@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190801013946
+// @version      20190802035246
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -37,7 +37,7 @@ const BOORU = (typeof temp_setting === "string" && temp_setting.match(/^https?:\
 GM_setValue('booru',BOORU);
 
 //Values needed from Danbooru API calls using the "only" parameter
-const POST_FIELDS = "id,is_pending,is_flagged,is_deleted,parent_id,has_visible_children,tag_string,image_width,image_height,preview_file_url";
+const POST_FIELDS = "id,is_pending,is_flagged,is_deleted,parent_id,has_visible_children,tag_string,image_width,image_height,preview_file_url,source,file_size,rating,created_at";
 const POST_COUNT_FIELDS = "post_count";
 const TAG_FIELDS = "name,category";
 const WIKI_FIELDS = "title,category_name";
@@ -526,12 +526,6 @@ $("head").append(`
     }
 `);
 
-const preview_has_children_color = "#0F0";
-const preview_has_parent_color = "#CC0";
-const preview_deleted_color = "#000";
-const preview_pending_color = "#00F";
-const preview_flagged_color = "#F00";
-
 function getImage(image_url) {
     return new Promise((resolve,reject)=>{
         GM.xmlHttpRequest({
@@ -689,20 +683,8 @@ async function buildArtistTooltip(artist, qtip) {
             const posts = get(`/posts`, {tags: `status:any ${artist.name}`, limit: ARTIST_POST_PREVIEW_LIMIT, only: POST_FIELDS}, 0);
             const tags = get(`/tags`, {search: {name: artist.name}, only: POST_COUNT_FIELDS}, 0);
 
-            const tooltip_html = buildArtistTooltipHtml(artist, (await tags)[0] || {post_count:0}, await posts);
-            let $tooltip = $(tooltip_html);
-            $("img",$tooltip).each((i,image)=>{
-                let image_source = $(image).data('src');
-                if (CORS_IMAGE_DOMAINS.includes(location.host)) {
-                    getImage(image_source).then((blob)=>{
-                        let image_blob = blob.slice(0, blob.size, "image/jpeg");
-                        let blob_url = window.URL.createObjectURL(image_blob);
-                        image.src = blob_url;
-                    });
-                } else {
-                    image.src = image_source;
-                }
-            });
+            const $tooltip = buildArtistTooltipContent(artist, await tags, await posts);
+            // let $tooltip = $(tooltip_html);
             rendered_qtips[artist.name] = $tooltip;
             return rendered_qtips[artist.name];
         }
@@ -717,9 +699,17 @@ async function buildArtistTooltip(artist, qtip) {
     }
 }
 
-function buildArtistTooltipHtml(artist, tag, posts) {
-    return `
+function buildArtistTooltipContent(artist, tag = [{post_count:0}], posts = []) {
+    let $content = $(`
         <style>
+            :root {
+                --preview_has_children_color: "#0F0";
+                --preview_has_parent_color: "#CC0";
+                --preview_deleted_color: "#000";
+                --preview_pending_color: "#00F";
+                --preview_flagged_color: "#F00";
+            }
+
             article.container {
                 font-family: Verdana, Helvetica, sans-serif;
                 padding: 10px;
@@ -772,6 +762,11 @@ function buildArtistTooltipHtml(artist, tag, posts) {
                 text-decoration-style: dotted;
             }
 
+            article.post-preview p {
+                text-align: center;
+                margin: 0 0 2px 0;
+            }
+
 
             /* Basic styles taken from Danbooru */
             a:link, a:visited {
@@ -795,7 +790,7 @@ function buildArtistTooltipHtml(artist, tag, posts) {
 
             /* Thumbnail styles taken from Danbooru */
             article.post-preview {
-                height: 154px;
+                /*height: 154px;*/
                 width: 154px;
                 margin: 0 10px 10px 0;
                 float: left;
@@ -810,51 +805,51 @@ function buildArtistTooltipHtml(artist, tag, posts) {
             }
 
             article.post-preview.post-status-has-children img {
-                border-color: ${preview_has_children_color};
+                border-color: var(--preview_has_children_color);
             }
 
             article.post-preview.post-status-has-parent img {
-                border-color: ${preview_has_parent_color};
+                border-color: var(--preview_has_parent_color);
             }
 
             article.post-preview.post-status-has-children.post-status-has-parent img {
-                border-color: ${preview_has_children_color} ${preview_has_parent_color} ${preview_has_parent_color} ${preview_has_children_color};
+                border-color: var(--preview_has_children_color) var(--preview_has_parent_color) var(--preview_has_parent_color) var(--preview_has_children_color);
             }
 
             article.post-preview.post-status-deleted img {
-                border-color: ${preview_deleted_color};
+                border-color: var(--preview_deleted_color);
             }
 
             article.post-preview.post-status-has-children.post-status-deleted img {
-                border-color: ${preview_has_children_color} ${preview_deleted_color} ${preview_deleted_color} ${preview_has_children_color};
+                border-color: var(--preview_has_children_color) var(--preview_deleted_color) var(--preview_deleted_color) var(--preview_has_children_color);
             }
 
             article.post-preview.post-status-has-parent.post-status-deleted img {
-                border-color: ${preview_has_parent_color} ${preview_deleted_color} ${preview_deleted_color} ${preview_has_parent_color};
+                border-color: var(--preview_has_parent_color) var(--preview_deleted_color) var(--preview_deleted_color) var(--preview_has_parent_color);
             }
 
             article.post-preview.post-status-has-children.post-status-has-parent.post-status-deleted img {
-                border-color: ${preview_has_children_color} ${preview_deleted_color} ${preview_deleted_color} ${preview_has_parent_color};
+                border-color: var(--preview_has_children_color) var(--preview_deleted_color) var(--preview_deleted_color) var(--preview_has_parent_color);
             }
 
             article.post-preview.post-status-pending img,
             article.post-preview.post-status-flagged img {
-                border-color: ${preview_pending_color};
+                border-color: var(--preview_pending_color);
             }
 
             article.post-preview.post-status-has-children.post-status-pending img,
             article.post-preview.post-status-has-children.post-status-flagged img {
-                border-color: ${preview_has_children_color} ${preview_pending_color} ${preview_pending_color} ${preview_has_children_color};
+                border-color: var(--preview_has_children_color) var(--preview_pending_color) var(--preview_pending_color) var(--preview_has_children_color);
             }
 
             article.post-preview.post-status-has-parent.post-status-pending img,
             article.post-preview.post-status-has-parent.post-status-flagged img {
-                border-color: ${preview_has_parent_color} ${preview_pending_color} ${preview_pending_color} ${preview_has_parent_color};
+                border-color: var(--preview_has_parent_color) var(--preview_pending_color) var(--preview_pending_color) var(--preview_has_parent_color);
             }
 
             article.post-preview.post-status-has-children.post-status-has-parent.post-status-pending img,
             article.post-preview.post-status-has-children.post-status-has-parent.post-status-flagged img {
-                border-color: ${preview_has_children_color} ${preview_pending_color} ${preview_pending_color} ${preview_has_parent_color};
+                border-color: var(--preview_has_children_color) var(--preview_pending_color) var(--preview_pending_color) var(--preview_has_parent_color);
             }
 
             article.post-preview[data-tags~=animated]:before {
@@ -882,13 +877,18 @@ function buildArtistTooltipHtml(artist, tag, posts) {
 
         <article class="container">
             <section class="header">
-                <a class="artist-name tag-category-artist" href="${BOORU}/artists/${artist.id}">${_.escape(artist.prettyName)}</a>
+                <a class="artist-name tag-category-artist"
+                   href="${BOORU}/artists/${artist.id}">
+                    ${_.escape(artist.prettyName)}
+                </a>
                 <span class="post-count">${tag.post_count}</span>
 
                 <ul class="other-names">
                     ${artist.other_names.filter(String).sort().map(other_name =>
                         `<li>
-                            <a href="${BOORU}/artists?search[name]=${encodeURIComponent(other_name)}">${_.escape(other_name)}</a>
+                            <a href="${BOORU}/artists?search[name]=${encodeURIComponent(other_name)}">
+                                ${_.escape(other_name)}
+                            </a>
                         </li>`
                     ).join("")}
                 </ul>
@@ -907,10 +907,11 @@ function buildArtistTooltipHtml(artist, tag, posts) {
                     Posts
                     <a href="${BOORU}/posts?tags=${artist.encodedName}">»</a>
                 </h2>
-                ${posts.map(post => buildPostPreview(post)).join("")}
             </section>
         </article>
-    `;
+    `);
+    $content.find(".posts").append(posts.map(buildPostPreview));
+    return $content;
 }
 
 function buildArtistUrlsHtml(artist) {
@@ -925,6 +926,37 @@ function buildArtistUrlsHtml(artist) {
     }).join("");
 
     return html;
+}
+
+function timeToAgo(time) {
+    const interval = new Date(Date.now() - new Date(time));
+    if (interval < 60000) return "less than a minute ago";
+    const values = [{
+        value: interval.getUTCFullYear()-1970,
+        unit: "year",
+    }, {
+        value: interval.getUTCMonth(),
+        unit: "month",
+    }, {
+        value: interval.getUTCDate()-1,
+        unit: "day",
+    }, {
+        value: interval.getUTCHours(),
+        unit: "hour",
+    }, {
+        value: interval.getUTCMinutes(),
+        unit: "minute",
+    }];
+    for (let {value, unit} of values) {
+        if (value) return `${value}  ${(value>1 ? unit+"s" : unit)}  ago`;
+    }
+    return "∞ ago";
+}
+// based on https://stackoverflow.com/questions/15900485/correct-way-to-convert-size-in-bytes-to-kb-mb-gb-in-javascript
+function formatBytes(bytes) {
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return parseFloat((bytes / Math.pow(1024, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 function buildPostPreview(post) {
@@ -947,18 +979,48 @@ function buildPostPreview(post) {
     let scale = Math.min(150 / post.image_width, 150 / post.image_height);
     scale = Math.min(1, scale);
 
+    let $preview;
     if (post.preview_file_url) {
-        [width, height] = [Math.round(post.image_width * scale), Math.round(post.image_height * scale)];
-        preview_file_url = post.preview_file_url;
+        width = Math.round(post.image_width * scale);
+        height = Math.round(post.image_height * scale);
+        if (CORS_IMAGE_DOMAINS.includes(location.host)) {
+            // temporaly set transparent 1x1 image
+            preview_file_url = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+            getImage(post.preview_file_url).then((blob) => {
+                let image_blob = blob.slice(0, blob.size, "image/jpeg");
+                let blob_url = window.URL.createObjectURL(image_blob);
+                $preview.find("img").prop("src", blob_url);
+            });
+        } else {
+            preview_file_url = post.preview_file_url;
+        }
     }
 
-    return `
-        <article itemscope itemtype="http://schema.org/ImageObject" class="${preview_class}" ${data_attributes}>
+    const domain = post.source.match(/^https?:\/\//)
+                    ? new URL(post.source).hostname.split(".").slice(-2).join(".")
+                    : "NON-WEB";
+    const img_size = [post.file_size, post.image_width, post.image_width].every(_.isFinite)
+                    ? `${formatBytes(post.file_size)} (${post.image_width}x${post.image_width})`
+                    : "";
+    const rating = {s:"Safe", q:"Questionable", e:"Explicit"}[post.rating];
+
+    $preview = $(`
+        <article itemscope
+                 itemtype="http://schema.org/ImageObject"
+                 class="${preview_class}"
+                 ${data_attributes} >
             <a href="${BOORU}/posts/${post.id}">
-                <img width="${width}" height="${height}" data-src="${preview_file_url}" title="${_.escape(post.tag_string)}">
+                <img width="${width}"
+                     height="${height}"
+                     src="${preview_file_url}"
+                     title="${_.escape(post.tag_string)}">
             </a>
+            <p>${img_size}</p>
+            <p>${timeToAgo(post.created_at)}</p>
+            <p>${rating}, from ${domain}</p>
         </article>
-    `;
+    `);
+    return $preview;
 }
 
 function getTagPreload(tag, tagLink, isContainer) {
