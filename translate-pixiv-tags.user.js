@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190803035546
+// @version      20190803040346
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 function getSetting(name, defValue, validator) {
-    const value = GM_getValue(name, defValue);
+    const value = GM_getValue(name);
     if (typeof value === "undefined" || validator && !validator(value)) {
         GM_setValue(defValue);
         return defValue;
@@ -53,7 +53,7 @@ const WIKI_FIELDS = "title,category_name";
 const ARTIST_FIELDS = "id,name,is_banned,other_names,urls";
 
 // How long (in seconds) to cache translated tag lookups. Default: 5 minutes.
-const CACHE_LIFETIME = getSetting("cache_lifetime", 60*5,Number.isInteger);
+const CACHE_LIFETIME = getSetting("cache_lifetime", 60*5, Number.isInteger);
 
 // Number of recent posts to show in artist tooltips.
 const ARTIST_POST_PREVIEW_LIMIT = getSetting("preview_limit", 3, Number.isInteger);
