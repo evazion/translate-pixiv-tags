@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190803234046
+// @version      20190805011646
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -34,7 +34,7 @@
 function getSetting(name, defValue, validator) {
     const value = GM_getValue(name);
     if (typeof value === "undefined" || validator && !validator(value)) {
-        GM_setValue(defValue);
+        GM_setValue(name, defValue);
         return defValue;
     }
     return value;
@@ -58,10 +58,10 @@ const CACHE_LIFETIME = getSetting("cache_lifetime", 60*5, Number.isInteger);
 // Number of recent posts to show in artist tooltips.
 const ARTIST_POST_PREVIEW_LIMIT = getSetting("preview_limit", 3, Number.isInteger);
 
-// The lower level of rating to blur preview. Empty string - no blur.
-const BLUR_PREVIEW_RATING = getSetting("blur_preview_rating",
-                                       "q",
-                                       (str) => typeof str === "string" && str.match(/^[sqe]?$/));
+// The upper level of rating to show preview. Higher ratings will be blurred.
+const SHOW_PREVIEW_RATING = getSetting("show_preview_rating",
+                                       "s",
+                                       (str) => typeof str === "string" && str.match(/^[sqe]$/));
 
 // Inline qtip2 css to avoid CSP issues on twitter.
 // https://cdnjs.cloudflare.com/ajax/libs/qtip2/3.0.3/jquery.qtip.min.css
@@ -755,6 +755,7 @@ function buildArtistTooltipContent(artist, [tag = {post_count:0}], posts = []) {
             ul.other-names li a {
                 background-color: rgba(128,128,128,0.2);
                 padding: 3px;
+                margin: 0 2px;
                 border-radius: 3px;
                 white-space: nowrap;
             }
@@ -883,7 +884,8 @@ function buildArtistTooltipContent(artist, [tag = {post_count:0}], posts = []) {
             div.post-list {
                 display: flex;
                 flex-wrap: wrap;
-                max-height: 410px;
+                max-height: 420px;
+                align-items: flex-end;
             }
 
             article.post-preview a {
@@ -1023,7 +1025,7 @@ function buildPostPreview(post) {
     preview_class += post.is_deleted           ? " post-status-deleted"      : "";
     preview_class += post.parent_id            ? " post-status-has-parent"   : "";
     preview_class += post.has_visible_children ? " post-status-has-children" : "";
-    if ({s:0, q:1, e:2}[post.rating] >= {s:0, q:1, e:2, "":3}[BLUR_PREVIEW_RATING]) {
+    if ({s:0, q:1, e:2}[post.rating] > {s:0, q:1, e:2}[SHOW_PREVIEW_RATING]) {
         preview_class += " blur-post";
     }
 
@@ -1073,8 +1075,8 @@ function buildPostPreview(post) {
                      part="post-preview rating-${post.rating}">
             </a>
             <p>${img_size}</p>
+            <p style="letter-spacing: -0.1px;">${domain}, rating:${post.rating.toUpperCase()}</p>
             <p>${timeToAgo(post.created_at)}</p>
-            <p>${domain}, rating:${post.rating.toUpperCase()}</p>
         </article>
     `);
     return $preview;
