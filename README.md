@@ -26,8 +26,10 @@ Settings can be changed via the **Storage** tab for the userscript. The script w
   * Subdomains include **danbooru**, **kagamihara**, **saitou**, and **shima**.
 * **cache_lifetime:** The amount of time in seconds to cache data from Danbooru before querying again.
 * **preview_limit:** The number of recent posts to show in artist tooltips.
+* **show_preview_rating:** The upper level of rating for preview. Higher ratings will be blurred.
+  * Possible values are "**s**", "**q**", "**e**" (save, questionable, explicit).
 
-<img width="600" src="https://user-images.githubusercontent.com/21149935/53772259-99ef6700-3e9a-11e9-9c5f-c31ad6aa6e87.png">
+<img width="600" src="https://user-images.githubusercontent.com/21149935/62501237-b6236700-b79e-11e9-826b-868a470bf050.png">
 
 # How to add new translations
 
