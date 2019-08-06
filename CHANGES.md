@@ -1,3 +1,18 @@
+# Release 2019.08.06
+
+## Fixes
+
+* In some cases the artist tooltip could be mostly outside the viewport.
+* The userscript couldn't automatically update if was installed via copy/paste (credit to BrokenEagle).
+
+## Changes
+
+* Now post preview also includes file size, resolution, source, rating, and time of upload.
+* NSFW previews are blurred, hover over them to unblur. This behavior can be adjusted in settings.
+* Limited size of main sections in the artist tooltip.
+* Main parts of the artist tooltip can be customized via pseudoelement ::part().
+* Added dark theme of the tooltip and adaptive background color.
+
 # Release 2019.07.26
 
 ## Fixes
