@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190805224546
+// @version      20190809222446
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -455,7 +455,7 @@ $("head").append(`
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
         margin-left: 0.5em;
     }
-    #ex-twitter article[data-testid='tweetDetail'] .ex-artist-tag {
+    #ex-twitter article:not(.r-1j63xyz) .ex-artist-tag {
         margin-left: 0;
     }
     #ex-twitter .ex-artist-tag a {
@@ -1307,7 +1307,7 @@ function initializeTwitter() {
     // floating name of a channel
     asyncAddTranslatedArtists("div.r-xoduu5[role='presentation']", "div", () => "https://twitter.com"+(window.location.pathname.match(/\/\w+/)||[])[0]);
     // author of an expanded tweet
-    asyncAddTranslatedArtists("div.css-1dbjc4n.r-18u37iz.r-1wbh5a2", "article[data-testid='tweetDetail'] a div.css-1dbjc4n.r-18u37iz.r-1wbh5a2", (e) => $(e).closest("a").prop("href"));
+    asyncAddTranslatedArtists("div.css-1dbjc4n.r-1wbh5a2.r-dnmrzs", "article:not(.r-1j63xyz) a div", (e) => $(e).closest("a").prop("href"));
     // tweet and comment authors
     asyncAddTranslatedArtists("div.r-1f6r7vd", "a div", (e) => $(e).closest("a").prop("href"));
 
