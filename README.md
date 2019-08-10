@@ -20,7 +20,11 @@ on [Nijie](https://nijie.info), [NicoSeiga](https://seiga.nicovideo.jp),
 
 # Settings
 
-Settings can be changed via the **Storage** tab for the userscript. The script will have to run once and the Tampermonkey console refreshed before that tab becomes available.
+Settings are stored in the **Storage** tab of the userscript.
+To be able to edit settings, you must set **advanced config mode**.
+<img width="600" src="https://user-images.githubusercontent.com/21149935/62814848-16c8e180-bac8-11e9-93a5-61c65d4c8297.png">
+
+To see default settings, the userscript should be run once.
 
 * **booru:** Danbooru domain to send requests to.
   * Subdomains include **danbooru**, **kagamihara**, **saitou**, and **shima**.
