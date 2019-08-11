@@ -31,19 +31,92 @@
 // @noframes
 // ==/UserScript==
 
-function getSetting(name, defValue, validator) {
-    const value = GM_getValue(name);
-    if (typeof value === "undefined" || validator && !validator(value)) {
-        GM_setValue(name, defValue);
-        return defValue;
+const SETTINGS = {
+    list: [
+        {
+            name: "booru",
+            defValue: "https://danbooru.donmai.us",
+            descr: "Danbooru subdomain for sending requests",
+            type: "list",
+            values: {
+                "https://danbooru.donmai.us":   "Danbooru",
+                "https://kagamihara.donmai.us": "Kagamihara",
+                "https://saitou.donmai.us":     "Saitou",
+                "https://shima.donmai.us":      "Shima",
+            },
+        }, {
+            name: "cache_lifetime",
+            defValue: 60*5,
+            descr: "The amount of time in seconds to cache data from Danbooru before querying again",
+            type: "number",
+        }, {
+            name: "preview_limit",
+            defValue: 3,
+            descr: "The number of recent posts to show in artist tooltips",
+            type: "number",
+        }, {
+            name: "show_preview_rating",
+            defValue: "s",
+            descr: "The upper level of rating for preview (higher ratings will be blurred)",
+            type: "list",
+            values: {
+                "s": "Safe",
+                "q": "Questionable",
+                "e": "Explicit",
+            }
+        }
+    ],
+    isValid: function(name, value) {
+        const setting = this.list.find(s => s.name===name);
+        if (!setting) {
+            console.error("No setting "+name);
+            return false;
+        }
+        switch (setting.type) {
+            case "number": return Number.isInteger(value) && value>0;
+            case "list": return setting.values.hasOwnProperty(value);
+            default:
+                console.error("Unsupported type "+setting.type);
+                return false;
+        }
+    },
+    get: function(name) {
+        const setting = this.list.find(s => s.name===name);
+        if (!setting) {
+            console.error("no setting "+name);
+            return null;
+        }
+        const value = GM_getValue(name);
+        if (typeof value === "undefined" || !this.isValid(name, value)) {
+            GM_setValue(name, setting.defValue);
+            return setting.defValue;
+        }
+        return value;
+    },
+    set: function(name, value) {
+        const setting = this.list.find(s => s.name===name);
+        if (!setting) {
+            console.error("no setting "+name);
+            return null;
+        }
+        if (this.isValid(name, value)) {
+            GM_setValue(name, value);
+            return true;
+        } else {
+            console.warn(`Invalid value ${value} for ${name}`);
+            return false;
+        }
     }
-    return value;
-}
+};
 
 // Which domain to send requests to
-const BOORU = getSetting("booru",
-                         "https://danbooru.donmai.us",
-                         (url) => typeof url === "string" && url.match(/^https?:\/\/(danbooru|kagamihara|saitou|shima)\.donmai\.us$/));
+const BOORU = SETTINGS.get("booru");
+// How long (in seconds) to cache translated tag lookups.
+const CACHE_LIFETIME = SETTINGS.get("cache_lifetime");
+// Number of recent posts to show in artist tooltips.
+const ARTIST_POST_PREVIEW_LIMIT = SETTINGS.get("preview_limit");
+// The upper level of rating to show preview. Higher ratings will be blurred.
+const SHOW_PREVIEW_RATING = SETTINGS.get("show_preview_rating");
 
 //Values needed from Danbooru API calls using the "only" parameter
 const POST_FIELDS = "id,is_pending,is_flagged,is_deleted,parent_id,has_visible_children,tag_string,image_width,image_height,preview_file_url,source,file_size,rating,created_at";
@@ -52,23 +125,12 @@ const TAG_FIELDS = "name,category";
 const WIKI_FIELDS = "title,category_name";
 const ARTIST_FIELDS = "id,name,is_banned,other_names,urls";
 
-// How long (in seconds) to cache translated tag lookups. Default: 5 minutes.
-const CACHE_LIFETIME = getSetting("cache_lifetime", 60*5, Number.isInteger);
-
-// Number of recent posts to show in artist tooltips.
-const ARTIST_POST_PREVIEW_LIMIT = getSetting("preview_limit", 3, Number.isInteger);
-
-// The upper level of rating to show preview. Higher ratings will be blurred.
-const SHOW_PREVIEW_RATING = getSetting("show_preview_rating",
-                                       "s",
-                                       (str) => typeof str === "string" && str.match(/^[sqe]$/));
-
 // Inline qtip2 css to avoid CSP issues on twitter.
 // https://cdnjs.cloudflare.com/ajax/libs/qtip2/3.0.3/jquery.qtip.min.css
 const QTIP_CSS = `#qtip-overlay.blurs,.qtip-close{cursor:pointer}.qtip{position:absolute;left:-28000px;top:-28000px;display:none;max-width:280px;min-width:50px;font-size:10.5px;line-height:12px;direction:ltr;box-shadow:none;padding:0}.qtip-content,.qtip-titlebar{position:relative;overflow:hidden}.qtip-content{padding:5px 9px;text-align:left;word-wrap:break-word}.qtip-titlebar{padding:5px 35px 5px 10px;border-width:0 0 1px;font-weight:700}.qtip-titlebar+.qtip-content{border-top-width:0!important}.qtip-close{position:absolute;right:-9px;top:-9px;z-index:11;outline:0;border:1px solid transparent}.qtip-titlebar .qtip-close{right:4px;top:50%;margin-top:-9px}* html .qtip-titlebar .qtip-close{top:16px}.qtip-icon .ui-icon,.qtip-titlebar .ui-icon{display:block;text-indent:-1000em;direction:ltr}.qtip-icon,.qtip-icon .ui-icon{-moz-border-radius:3px;-webkit-border-radius:3px;border-radius:3px;text-decoration:none}.qtip-icon .ui-icon{width:18px;height:14px;line-height:14px;text-align:center;text-indent:0;font:normal 700 10px/13px Tahoma,sans-serif;color:inherit;background:-100em -100em no-repeat}.qtip-default{border:1px solid #F1D031;background-color:#FFFFA3;color:#555}.qtip-default .qtip-titlebar{background-color:#FFEF93}.qtip-default .qtip-icon{border-color:#CCC;background:#F1F1F1;color:#777}.qtip-default .qtip-titlebar .qtip-close{border-color:#AAA;color:#111}.qtip-light{background-color:#fff;border-color:#E2E2E2;color:#454545}.qtip-light .qtip-titlebar{background-color:#f1f1f1}.qtip-dark{background-color:#505050;border-color:#303030;color:#f3f3f3}.qtip-dark .qtip-titlebar{background-color:#404040}.qtip-dark .qtip-icon{border-color:#444}.qtip-dark .qtip-titlebar .ui-state-hover{border-color:#303030}.qtip-cream{background-color:#FBF7AA;border-color:#F9E98E;color:#A27D35}.qtip-red,.qtip-red .qtip-icon,.qtip-red .qtip-titlebar .ui-state-hover{border-color:#D95252}.qtip-cream .qtip-titlebar{background-color:#F0DE7D}.qtip-cream .qtip-close .qtip-icon{background-position:-82px 0}.qtip-red{background-color:#F78B83;color:#912323}.qtip-red .qtip-titlebar{background-color:#F06D65}.qtip-red .qtip-close .qtip-icon{background-position:-102px 0}.qtip-green{background-color:#CAED9E;border-color:#90D93F;color:#3F6219}.qtip-green .qtip-titlebar{background-color:#B0DE78}.qtip-green .qtip-close .qtip-icon{background-position:-42px 0}.qtip-blue{background-color:#E5F6FE;border-color:#ADD9ED;color:#5E99BD}.qtip-blue .qtip-titlebar{background-color:#D0E9F5}.qtip-blue .qtip-close .qtip-icon{background-position:-2px 0}.qtip-shadow{-webkit-box-shadow:1px 1px 3px 1px rgba(0,0,0,.15);-moz-box-shadow:1px 1px 3px 1px rgba(0,0,0,.15);box-shadow:1px 1px 3px 1px rgba(0,0,0,.15)}.qtip-bootstrap,.qtip-rounded,.qtip-tipsy{-moz-border-radius:5px;-webkit-border-radius:5px;border-radius:5px}.qtip-rounded .qtip-titlebar{-moz-border-radius:4px 4px 0 0;-webkit-border-radius:4px 4px 0 0;border-radius:4px 4px 0 0}.qtip-youtube{-moz-border-radius:2px;-webkit-border-radius:2px;border-radius:2px;-webkit-box-shadow:0 0 3px #333;-moz-box-shadow:0 0 3px #333;box-shadow:0 0 3px #333;color:#fff;border:0 solid transparent;background:#4A4A4A;background-image:-webkit-gradient(linear,left top,left bottom,color-stop(0,#4A4A4A),color-stop(100%,#000));background-image:-webkit-linear-gradient(top,#4A4A4A 0,#000 100%);background-image:-moz-linear-gradient(top,#4A4A4A 0,#000 100%);background-image:-ms-linear-gradient(top,#4A4A4A 0,#000 100%);background-image:-o-linear-gradient(top,#4A4A4A 0,#000 100%)}.qtip-youtube .qtip-titlebar{background-color:#4A4A4A;background-color:rgba(0,0,0,0)}.qtip-youtube .qtip-content{padding:.75em;font:12px arial,sans-serif;filter:progid:DXImageTransform.Microsoft.Gradient(GradientType=0, StartColorStr=#4a4a4a, EndColorStr=#000000);-ms-filter:"progid:DXImageTransform.Microsoft.Gradient(GradientType=0,StartColorStr=#4a4a4a,EndColorStr=#000000);"}.qtip-youtube .qtip-icon{border-color:#222}.qtip-youtube .qtip-titlebar .ui-state-hover{border-color:#303030}.qtip-jtools{background:#232323;background:rgba(0,0,0,.7);background-image:-webkit-gradient(linear,left top,left bottom,from(#717171),to(#232323));background-image:-moz-linear-gradient(top,#717171,#232323);background-image:-webkit-linear-gradient(top,#717171,#232323);background-image:-ms-linear-gradient(top,#717171,#232323);background-image:-o-linear-gradient(top,#717171,#232323);border:2px solid #ddd;border:2px solid rgba(241,241,241,1);-moz-border-radius:2px;-webkit-border-radius:2px;border-radius:2px;-webkit-box-shadow:0 0 12px #333;-moz-box-shadow:0 0 12px #333;box-shadow:0 0 12px #333}.qtip-jtools .qtip-titlebar{background-color:transparent;filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#717171, endColorstr=#4A4A4A);-ms-filter:"progid:DXImageTransform.Microsoft.gradient(startColorstr=#717171,endColorstr=#4A4A4A)"}.qtip-jtools .qtip-content{filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#4A4A4A, endColorstr=#232323);-ms-filter:"progid:DXImageTransform.Microsoft.gradient(startColorstr=#4A4A4A,endColorstr=#232323)"}.qtip-jtools .qtip-content,.qtip-jtools .qtip-titlebar{background:0 0;color:#fff;border:0 dashed transparent}.qtip-jtools .qtip-icon{border-color:#555}.qtip-jtools .qtip-titlebar .ui-state-hover{border-color:#333}.qtip-cluetip{-webkit-box-shadow:4px 4px 5px rgba(0,0,0,.4);-moz-box-shadow:4px 4px 5px rgba(0,0,0,.4);box-shadow:4px 4px 5px rgba(0,0,0,.4);background-color:#D9D9C2;color:#111;border:0 dashed transparent}.qtip-cluetip .qtip-titlebar{background-color:#87876A;color:#fff;border:0 dashed transparent}.qtip-cluetip .qtip-icon{border-color:#808064}.qtip-cluetip .qtip-titlebar .ui-state-hover{border-color:#696952;color:#696952}.qtip-tipsy{background:#000;background:rgba(0,0,0,.87);color:#fff;border:0 solid transparent;font-size:11px;font-family:'Lucida Grande',sans-serif;font-weight:700;line-height:16px;text-shadow:0 1px #000}.qtip-tipsy .qtip-titlebar{padding:6px 35px 0 10px;background-color:transparent}.qtip-tipsy .qtip-content{padding:6px 10px}.qtip-tipsy .qtip-icon{border-color:#222;text-shadow:none}.qtip-tipsy .qtip-titlebar .ui-state-hover{border-color:#303030}.qtip-tipped{border:3px solid #959FA9;-moz-border-radius:3px;-webkit-border-radius:3px;border-radius:3px;background-color:#F9F9F9;color:#454545;font-weight:400;font-family:serif}.qtip-tipped .qtip-titlebar{border-bottom-width:0;color:#fff;background:#3A79B8;background-image:-webkit-gradient(linear,left top,left bottom,from(#3A79B8),to(#2E629D));background-image:-webkit-linear-gradient(top,#3A79B8,#2E629D);background-image:-moz-linear-gradient(top,#3A79B8,#2E629D);background-image:-ms-linear-gradient(top,#3A79B8,#2E629D);background-image:-o-linear-gradient(top,#3A79B8,#2E629D);filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#3A79B8, endColorstr=#2E629D);-ms-filter:"progid:DXImageTransform.Microsoft.gradient(startColorstr=#3A79B8,endColorstr=#2E629D)"}.qtip-tipped .qtip-icon{border:2px solid #285589;background:#285589}.qtip-tipped .qtip-icon .ui-icon{background-color:#FBFBFB;color:#555}.qtip-bootstrap{font-size:14px;line-height:20px;color:#333;padding:1px;background-color:#fff;border:1px solid #ccc;border:1px solid rgba(0,0,0,.2);-webkit-border-radius:6px;-moz-border-radius:6px;border-radius:6px;-webkit-box-shadow:0 5px 10px rgba(0,0,0,.2);-moz-box-shadow:0 5px 10px rgba(0,0,0,.2);box-shadow:0 5px 10px rgba(0,0,0,.2);-webkit-background-clip:padding-box;-moz-background-clip:padding;background-clip:padding-box}.qtip-bootstrap .qtip-titlebar{padding:8px 14px;margin:0;font-size:14px;font-weight:400;line-height:18px;background-color:#f7f7f7;border-bottom:1px solid #ebebeb;-webkit-border-radius:5px 5px 0 0;-moz-border-radius:5px 5px 0 0;border-radius:5px 5px 0 0}.qtip-bootstrap .qtip-titlebar .qtip-close{right:11px;top:45%;border-style:none}.qtip-bootstrap .qtip-content{padding:9px 14px}.qtip-bootstrap .qtip-icon{background:0 0}.qtip-bootstrap .qtip-icon .ui-icon{width:auto;height:auto;float:right;font-size:20px;font-weight:700;line-height:18px;color:#000;text-shadow:0 1px 0 #fff;opacity:.2;filter:alpha(opacity=20)}#qtip-overlay,#qtip-overlay div{left:0;top:0;width:100%;height:100%}.qtip-bootstrap .qtip-icon .ui-icon:hover{color:#000;text-decoration:none;cursor:pointer;opacity:.4;filter:alpha(opacity=40)}.qtip:not(.ie9haxors) div.qtip-content,.qtip:not(.ie9haxors) div.qtip-titlebar{filter:none;-ms-filter:none}.qtip .qtip-tip{margin:0 auto;overflow:hidden;z-index:10}.qtip .qtip-tip,x:-o-prefocus{visibility:hidden}.qtip .qtip-tip,.qtip .qtip-tip .qtip-vml,.qtip .qtip-tip canvas{position:absolute;color:#123456;background:0 0;border:0 dashed transparent}.qtip .qtip-tip canvas{top:0;left:0}.qtip .qtip-tip .qtip-vml{behavior:url(#default#VML);display:inline-block;visibility:visible}#qtip-overlay{position:fixed}#qtip-overlay div{position:absolute;background-color:#000;opacity:.7;filter:alpha(opacity=70);-ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=70)"}.qtipmodal-ie6fix{position:absolute!important}`;
 
 // Container and viewport for qTips
-$(`<div id="qtips"></div>`).appendTo("body");
+$(`<div id="ex-qtips"></div>`).appendTo("body");
 // Settings for artist tooltips.
 const ARTIST_QTIP_SETTINGS = {
     style: {
@@ -77,8 +139,8 @@ const ARTIST_QTIP_SETTINGS = {
     position: {
         my: "top center",
         at: "bottom center",
-        viewport: $("#qtips"),
-        container: $("#qtips"),
+        viewport: $("#ex-qtips"),
+        container: $("#ex-qtips"),
     },
     show: {
         delay: 150,
@@ -256,7 +318,7 @@ $("head").append(`
         content: " (banned)";
     }
 
-    #qtips {
+    #ex-qtips {
         position: fixed;
         width: 100vw;
         height: 100vh;
@@ -264,7 +326,7 @@ $("head").append(`
         pointer-events: none;
         z-index: 15000;
     }
-    #qtips > * {
+    #ex-qtips > * {
         pointer-events: all;
     }
 
@@ -929,9 +991,53 @@ function buildArtistTooltipContent(artist, [tag = {post_count:0}], posts = []) {
                 background-color: rgba(128,128,128,0.4);
                 border-radius: 6px;
             }
+
+            .settings-icon {
+                position:absolute;
+                top: 10px;
+                right: 10px;
+                width: 16px;
+                height: 16px;
+                cursor: pointer;
+            }
+            .settings-icon path {
+                fill: #888;
+            }
         </style>
 
         <article class="container" part="container">
+            <!-- icon by Gregor Cresnar @ flaticon.com -->
+            <svg class="settings-icon" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                     viewBox="0 0 478.703 478.703" style="enable-background:new 0 0 478.703 478.703;" xml:space="preserve">
+                <title>Show translate-pixiv-tags settigns</title>
+                <g>
+                    <g>
+                        <path d="M454.2,189.101l-33.6-5.7c-3.5-11.3-8-22.2-13.5-32.6l19.8-27.7c8.4-11.8,7.1-27.9-3.2-38.1l-29.8-29.8
+                            c-5.6-5.6-13-8.7-20.9-8.7c-6.2,0-12.1,1.9-17.1,5.5l-27.8,19.8c-10.8-5.7-22.1-10.4-33.8-13.9l-5.6-33.2
+                            c-2.4-14.3-14.7-24.7-29.2-24.7h-42.1c-14.5,0-26.8,10.4-29.2,24.7l-5.8,34c-11.2,3.5-22.1,8.1-32.5,13.7l-27.5-19.8
+                            c-5-3.6-11-5.5-17.2-5.5c-7.9,0-15.4,3.1-20.9,8.7l-29.9,29.8c-10.2,10.2-11.6,26.3-3.2,38.1l20,28.1
+                            c-5.5,10.5-9.9,21.4-13.3,32.7l-33.2,5.6c-14.3,2.4-24.7,14.7-24.7,29.2v42.1c0,14.5,10.4,26.8,24.7,29.2l34,5.8
+                            c3.5,11.2,8.1,22.1,13.7,32.5l-19.7,27.4c-8.4,11.8-7.1,27.9,3.2,38.1l29.8,29.8c5.6,5.6,13,8.7,20.9,8.7c6.2,0,12.1-1.9,17.1-5.5
+                            l28.1-20c10.1,5.3,20.7,9.6,31.6,13l5.6,33.6c2.4,14.3,14.7,24.7,29.2,24.7h42.2c14.5,0,26.8-10.4,29.2-24.7l5.7-33.6
+                            c11.3-3.5,22.2-8,32.6-13.5l27.7,19.8c5,3.6,11,5.5,17.2,5.5l0,0c7.9,0,15.3-3.1,20.9-8.7l29.8-29.8c10.2-10.2,11.6-26.3,3.2-38.1
+                            l-19.8-27.8c5.5-10.5,10.1-21.4,13.5-32.6l33.6-5.6c14.3-2.4,24.7-14.7,24.7-29.2v-42.1
+                            C478.9,203.801,468.5,191.501,454.2,189.101z M451.9,260.401c0,1.3-0.9,2.4-2.2,2.6l-42,7c-5.3,0.9-9.5,4.8-10.8,9.9
+                            c-3.8,14.7-9.6,28.8-17.4,41.9c-2.7,4.6-2.5,10.3,0.6,14.7l24.7,34.8c0.7,1,0.6,2.5-0.3,3.4l-29.8,29.8c-0.7,0.7-1.4,0.8-1.9,0.8
+                            c-0.6,0-1.1-0.2-1.5-0.5l-34.7-24.7c-4.3-3.1-10.1-3.3-14.7-0.6c-13.1,7.8-27.2,13.6-41.9,17.4c-5.2,1.3-9.1,5.6-9.9,10.8l-7.1,42
+                            c-0.2,1.3-1.3,2.2-2.6,2.2h-42.1c-1.3,0-2.4-0.9-2.6-2.2l-7-42c-0.9-5.3-4.8-9.5-9.9-10.8c-14.3-3.7-28.1-9.4-41-16.8
+                            c-2.1-1.2-4.5-1.8-6.8-1.8c-2.7,0-5.5,0.8-7.8,2.5l-35,24.9c-0.5,0.3-1,0.5-1.5,0.5c-0.4,0-1.2-0.1-1.9-0.8l-29.8-29.8
+                            c-0.9-0.9-1-2.3-0.3-3.4l24.6-34.5c3.1-4.4,3.3-10.2,0.6-14.8c-7.8-13-13.8-27.1-17.6-41.8c-1.4-5.1-5.6-9-10.8-9.9l-42.3-7.2
+                            c-1.3-0.2-2.2-1.3-2.2-2.6v-42.1c0-1.3,0.9-2.4,2.2-2.6l41.7-7c5.3-0.9,9.6-4.8,10.9-10c3.7-14.7,9.4-28.9,17.1-42
+                            c2.7-4.6,2.4-10.3-0.7-14.6l-24.9-35c-0.7-1-0.6-2.5,0.3-3.4l29.8-29.8c0.7-0.7,1.4-0.8,1.9-0.8c0.6,0,1.1,0.2,1.5,0.5l34.5,24.6
+                            c4.4,3.1,10.2,3.3,14.8,0.6c13-7.8,27.1-13.8,41.8-17.6c5.1-1.4,9-5.6,9.9-10.8l7.2-42.3c0.2-1.3,1.3-2.2,2.6-2.2h42.1
+                            c1.3,0,2.4,0.9,2.6,2.2l7,41.7c0.9,5.3,4.8,9.6,10,10.9c15.1,3.8,29.5,9.7,42.9,17.6c4.6,2.7,10.3,2.5,14.7-0.6l34.5-24.8
+                            c0.5-0.3,1-0.5,1.5-0.5c0.4,0,1.2,0.1,1.9,0.8l29.8,29.8c0.9,0.9,1,2.3,0.3,3.4l-24.7,34.7c-3.1,4.3-3.3,10.1-0.6,14.7
+                            c7.8,13.1,13.6,27.2,17.4,41.9c1.3,5.2,5.6,9.1,10.8,9.9l42,7.1c1.3,0.2,2.2,1.3,2.2,2.6v42.1H451.9z"/>
+                        <path d="M239.4,136.001c-57,0-103.3,46.3-103.3,103.3s46.3,103.3,103.3,103.3s103.3-46.3,103.3-103.3S296.4,136.001,239.4,136.001
+                            z M239.4,315.601c-42.1,0-76.3-34.2-76.3-76.3s34.2-76.3,76.3-76.3s76.3,34.2,76.3,76.3S281.5,315.601,239.4,315.601z"/>
+                    </g>
+                </g>
+            </svg>
             <section class="header">
                 <a class="artist-name tag-category-artist"
                    href="${BOORU}/artists/${artist.id}">
@@ -968,6 +1074,7 @@ function buildArtistTooltipContent(artist, [tag = {post_count:0}], posts = []) {
         </article>
     `);
     $content.find(".post-list").append(posts.map(buildPostPreview));
+    $content.find(".settings-icon").click(showSettings);
     return $content;
 }
 
@@ -1017,6 +1124,7 @@ function formatBytes(bytes) {
 }
 
 function buildPostPreview(post) {
+    const RATINGS = {s:0, q:1, e:2};
     let [width, height] = [150, 150];
     let preview_file_url = `${BOORU}/images/download-preview.png`;
 
@@ -1026,7 +1134,7 @@ function buildPostPreview(post) {
     preview_class += post.is_deleted           ? " post-status-deleted"      : "";
     preview_class += post.parent_id            ? " post-status-has-parent"   : "";
     preview_class += post.has_visible_children ? " post-status-has-children" : "";
-    if ({s:0, q:1, e:2}[post.rating] > {s:0, q:1, e:2}[SHOW_PREVIEW_RATING]) {
+    if (RATINGS[post.rating] > RATINGS[SHOW_PREVIEW_RATING]) {
         preview_class += " blur-post";
     }
 
@@ -1081,6 +1189,83 @@ function buildPostPreview(post) {
         </article>
     `);
     return $preview;
+}
+
+function showSettings() {
+    const settingToInput = (setting) => {
+        const value = SETTINGS.get(setting.name);
+        switch (setting.type) {
+            case "number":
+                return `<input type="number" min="0" value="${value}" name="${setting.name}" />`;
+            case "list":
+                let options = Object.entries(setting.values)
+                    .map(([v,d]) => `<option value="${v}" ${v==value?"selected":""}>${d}</option>`);
+                return `<select name="${setting.name}">${options}</select>`;
+            default:
+                console.error("Unsupported type "+setting.name);
+                return "";
+        }
+    };
+    const $settings = $(`
+        <style>
+            #ui-settings {
+                width: 100vw;
+                height: 100vh;
+                background: rgba(128,128,128,0.4);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                position: relative;
+                z-index: 16000;
+            }
+            .container {
+                padding: 20px;
+                display: grid;
+                grid-template-columns: 300px 1fr;
+                grid-gap: 10px;
+                font-size: 12px;
+            }
+            .container.qtip-light {
+                background-color: #fff;
+                color: #454545;
+            }
+            .container.qtip-dark {
+                background-color: #505050;
+                color: #f3f3f3;
+            }
+            .container div:nth-child(even) {
+                display: flex;
+                flex-direction: column-reverse;
+            }
+            .container .button {
+                grid-column: span 2;
+                margin: auto;
+            }
+        </style>
+        <div id="ui-settings">
+            <div class="container">
+                ${SETTINGS.list.map(s => `<div>${s.descr}:</div><div>${settingToInput(s)}</div>`).join("")}
+                <div class="button"><input type="button" value="Refresh page to apply changes" disabled /></div>
+            </div>
+        </div>
+    `);
+    let $shadowContainer = $("<div>").appendTo("#ex-qtips");
+    $settings.click((ev) => {
+        if ($(ev.target).is("#ui-settings")) $shadowContainer.remove();
+    });
+    $settings.find("input[type='number'], select").change((ev) => {
+        let $input = $(ev.target);
+        let value = $input.is("input[type='number']") ? +$input.val() : $input.val();
+        SETTINGS.set($input.prop("name"), value);
+        $settings.find(".button input").removeAttr("disabled");
+    });
+    $settings.find(".button input").click((ev) => {
+        $shadowContainer.remove();
+        window.location.reload();
+    });
+    let [className, bgcolor] = chooseBackgroundColorScheme($("#ex-qtips"));
+    $settings.find(".container").addClass(className);
+    attachShadow($shadowContainer[0], () => $settings);
 }
 
 function getTagPreload(tag, tagLink, isContainer) {
