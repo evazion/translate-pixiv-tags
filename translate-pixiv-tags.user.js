@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190815040546
+// @version      20190816045246
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -143,7 +143,7 @@ const ARTIST_QTIP_SETTINGS = {
         container: $("#ex-qtips"),
     },
     show: {
-        delay: 150,
+        delay: 500,
         solo: true,
     },
     hide: {
@@ -407,6 +407,16 @@ $("head").append(`
     #ex-twitter .ex-artist-tag {
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
     }
+    /* Old design: on post page locate the artist tag below author's @name. */
+    #ex-twitter .permalink-header {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        height: auto;
+    }
+    #ex-twitter .permalink-header .ex-artist-tag {
+        grid-row: 2;
+        margin-left: 0;
+    }
 
     #ex-artstation .qtip-content {
         box-sizing: initial;
@@ -436,6 +446,9 @@ $("head").append(`
     }
     #ex-saucenao .ex-translated-tags::before, #ex-saucenao .ex-translated-tags::after {
         content: none;
+    }
+    #ex-saucenao .ex-translated-tags + .target, #ex-saucenao .ex-artist-tag + .target {
+        display: none;
     }
 
     /* Active Users sidebar */
@@ -522,7 +535,7 @@ function addDanbooruTags($target, tags, options = {}) {
         return;
     }
     let { classes = "",
-          onadded = ($tag)=>{},
+          onadded = null, // ($tag)=>{},
           tagPosition: {
             searchAt = "nextAll",
             insertAt = "insertAfter"
@@ -539,33 +552,33 @@ function addDanbooruTags($target, tags, options = {}) {
             .join(", ")}
         </span>`);
     $tagsContainer[insertAt]($target);
-    onadded($tagsContainer);
+    if (onadded) onadded($tagsContainer);
 }
 
-async function translateArtist(element, profileUrl, options) {
+async function translateArtistByURL(element, profileUrl, options) {
     if (!profileUrl) return;
 
-    if (profileUrl.match(/https?:\/\//)) { // profileUrl allowed to be aritst name
-        const artists = await get("/artists", {search: {url_matches: profileUrl, is_active: true}, only: ARTIST_FIELDS});
-        const pUrl = new URL(profileUrl.replace(/\/$/,"").toLowerCase());
-        artists
-            // fix of #18: for some unsupported domains, Danbooru returns false-positive results
-            .filter(({urls}) => urls
-                .flatMap(({url, normalized_url}) => [url, normalized_url])
-                .map(url => new URL(url.replace(/\/$/,"").toLowerCase()))
-                .some(aUrl => (pUrl.host==aUrl.host && pUrl.pathname==aUrl.pathname && pUrl.search==aUrl.search)))
-            .map(artist => addDanbooruArtist($(element), artist, options));
-    } else {
-        const artistName = profileUrl.replace(/ /g, "_");
-        const artists = await get("/artists", {search: {name: artistName, is_active: true}, only: ARTIST_FIELDS});
-        artists.map(artist => addDanbooruArtist($(element), artist, options));
-    }
+    const artists = await get("/artists", {search: {url_matches: profileUrl, is_active: true}, only: ARTIST_FIELDS});
+    const pUrl = new URL(profileUrl.replace(/\/$/,"").toLowerCase());
+    artists
+        // fix of #18: for some unsupported domains, Danbooru returns false-positive results
+        .filter(({urls}) => urls
+            .flatMap(({url, normalized_url}) => [url, normalized_url])
+            .map(url => new URL(url.replace(/\/$/,"").toLowerCase()))
+            .some(aUrl => (pUrl.host==aUrl.host && pUrl.pathname==aUrl.pathname && pUrl.search==aUrl.search)))
+        .map(artist => addDanbooruArtist($(element), artist, options));
+}
 
+async function translateArtistByName(element, artistName, options) {
+    if (!artistName) return;
+
+    const artists = await get("/artists", {search: {name: artistName.replace(/ /g, "_"), is_active: true}, only: ARTIST_FIELDS});
+    artists.map(artist => addDanbooruArtist($(element), artist, options));
 }
 
 function addDanbooruArtist($target, artist, options = {}) {
     let { classes = "",
-          onadded = ($tag)=>{},
+          onadded = null, // ($tag)=>{},
           tagPosition: {
             searchAt = "nextAll",
             insertAt = "insertAfter"
@@ -599,7 +612,7 @@ function addDanbooruArtist($target, artist, options = {}) {
         </div>`);
     $tag[insertAt]($target);
     $tag.find("a").qtip(qtip_settings).end();
-    onadded($tag);
+    if (onadded) onadded($tag);
 }
 
 async function attachShadow(target, callback) {
@@ -1198,12 +1211,12 @@ function findAndTranslate(mode, selector, options = {}) {
     options = Object.assign({
         asyncMode: false,
         requiredAttributes: null,
-        predicate: (el) => true,
+        predicate: null, // (el) => true,
         toProfileUrl: (el) => $(el).closest("a").prop("href"),
-        toTagName: (el) => $(el).text(),
+        toTagName: (el) => el.innerText,
         tagPosition: "afterend", // beforebegin, afterbegin, beforeend, afterend
         classes: "",
-        onadded: ($tag) => {},
+        onadded: null, // ($tag) => {},
     }, options);
 
     if (typeof options.predicate === "string") {
@@ -1218,10 +1231,13 @@ function findAndTranslate(mode, selector, options = {}) {
     }[options.tagPosition] || {searchAt:"nextAll", insertAt:"insertAfter"};
 
     const tryToTranslate = (elem) => {
-        if (options.predicate(elem)) {
+        if (!options.predicate || options.predicate(elem)) {
             switch (mode) {
                 case "artist":
-                    translateArtist(elem, options.toProfileUrl(elem), options);
+                    translateArtistByURL(elem, options.toProfileUrl(elem), options);
+                    break;
+                case "artistByName":
+                    translateArtistByName(elem, options.toTagName(elem), options);
                     break;
                 case "tag":
                     translateTag(elem, options.toTagName(elem), options);
@@ -1420,19 +1436,37 @@ function initializeHentaiFoundry() {
 
 function initializeTwitter() {
     $("body").attr("id", "ex-twitter");
-    // // old dedsign
-    // asyncAddTranslation(".twitter-hashtag", ">b", true);
 
-    // asyncAddTranslatedArtists(".ProfileHeaderCard-screennameLink");
-    // asyncAddTranslatedArtists(".ProfileCard-screennameLink");
-    // asyncAddTranslatedArtists("a.js-user-profile-link", ":not(.js-retweet-text) > a");
-    // // quoted tweets
-    // asyncAddTranslatedArtists(".username", "div.js-user-profile-link .username", e => "https://twitter.com/" + $(e).find("b").text());
+    // old dedsign
+    findAndTranslate("tag", ".twitter-hashtag", {
+        asyncMode: true
+    });
+
+    // header card
+    findAndTranslate("artist", ".ProfileHeaderCard-screennameLink", {
+        asyncMode: true
+    });
+    // popuping user card info
+    findAndTranslate("artist", ".ProfileCard-screennameLink", {
+        asyncMode: true
+    });
+    // tweet authors and comments
+    findAndTranslate("artist", "a.js-user-profile-link", {
+        predicate: ":not(.js-retweet-text) > a",
+        classes: "inline",
+        asyncMode: true
+    });
+    // quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
+    findAndTranslate("artist", ".username", {
+        predicate: "div.js-user-profile-link .username",
+        toProfileUrl: e => "https://twitter.com/" + $(e).find("b").text(),
+        asyncMode: true,
+        classes: "inline"
+    });
 
     // new design
     findAndTranslate("tag", "a.r-1n1174f", {
         predicate: "a.r-1n1174f[href^='/hashtag/']",
-        toTagName: tag => tag.innerText.substr(1),
         asyncMode: true,
     });
     // floating name of a channel
@@ -1462,9 +1496,9 @@ function initializeTwitter() {
         predicate: "article:not(.r-1j63xyz) a div",
         asyncMode: true,
     });
-    // tweet and comment authors
+    // tweet and comment authors and quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
     findAndTranslate("artist", "div.r-1f6r7vd", {
-        predicate: "a div",
+        toProfileUrl: el => "https://twitter.com/"+el.innerText.substr(1),
         classes: "inline",
         asyncMode: true,
     });
@@ -1578,13 +1612,12 @@ function initializeSauceNAO() {
     findAndTranslate("artist", "strong:contains('Member: ')+a, strong:contains('Author: ')+a", {
         classes: "inline"
     });
-    findAndTranslate("artist", ".resulttitle .target", {
-        toProfileUrl: el => el.innerText, // get artist name
-        classes: "inline",
-        onadded: ($tag) => $tag.prev().hide()
+    findAndTranslate("artistByName", ".resulttitle .target", {
+        tagPosition: "beforebegin",
+        classes: "inline"
     });
     findAndTranslate("tag", ".resultcontentcolumn .target", {
-        onadded: ($tag) => $tag.prev().hide()
+        tagPosition: "beforebegin"
     });
 }
 
