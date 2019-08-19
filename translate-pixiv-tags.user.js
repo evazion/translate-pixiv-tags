@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190819124546
+// @version      20190820002246
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -352,11 +352,6 @@ $("head").append(`
     #ex-pixiv .GpJOYWW a:before {
         content: "";
     }
-    /* Add space between pixiv artist name and danbooru tag in recommended posts section .*/
-    #ex-pixiv .gtm-illust-recommend-zone .ex-artist-tag {
-        margin-left: 0.5em;
-        margin-top: -6px;
-    }
     /* On the artist profile page, render the danbooru artist tag between the artist's name and follower count. */
     #ex-pixiv ._3_qyP5m {
         display: grid;
@@ -369,6 +364,27 @@ $("head").append(`
     }
     #ex-pixiv ._3_qyP5m .ex-artist-tag {
         grid-area: span 1 / span 2;
+    }
+    /* Illust page: fix locate artist tag to not trigger native tooltip */
+    #ex-pixiv .jkOmvO {
+        position: relative;
+    }
+    #ex-pixiv .hrdJSq {
+        margin-bottom: 16px;
+    }
+    #ex-pixiv .jkOmvO .ex-artist-tag {
+        position: absolute;
+        bottom: 0;
+        left: 47px;
+    }
+    /* Illust page: fix artist tag overflowing in related works */
+    #ex-pixiv .bAzGIw {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    #ex-pixiv .bAzGIw .ex-artist-tag {
+        margin-left: 2px;
+        margin-top: -6px;
     }
 
     #ex-nijie .ex-translated-tags {
@@ -417,6 +433,15 @@ $("head").append(`
         grid-row: 2;
         margin-left: 0;
     }
+    /* Fix position of artist tag in an expanded tweet */
+    #ex-twitter .r-18u37iz.r-thb0q2.r-wgs6xk .r-zl2h9q {
+        display: grid;
+        grid-template-columns: auto 32px;
+    }
+    #ex-twitter .r-18u37iz.r-thb0q2.r-wgs6xk .r-zl2h9q .ex-artist-tag {
+        grid-area: 2/1;
+        margin: 0;
+    }
 
     #ex-artstation .qtip-content {
         box-sizing: initial;
@@ -456,6 +481,10 @@ $("head").append(`
         display: flex;
         height: 100%;
         align-items: center;
+    }
+    /* fix newline in arist tag in cards of following users and followers */
+    #ex-pawoo .ex-artist-tag a {
+        display: inline;
     }
 `);
 
@@ -1290,9 +1319,29 @@ function initializePixiv() {
         asyncMode: true
     });
 
-    // https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
-    findAndTranslate("artist", "a", {
-        predicate: 'aside a[href^="/member.php?id="]:not(:has([role=img]))',
+    // illust author https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
+    findAndTranslate("artist", "div.jkOmvR", {
+        // predicate: 'aside a[href^="/member.php?id="]:not(:has([role=img]))',
+        toProfileUrl: el => $(el).find("a").prop("href"),
+        asyncMode: true,
+        onadded: ($tag) => {
+            const $container = $tag.prev();
+            new MutationSummary({
+                rootNode: $container.find(".hGNSdl")[0],
+                queries: [{ characterData: true }],
+                callback: () => {
+                    $container.siblings(".ex-artist-tag").remove();
+                    findAndTranslate("artist", $container, {
+                        toProfileUrl: el => $(el).find("a").prop("href"),
+                    });
+                }
+            });
+        }
+    });
+
+    findAndTranslate("artist", "div.bAzGIx", {
+        toProfileUrl: el => $(el).find("a").prop("href"),
+        // classes: "inline",
         asyncMode: true
     });
 
@@ -1490,16 +1539,18 @@ function initializeTwitter() {
             });
         }
     });
-    // author of an expanded tweet
-    findAndTranslate("artist", "div.css-1dbjc4n.r-1wbh5a2.r-dnmrzs", {
-        predicate: "article:not(.r-1j63xyz) a div",
-        asyncMode: true,
-    });
-    // tweet and comment authors and quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
-    findAndTranslate("artist", "div.r-1f6r7vd", {
-        toProfileUrl: el => "https://twitter.com/"+el.innerText.substr(1),
+    // tweet, expanded tweet and comment authors
+    findAndTranslate("artist", "div.r-1wbh5a2.r-dnmrzs", {
+        predicate: "div[data-testid='primaryColumn'] div:has(>a.r-1wbh5a2)",
+        toProfileUrl: el => $(el).find("a").prop("href"),
         classes: "inline",
         asyncMode: true,
+    });
+    // quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
+    findAndTranslate("artist", "div.r-1wbh5a2.r-1udh08x", {
+        toProfileUrl: el => "https://twitter.com/"+$(el).find(".r-1f6r7vd").text().substr(1),
+        classes: "inline",
+        asyncMode: true
     });
     // user card info
     findAndTranslate("artist", "a", {
