@@ -20,6 +20,14 @@ on [Nijie](https://nijie.info), [NicoSeiga](https://seiga.nicovideo.jp),
 
 # Settings
 
+### Via UI
+
+You can open the settings by clicking a button in the upper right corner of any artist's tooltip.
+
+<img width="600" src="https://user-images.githubusercontent.com/29704098/63255026-7c159300-c27d-11e9-9a0f-63b1e813affe.png">
+
+### Via Storage
+
 Settings are stored in the **Storage** tab of the userscript.
 To be able to edit settings of the userscript, you must set **advanced config mode** in Tampermonkey settings.
 <img width="600" src="https://user-images.githubusercontent.com/21149935/62814848-16c8e180-bac8-11e9-93a5-61c65d4c8297.png">

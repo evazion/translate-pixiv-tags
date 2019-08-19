@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190813184946
+// @version      20190819124546
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -15,7 +15,7 @@
 // @match        *://bcy.net/*
 // @match        *://*.deviantart.com/*
 // @match        *://*.hentai-foundry.com/*
-// @match        *://*.twitter.com/*
+// @match        *://twitter.com/*
 // @match        *://*.artstation.com/*
 // @match        *://saucenao.com/*
 // @match        *://pawoo.net/*
@@ -143,7 +143,7 @@ const ARTIST_QTIP_SETTINGS = {
         container: $("#ex-qtips"),
     },
     show: {
-        delay: 150,
+        delay: 500,
         solo: true,
     },
     hide: {
@@ -254,7 +254,6 @@ $("head").append(`
     .ex-translated-tags {
         margin: 0 0.5em;
     }
-
     .ex-translated-tags * {
         display: inline !important;
         float: none !important;
@@ -264,45 +263,42 @@ $("head").append(`
         text-decoration: none !important;
         white-space: nowrap;
     }
-
     .ex-translated-tags::before {
         content: "(";
         white-space: nowrap;
     }
-
     .ex-translated-tags::after {
         content: ")";
         white-space: nowrap;
     }
-    .ex-translated-tag-category-5 {
+    span.ex-translated-tags a.ex-translated-tag-category-5 {
         color: #F80 !important;
     }
-
-    .ex-translated-tag-category-4 {
+    span.ex-translated-tags a.ex-translated-tag-category-4 {
         color: #0A0 !important;
     }
-
-    .ex-translated-tag-category-3 {
+    span.ex-translated-tags a.ex-translated-tag-category-3 {
         color: #A0A !important;
     }
-
-    .ex-translated-tag-category-1 {
+    span.ex-translated-tags a.ex-translated-tag-category-1 {
         color: #A00 !important;
     }
-
-    .ex-translated-tag-category-0 {
+    span.ex-translated-tags a.ex-translated-tag-category-0 {
         color: #0073ff !important;
     }
 
     .ex-artist-tag {
         white-space: nowrap;
     }
-
+    .ex-artist-tag.inline {
+        display: inline-block;
+        margin-left: 0.5em;
+    }
     .ex-artist-tag a {
         color: #A00 !important;
         margin-left: 0.3ch;
+        text-decoration: none;
     }
-
     .ex-artist-tag::before {
         content: "";
         display: inline-block;
@@ -313,7 +309,6 @@ $("head").append(`
         height: 12px;
         vertical-align: middle;
     }
-
     .ex-banned-artist-tag a::after {
         content: " (banned)";
     }
@@ -345,33 +340,23 @@ $("head").append(`
     #ex-pixiv .tag-list li {
         display: block;
     }
-
-    /* Fix https://dic.pixiv.net/a/東方 to display Danbooru tag next to article title. */
-    #ex-pixiv #content_title #article-name {
-       display: inline-block;
+    #ex-pixiv .tag-list li::before {
+        content: none;
     }
-
-    /* Don't underline translated artist tags */
-    #ex-pixiv .ex-artist-tag a {
-        text-decoration: none;
-    }
-
     /* Hide Pixiv's translated tags  */
-    #ex-pixiv .gtm-new-work-romaji-tag-event-click,
-    #ex-pixiv .gtm-new-work-translate-tag-event-click {
+    #ex-pixiv .ex-translated-tags + span .gtm-new-work-romaji-tag-event-click,
+    #ex-pixiv .ex-translated-tags + span .gtm-new-work-translate-tag-event-click {
         display: none;
     }
-
     /* Remove hashtags from translated tags */
     #ex-pixiv .GpJOYWW a:before {
         content: "";
     }
-
     /* Add space between pixiv artist name and danbooru tag in recommended posts section .*/
-    #ex-pixiv .gtm-illust-recommend-user-name + .ex-artist-tag {
+    #ex-pixiv .gtm-illust-recommend-zone .ex-artist-tag {
         margin-left: 0.5em;
+        margin-top: -6px;
     }
-
     /* On the artist profile page, render the danbooru artist tag between the artist's name and follower count. */
     #ex-pixiv ._3_qyP5m {
         display: grid;
@@ -387,23 +372,12 @@ $("head").append(`
     }
 
     #ex-nijie .ex-translated-tags {
-       font-size: 12px;
        font-family: Verdana, Helvetica, sans-serif;
     }
-
-    /* Position Nijie dictionary links to the right of Danbooru tag links. */
-    #ex-nijie .tag .tag_name a.dic {
-       float: right !important;
-    }
-
     /* Fix tag lists in http://nijie.info/view.php?id=203787 pages. */
     #ex-nijie #dojin_left #view-tag .tag {
       white-space: nowrap;
       border: 0;
-    }
-
-    #ex-nijie #seiten_dic .ex-translated-tags {
-       font-size: 32px;
     }
 
     /* Fix tags in http://seiga.nicovideo.jp/seiga/im7626097 */
@@ -412,34 +386,12 @@ $("head").append(`
         height: auto;
         margin: 0 10px 5px 0;
     }
-
-    #ex-seiga .illust_tag .tag ul {
-        display: none;
-    }
-
     /* Fix artist tag in http://seiga.nicovideo.jp/seiga/im6950870 */
     #ex-seiga .im_head_bar .ex-artist-tag a {
         display: inline-block;
         border: none;
         background: none;
-        padding: 5px 0;
-    }
-
-    /* Fix tags in http://seiga.nicovideo.jp/tag/艦これ */
-    #ex-seiga #ko_tagwatch .ex-translated-tags {
-        font-size: 233.4%;
-        line-height: 120%;
-        vertical-align: middle;
-    }
-
-    /* Fix Clip button overlapping artist tag on http://seiga.nicovideo.jp/seiga/im8006360 */
-    #ex-seiga .illust_main .illust_side .clip {
-        margin-top: -44px;
-    }
-
-    #ex-tinami .tag > span {
-        display: inline;
-        float: none;
+        padding: 0;
     }
 
     #ex-tinami .ex-translated-tags {
@@ -448,57 +400,14 @@ $("head").append(`
         display: inline !important;
     }
 
-    /* Fix tags in https://bcy.net/illust/detail/77708/2182055 */
-    #ex-bcy ._tag {
-        display: inline-block !important;
-    }
-
-    #ex-bcy .ex-translated-tags {
-        margin: 0;
-        display: inline-block;
-        padding: 4px 10px 3px;
-        border-radius: 0 2px 2px 0;
-        background-color: #f0f4fa;
-        font-size: 13px;
-        vertical-align: top;
-    }
-
-    /* Fix tags in Ta关注的原作 box on https://bcy.net/u/2123332 */
-    #ex-bcy #followWorks ._tag, #ex-bcy #followWorks .ex-translated-tags {
-        float: left;
-        clear: both;
-    }
-
-    /* XXX Hide translated tags on https://bcy.net/illust (badly formatted) */
-    #ex-bcy .js-leftTags .ex-translated-tags {
-        display: none;
-    }
-
-    /* Render the Danbooru artist tag on the same line as the HF artist name. */
-    #ex-hentaifoundry .ex-artist-tag {
-        display: inline-block;
-        margin-left: 0.5em;
-    }
-
-    #ex-deviantart .ex-artist-tag {
-        display: inline-block;
-        margin-left: 0.5em;
-    }
-
     #ex-deviantart .ex-artist-tag a {
         color: #A00 !important;
     }
 
-    #ex-twitter .ex-translated-tags * {
-        white-space: inherit;
+    #ex-twitter .ex-artist-tag {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
     }
-
-    /* Add some space between twitter username and danbooru artist tag. */
-    #ex-twitter .js-user-profile-link .ex-artist-tag {
-        margin-left: 0.5em;
-    }
-
-    /* On post page locate the artist tag below author's @name. */
+    /* Old design: on post page locate the artist tag below author's @name. */
     #ex-twitter .permalink-header {
         display: grid;
         grid-template-columns: 1fr auto auto;
@@ -506,58 +415,23 @@ $("head").append(`
     }
     #ex-twitter .permalink-header .ex-artist-tag {
         grid-row: 2;
-    }
-
-    #ex-twitter .ReplyingToContextBelowAuthor .ex-artist-tag {
-        display: inline-block;
-        margin-left: 5px;
-    }
-
-    #ex-twitter .ex-artist-tag {
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
-        margin-left: 0.5em;
-    }
-    #ex-twitter article:not(.r-1j63xyz) .ex-artist-tag {
         margin-left: 0;
-    }
-    #ex-twitter .ex-artist-tag a {
-        text-decoration: none;
-    }
-    #ex-twitter div[role='presentation'] + .ex-artist-tag {
-       display: inline-block;
-    }
-    #ex-twitter .ex-artist-tag::before {
-        vertical-align: initial;
-        margin-bottom: -2px;
-    }
-
-    /* Render the Danbooru artist tag on the same line as the Twitter username. */
-    #ex-mobile-twitter ._2CFyTHU5 {
-        white-space: normal;
-    }
-
-    #ex-mobile-twitter .ex-artist-tag {
-        display: inline;
     }
 
     #ex-artstation .qtip-content {
         box-sizing: initial;
     }
-
     #ex-artstation .artist-name-and-headline .ex-artist-tag {
         font-size: 12pt;
         line-height: 150%;
     }
-
     #ex-artstation .hover-card .ex-artist-tag {
         font-size: 12pt;
         margin-top: -10px;
     }
-
     #ex-artstation a.user .ex-artist-tag {
         line-height: 100%;
     }
-
     #ex-artstation .site-title .ex-artist-tag {
         font-size: 12pt;
         line-height: 100%;
@@ -567,36 +441,36 @@ $("head").append(`
         font-size: 12pt;
     }
 
-    #ex-saucenao .ex-artist-tag {
-        display: inline;
-        margin-left: 10px;
+    #ex-saucenao .ex-translated-tags {
+        margin: 0;
     }
     #ex-saucenao .ex-translated-tags::before, #ex-saucenao .ex-translated-tags::after {
         content: none;
     }
-    #ex-saucenao .ex-translated-tags {
-        margin: 0;
+    #ex-saucenao .ex-translated-tags + .target, #ex-saucenao .ex-artist-tag + .target {
+        display: none;
     }
 
-    #ex-pawoo .ex-artist-tag {
-        font-size: 14px;
-        line-height: 100%;
-    }
-    #ex-pawoo .status__display-name .ex-artist-tag {
-        display: inline-block;
-        margin-left: 5px;
-    }
+    /* Active Users sidebar */
     #ex-pawoo .account__avatar-wrapper {
         display: flex;
         height: 100%;
-    }
-    #ex-pawoo .account__avatar {
-        margin: auto;
-    }
-    #ex-pawoo .ex-artist-tag a {
-        display: inline;
+        align-items: center;
     }
 `);
+
+// tag function for template literals to remove newlines and leading spaces
+function noIndents(strings, ...values) {
+    // remove all spaces before/after a tag and leave one in other cases
+    strings = strings.map(s => s.replace(/(>)?\n *(<)?/g, (s, lt, gt) => lt&&gt ? lt+gt : lt||gt ? (lt||gt) : " "));
+    let res = new Array(values.length*2+1);
+    for (let i = 0; i < values.length; i++) {
+        res[i*2] = strings[i];
+        res[i*2+1] = values[i];
+    }
+    res[res.length-1] = strings[strings.length-1];
+    return res.join("");
+}
 
 function getImage(image_url) {
     return new Promise((resolve,reject)=>{
@@ -620,85 +494,108 @@ function get(url, params, cache = CACHE_LIFETIME, base_url = BOORU) {
         const timestamp = Math.round((Date.now() / 1000 / cache));
         params = { ...params, expiry: 365, timestamp: timestamp };
     }
-    return getJSONMemoized(`${base_url}${url}.json`, params);
+    return getJSONMemoized(`${base_url}${url}.json`, params)
+        .catch(xhr => {
+            console.error(xhr.status, xhr);
+            return [];
+        });
 }
 
-async function addTranslation($element, tag = $element.text()) {
-    const danbooruTags = await translateTag(tag);
-    addDanbooruTags($element, danbooruTags);
-}
-
-async function translateTag(pixivTag) {
-    const normalizedTag = pixivTag.trim().normalize("NFKC").replace(/\d+users入り$/, "");
+async function translateTag(target, tagName, options) {
+    const normalizedTag = tagName.trim().normalize("NFKC").replace(/\d+users入り$/, "").replace(/^#/, "");
 
     /* tags like "5000users入り$" become empty after normalization; don't search for empty tags. */
     if (normalizedTag.length === 0) {
         return [];
     }
 
-    const wikiPages = await get("/wiki_pages", {search: {other_names_match: normalizedTag}, only: WIKI_FIELDS});
-    if (wikiPages.length === 0 && normalizedTag.match(/^[\x20-\x24\x26-\x29\x2B\x2D-\x7F]+$/)) { // ASCII characters except percent, asterics, and comma
-        //The index action on the tags endpoint does not support expirations
-        const tags = await get("/tags", {search: {name: normalizedTag}, only: TAG_FIELDS}, 0);
-        return tags.map(tag => new Object({
+    let tags = [];
+
+    const wikiPages = await get("/wiki_pages", {search: {other_names_match: normalizedTag, is_deleted: false}, only: WIKI_FIELDS});
+    if (wikiPages.length) {
+        tags = wikiPages.map(wikiPage => new Object({
+            name: wikiPage.title,
+            prettyName: wikiPage.title.replace(/_/g, " "),
+            category: wikiPage.category_name,
+        }));
+    } else if (normalizedTag.match(/^[\x20-\x24\x26-\x29\x2B\x2D-\x7F]+$/)) { // ASCII characters except percent, asterics, and comma
+        // The index action on the tags endpoint does not support expirations
+        tags = await get("/tags", {search: {name: normalizedTag}, only: TAG_FIELDS}, 0);
+        tags = tags.map(tag => new Object({
             name: tag.name,
             prettyName: tag.name.replace(/_/g, " "),
             category: tag.category,
         }));
     }
-
-    return wikiPages.map(wikiPage => new Object({
-        name: wikiPage.title,
-        prettyName: wikiPage.title.replace(/_/g, " "),
-        category: wikiPage.category_name,
-    }));
+    addDanbooruTags($(target), tags, options);
 }
 
-function addDanbooruTags($target, tags) {
+function addDanbooruTags($target, tags, options = {}) {
     if (tags.length === 0) {
         return;
     }
+    let { classes = "",
+          onadded = null, // ($tag)=>{},
+          tagPosition: {
+            searchAt = "nextAll",
+            insertAt = "insertAfter"
+          } = {}
+    } = options;
 
-    const $tagsContainer = $(`<span class="ex-translated-tags">`);
-    $target.after($tagsContainer);
-
-    $.each(tags, (i, tag) => {
-        const danbooruTagLink = $(`<a class="ex-translated-tag-category-${tag.category}" href="${BOORU}/posts?tags=${encodeURIComponent(tag.name)}">`).text(tag.prettyName);
-        $tagsContainer.append(danbooruTagLink);
-
-        if (i < tags.length - 1) {
-            $tagsContainer.append(", ");
-        }
-    });
+    const $tagsContainer = $(noIndents`
+        <span class="ex-translated-tags ${classes}">
+            ${tags.map(tag => noIndents`
+                <a class="ex-translated-tag-category-${tag.category}"
+                   href="${BOORU}/posts?tags=${encodeURIComponent(tag.name)}">
+                        ${_.escape(tag.prettyName)}
+                </a>`)
+            .join(", ")}
+        </span>`);
+    $tagsContainer[insertAt]($target);
+    if (onadded) onadded($tagsContainer);
 }
 
-function addTranslatedArtists(element, toProfileUrl = (e) => $(e).prop("href")) {
-    $(element).each(async (i, e) => {
-        const profileUrl = toProfileUrl($(e));
+async function translateArtistByURL(element, profileUrl, options) {
+    if (!profileUrl) return;
 
-        const artists = await get("/artists", {search: {url_matches: profileUrl, is_active: true}, only: ARTIST_FIELDS});
-        const pUrl = new URL(profileUrl.replace(/\/$/,"").toLowerCase());
-        artists
-            // fix of #18: for some unsupported domains, Danbooru returns false-positive results
-            .filter(({urls}) => urls
-                .flatMap(({url, normalized_url}) => [url, normalized_url])
-                .map(url => new URL(url.replace(/\/$/,"").toLowerCase()))
-                .some(aUrl => (pUrl.host==aUrl.host  && pUrl.pathname==aUrl.pathname  && pUrl.search==aUrl.search)))
-            .forEach(artist => addDanbooruArtist($(e), artist));
-    });
+    const artists = await get("/artists", {search: {url_matches: profileUrl, is_active: true}, only: ARTIST_FIELDS});
+    const pUrl = new URL(profileUrl.replace(/\/$/,"").toLowerCase());
+    artists
+        // fix of #18: for some unsupported domains, Danbooru returns false-positive results
+        .filter(({urls}) => urls
+            .flatMap(({url, normalized_url}) => [url, normalized_url])
+            .map(url => new URL(url.replace(/\/$/,"").toLowerCase()))
+            .some(aUrl => (pUrl.host==aUrl.host && pUrl.pathname==aUrl.pathname && pUrl.search==aUrl.search)))
+        .map(artist => addDanbooruArtist($(element), artist, options));
 }
 
-function addDanbooruArtist($target, artist) {
-    let classes = artist.is_banned ? "ex-artist-tag ex-banned-artist-tag" : "ex-artist-tag";
+async function translateArtistByName(element, artistName, options) {
+    if (!artistName) return;
+
+    const artists = await get("/artists", {search: {name: artistName.replace(/ /g, "_"), is_active: true}, only: ARTIST_FIELDS});
+    artists.map(artist => addDanbooruArtist($(element), artist, options));
+}
+
+function addDanbooruArtist($target, artist, options = {}) {
+    let { classes = "",
+          onadded = null, // ($tag)=>{},
+          tagPosition: {
+            searchAt = "nextAll",
+            insertAt = "insertAfter"
+          } = {}
+    } = options;
+
+    classes += artist.is_banned ? " ex-artist-tag ex-banned-artist-tag" : " ex-artist-tag";
     artist.prettyName = artist.name.replace(/_/g, " ");
     artist.escapedName = _.escape(artist.prettyName);
     artist.encodedName = encodeURIComponent(artist.name);
 
-    let duplicates = $target.nextAll(".ex-artist-tag").filter((i,el) => el.innerText.trim() == artist.escapedName);
-
     const qtip_settings = Object.assign(ARTIST_QTIP_SETTINGS, {
         content: { text: (event, qtip) => buildArtistTooltip(artist, qtip) }
     });
+
+    let duplicates = $target[searchAt](".ex-artist-tag")
+                        .filter((i,el) => el.innerText.trim() == artist.escapedName);
     if (duplicates.length) {
         // if qtip was removed then add it back
         if (!$.data(duplicates.find("a")[0]).qtip) {
@@ -707,10 +604,15 @@ function addDanbooruArtist($target, artist) {
         return;
     }
 
-    $(`<div class="${classes}"><a href="${BOORU}/artists/${artist.id}">${artist.escapedName}</a></div>`)
-        .insertAfter($target)
-        .find("a")
-        .qtip(qtip_settings);
+    let $tag = $(noIndents`
+        <div class="${classes}">
+            <a href="${BOORU}/artists/${artist.id}">
+                ${artist.escapedName}
+            </a>
+        </div>`);
+    $tag[insertAt]($target);
+    $tag.find("a").qtip(qtip_settings).end();
+    if (onadded) onadded($tag);
 }
 
 async function attachShadow(target, callback) {
@@ -770,7 +672,7 @@ async function buildArtistTooltip(artist, qtip) {
 }
 
 function buildArtistTooltipContent(artist, [tag = {post_count:0}], posts = []) {
-    let $content = $(`
+    let $content = $(noIndents`
         <style>
             :host {
                 --preview_has_children_color: #0F0;
@@ -1046,8 +948,8 @@ function buildArtistTooltipContent(artist, [tag = {post_count:0}], posts = []) {
                 <span class="post-count">${tag.post_count}</span>
 
                 <ul class="other-names scrollable" part="other-names">
-                    ${artist.other_names.filter(String).sort().map(other_name =>
-                        `<li>
+                    ${artist.other_names.filter(String).sort().map(other_name => `
+                        <li>
                             <a href="${BOORU}/artists?search[name]=${encodeURIComponent(other_name)}">
                                 ${_.escape(other_name.replace(/_/g, " "))}
                             </a>
@@ -1080,13 +982,22 @@ function buildArtistTooltipContent(artist, [tag = {post_count:0}], posts = []) {
 
 function buildArtistUrlsHtml(artist) {
     const domainSorter = artist_url => new URL(artist_url.normalized_url).host.match(/[^.]*\.[^.]*$/)[0];
-    const artist_urls = _(artist.urls).chain().uniq('normalized_url').sortBy('normalized_url').sortBy(domainSorter).sortBy(artist_url => !artist_url.is_active);
+    const artist_urls = _(artist.urls).chain()
+                                      .uniq('normalized_url')
+                                      .sortBy('normalized_url')
+                                      .sortBy(domainSorter)
+                                      .sortBy(artist_url => !artist_url.is_active);
 
     const html = artist_urls.map(artist_url => {
         const normalized_url = artist_url.normalized_url.replace(/\/$/, "");
         const urlClass = artist_url.is_active ? "artist-url-active" : "artist-url-inactive";
 
-        return `<li class="${urlClass}"><a href="${normalized_url}">${_.escape(normalized_url)}</a></li>`;
+        return noIndents`
+            <li class="${urlClass}">
+                <a href="${normalized_url}">
+                    ${_.escape(normalized_url)}
+                </a>
+            </li>`;
     }).join("");
 
     return html;
@@ -1112,7 +1023,7 @@ function timeToAgo(time) {
         unit: "minute",
     }];
     for (let {value, unit} of values) {
-        if (value) return `${value}  ${(value>1 ? unit+"s" : unit)}  ago`;
+        if (value) return `${value} ${(value>1 ? unit+"s" : unit)} ago`;
     }
     return "∞ ago";
 }
@@ -1171,7 +1082,7 @@ function buildPostPreview(post) {
                     ? `${formatBytes(post.file_size)} (${post.image_width}x${post.image_height})`
                     : "";
 
-    $preview = $(`
+    $preview = $(noIndents`
         <article itemscope
                  itemtype="http://schema.org/ImageObject"
                  class="${preview_class}"
@@ -1196,27 +1107,43 @@ function showSettings() {
         const value = SETTINGS.get(setting.name);
         switch (setting.type) {
             case "number":
-                return `<input type="number" min="0" value="${value}" name="${setting.name}" />`;
+                return noIndents`
+                    <input type="number"
+                           min="0"
+                           value="${value}"
+                           name="${setting.name}" />`;
             case "list":
-                let options = Object.entries(setting.values)
-                    .map(([v,d]) => `<option value="${v}" ${v==value?"selected":""}>${d}</option>`);
-                return `<select name="${setting.name}">${options}</select>`;
+                return noIndents`
+                    <select name="${setting.name}">
+                        ${Object
+                            .entries(setting.values)
+                            .map(([val,descr]) =>
+                                noIndents`
+                                <option value="${val}" ${val==value?"selected":""}>
+                                    ${descr}
+                                </option>`)
+                            .join("")}
+                    </select>`;
             default:
-                console.error("Unsupported type "+setting.name);
+                console.error("Unsupported type "+setting.type);
                 return "";
         }
     };
-    const $settings = $(`
+    const $settings = $(
+        noIndents`
         <style>
             #ui-settings {
                 width: 100vw;
                 height: 100vh;
-                background: rgba(128,128,128,0.4);
+                background: rgba(0,0,0,0.25);
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 position: relative;
                 z-index: 16000;
+            }
+            #ui-settings.qtip-dark {
+                background: rgba(0,0,0,0.75);
             }
             .container {
                 padding: 20px;
@@ -1225,27 +1152,38 @@ function showSettings() {
                 grid-gap: 10px;
                 font-size: 12px;
             }
-            .container.qtip-light {
+            .qtip-light .container {
                 background-color: #fff;
-                color: #454545;
+                color: #222;
             }
-            .container.qtip-dark {
-                background-color: #505050;
-                color: #f3f3f3;
+            .qtip-dark .container {
+                background-color: #222;
+                color: #fff;
             }
-            .container div:nth-child(even) {
+            .container div:nth-of-type(even) {
                 display: flex;
                 flex-direction: column-reverse;
             }
-            .container .button {
+            .container h2 {
                 grid-column: span 2;
                 margin: auto;
             }
         </style>
         <div id="ui-settings">
             <div class="container">
-                ${SETTINGS.list.map(s => `<div>${s.descr}:</div><div>${settingToInput(s)}</div>`).join("")}
-                <div class="button"><input type="button" value="Refresh page to apply changes" disabled /></div>
+                <h2>Translate Pixiv Tags settings</h2>
+                ${SETTINGS.list
+                    .map(setting => noIndents`
+                        <div>${setting.descr}:</div>
+                        <div>${settingToInput(setting)}</div>`)
+                    .join("")
+                }
+                <h2>
+                    <input class="refresh-page"
+                           type="button"
+                           value="Refresh page to apply changes"
+                           disabled />
+                </h2>
             </div>
         </div>
     `);
@@ -1257,115 +1195,73 @@ function showSettings() {
         let $input = $(ev.target);
         let value = $input.is("input[type='number']") ? +$input.val() : $input.val();
         SETTINGS.set($input.prop("name"), value);
-        $settings.find(".button input").removeAttr("disabled");
+        $settings.find(".refresh-page").removeAttr("disabled");
     });
-    $settings.find(".button input").click((ev) => {
+    $settings.find(".refresh-page").click((ev) => {
         $shadowContainer.remove();
         window.location.reload();
     });
     let [className, bgcolor] = chooseBackgroundColorScheme($("#ex-qtips"));
-    $settings.find(".container").addClass(className);
+    $settings.addClass(className);
     attachShadow($shadowContainer[0], () => $settings);
 }
 
-function getTagPreload(tag, tagLink, isContainer) {
-    if (isContainer) {
-        return [$(tag),$(tag).find(tagLink).text()];
-    } else {
-        return [$(tag).find(tagLink),undefined];
+function findAndTranslate(mode, selector, options = {}) {
+    options = Object.assign({
+        asyncMode: false,
+        requiredAttributes: null,
+        predicate: null, // (el) => true,
+        toProfileUrl: (el) => $(el).closest("a").prop("href"),
+        toTagName: (el) => el.innerText,
+        tagPosition: "afterend", // beforebegin, afterbegin, beforeend, afterend
+        classes: "",
+        onadded: null, // ($tag) => {},
+    }, options);
+
+    if (typeof options.predicate === "string") {
+        const predicateSelector = options.predicate;
+        options.predicate = (el) => $(el).is(predicateSelector);
     }
-}
+    options.tagPosition = {
+        beforebegin: {searchAt:"prevAll", insertAt:"insertBefore"},
+        afterbegin:  {searchAt:"find",    insertAt:"prependTo"},
+        beforeend:   {searchAt:"find",    insertAt:"appendTo"},
+        afterend:    {searchAt:"nextAll", insertAt:"insertAfter"},
+    }[options.tagPosition] || {searchAt:"nextAll", insertAt:"insertAfter"};
 
-function asyncAddTranslation(tagSelector, tagLink = "> a", isContainer = false) {
-    $(tagSelector).each((i, tag) => {
-        addTranslation(...getTagPreload(tag, tagLink, isContainer));
-    });
-    onElementsAdded(tagSelector, tag => {
-        addTranslation(...getTagPreload(tag, tagLink, isContainer));
-    });
-}
-
-function asyncAddTranslatedArtists(selector, predicate = selector, toProfileUrl = (e) => $(e).prop("href")) {
-    if (typeof predicate === "string") {
-        const predicateSelector = predicate;
-        predicate = (e) => $(e).is(predicateSelector);
-    }
-
-    $(selector).each((i, artist) => {
-        if (predicate(artist)) {
-            addTranslatedArtists(artist, toProfileUrl);
+    const tryToTranslate = (elem) => {
+        if (!options.predicate || options.predicate(elem)) {
+            switch (mode) {
+                case "artist":
+                    translateArtistByURL(elem, options.toProfileUrl(elem), options);
+                    break;
+                case "artistByName":
+                    translateArtistByName(elem, options.toTagName(elem), options);
+                    break;
+                case "tag":
+                    translateTag(elem, options.toTagName(elem), options);
+                    break;
+                default:
+                    console.error("Unsupported mode "+mode);
+            }
         }
-    });
+    };
 
-    onElementsAdded(selector, artist => {
-        if (predicate(artist)) {
-            addTranslatedArtists(artist, toProfileUrl);
+    $(selector).each((i, elem) => tryToTranslate(elem));
+
+    if (!options.asyncMode) return;
+
+    const query = { element: selector };
+    if (options.requiredAttributes) query.elementAttributes = options.requiredAttributes;
+    new MutationSummary({
+        queries: [query],
+        callback: ([summary]) => {
+            let elems = summary.added;
+            if (summary.attributeChanged) {
+                elems = elems.concat(Object.values(summary.attributeChanged).flat(1));
+            }
+            elems.forEach(tryToTranslate);
         }
-    });
-}
-
-function onElementsAdded(selector, callback) {
-    const observer = new MutationSummary({
-        queries: [{ element: selector }],
-        callback: function (summaries) {
-            const summary = summaries[0];
-
-            summary.added.forEach(callback);
-        }
-    });
-}
-
-function asyncAddTranslatedArtists2(
-        selector,
-        selPredicate = selector,
-        attribute = "href",
-        attrPredicate = (e) => (e = $(e).attr("href")) && (e.startsWith("/") || e.startsWith("http")),
-        toProfileUrl = (e) => $(e).prop("href"))
-{
-    if (typeof selPredicate === "string") {
-        const predicateSelector = selPredicate;
-        selPredicate = (e) => $(e).is(predicateSelector);
-    }
-
-    $(selector).each((i, artist) => {
-        if (selPredicate(artist) && attrPredicate(artist)) {
-            addTranslatedArtists(artist, toProfileUrl);
-        }
-    });
-
-    onElementsAddedOrChanged(selector, attribute, artist => {
-        if (selPredicate(artist) && attrPredicate(artist)) {
-            addTranslatedArtists(artist, toProfileUrl);
-        }
-    });
-}
-
-function onElementsAddedOrChanged(selector, attribute, callback) {
-    const observer = new MutationSummary({
-        queries: [{ element: selector, elementAttributes: attribute }],
-        callback: function (summaries) {
-            const summary = summaries[0];
-            summary.added.forEach(callback);
-            summary.attributeChanged[attribute].forEach(callback);
-        }
-    });
-}
-
-function initializeTranslatedTags() {
-    const selectors = [
-        "#ex-pixiv .tags li .text",                             // https://www.pixiv.net/member_illust.php?mode=medium&illust_id=64362862
-        "#ex-pixiv .tag-list li .tag-name",                     // https://www.pixiv.net/tags.php
-        "#ex-pixiv .tags-portal-header .title",                 // https://www.pixiv.net/tags.php?tag=touhou
-        "#ex-pixiv #content_title #article-name",               // https://dic.pixiv.net/a/touhou
-        "#ex-pixiv #wrapper div.layout-body h1.column-title a", // https://www.pixiv.net/search.php?s_mode=s_tag&word=touhou
-        "#ex-nijie .tag .tag_name a:first-child",               // http://nijie.info/view.php?id=208491
-        "#ex-nijie #seiten_dic h1#dic_title",                   // https://nijie.info/dic/seiten/d/東方
-        "#ex-seiga #ko_tagwatch > div > h1",
-        "#ex-tinami .tag > span > a:nth-child(2)",
-    ];
-
-    $(selectors.join(", ")).each((i, e) => {
-        addTranslation($(e));
     });
 }
 
@@ -1373,136 +1269,244 @@ function initializePixiv() {
     $("body").attr("id", "ex-pixiv");
     $(".illust-tag-translation").remove();
 
-    // https://www.pixiv.net/bookmark_add.php?type=illust&illust_id=1234
-    $(".tag-cloud .tag").each((i, e) => {
-        addTranslation($(e), $(e).data("tag"));
+    findAndTranslate("tag", [
+        // https://www.pixiv.net/bookmark_add.php?type=illust&illust_id=123456
+        ".tag-cloud .tag",
+        // https://www.pixiv.net/tags.php
+        // https://www.pixiv.net/novel/tags.php
+        ".tag-list li .tag-value",
+        // https://www.pixiv.net/tags.php?tag=touhou
+        ".tags-portal-header .title a",
+        // https://www.pixiv.net/search.php?s_mode=s_tag&word=touhou
+        "#wrapper div.layout-body h1.column-title a",
+    ].join(", "));
+
+    // https://dic.pixiv.net/a/東方
+    findAndTranslate("tag", "#content_title #article-name", {tagPosition: "beforeend"});
+
+    // tags on work pages: https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
+    findAndTranslate("tag", 'span', {
+        predicate: ".GpJOYWW > span:first-child",
+        asyncMode: true
     });
 
     // https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
-    let toProfileUrl = (e => $(e).prop("href").replace(/member_illust/, "member").replace(/&ref=.*$/, ""));
-    asyncAddTranslatedArtists("a", 'aside a[href^="/member.php?id="]:not(:has([role=img]))');
+    findAndTranslate("artist", "a", {
+        predicate: 'aside a[href^="/member.php?id="]:not(:has([role=img]))',
+        asyncMode: true
+    });
 
     // artist profile pages: https://www.pixiv.net/member.php?id=29310, https://www.pixiv.net/member_illust.php?id=104471&type=illust
     let normalizePageUrl = () => `https://www.pixiv.net/member.php?id=${new URL(window.location.href).searchParams.get("id")}`;
-    asyncAddTranslatedArtists(".VyO6wL2", ".VyO6wL2", normalizePageUrl);
+    findAndTranslate("artist", ".VyO6wL2", {
+        toProfileUrl: normalizePageUrl,
+        asyncMode: true
+    });
 
     // search pages: https://www.pixiv.net/bookmark_new_illust.php
-    asyncAddTranslatedArtists(".ui-profile-popup", "figcaption._3HwPt89 > ul > li > a.ui-profile-popup", toProfileUrl);
+    let toProfileUrl = (e => $(e).prop("href").replace(/member_illust/, "member").replace(/&ref=.*$/, ""));
+    findAndTranslate("artist", ".ui-profile-popup", {
+        predicate: "figcaption._3HwPt89 > ul > li > a.ui-profile-popup",
+        toProfileUrl: toProfileUrl,
+        asyncMode: true
+    });
 
     // ranking pages: https://www.pixiv.net/ranking.php?mode=original
-    asyncAddTranslatedArtists(".ui-profile-popup", ".user-container.ui-profile-popup", toProfileUrl);
-
-    // tags on work pages: https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
-    asyncAddTranslation('.GpJOYWW', '._3Xr7iJv');
+    findAndTranslate("artist", ".user-container.ui-profile-popup", {
+        toProfileUrl: toProfileUrl,
+        asyncMode: true
+    });
 }
 
 function initializeNijie() {
     $("body").attr("id", "ex-nijie");
 
     // http://nijie.info/view.php?id=233339
-    addTranslatedArtists("#pro .user_icon .name, .popup_member > a");
+    findAndTranslate("artist", "#pro .user_icon .name, .popup_member > a");
+
+    // http://nijie.info/view.php?id=208491
+    findAndTranslate("tag", ".tag .tag_name a:first-child", {
+        tagPosition: "beforeend"
+    });
+    // https://nijie.info/dic/seiten/d/東方
+    findAndTranslate("tag", "#seiten_dic h1#dic_title", {
+        tagPosition: "beforeend"
+    });
 }
 
 function initializeTinami() {
     $("body").attr("id", "ex-tinami");
 
-    // triggers on http://www.tinami.com/creator/profile/10262 pages
-    addTranslatedArtists('img[src*="/creator/profile/sticker/"]', e => {
-        // https://img.tinami.com//creator/profile/sticker/62414.gif
-        let userId = $(e).prop("src").match(/\/creator\/profile\/sticker\/(\d+)\.gif$/)[1];
-        return `http://www.tinami.com/creator/profile/${userId}`;
+    // http://www.tinami.com/view/979474
+    findAndTranslate("tag", ".tag > span > a:nth-child(2)");
+
+    // triggers on http://www.tinami.com/creator/profile/10262
+    findAndTranslate("artist", "div.cre_name h1", {
+        toProfileUrl: el => window.location.href,
+        tagPosition: "beforeend",
+        classes: "inline"
     });
 
-    // triggers on http://www.tinami.com/view/934323 pages
-    addTranslatedArtists('a[href^="/creator/profile/"] strong', e => {
-        // e: '<a href="/creator/profile/10262"><strong>松永紅葉</strong></a>'
-        let $strong = $(e);
-        let $a = $(e).parent();
-        let userId = $a.prop("href").match(/\/creator\/profile\/(\d+)$/)[1];
-        return `http://www.tinami.com/creator/profile/${userId}`;
+    // triggers on http://www.tinami.com/view/934323
+    findAndTranslate("artist", 'p:has(>a[href^="/creator/profile/"])', {
+        toProfileUrl: el => $(el).find("a").prop("href")
     });
 }
 
 function initializeNicoSeiga() {
     $("body").attr("id", "ex-seiga");
 
+    // http://seiga.nicovideo.jp/tag/艦これ
+    findAndTranslate("tag", "h1:has(.icon_tag_big)", {
+        tagPosition: "beforeend"
+    });
     // http://seiga.nicovideo.jp/seiga/im7741859
-    asyncAddTranslation('.tag');
-    addTranslatedArtists(".user_info h1 a");
-    addTranslatedArtists(".user_link > a");
+    findAndTranslate("tag", "a", {
+        predicate: ".tag > a",
+        tagPosition: "beforeend",
+        asyncMode: true
+    });
+    findAndTranslate("artist", ".user_info h1 a", {
+        classes: "inline"
+    });
+    findAndTranslate("artist", ".user_link > a .user_name", {
+        tagPosition: "beforeend"
+    });
 }
 
 function initializeBCY() {
     $("body").attr("id", "ex-bcy");
 
-    // translate artists on illust pages (https://bcy.net/illust/detail/66626/1824973)
-    addTranslatedArtists('.js-userTpl .fz14');
+    // prfile page https://bcy.net/u/3935930
+    findAndTranslate("artist", "div:has(>a.uname)", {
+        toProfileUrl: el => $(el).find("a").prop("href")
+    });
+
+    // translate artists on illust pages (https://bcy.net/item/detail/6643704430988361988)
+    findAndTranslate("artist", ".js-userTpl .user-name a", {
+        toProfileUrl: el => el.href.replace(/\?.*$/,"")
+    });
 
     // translate artists on search pages (https://bcy.net/tags/name/看板娘)
-    asyncAddTranslatedArtists(".lh40", ".lh40");
+    findAndTranslate("artist", "a.title-txt", {
+        toProfileUrl: el => el.href.replace(/\?.*$/,""),
+        tagPosition: "beforeend",
+        classes: "inline",
+        asyncMode: true
+    });
 
     // translate tags on search pages (https://bcy.net/tags/name/看板娘)
-    $("#ex-bcy ._tag").each((i, e) => addTranslation($(e)));
+    findAndTranslate("tag", ".circle-desc-name, .tag", {tagPosition: "beforeend"});
 
-    // translate tags on illust pages (https://bcy.net/illust/detail/77708/2196418)
-    asyncAddTranslation('.tag');
+    // translate tags on illust pages (https://bcy.net/illust/detail/6561698116674781447)
+    findAndTranslate("tag", ".dm-tag-a", {tagPosition: "beforeend"});
 }
 
 function initializeDeviantArt() {
     $("body").attr("id", "ex-deviantart");
 
-    let usernameSelectors = [
-      ".dev-title-container .author .username",  // https://sakimichan.deviantart.com/art/Horoscope-series-Libra-641842522 pages
-      "#gmi-Gruser .gruserbadge .username",      // https://sakimichan.deviantart.com
-    ];
-
-    asyncAddTranslatedArtists(".username", usernameSelectors.join(", "));
-
-    $("#ex-deviantart .dev-about-tags-cc .discoverytag").each((i, e) => {
-        addTranslation($(e), $(e).data("canonical-tag"));
+    // https://www.deviantart.com/koyorin
+    // https://www.deviantart.com/koyorin/art/Ruby-570526828
+    findAndTranslate("artist", ".gruserbadge .username, .dev-title-container .author .username", {
+        classes: "inline"
     });
+
+    findAndTranslate("tag", ".dev-about-tags-cc .discoverytag");
 }
 
 function initializeHentaiFoundry() {
     $("body").attr("id", "ex-hentaifoundry");
 
-    // triggers on https://www.hentai-foundry.com/pictures/user/firolian/560377/Miss-Marvel---Selfie
-    addTranslatedArtists("#picBox .boxtitle a");
-
-    // triggers on https://www.hentai-foundry.com/user/Calm/profile
-    addTranslatedArtists(".galleryViewTable .thumb_square > a:nth-child(4)");
+    // posts on https://www.hentai-foundry.com/user/Calm/profile
+    findAndTranslate("artist", ".galleryViewTable .thumb_square > a:nth-child(4)", {
+        classes: "inline"
+    });
+    // profile tab https://www.hentai-foundry.com/user/DrGraevling/profile
+    findAndTranslate("artist", ".breadcrumbs a:contains('Users') + span", {
+        toProfileUrl: el => window.location.href,
+        tagPosition: "beforeend",
+        classes: "inline"
+    });
+    // orher tabs https://www.hentai-foundry.com/pictures/user/DrGraevling
+    findAndTranslate("artist", ".breadcrumbs a[href^='/user/']", {
+        classes: "inline"
+    });
 }
 
 function initializeTwitter() {
     $("body").attr("id", "ex-twitter");
-    // old dedsign
-    asyncAddTranslation(".twitter-hashtag", ">b", true);
 
-    asyncAddTranslatedArtists(".ProfileHeaderCard-screennameLink");
-    asyncAddTranslatedArtists(".ProfileCard-screennameLink");
-    asyncAddTranslatedArtists("a.js-user-profile-link", ":not(.js-retweet-text) > a");
-    // quoted tweets
-    asyncAddTranslatedArtists(".username", "div.js-user-profile-link .username", e => "https://twitter.com/" + $(e).find("b").text());
+    // old dedsign
+    findAndTranslate("tag", ".twitter-hashtag", {
+        asyncMode: true
+    });
+
+    // header card
+    findAndTranslate("artist", ".ProfileHeaderCard-screennameLink", {
+        asyncMode: true
+    });
+    // popuping user card info
+    findAndTranslate("artist", ".ProfileCard-screennameLink", {
+        asyncMode: true
+    });
+    // tweet authors and comments
+    findAndTranslate("artist", "a.js-user-profile-link", {
+        predicate: ":not(.js-retweet-text) > a",
+        classes: "inline",
+        asyncMode: true
+    });
+    // quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
+    findAndTranslate("artist", ".username", {
+        predicate: "div.js-user-profile-link .username",
+        toProfileUrl: e => "https://twitter.com/" + $(e).find("b").text(),
+        asyncMode: true,
+        classes: "inline"
+    });
 
     // new design
-    // asyncAddTranslation("a.r-1n1174f", "a.r-1n1174f[href^='/hashtag/']", true);
-    onElementsAdded("a.r-1n1174f", tag => {
-        if (tag.matches("a.r-1n1174f[href^='/hashtag/']")) addTranslation($(tag), tag.innerText.substr(1));
+    findAndTranslate("tag", "a.r-1n1174f", {
+        predicate: "a.r-1n1174f[href^='/hashtag/']",
+        asyncMode: true,
     });
     // floating name of a channel
-    asyncAddTranslatedArtists("div.r-xoduu5[role='presentation']", "div", () => "https://twitter.com"+(window.location.pathname.match(/\/\w+/)||[])[0]);
+    const URLfromLocation = () => "https://twitter.com"+(window.location.pathname.match(/\/\w+/)||[])[0];
+    findAndTranslate("artist", "div.css-1dbjc4n.r-xoduu5.r-18u37iz.r-dnmrzs", {
+        predicate: "div[role='presentation']>div>div",
+        toProfileUrl: URLfromLocation,
+        asyncMode: true,
+        classes: "inline",
+        onadded: ($tag) => {
+            const $container = $tag.prev();
+            new MutationSummary({
+                rootNode: $container.find("span>span")[0],
+                queries: [{ characterData: true }],
+                callback: () => {
+                    $container.siblings(".ex-artist-tag").remove();
+                    findAndTranslate("artist", $container, {
+                        toProfileUrl: URLfromLocation,
+                        classes: "inline",
+                    });
+                }
+            });
+        }
+    });
     // author of an expanded tweet
-    asyncAddTranslatedArtists("div.css-1dbjc4n.r-1wbh5a2.r-dnmrzs", "article:not(.r-1j63xyz) a div", (e) => $(e).closest("a").prop("href"));
-    // tweet and comment authors
-    asyncAddTranslatedArtists("div.r-1f6r7vd", "a div", (e) => $(e).closest("a").prop("href"));
-
-}
-
-function initializeMobileTwitter() {
-    $("body").attr("id", "ex-mobile-twitter");
-
-    // triggers on top profile section of https://mobile.twitter.com/anchobibi_fg
-    asyncAddTranslatedArtists(".Z5IeoGpY", ".Z5IeoGpY", e => "https://twitter.com/" + $(e).text().replace(/^@/, ""));
+    findAndTranslate("artist", "div.css-1dbjc4n.r-1wbh5a2.r-dnmrzs", {
+        predicate: "article:not(.r-1j63xyz) a div",
+        asyncMode: true,
+    });
+    // tweet and comment authors and quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
+    findAndTranslate("artist", "div.r-1f6r7vd", {
+        toProfileUrl: el => "https://twitter.com/"+el.innerText.substr(1),
+        classes: "inline",
+        asyncMode: true,
+    });
+    // user card info
+    findAndTranslate("artist", "a", {
+        predicate: "div.r-1g94qm0 > a",
+        tagPosition: "beforeend",
+        asyncMode: true,
+    });
 }
 
 function initializeArtStation() {
@@ -1538,16 +1542,42 @@ function initializeArtStation() {
         return "https://www.artstation.com/" + artistName;
     }
 
+    function hasValidHref(el) {
+        let href = el.getAttribute("href");
+        return href && (href.startsWith("http") || href.startsWith("/")&&href.length>1);
+    }
+
     // https://www.artstation.com/jubi
     // https://www.artstation.com/jubi/*
-    asyncAddTranslatedArtists("h1.artist-name", "h1.artist-name", toFullURL);
+    // asyncAddTranslatedArtists("h1.artist-name", "h1.artist-name", toFullURL);
+    findAndTranslate("artist", "h1.artist-name", {
+        toProfileUrl: toFullURL,
+        asyncMode: true
+    });
     // https://www.artstation.com/artwork/0X40zG
-    asyncAddTranslatedArtists2("a[hover-card]", ".name > a", "href", toFullURL);
+    findAndTranslate("artist", "a[hover-card]", {
+        requiredAttributes: "href",
+        predicate: (el) => el.matches(".name > a") && hasValidHref(el),
+        toProfileUrl: toFullURL,
+        asyncMode: true,
+    });
+    findAndTranslate("tag", ".label-tag", {
+        tagPosition: "beforeend",
+        asyncMode: true
+    });
     // hover card
-    asyncAddTranslatedArtists2("a", ".hover-card-name > a");
+    findAndTranslate("artist", "a", {
+        requiredAttributes: "href",
+        predicate: (el) => el.matches(".hover-card-name > a") && hasValidHref(el),
+        asyncMode: true,
+    });
     // https://www.artstation.com/jubi/following
     // https://www.artstation.com/jubi/followers
-    asyncAddTranslatedArtists(".users-grid-name", "div", e => toFullURL($(e).find("a")));
+    // asyncAddTranslatedArtists(".users-grid-name", "div", e => toFullURL($(e).find("a")));
+    findAndTranslate("artist", ".users-grid-name", {
+        toProfileUrl: el => toFullURL($(el).find("a")),
+        asyncMode: true
+    });
 
     // default personal websites:
     // https://jubi.artstation.com/
@@ -1557,7 +1587,10 @@ function initializeArtStation() {
     // https://kastep.artstation.com/
     // https://tinadraw.artstation.com/
     // https://dylan-kowalski.artstation.com/
-    addTranslatedArtists(".site-title a", toFullURL);
+    // addTranslatedArtists(".site-title a", toFullURL);
+    findAndTranslate("artist", ".site-title a", {
+        toProfileUrl: toFullURL
+    });
 }
 
 function initializeSauceNAO() {
@@ -1568,30 +1601,44 @@ function initializeSauceNAO() {
         .filter(function(){return this.nodeType==3;}) // get text nodes
         .wrap("<span class=target>");
      $(".target:contains(',')")
-        .replaceWith(function(){return this.innerText.split(", ").map(s => `<span class="target">${s}</span>`).join(", ");});
+        .replaceWith(function(){
+            return this.innerText
+                .split(", ")
+                .map(s => `<span class="target">${s}</span>`)
+                .join(", ");
+        });
 
-    addTranslatedArtists("strong:contains('Member: ')+a, strong:contains('Author: ')+a");
-    $(".target").each((i, e) => {
-        e = $(e);
-        if (e.prevAll("strong").text() == "Creator: ") {
-            get("/artists", {search: {name: e.text().replace(/ /g, "_"), is_active: true}, only: ARTIST_FIELDS})
-                .then(artists => artists.map(artist => addDanbooruArtist(e, artist)).length && e.hide());
-        } else {
-            addTranslation(e, e.text())
-                .then(() => e.next().is(".ex-translated-tags") && e.hide());
-        }
+    findAndTranslate("artist", "strong:contains('Member: ')+a, strong:contains('Author: ')+a", {
+        classes: "inline"
+    });
+    findAndTranslate("artistByName", ".resulttitle .target", {
+        tagPosition: "beforebegin",
+        classes: "inline"
+    });
+    findAndTranslate("tag", ".resultcontentcolumn .target", {
+        tagPosition: "beforebegin"
     });
 }
 
 function initializePawoo() {
     $("body").attr("id", "ex-pawoo");
 
+    // https://pawoo.net/@yamadorikodi
     // artist name in his card info
-    addTranslatedArtists(".name .p-name", () => "https://pawoo.net" + window.location.pathname.match(/\/[^\/]+/)[0]);
-    // post author, commentor, users in sidebar
-    addTranslatedArtists("a .display-name span", ($e) => $e.closest("a").prop("href"));
+    findAndTranslate("artist", ".name small", {
+        toProfileUrl: () => "https://pawoo.net" + window.location.pathname.match(/\/[^\/]+/)[0],
+        tagPosition: "afterbegin"
+    });
+    // post author, commentor
+    findAndTranslate("artist", "a.status__display-name span span", {
+        classes: "inline"
+    });
+    // users in sidebar
+    findAndTranslate("artist", "a.account__display-name span span");
     // cards of following users and followers
-    addTranslatedArtists(".account-grid-card .name a");
+    findAndTranslate("artist", ".account-grid-card .name a");
+    // tags https://pawoo.net/@SilSinn9801
+    findAndTranslate("tag", ".hashtag");
 }
 
 function initialize() {
@@ -1606,7 +1653,6 @@ function initialize() {
         case "bcy.net":                initializeBCY();           break;
         case "www.hentai-foundry.com": initializeHentaiFoundry(); break;
         case "twitter.com":            initializeTwitter();       break;
-        // case "mobile.twitter.com":  initializeMobileTwitter(); break;
         case "saucenao.com":           initializeSauceNAO();      break;
         case "pawoo.net":              initializePawoo();         break;
         case "www.deviantart.com":     initializeDeviantArt();    break;
@@ -1616,8 +1662,6 @@ function initialize() {
                 initializeArtStation();
             }
     }
-
-    initializeTranslatedTags();
 }
 
 initialize();
