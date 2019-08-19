@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190816045246
+// @version      20190819122346
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -15,7 +15,7 @@
 // @match        *://bcy.net/*
 // @match        *://*.deviantart.com/*
 // @match        *://*.hentai-foundry.com/*
-// @match        *://*.twitter.com/*
+// @match        *://twitter.com/*
 // @match        *://*.artstation.com/*
 // @match        *://saucenao.com/*
 // @match        *://pawoo.net/*
@@ -948,8 +948,7 @@ function buildArtistTooltipContent(artist, [tag = {post_count:0}], posts = []) {
                 <span class="post-count">${tag.post_count}</span>
 
                 <ul class="other-names scrollable" part="other-names">
-                    ${artist.other_names.filter(String).sort().map(other_name =>
-                        noIndents`
+                    ${artist.other_names.filter(String).sort().map(other_name => `
                         <li>
                             <a href="${BOORU}/artists?search[name]=${encodeURIComponent(other_name)}">
                                 ${_.escape(other_name.replace(/_/g, " "))}
@@ -1472,7 +1471,7 @@ function initializeTwitter() {
     // floating name of a channel
     const URLfromLocation = () => "https://twitter.com"+(window.location.pathname.match(/\/\w+/)||[])[0];
     findAndTranslate("artist", "div.css-1dbjc4n.r-xoduu5.r-18u37iz.r-dnmrzs", {
-        predicate: ":not(.r-1wbh5a2)",
+        predicate: "div[role='presentation']>div>div",
         toProfileUrl: URLfromLocation,
         asyncMode: true,
         classes: "inline",
@@ -1483,7 +1482,7 @@ function initializeTwitter() {
                 queries: [{ characterData: true }],
                 callback: () => {
                     $container.siblings(".ex-artist-tag").remove();
-                    findAndTranslateArtists($container, {
+                    findAndTranslate("artist", $container, {
                         toProfileUrl: URLfromLocation,
                         classes: "inline",
                     });
