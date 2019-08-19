@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190820002246
+// @version      20190820003146
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -662,9 +662,17 @@ function chooseBackgroundColorScheme($element) {
     //Halfway between white/black in the RGB scheme
     const MIDDLE_LUMINOSITY = 128;
 
-    // Get background color of closest parent element with a nontransparent background color
-    let background_color = $element.parents().filter((i,el) => $(el).css("background-color") !== TRANSPARENT_COLOR).css("background-color");
-    let color_array = background_color.match(/\d+/g).map(Number).slice(0, 3); // Ignore alpha
+    // Get background colors of all parent elements with a nontransparent background color
+    let background_colors = $element.parents()
+        .map((i,el) => $(el).css("background-color"))
+        .get()
+        .filter(color => color !== TRANSPARENT_COLOR);
+    // calculate summary color and get RGB channels
+    let color_array = background_colors
+        .map(color => color.match(/(\d+(\.\d+)?)+/g))
+        .reverse()
+        .reduce(([r1,g1,b1],[r2,g2,b2,al=1]) => [r1*(1-al)+r2*al, g1*(1-al)+g2*al, b1*(1-al)+b2*al])
+        .slice(0, 3); // Ignore alpha
     let median_luminosity = (Math.max(...color_array) + Math.min(...color_array)) / 2;
     let qtip_class = (median_luminosity < MIDDLE_LUMINOSITY ? "qtip-dark" : "qtip-light");
     let adjusted_array = color_array.map((color) => {
