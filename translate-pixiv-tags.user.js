@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190820003146
+// @version      20190822211846
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -366,23 +366,23 @@ $("head").append(`
         grid-area: span 1 / span 2;
     }
     /* Illust page: fix locate artist tag to not trigger native tooltip */
-    #ex-pixiv .jkOmvO {
+    #ex-pixiv main+aside>section>h2 {
         position: relative;
     }
-    #ex-pixiv .hrdJSq {
+    #ex-pixiv h2>div>div {
         margin-bottom: 16px;
     }
-    #ex-pixiv .jkOmvO .ex-artist-tag {
+    #ex-pixiv main+aside>section>h2 .ex-artist-tag {
         position: absolute;
         bottom: 0;
         left: 47px;
     }
     /* Illust page: fix artist tag overflowing in related works */
-    #ex-pixiv .bAzGIw {
+    #ex-pixiv aside li>div>div:last-child {
         flex-direction: column;
         align-items: flex-start;
     }
-    #ex-pixiv .bAzGIw .ex-artist-tag {
+    #ex-pixiv aside li .ex-artist-tag {
         margin-left: 2px;
         margin-top: -6px;
     }
@@ -1328,14 +1328,15 @@ function initializePixiv() {
     });
 
     // illust author https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
-    findAndTranslate("artist", "div.jkOmvR", {
-        // predicate: 'aside a[href^="/member.php?id="]:not(:has([role=img]))',
+    findAndTranslate("artist", "h2", {
+        predicate: "main+aside>section>h2",
         toProfileUrl: el => $(el).find("a").prop("href"),
+        tagPosition: "beforeend",
         asyncMode: true,
         onadded: ($tag) => {
             const $container = $tag.prev();
             new MutationSummary({
-                rootNode: $container.find(".hGNSdl")[0],
+                rootNode: $container.find("div:not(:has(*))")[0],
                 queries: [{ characterData: true }],
                 callback: () => {
                     $container.siblings(".ex-artist-tag").remove();
@@ -1347,9 +1348,9 @@ function initializePixiv() {
         }
     });
 
-    findAndTranslate("artist", "div.bAzGIx", {
+    findAndTranslate("artist", "div", {
+        predicate: "aside li>div>div:last-child>div:first-child",
         toProfileUrl: el => $(el).find("a").prop("href"),
-        // classes: "inline",
         asyncMode: true
     });
 
