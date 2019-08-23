@@ -1,3 +1,23 @@
+# Release 2019.08.24
+
+## Fixes
+
+* #25: displayed incorrect image size
+* BCY: everything was broken.
+* DevianArt: uncolored tags.
+* SauceNAO: could translated deleted artists.
+* Simultaneous triggering of native and script tooltips.
+* Tag translating could use deleted wikis.
+
+## Changes
+
+* Added UI for settings.
+* Updated and cleaned CSS.
+* Updated some selectors for translating.
+* Pixiv: now native translations are removed only for translated tags.
+* Mobile Twitter: removed.
+* Improved choosing of background color in case of semi-transparent ones.
+
 # Release 2019.08.06
 
 ## Fixes
