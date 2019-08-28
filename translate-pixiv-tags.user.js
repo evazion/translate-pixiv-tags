@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190828195046
+// @version      20190828195746
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -1495,31 +1495,35 @@ function initializeTwitter() {
     $("body").attr("id", "ex-twitter");
 
     // old dedsign
-    findAndTranslate("tag", ".twitter-hashtag", {
-        asyncMode: true
-    });
+    if ($("body > div#doc").length) {
+        findAndTranslate("tag", ".twitter-hashtag", {
+            asyncMode: true
+        });
 
-    // header card
-    findAndTranslate("artist", ".ProfileHeaderCard-screennameLink", {
-        asyncMode: true
-    });
-    // popuping user card info
-    findAndTranslate("artist", ".ProfileCard-screennameLink", {
-        asyncMode: true
-    });
-    // tweet authors and comments
-    findAndTranslate("artist", "a.js-user-profile-link", {
-        predicate: ":not(.js-retweet-text) > a",
-        classes: "inline",
-        asyncMode: true
-    });
-    // quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
-    findAndTranslate("artist", ".username", {
-        predicate: "div.js-user-profile-link .username",
-        toProfileUrl: e => "https://twitter.com/" + $(e).find("b").text(),
-        asyncMode: true,
-        classes: "inline"
-    });
+        // header card
+        findAndTranslate("artist", ".ProfileHeaderCard-screennameLink", {
+            asyncMode: true
+        });
+        // popuping user card info
+        findAndTranslate("artist", ".ProfileCard-screennameLink", {
+            asyncMode: true
+        });
+        // tweet authors and comments
+        findAndTranslate("artist", "a.js-user-profile-link", {
+            predicate: ":not(.js-retweet-text) > a",
+            classes: "inline",
+            asyncMode: true
+        });
+        // quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
+        findAndTranslate("artist", ".username", {
+            predicate: "div.js-user-profile-link .username",
+            toProfileUrl: e => "https://twitter.com/" + $(e).find("b").text(),
+            asyncMode: true,
+            classes: "inline"
+        });
+
+        return;
+    }
 
     // new design
     findAndTranslate("tag", "a.r-1n1174f", {
