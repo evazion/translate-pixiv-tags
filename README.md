@@ -21,8 +21,10 @@ and [Twitter](https://twitter.com).
 
 # Screenshots
 
-<img width="600" src="https://user-images.githubusercontent.com/8430473/32701834-3b127f76-c7a2-11e7-99b5-bb4fac0a09ee.png">
-<img width="600" src="https://user-images.githubusercontent.com/8430473/38178147-f266d652-35d1-11e8-89c7-80730fcae865.png">
+<img width="600" src="https://user-images.githubusercontent.com/29704098/64010410-6710ed80-cb22-11e9-81de-141f5e1fb7e2.png">
+<img width="600" src="https://user-images.githubusercontent.com/29704098/64010491-945d9b80-cb22-11e9-83d0-1e89f6bd9405.png">
+<img width="600" src="https://user-images.githubusercontent.com/29704098/64010663-e7375300-cb22-11e9-8a7a-9c5cf9912033.png">
+<img width="600" src="https://user-images.githubusercontent.com/29704098/64010716-033af480-cb23-11e9-995d-85791910bb7e.png">
 
 # Settings
 
