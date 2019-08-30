@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190830132146
+// @version      20190831013046
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -1631,13 +1631,35 @@ function initializeTweetDeck() {
     });
 }
 
+function initializePixivFanbox() {
+    // https://www.pixiv.net/fanbox/creator/310631
+    // channel header
+    findAndTranslate("artist", "a.sc-1upaq18-16", {
+        classes: "inline a.sc-1upaq18-16",
+        asyncMode: true
+    });
+    // post author
+    findAndTranslate("artist", "div.sc-7161tb-4", {
+        toProfileUrl: el => ($(el).closest("a").prop("href")||"").replace(/\/post\/\d+/,""),
+        tagPosition: "beforeend",
+        classes: "inline",
+        asyncMode: true
+    });
+}
+
 function initialize() {
     GM_jQuery_setup();
     GM_addStyle(PROGRAM_CSS);
     GM_addStyle(GM_getResourceText('jquery_qtip_css'));
 
     switch (location.host) {
-        case "www.pixiv.net":          initializePixiv();         break;
+        case "www.pixiv.net":
+            if (location.pathname.startsWith("/fanbox")) {
+                initializePixivFanbox();
+            } else {
+                initializePixiv();
+            }
+            break;
         case "dic.pixiv.net":          initializePixiv();         break;
         case "nijie.info":             initializeNijie();         break;
         case "seiga.nicovideo.jp":     initializeNicoSeiga();     break;
