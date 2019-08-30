@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190830120346
+// @version      20190830121346
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -261,15 +261,12 @@ function noIndents(strings, ...values) {
 }
 
 function getImage(image_url) {
-    return new Promise((resolve,reject)=>{
-        GM.xmlHttpRequest({
+    return GM.xmlHttpRequest({
             method: "GET",
             url: image_url,
             responseType: 'blob',
-            onload: function(resp) {resolve(resp.response);},
-            onerror: function(resp) {reject(resp);}
-        });
-    });
+        })
+        .then(resp => resp.response);
 }
 
 const getJSONMemoized = _.memoize(
