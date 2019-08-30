@@ -1,15 +1,21 @@
 # Translate Pixiv Tags
 
 A userscript that translates tags and artist names on
-[Pixiv](https://www.pixiv.net) to their corresponding Danbooru tags. Also works
-on [Nijie](https://nijie.info), [NicoSeiga](https://seiga.nicovideo.jp),
-[Tinami](https://www.tinami.com), [BCY](https://bcy.net),
-[Twitter](https://twitter.com), [DeviantArt](https://www.deviantart.com), and
-[Hentai-Foundry](https://www.hentai-foundry.com).
+[Pixiv](https://www.pixiv.net) to their corresponding Danbooru tags. Also works on
+[ArtStation](https://www.artstation.com/),
+[BCY](https://bcy.net),
+[DeviantArt](https://www.deviantart.com),
+[Hentai-Foundry](https://www.hentai-foundry.com),
+[NicoSeiga](https://seiga.nicovideo.jp),
+[Nijie](https://nijie.info),
+[Pawoo](https://pawoo.net/about),
+[SauceNAO](http://saucenao.com/),
+[Tinami](https://www.tinami.com),
+and [Twitter](https://twitter.com).
 
 # Installation
 
-* Install [Tampermonkey](https://tampermonkey.net/) (for Chrome users) or [Greasemonkey](https://addons.mozilla.org/en-US/firefox/addon/greasemonkey/) (for Firefox users).
+* Install [Tampermonkey](https://tampermonkey.net/) extension, it's available for Chrome, Microsoft Edge, Safari, Opera Next, and Firefox.
 * Download the script: https://github.com/evazion/translate-pixiv-tags/raw/stable/translate-pixiv-tags.user.js
 * An installation prompt will appear. Accept the installation.
 
