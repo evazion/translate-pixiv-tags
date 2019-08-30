@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190830121346
+// @version      20190830132146
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -16,6 +16,7 @@
 // @match        *://*.deviantart.com/*
 // @match        *://*.hentai-foundry.com/*
 // @match        *://twitter.com/*
+// @match        *://tweetdeck.twitter.com/*
 // @match        *://*.artstation.com/*
 // @match        *://saucenao.com/*
 // @match        *://pawoo.net/*
@@ -1614,6 +1615,22 @@ function initializePawoo() {
     findAndTranslate("tag", ".hashtag");
 }
 
+function initializeTweetDeck() {
+    findAndTranslate("tag", "span.link-complex-target", {
+        predicate: "a[rel='hashtag'] span.link-complex-target",
+        asyncMode: true
+    });
+    // user card info
+    findAndTranslate("artist", "p.username", {
+        asyncMode: true
+    });
+    // tweet authors and comments
+    findAndTranslate("artist", "a.account-link", {
+        predicate: "a:has(.username)",
+        asyncMode: true
+    });
+}
+
 function initialize() {
     GM_jQuery_setup();
     GM_addStyle(PROGRAM_CSS);
@@ -1628,6 +1645,7 @@ function initialize() {
         case "bcy.net":                initializeBCY();           break;
         case "www.hentai-foundry.com": initializeHentaiFoundry(); break;
         case "twitter.com":            initializeTwitter();       break;
+        case "tweetdeck.twitter.com":  initializeTweetDeck();     break;
         case "saucenao.com":           initializeSauceNAO();      break;
         case "pawoo.net":              initializePawoo();         break;
         case "www.deviantart.com":     initializeDeviantArt();    break;
