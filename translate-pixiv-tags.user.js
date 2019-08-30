@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190828195746
+// @version      20190830120346
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -24,6 +24,7 @@
 // @grant        GM.xmlHttpRequest
 // @grant        GM_getValue
 // @grant        GM_setValue
+// @grant        GM_addStyle
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js
 // @require      https://raw.githubusercontent.com/rafaelw/mutation-summary/421110f84178aa9e4098b38df83f727e5aea3d97/src/mutation-summary.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/qtip2/3.0.3/jquery.qtip.js
@@ -244,161 +245,7 @@ span.ex-translated-tags a.ex-translated-tag-category-0 {
 .ex-artist-tooltip .qtip-content {
     width: 520px !important;
 }
-
-/* Fix https://www.pixiv.net/tags.php to display tags as vertical list. */
-#ex-pixiv .tag-list li {
-    display: block;
-}
-#ex-pixiv .tag-list li::before {
-    content: none;
-}
-/* Hide Pixiv's translated tags  */
-#ex-pixiv .ex-translated-tags + span .gtm-new-work-romaji-tag-event-click,
-#ex-pixiv .ex-translated-tags + span .gtm-new-work-translate-tag-event-click {
-    display: none;
-}
-/* Remove hashtags from translated tags */
-#ex-pixiv .GpJOYWW a:before {
-    content: "";
-}
-/* On the artist profile page, render the danbooru artist tag between the artist's name and follower count. */
-#ex-pixiv ._3_qyP5m {
-    display: grid;
-    grid-auto-rows: 16px;
-    grid-template-columns: auto 1fr;
-    justify-items: start;
-}
-#ex-pixiv ._3_qyP5m a[href^="/premium"] {
-    grid-area: 1 / 2;
-}
-#ex-pixiv ._3_qyP5m .ex-artist-tag {
-    grid-area: span 1 / span 2;
-}
-/* Illust page: fix locate artist tag to not trigger native tooltip */
-#ex-pixiv main+aside>section>h2 {
-    position: relative;
-}
-#ex-pixiv h2>div>div {
-    margin-bottom: 16px;
-}
-#ex-pixiv main+aside>section>h2 .ex-artist-tag {
-    position: absolute;
-    bottom: 0;
-    left: 47px;
-}
-/* Illust page: fix artist tag overflowing in related works */
-#ex-pixiv aside li>div>div:last-child {
-    flex-direction: column;
-    align-items: flex-start;
-}
-#ex-pixiv aside li .ex-artist-tag {
-    margin-left: 2px;
-    margin-top: -6px;
-}
-
-#ex-nijie .ex-translated-tags {
-   font-family: Verdana, Helvetica, sans-serif;
-}
-/* Fix tag lists in http://nijie.info/view.php?id=203787 pages. */
-#ex-nijie #dojin_left #view-tag .tag {
-  white-space: nowrap;
-  border: 0;
-}
-
-/* Fix tags in http://seiga.nicovideo.jp/seiga/im7626097 */
-#ex-seiga .illust_tag .tag {
-    background: #ebebeb;
-    height: auto;
-    margin: 0 10px 5px 0;
-}
-/* Fix artist tag in http://seiga.nicovideo.jp/seiga/im6950870 */
-#ex-seiga .im_head_bar .ex-artist-tag a {
-    display: inline-block;
-    border: none;
-    background: none;
-    padding: 0;
-}
-
-#ex-tinami .ex-translated-tags {
-    font-family: Verdana, Helvetica, sans-serif;
-    float: none !important;
-    display: inline !important;
-}
-
-#ex-deviantart .ex-artist-tag a {
-    color: #A00 !important;
-}
-
-#ex-twitter .ex-artist-tag {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
-}
-/* Old design: on post page locate the artist tag below author's @name. */
-#ex-twitter .permalink-header {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-    height: auto;
-}
-#ex-twitter .permalink-header .ex-artist-tag {
-    grid-row: 2;
-    margin-left: 0;
-}
-/* Fix position of artist tag in an expanded tweet */
-#ex-twitter .r-18u37iz.r-thb0q2.r-wgs6xk .r-zl2h9q {
-    display: grid;
-    grid-template-columns: auto 32px;
-}
-#ex-twitter .r-18u37iz.r-thb0q2.r-wgs6xk .r-zl2h9q .ex-artist-tag {
-    grid-area: 2/1;
-    margin: 0;
-}
-
-#ex-artstation .qtip-content {
-    box-sizing: initial;
-}
-#ex-artstation .artist-name-and-headline .ex-artist-tag {
-    font-size: 12pt;
-    line-height: 150%;
-}
-#ex-artstation .hover-card .ex-artist-tag {
-    font-size: 12pt;
-    margin-top: -10px;
-}
-#ex-artstation a.user .ex-artist-tag {
-    line-height: 100%;
-}
-#ex-artstation .site-title .ex-artist-tag {
-    font-size: 12pt;
-    line-height: 100%;
-    margin-top: -10px;
-}
-#ex-artstation .site-title .ex-artist-tag a {
-    font-size: 12pt;
-}
-
-#ex-saucenao .ex-translated-tags {
-    margin: 0;
-}
-#ex-saucenao .ex-translated-tags::before, #ex-saucenao .ex-translated-tags::after {
-    content: none;
-}
-#ex-saucenao .ex-translated-tags + .target, #ex-saucenao .ex-artist-tag + .target {
-    display: none;
-}
-
-/* Active Users sidebar */
-#ex-pawoo .account__avatar-wrapper {
-    display: flex;
-    height: 100%;
-    align-items: center;
-}
-/* fix newline in arist tag in cards of following users and followers */
-#ex-pawoo .ex-artist-tag a {
-    display: inline;
-}`;
-
-function installStyle(style_string) {
-    $("head").append(`<style type="text/css">${style_string}</style>`);
-}
+`;
 
 // tag function for template literals to remove newlines and leading spaces
 function noIndents(strings, ...values) {
@@ -1215,8 +1062,58 @@ function findAndTranslate(mode, selector, options = {}) {
 }
 
 function initializePixiv() {
-    $("body").attr("id", "ex-pixiv");
-    $(".illust-tag-translation").remove();
+    GM_addStyle(`
+        /* Fix https://www.pixiv.net/tags.php to display tags as vertical list. */
+        .tag-list.slash-separated li {
+            display: block;
+        }
+        .tag-list.slash-separated li + li:before {
+            content: none;
+        }
+        /* Hide Pixiv's translated tags  */
+        .ex-translated-tags + span .gtm-new-work-romaji-tag-event-click,
+        .ex-translated-tags + span .gtm-new-work-translate-tag-event-click {
+            display: none;
+        }
+        /* Remove hashtags from translated tags */
+        .GpJOYWW a:before {
+            content: "";
+        }
+        /* On the artist profile page, render the danbooru artist tag between the artist's name and follower count. */
+        ._3_qyP5m {
+            display: grid;
+            grid-auto-rows: 16px;
+            grid-template-columns: auto 1fr;
+            justify-items: start;
+        }
+        ._3_qyP5m a[href^="/premium"] {
+            grid-area: 1 / 2;
+        }
+        ._3_qyP5m .ex-artist-tag {
+            grid-area: span 1 / span 2;
+        }
+        /* Illust page: fix locate artist tag to not trigger native tooltip */
+        main+aside>section>h2 {
+            position: relative;
+        }
+        h2>div>div {
+            margin-bottom: 16px;
+        }
+        main+aside>section>h2 .ex-artist-tag {
+            position: absolute;
+            bottom: 0;
+            left: 47px;
+        }
+        /* Illust page: fix artist tag overflowing in related works */
+        aside li>div>div:last-child {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        aside li .ex-artist-tag {
+            margin-left: 2px;
+            margin-top: -6px;
+        }
+    `);
 
     findAndTranslate("tag", [
         // https://www.pixiv.net/bookmark_add.php?type=illust&illust_id=123456
@@ -1289,7 +1186,16 @@ function initializePixiv() {
 }
 
 function initializeNijie() {
-    $("body").attr("id", "ex-nijie");
+    GM_addStyle(`
+        .ex-translated-tags {
+            font-family: Verdana, Helvetica, sans-serif;
+        }
+        /* Fix tag lists in http://nijie.info/view.php?id=203787 pages. */
+        #dojin_left #view-tag .tag {
+            white-space: nowrap;
+            border: 0;
+        }
+    `);
 
     // http://nijie.info/view.php?id=233339
     findAndTranslate("artist", "#pro .user_icon .name, .popup_member > a");
@@ -1305,7 +1211,13 @@ function initializeNijie() {
 }
 
 function initializeTinami() {
-    $("body").attr("id", "ex-tinami");
+    GM_addStyle(`
+        .ex-translated-tags {
+            font-family: Verdana, Helvetica, sans-serif;
+            float: none !important;
+            display: inline !important;
+        }
+    `);
 
     // http://www.tinami.com/view/979474
     findAndTranslate("tag", ".tag > span > a:nth-child(2)");
@@ -1324,7 +1236,21 @@ function initializeTinami() {
 }
 
 function initializeNicoSeiga() {
-    $("body").attr("id", "ex-seiga");
+    GM_addStyle(`
+        /* Fix tags in http://seiga.nicovideo.jp/seiga/im7626097 */
+        .illust_tag .tag {
+            background: #ebebeb;
+            height: auto;
+            margin: 0 10px 5px 0;
+        }
+        /* Fix artist tag in http://seiga.nicovideo.jp/seiga/im6950870 */
+        .im_head_bar .inner .user ul .user_link .ex-artist-tag a {
+            display: inline-block;
+            border: none;
+            background: none;
+            padding: 0;
+        }
+    `);
 
     // http://seiga.nicovideo.jp/tag/艦これ
     findAndTranslate("tag", "h1:has(.icon_tag_big)", {
@@ -1373,7 +1299,11 @@ function initializeBCY() {
 }
 
 function initializeDeviantArt() {
-    $("body").attr("id", "ex-deviantart");
+    GM_addStyle(`
+        body:not(.mobile-devpage-uplift) .ex-artist-tag a {
+            color: #A00 !important;
+        }
+    `);
 
     // https://www.deviantart.com/koyorin
     // https://www.deviantart.com/koyorin/art/Ruby-570526828
@@ -1404,7 +1334,30 @@ function initializeHentaiFoundry() {
 }
 
 function initializeTwitter() {
-    $("body").attr("id", "ex-twitter");
+    GM_addStyle(`
+        .ex-artist-tag {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
+        }
+        /* Old design: on post page locate the artist tag below author's @name. */
+        .permalink-header {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            height: auto;
+        }
+        .permalink-header .ex-artist-tag {
+            grid-row: 2;
+            margin-left: 0;
+        }
+        /* Fix position of artist tag in an expanded tweet */
+        .r-18u37iz.r-thb0q2.r-wgs6xk .r-zl2h9q {
+            display: grid;
+            grid-template-columns: auto 32px;
+        }
+        .r-18u37iz.r-thb0q2.r-wgs6xk .r-zl2h9q .ex-artist-tag {
+            grid-area: 2/1;
+            margin: 0;
+        }
+    `);
 
     // old dedsign
     if ($("body > div#doc").length) {
@@ -1486,7 +1439,30 @@ function initializeTwitter() {
 }
 
 function initializeArtStation() {
-    $("body").attr("id", "ex-artstation");
+    GM_addStyle(`
+        .qtip-content {
+            box-sizing: initial;
+        }
+        .artist-name-and-headline .ex-artist-tag {
+            font-size: 12pt;
+            line-height: 150%;
+        }
+        .hover-card .ex-artist-tag {
+            font-size: 12pt;
+            margin-top: -10px;
+        }
+        a.user .ex-artist-tag {
+            line-height: 100%;
+        }
+        .site-title .ex-artist-tag {
+            font-size: 12pt;
+            line-height: 100%;
+            margin-top: -10px;
+        }
+        .site-title .ex-artist-tag a {
+            font-size: 12pt;
+        }
+    `);
 
     function toFullURL(url) {
         if (url && typeof url !== "string") {
@@ -1570,7 +1546,17 @@ function initializeArtStation() {
 }
 
 function initializeSauceNAO() {
-    $("body").attr("id", "ex-saucenao");
+    GM_addStyle(`
+        .ex-translated-tags {
+            margin: 0;
+        }
+        .ex-translated-tags::before, .ex-translated-tags::after {
+            content: none;
+        }
+        .ex-translated-tags + .target, .ex-artist-tag + .target {
+            display: none;
+        }
+    `);
 
     $(".resulttitle, .resultcontentcolumn")
         .contents()
@@ -1597,7 +1583,21 @@ function initializeSauceNAO() {
 }
 
 function initializePawoo() {
-    $("body").attr("id", "ex-pawoo");
+    GM_addStyle(`
+        .ex-artist-tag {
+            line-height: 100%;
+        }
+        /* Active Users sidebar */
+        .account__avatar-wrapper {
+            display: flex;
+            height: 100%;
+            align-items: center;
+        }
+        /* fix newline in arist tag in cards of following users and followers */
+        .ex-artist-tag a {
+            display: inline;
+        }
+    `);
 
     // https://pawoo.net/@yamadorikodi
     // artist name in his card info
@@ -1619,8 +1619,8 @@ function initializePawoo() {
 
 function initialize() {
     GM_jQuery_setup();
-    installStyle(PROGRAM_CSS);
-    installStyle(GM_getResourceText('jquery_qtip_css'));
+    GM_addStyle(PROGRAM_CSS);
+    GM_addStyle(GM_getResourceText('jquery_qtip_css'));
 
     switch (location.host) {
         case "www.pixiv.net":          initializePixiv();         break;
