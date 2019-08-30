@@ -28,7 +28,7 @@
 // @require      https://raw.githubusercontent.com/rafaelw/mutation-summary/421110f84178aa9e4098b38df83f727e5aea3d97/src/mutation-summary.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/qtip2/3.0.3/jquery.qtip.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore.js
-// @require      https://github.com/BrokenEagle/translate-pixiv-tags/raw/Lib-20190829/lib/jquery-gm-shim.js
+// @require      https://github.com/evazion/translate-pixiv-tags/raw/lib-20190830/lib/jquery-gm-shim.js
 // @resource     jquery_qtip_css https://cdnjs.cloudflare.com/ajax/libs/qtip2/3.0.3/jquery.qtip.min.css
 // @connect      donmai.us
 // @noframes
