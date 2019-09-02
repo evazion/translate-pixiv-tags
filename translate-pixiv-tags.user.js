@@ -138,8 +138,6 @@ const ARTIST_QTIP_SETTINGS = {
     position: {
         my: "top center",
         at: "bottom center",
-        viewport: $("#ex-qtips"),
-        container: $("#ex-qtips"),
     },
     show: {
         delay: 500,
