@@ -1645,9 +1645,15 @@ function initializePixivFanbox() {
     });
 }
 
-function initialize() {
+function initializeQtipContainer() {
     // Container and viewport for qTips
     $(`<div id="ex-qtips"></div>`).appendTo("body");
+    ARTIST_QTIP_SETTINGS.position.viewport =
+    ARTIST_QTIP_SETTINGS.position.container = $("#ex-qtips");
+}
+
+function initialize() {
+    initializeQtipContainer()
     GM_jQuery_setup();
     GM_addStyle(PROGRAM_CSS);
     GM_addStyle(GM_getResourceText('jquery_qtip_css'));
