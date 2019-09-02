@@ -130,8 +130,6 @@ const TAG_FIELDS = "name,category";
 const WIKI_FIELDS = "title,category_name";
 const ARTIST_FIELDS = "id,name,is_banned,other_names,urls";
 
-// Container and viewport for qTips
-$(`<div id="ex-qtips"></div>`).appendTo("body");
 // Settings for artist tooltips.
 const ARTIST_QTIP_SETTINGS = {
     style: {
@@ -1648,6 +1646,8 @@ function initializePixivFanbox() {
 }
 
 function initialize() {
+    // Container and viewport for qTips
+    $(`<div id="ex-qtips"></div>`).appendTo("body");
     GM_jQuery_setup();
     GM_addStyle(PROGRAM_CSS);
     GM_addStyle(GM_getResourceText('jquery_qtip_css'));
@@ -1679,5 +1679,6 @@ function initialize() {
     }
 }
 
-initialize();
+/****Program execution start****/
 
+initialize();
