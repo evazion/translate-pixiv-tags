@@ -32,7 +32,7 @@ and [Twitter](https://twitter.com).
 
 You can open the settings by clicking a button in the upper right corner of any artist's tooltip.
 
-<img width="600" src="https://user-images.githubusercontent.com/29704098/63255026-7c159300-c27d-11e9-9a0f-63b1e813affe.png">
+<img width="600" src="https://user-images.githubusercontent.com/29704098/64245098-f64b4600-cf12-11e9-83f2-6be8a6da59db.png">
 
 ### Via Storage
 
@@ -51,19 +51,8 @@ To see default settings, the userscript should be run once.
 
 <img width="600" src="https://user-images.githubusercontent.com/21149935/62501237-b6236700-b79e-11e9-826b-868a470bf050.png">
 
-# How to add new translations
+# FAQ
 
-Often you'll find tags that aren't translated. In these cases you can add the translation yourself:
-
-* Go to https://danbooru.donmai.us/wiki_pages.
-* Use the search box (in the top left) to find the Danbooru tag. For example, to add a translation of `オリジナル` to `original`, search for `original` to find Danbooru's wiki page for the [original](https://danbooru.donmai.us/wiki_pages?title=original) tag.
-* Click `Edit` in the menu bar at the top.
-* In the `Other names` field, add the untranslated tag.
-* Click `Submit` to save your changes.
-
-Sometimes a tag will translate to multiple Danbooru tags. In these cases the Pixiv tag should be added to each Danbooru wiki entry. For example, `黒タイツ` ("black tights") on Pixiv corresponds to `pantyhose` and `black_legwear` on Danbooru, so it is listed as an "Other name" on both the `black_legwear` and `pantyhose` wikis.
-
-Sometimes tags on other sites don't have an equivalent Danbooru tag. This is usually because the tag is too subjective ("cute", "sexy", "beautiful"), or too generic ("girl", "anime", "fanart", "illustration"). These tags can't be translated.
-
-##### Adding a new translation
-<img width="600" src="https://user-images.githubusercontent.com/8430473/51077237-2e8ed300-1669-11e9-8b0b-88a51804a9d3.png">
+* [How to add new translations](https://github.com/evazion/translate-pixiv-tags/wiki/How-to-add-new-translations)
+* [How to add or update artist links](https://github.com/evazion/translate-pixiv-tags/wiki/How-to-add-or-update-artist-links)
+* [How to add support of one more site](https://github.com/evazion/translate-pixiv-tags/wiki/How-to-add-support-of-one-more-site)
