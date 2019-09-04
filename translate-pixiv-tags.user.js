@@ -894,7 +894,7 @@ function showSettings() {
     }
     function closeSettings() {
         $shadowContainer.remove();
-        $(document).off("keydown", closeOnEscape);
+        $(document).off("keydown", closeSettingsOnEscape);
     }
     function closeSettingsOnEscape(ev) {
         if (ev.key==="Escape" && !ev.altKey && !ev.ctrlKey && !ev.shiftKey) {
