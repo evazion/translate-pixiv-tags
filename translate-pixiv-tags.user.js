@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190904125046
+// @version      20190904230446
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -866,7 +866,7 @@ function buildPostPreview(post) {
 }
 
 function showSettings() {
-    const settingToInput = (setting) => {
+    function settingToInput(setting) {
         const value = SETTINGS.get(setting.name);
         switch (setting.type) {
             case "number":
@@ -891,7 +891,17 @@ function showSettings() {
                 console.error("Unsupported type "+setting.type);
                 return "";
         }
-    };
+    }
+    function closeSettings() {
+        $shadowContainer.remove();
+        $(document).off("keydown", closeOnEscape);
+    }
+    function closeSettingsOnEscape(ev) {
+        if (ev.key==="Escape" && !ev.altKey && !ev.ctrlKey && !ev.shiftKey) {
+            closeSettings();
+            return false;
+        }
+    }
 
     const $settings = $(
         noIndents`
@@ -957,7 +967,7 @@ function showSettings() {
     `);
     let $shadowContainer = $("<div>").appendTo("#ex-qtips");
     $settings.click((ev) => {
-        if ($(ev.target).is("#ui-settings")) $shadowContainer.remove();
+        if ($(ev.target).is("#ui-settings")) closeSettings();
     });
     $settings.find("input[type='number'], select").change((ev) => {
         $settings.find(".refresh-page").removeAttr("disabled");
@@ -968,19 +978,11 @@ function showSettings() {
             let value = $input.is("input[type='number']") ? +$input.val() : $input.val();
             SETTINGS.set($input.prop("name"), value);
         });
-        $shadowContainer.remove();
+        closeSettings();
         window.location.reload();
     });
-    $settings.find(".cancel").click((ev) => {
-        $shadowContainer.remove();
-    });
-    $(document).keydown(function closeOnEscape(ev) {
-        if (ev.key==="Escape" && !ev.altKey && !ev.ctrlKey && !ev.shiftKey) {
-            $(document).off("keydown", closeOnEscape);
-            $shadowContainer.remove();
-            return false;
-        }
-    });
+    $settings.find(".cancel").click(closeSettings);
+    $(document).keydown(closeSettingsOnEscape);
     let [className, bgcolor] = chooseBackgroundColorScheme($("#ex-qtips"));
     $settings.addClass(className);
     attachShadow($shadowContainer[0], () => $settings);
