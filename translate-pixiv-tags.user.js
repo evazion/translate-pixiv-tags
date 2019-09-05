@@ -160,6 +160,10 @@ const CORS_IMAGE_DOMAINS = [
 //Memory storage for already rendered artist tooltips
 const rendered_qtips = {};
 
+//For network rate limiting
+const max_pending_network_requests = 40;
+const rate_limit_request = {};
+
 const PROGRAM_CSS = `
 .ex-translated-tags {
     margin: 0 0.5em;
@@ -269,8 +273,29 @@ function getImage(image_url) {
         .then(resp => resp.response);
 }
 
+function logPendingWarning(domain) {
+    if (rate_limit_request[domain].log) {
+        console.warn("Max pending requests for " + domain);
+        rate_limit_request[domain].log = false;
+        //Have only one warning message per second for the same domain
+        setTimeout(()=>{rate_limit_request[domain].log = true;}, 1000);
+    }
+}
+
+async function getJSONRateLimited(url, params) {
+    let domain = new URL(url).hostname;
+    rate_limit_request[domain] = rate_limit_request[domain] || {pending: 0, log: true};
+    //Wait until the number of pending network requests is below the max threshold
+    while (rate_limit_request[domain].pending >= max_pending_network_requests) {
+        logPendingWarning(domain)
+        await new Promise(resolve => setTimeout(resolve, 500)); //Sleep half a second
+    }
+    rate_limit_request[domain].pending++
+    return $.getJSON(url, params).always(()=>{rate_limit_request[domain].pending--;});
+}
+
 const getJSONMemoized = _.memoize(
-    (url, params) => $.getJSON(url, params),
+    (url, params) => getJSONRateLimited(url, params),
     (url, params) => url + $.param(params)
 );
 
