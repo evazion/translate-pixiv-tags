@@ -287,10 +287,10 @@ async function getJSONRateLimited(url, params) {
     rate_limit_request[domain] = rate_limit_request[domain] || {pending: 0, log: true};
     //Wait until the number of pending network requests is below the max threshold
     while (rate_limit_request[domain].pending >= max_pending_network_requests) {
-        logPendingWarning(domain)
+        logPendingWarning(domain);
         await new Promise(resolve => setTimeout(resolve, 500)); //Sleep half a second
     }
-    rate_limit_request[domain].pending++
+    rate_limit_request[domain].pending++;
     return $.getJSON(url, params).always(()=>{rate_limit_request[domain].pending--;});
 }
 
