@@ -161,7 +161,8 @@ const CORS_IMAGE_DOMAINS = [
 const rendered_qtips = {};
 
 //For network rate limiting
-const max_pending_network_requests = 40;
+const MAX_PENDING_NETWORK_REQUESTS = 40;
+const MAX_NETWORK_RETRIES = 3;
 const rate_limit_request = {};
 
 const PROGRAM_CSS = `
@@ -294,12 +295,22 @@ async function getJSONRateLimited(url, params) {
     let domain = new URL(url).hostname;
     rate_limit_request[domain] = rate_limit_request[domain] || {pending: 0};
     //Wait until the number of pending network requests is below the max threshold
-    while (rate_limit_request[domain].pending >= max_pending_network_requests) {
+    while (rate_limit_request[domain].pending >= MAX_PENDING_NETWORK_REQUESTS) {
         rateLimitedLog("Exceeded maximum pending requests for", domain, 'warn');
         await new Promise(sleepHalfSecond);
     }
-    rate_limit_request[domain].pending++;
-    return $.getJSON(url, params).always(()=>{rate_limit_request[domain].pending--;});
+    for (let i = 0; i < MAX_NETWORK_RETRIES; i++) {
+        rate_limit_request[domain].pending++;
+        try {
+            var resp = await $.getJSON(url, params).always(()=>{rate_limit_request[domain].pending--;});
+        } catch (e) {
+            console.error("Failed try #", i + 1, "\nURL:", url, "\nParameters:", params, "\nHTTP Error:", e.status);
+            await new Promise(sleepHalfSecond);
+            continue;
+        }
+        return resp;
+    }
+    return [];
 }
 
 const getJSONMemoized = _.memoize(
