@@ -165,7 +165,6 @@ const MAX_PENDING_NETWORK_REQUESTS = 40;
 const MIN_PENDING_NETWORK_REQUESTS = 5;
 const MAX_NETWORK_ERRORS = 25;
 const MAX_NETWORK_RETRIES = 3;
-const rate_limit_request = {};
 
 const PROGRAM_CSS = `
 .ex-translated-tags {
@@ -307,23 +306,23 @@ function checkNetworkErrors(domain,hasError) {
 async function getJSONRateLimited(url, params) {
     const sleepHalfSecond = resolve => setTimeout(resolve, 500);
     let domain = new URL(url).hostname;
-    rate_limit_request[domain] = rate_limit_request[domain] || {pending: 0, current_max: MAX_PENDING_NETWORK_REQUESTS};
+    getJSONRateLimited[domain] = getJSONRateLimited[domain] || {pending: 0, current_max: MAX_PENDING_NETWORK_REQUESTS};
     //Wait until the number of pending network requests is below the max threshold
-    while (rate_limit_request[domain].pending >= rate_limit_request[domain].current_max) {
+    while (getJSONRateLimited[domain].pending >= getJSONRateLimited[domain].current_max) {
         //Bail if the maximum number of network errors has been exceeded
         if (!(checkNetworkErrors(domain, false))) {
             return [];
         }
-        rateLimitedLog("Exceeded maximum pending requests", rate_limit_request[domain].current_max, "for", domain, 'warn');
+        rateLimitedLog("Exceeded maximum pending requests", getJSONRateLimited[domain].current_max, "for", domain, 'warn');
         await new Promise(sleepHalfSecond);
     }
     for (let i = 0; i < MAX_NETWORK_RETRIES; i++) {
-        rate_limit_request[domain].pending++;
+        getJSONRateLimited[domain].pending++;
         try {
-            var resp = await $.getJSON(url, params).always(()=>{rate_limit_request[domain].pending--;});
+            var resp = await $.getJSON(url, params).always(()=>{getJSONRateLimited[domain].pending--;});
         } catch (e) {
             //Backing off maximum to adjust to current network conditions
-            rate_limit_request[domain].current_max = Math.max(rate_limit_request[domain].current_max - 1, MIN_PENDING_NETWORK_REQUESTS);
+            getJSONRateLimited[domain].current_max = Math.max(getJSONRateLimited[domain].current_max - 1, MIN_PENDING_NETWORK_REQUESTS);
             console.error("Failed try #", i + 1, "\nURL:", url, "\nParameters:", params, "\nHTTP Error:", e.status);
             if (!checkNetworkErrors(domain, true)) {
                 return [];
