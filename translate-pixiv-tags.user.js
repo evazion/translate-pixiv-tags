@@ -302,8 +302,7 @@ const getJSONMemoized = _.memoize(
 
 function get(url, params, cache = CACHE_LIFETIME, base_url = BOORU) {
     if (cache > 0) {
-        const timestamp = Math.round((Date.now() / 1000 / cache));
-        params = { ...params, expiry: 365, timestamp: timestamp };
+        params = { ...params, expires_in: cache};
     }
     return getJSONMemoized(`${base_url}${url}.json`, params)
         .catch(xhr => {
