@@ -160,8 +160,9 @@ const CORS_IMAGE_DOMAINS = [
 //Memory storage for already rendered artist tooltips
 const rendered_qtips = {};
 
-//For network rate limiting
+//For network rate and error management
 const MAX_PENDING_NETWORK_REQUESTS = 40;
+const MAX_NETWORK_ERRORS = 25;
 const MAX_NETWORK_RETRIES = 3;
 const rate_limit_request = {};
 
@@ -290,12 +291,28 @@ function rateLimitedLog() {
     }
 }
 
+function checkNetworkErrors(domain,hasError) {
+    checkNetworkErrors[domain] = checkNetworkErrors[domain] || {error: 0};
+    if (hasError) {
+        console.log("Total errors:", ++checkNetworkErrors[domain].error);
+    }
+    if (checkNetworkErrors[domain].error >= MAX_NETWORK_ERRORS) {
+        rateLimitedLog("Maximun number of errors exceeded", MAX_NETWORK_ERRORS, "for", domain, 'error');
+        return false;
+    }
+    return true;
+}
+
 async function getJSONRateLimited(url, params) {
     const sleepHalfSecond = resolve => setTimeout(resolve, 500);
     let domain = new URL(url).hostname;
     rate_limit_request[domain] = rate_limit_request[domain] || {pending: 0};
     //Wait until the number of pending network requests is below the max threshold
     while (rate_limit_request[domain].pending >= MAX_PENDING_NETWORK_REQUESTS) {
+        //Bail if the maximum number of network errors has been exceeded
+        if (!(checkNetworkErrors(domain, false))) {
+            return [];
+        }
         rateLimitedLog("Exceeded maximum pending requests for", domain, 'warn');
         await new Promise(sleepHalfSecond);
     }
@@ -305,6 +322,9 @@ async function getJSONRateLimited(url, params) {
             var resp = await $.getJSON(url, params).always(()=>{rate_limit_request[domain].pending--;});
         } catch (e) {
             console.error("Failed try #", i + 1, "\nURL:", url, "\nParameters:", params, "\nHTTP Error:", e.status);
+            if (!checkNetworkErrors(domain, true)) {
+                return [];
+            }
             await new Promise(sleepHalfSecond);
             continue;
         }
