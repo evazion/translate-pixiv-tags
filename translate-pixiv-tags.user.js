@@ -302,8 +302,7 @@ const getJSONMemoized = _.memoize(
 
 function get(url, params, cache = CACHE_LIFETIME, base_url = BOORU) {
     if (cache > 0) {
-        const timestamp = Math.round((Date.now() / 1000 / cache));
-        params = { ...params, expiry: 365, timestamp: timestamp };
+        params = { ...params, expires_in: cache};
     }
     return getJSONMemoized(`${base_url}${url}.json`, params)
         .catch(xhr => {
@@ -330,8 +329,7 @@ async function translateTag(target, tagName, options) {
             category: wikiPage.category_name,
         }));
     } else if (normalizedTag.match(/^[\x20-\x24\x26-\x29\x2B\x2D-\x7F]+$/)) { // ASCII characters except percent, asterics, and comma
-        // The index action on the tags endpoint does not support expirations
-        tags = await get("/tags", {search: {name: normalizedTag}, only: TAG_FIELDS}, 0);
+        tags = await get("/tags", {search: {name: normalizedTag}, only: TAG_FIELDS});
         tags = tags.map(tag => new Object({
             name: tag.name,
             prettyName: tag.name.replace(/_/g, " "),
@@ -472,9 +470,8 @@ function chooseBackgroundColorScheme($element) {
 async function buildArtistTooltip(artist, qtip) {
     attachShadow(qtip.elements.content.get(0), async () => {
         if (!(artist.name in rendered_qtips)) {
-            //The index action on the posts and tags endpoints does not support expirations
-            const posts = get(`/posts`, {tags: `status:any ${artist.name}`, limit: ARTIST_POST_PREVIEW_LIMIT, only: POST_FIELDS}, 0);
-            const tags = get(`/tags`, {search: {name: artist.name}, only: POST_COUNT_FIELDS}, 0);
+            const posts = get(`/posts`, {tags: `status:any ${artist.name}`, limit: ARTIST_POST_PREVIEW_LIMIT, only: POST_FIELDS});
+            const tags = get(`/tags`, {search: {name: artist.name}, only: POST_COUNT_FIELDS});
 
             rendered_qtips[artist.name] = buildArtistTooltipContent(artist, await tags, await posts);
             return rendered_qtips[artist.name];
