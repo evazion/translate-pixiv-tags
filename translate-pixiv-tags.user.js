@@ -273,22 +273,29 @@ function getImage(image_url) {
         .then(resp => resp.response);
 }
 
-function logPendingWarning(domain) {
-    if (rate_limit_request[domain].log) {
-        console.warn("Max pending requests for " + domain);
-        rate_limit_request[domain].log = false;
-        //Have only one warning message per second for the same domain
-        setTimeout(()=>{rate_limit_request[domain].log = true;}, 1000);
+function rateLimitedLog() {
+    //The last parameter is the level of logging
+    let level = arguments[arguments.length - 1];
+    //Removes the last parameter
+    arguments.length -= 1;
+    //Assumes that only simple arguments will be passed in
+    let key = [...arguments].join(',');
+    rateLimitedLog[key] = rateLimitedLog[key] || {log: true};
+    if (rateLimitedLog[key].log) {
+        console[level](...arguments);
+        rateLimitedLog[key].log = false;
+        //Have only one message with the same parameters per second
+        setTimeout(()=>{rateLimitedLog[key].log = true;}, 1000);
     }
 }
 
 async function getJSONRateLimited(url, params) {
     const sleepHalfSecond = resolve => setTimeout(resolve, 500);
     let domain = new URL(url).hostname;
-    rate_limit_request[domain] = rate_limit_request[domain] || {pending: 0, log: true};
+    rate_limit_request[domain] = rate_limit_request[domain] || {pending: 0};
     //Wait until the number of pending network requests is below the max threshold
     while (rate_limit_request[domain].pending >= max_pending_network_requests) {
-        logPendingWarning(domain);
+        rateLimitedLog("Exceeded maximum pending requests for", domain, 'warn');
         await new Promise(sleepHalfSecond);
     }
     rate_limit_request[domain].pending++;
