@@ -160,9 +160,11 @@ const CORS_IMAGE_DOMAINS = [
 //Memory storage for already rendered artist tooltips
 const rendered_qtips = {};
 
-//For network rate limiting
-const max_pending_network_requests = 40;
-const rate_limit_request = {};
+//For network rate and error management
+const MAX_PENDING_NETWORK_REQUESTS = 40;
+const MIN_PENDING_NETWORK_REQUESTS = 5;
+const MAX_NETWORK_ERRORS = 25;
+const MAX_NETWORK_RETRIES = 3;
 
 const PROGRAM_CSS = `
 .ex-translated-tags {
@@ -273,26 +275,60 @@ function getImage(image_url) {
         .then(resp => resp.response);
 }
 
-function logPendingWarning(domain) {
-    if (rate_limit_request[domain].log) {
-        console.warn("Max pending requests for " + domain);
-        rate_limit_request[domain].log = false;
-        //Have only one warning message per second for the same domain
-        setTimeout(()=>{rate_limit_request[domain].log = true;}, 1000);
+function rateLimitedLog(level, ...messageData) {
+    //Assumes that only simple arguments will be passed in
+    let key = messageData.join(',');
+    rateLimitedLog[key] = rateLimitedLog[key] || {log: true};
+    if (rateLimitedLog[key].log) {
+        console[level](...messageData);
+        rateLimitedLog[key].log = false;
+        //Have only one message with the same parameters per second
+        setTimeout(()=>{rateLimitedLog[key].log = true;}, 1000);
     }
+}
+
+function checkNetworkErrors(domain,hasError) {
+    checkNetworkErrors[domain] = checkNetworkErrors[domain] || {error: 0};
+    if (hasError) {
+        console.log("Total errors:", ++checkNetworkErrors[domain].error);
+    }
+    if (checkNetworkErrors[domain].error >= MAX_NETWORK_ERRORS) {
+        rateLimitedLog("error", "Maximun number of errors exceeded", MAX_NETWORK_ERRORS, "for", domain);
+        return false;
+    }
+    return true;
 }
 
 async function getJSONRateLimited(url, params) {
     const sleepHalfSecond = resolve => setTimeout(resolve, 500);
     let domain = new URL(url).hostname;
-    rate_limit_request[domain] = rate_limit_request[domain] || {pending: 0, log: true};
+    getJSONRateLimited[domain] = getJSONRateLimited[domain] || {pending: 0, current_max: MAX_PENDING_NETWORK_REQUESTS};
     //Wait until the number of pending network requests is below the max threshold
-    while (rate_limit_request[domain].pending >= max_pending_network_requests) {
-        logPendingWarning(domain);
+    while (getJSONRateLimited[domain].pending >= getJSONRateLimited[domain].current_max) {
+        //Bail if the maximum number of network errors has been exceeded
+        if (!(checkNetworkErrors(domain, false))) {
+            return [];
+        }
+        rateLimitedLog("warn", "Exceeded maximum pending requests", getJSONRateLimited[domain].current_max, "for", domain);
         await new Promise(sleepHalfSecond);
     }
-    rate_limit_request[domain].pending++;
-    return $.getJSON(url, params).always(()=>{rate_limit_request[domain].pending--;});
+    for (let i = 0; i < MAX_NETWORK_RETRIES; i++) {
+        getJSONRateLimited[domain].pending++;
+        try {
+            var resp = await $.getJSON(url, params).always(()=>{getJSONRateLimited[domain].pending--;});
+        } catch (e) {
+            //Backing off maximum to adjust to current network conditions
+            getJSONRateLimited[domain].current_max = Math.max(getJSONRateLimited[domain].current_max - 1, MIN_PENDING_NETWORK_REQUESTS);
+            console.error("Failed try #", i + 1, "\nURL:", url, "\nParameters:", params, "\nHTTP Error:", e.status);
+            if (!checkNetworkErrors(domain, true)) {
+                return [];
+            }
+            await new Promise(sleepHalfSecond);
+            continue;
+        }
+        return resp;
+    }
+    return [];
 }
 
 const getJSONMemoized = _.memoize(
