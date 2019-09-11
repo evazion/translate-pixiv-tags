@@ -275,16 +275,12 @@ function getImage(image_url) {
         .then(resp => resp.response);
 }
 
-function rateLimitedLog() {
-    //The last parameter is the level of logging
-    let level = arguments[arguments.length - 1];
-    //Removes the last parameter
-    arguments.length -= 1;
+function rateLimitedLog(level, ...messageData) {
     //Assumes that only simple arguments will be passed in
-    let key = [...arguments].join(',');
+    let key = messageData.join(',');
     rateLimitedLog[key] = rateLimitedLog[key] || {log: true};
     if (rateLimitedLog[key].log) {
-        console[level](...arguments);
+        console[level](...messageData);
         rateLimitedLog[key].log = false;
         //Have only one message with the same parameters per second
         setTimeout(()=>{rateLimitedLog[key].log = true;}, 1000);
@@ -297,7 +293,7 @@ function checkNetworkErrors(domain,hasError) {
         console.log("Total errors:", ++checkNetworkErrors[domain].error);
     }
     if (checkNetworkErrors[domain].error >= MAX_NETWORK_ERRORS) {
-        rateLimitedLog("Maximun number of errors exceeded", MAX_NETWORK_ERRORS, "for", domain, 'error');
+        rateLimitedLog("error", "Maximun number of errors exceeded", MAX_NETWORK_ERRORS, "for", domain);
         return false;
     }
     return true;
@@ -313,7 +309,7 @@ async function getJSONRateLimited(url, params) {
         if (!(checkNetworkErrors(domain, false))) {
             return [];
         }
-        rateLimitedLog("Exceeded maximum pending requests", getJSONRateLimited[domain].current_max, "for", domain, 'warn');
+        rateLimitedLog("warn", "Exceeded maximum pending requests", getJSONRateLimited[domain].current_max, "for", domain);
         await new Promise(sleepHalfSecond);
     }
     for (let i = 0; i < MAX_NETWORK_RETRIES; i++) {
