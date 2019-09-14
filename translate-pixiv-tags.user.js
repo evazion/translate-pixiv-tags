@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190904230446
+// @version      20190915000646
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -187,19 +187,20 @@ const PROGRAM_CSS = `
     content: ")";
     white-space: nowrap;
 }
-span.ex-translated-tags a.ex-translated-tag-category-5 {
+/* dirt hack for DevianArt: add :not(#id) to rapidly increase rule specificity */
+.ex-translated-tag-category-5:not(#id) {
     color: #F80 !important;
 }
-span.ex-translated-tags a.ex-translated-tag-category-4 {
+.ex-translated-tag-category-4:not(#id) {
     color: #0A0 !important;
 }
-span.ex-translated-tags a.ex-translated-tag-category-3 {
+.ex-translated-tag-category-3:not(#id) {
     color: #A0A !important;
 }
-span.ex-translated-tags a.ex-translated-tag-category-1 {
+.ex-translated-tag-category-1:not(#id) {
     color: #A00 !important;
 }
-span.ex-translated-tags a.ex-translated-tag-category-0 {
+.ex-translated-tag-category-0:not(#id) {
     color: #0073ff !important;
 }
 
@@ -210,7 +211,7 @@ span.ex-translated-tags a.ex-translated-tag-category-0 {
     display: inline-block;
     margin-left: 0.5em;
 }
-.ex-artist-tag a {
+.ex-artist-tag a:not(#id) {
     color: #A00 !important;
     margin-left: 0.3ch;
     text-decoration: none;
@@ -1344,12 +1345,6 @@ function initializeBCY() {
 }
 
 function initializeDeviantArt() {
-    GM_addStyle(`
-        body:not(.mobile-devpage-uplift) .ex-artist-tag a {
-            color: #A00 !important;
-        }
-    `);
-
     // https://www.deviantart.com/koyorin
     // https://www.deviantart.com/koyorin/art/Ruby-570526828
     findAndTranslate("artist", ".gruserbadge .username, .dev-title-container .author .username", {
