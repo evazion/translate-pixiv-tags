@@ -28,13 +28,21 @@ and [Twitter](https://twitter.com).
 
 # Settings
 
-### Via UI
+<img width="600" src="https://user-images.githubusercontent.com/29704098/64245098-f64b4600-cf12-11e9-83f2-6be8a6da59db.png">
+
+### Via Tampermonkey menu
+
+Click "Settings" under this script's item in the Tampermonkey menu.
+
+<img width="600" src="https://user-images.githubusercontent.com/29704098/64924663-ad876d00-d7ef-11e9-8a22-d123579d6181.png">
+
+### Via artist tag
 
 You can open the settings by clicking a button in the upper right corner of any artist's tooltip.
 
-<img width="600" src="https://user-images.githubusercontent.com/29704098/64245098-f64b4600-cf12-11e9-83f2-6be8a6da59db.png">
+<img width="600" src="https://user-images.githubusercontent.com/29704098/64924739-4b7b3780-d7f0-11e9-885e-a0559ae67ef7.png">
 
-### Via Storage
+### Via Storage tab
 
 Settings are stored in the **Storage** tab of the userscript.
 To be able to edit settings of the userscript, you must set **advanced config mode** in Tampermonkey settings.
