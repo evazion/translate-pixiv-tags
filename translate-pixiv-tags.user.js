@@ -1123,7 +1123,9 @@ function initializePixiv() {
             display: none;
         }
         /* Remove hashtags from translated tags */
-        figcaption li > span:first-child > a:before {
+        a.tag-value::before,
+        span.ex-translated-tags a::before,
+        figcaption li > span:first-child > a::before {
             content: "";
         }
         /* On the artist profile page, render the danbooru artist tag between the artist's name and follower count. */
@@ -1204,6 +1206,7 @@ function initializePixiv() {
         }
     });
 
+    // related work's artists https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
     findAndTranslate("artist", "div", {
         predicate: "aside li>div>div:last-child>div:first-child",
         toProfileUrl: el => $(el).find("a").prop("href"),
