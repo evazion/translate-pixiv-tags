@@ -1,3 +1,20 @@
+# Release 2019.09.19
+
+## Fixes
+
+* #32: no obvious way to cancel settings changes.
+* #33: settings menu doesn't open for some artist tags.
+* DevianArt: fixed overridden color of the artist tag.
+* Fixed breakages caused by sites updating.
+
+## Changes
+
+* Added TweetDeck support.
+* Added pixivFanbox support.
+* Added alternative way to open settings: via Tampermonkey menu.
+* Added handling of network request limit (credit to BrokenEagle).
+* Internal improvements.
+
 # Release 2019.08.24
 
 ## Fixes
