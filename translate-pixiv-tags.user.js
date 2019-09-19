@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190919192546
+// @version      20190919222446
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -1312,9 +1312,11 @@ function initializeNicoSeiga() {
         tagPosition: "beforeend",
         asyncMode: true
     });
+    // http://seiga.nicovideo.jp/user/illust/14767435
     findAndTranslate("artist", ".user_info h1 a", {
         classes: "inline"
     });
+    // http://seiga.nicovideo.jp/seiga/im7741859
     findAndTranslate("artist", ".user_link > a .user_name", {
         tagPosition: "beforeend"
     });
@@ -1328,12 +1330,12 @@ function initializeBCY() {
         toProfileUrl: el => $(el).find("a").prop("href")
     });
 
-    // translate artists on illust pages (https://bcy.net/item/detail/6643704430988361988)
+    // illust pages https://bcy.net/item/detail/6643704430988361988
     findAndTranslate("artist", ".js-userTpl .user-name a", {
         toProfileUrl: el => el.href.replace(/\?.*$/,"")
     });
 
-    // translate artists on search pages (https://bcy.net/tags/name/看板娘)
+    // search pages https://bcy.net/tags/name/看板娘
     findAndTranslate("artist", "a.title-txt", {
         toProfileUrl: el => el.href.replace(/\?.*$/,""),
         tagPosition: "beforeend",
@@ -1341,10 +1343,13 @@ function initializeBCY() {
         asyncMode: true
     });
 
-    // translate tags on search pages (https://bcy.net/tags/name/看板娘)
-    findAndTranslate("tag", ".circle-desc-name, .tag", {tagPosition: "beforeend"});
+    // search pages https://bcy.net/tags/name/看板娘
+    findAndTranslate("tag", ".circle-desc-name, .tag", {
+        tagPosition: "beforeend",
+        asyncMode: true
+    });
 
-    // translate tags on illust pages (https://bcy.net/illust/detail/6561698116674781447)
+    // illust pages https://bcy.net/item/detail/6561698116674781447
     findAndTranslate("tag", ".dm-tag-a", {tagPosition: "beforeend"});
 }
 
@@ -1435,11 +1440,12 @@ function initializeTwitter() {
     }
 
     // new design
+    // tags https://twitter.com/mugosatomi/status/1173231575959363584
     findAndTranslate("tag", "a.r-1n1174f", {
         predicate: "a.r-1n1174f[href^='/hashtag/']",
         asyncMode: true,
     });
-    // floating name of a channel
+    // floating name of a channel https://twitter.com/mugosatomi
     const URLfromLocation = () => "https://twitter.com"+(window.location.pathname.match(/\/\w+/)||[])[0];
     findAndTranslate("artist", "div.css-1dbjc4n.r-xoduu5.r-18u37iz.r-dnmrzs", {
         predicate: "h2>div>div>div",
@@ -1462,6 +1468,7 @@ function initializeTwitter() {
         }
     });
     // tweet, expanded tweet and comment authors
+    // https://twitter.com/mugosatomi/status/1173231575959363584
     findAndTranslate("artist", "div.r-1wbh5a2.r-dnmrzs", {
         predicate: "div[data-testid='primaryColumn'] article div:has(>a.r-1wbh5a2)",
         toProfileUrl: el => $(el).find("a").prop("href"),
@@ -1545,7 +1552,6 @@ function initializeArtStation() {
 
     // https://www.artstation.com/jubi
     // https://www.artstation.com/jubi/*
-    // asyncAddTranslatedArtists("h1.artist-name", "h1.artist-name", toFullURL);
     findAndTranslate("artist", "h1.artist-name", {
         toProfileUrl: toFullURL,
         asyncMode: true
@@ -1569,7 +1575,6 @@ function initializeArtStation() {
     });
     // https://www.artstation.com/jubi/following
     // https://www.artstation.com/jubi/followers
-    // asyncAddTranslatedArtists(".users-grid-name", "div", e => toFullURL($(e).find("a")));
     findAndTranslate("artist", ".users-grid-name", {
         toProfileUrl: el => toFullURL($(el).find("a")),
         asyncMode: true
@@ -1577,13 +1582,12 @@ function initializeArtStation() {
 
     // default personal websites:
     // https://jubi.artstation.com/
-    // https://snow7a.artstation.com/
+    // https://anninosart.artstation.com/
     // customized personal websites:
     // https://inawong.artstation.com/
     // https://kastep.artstation.com/
     // https://tinadraw.artstation.com/
     // https://dylan-kowalski.artstation.com/
-    // addTranslatedArtists(".site-title a", toFullURL);
     findAndTranslate("artist", ".site-title a", {
         toProfileUrl: toFullURL
     });
@@ -1606,14 +1610,13 @@ function initializeSauceNAO() {
         .contents()
         .filter(function(){return this.nodeType==3;}) // get text nodes
         .wrap("<span class=target>");
-     $(".target:contains(',')")
-        .replaceWith(function(){
-            return this.innerText
-                .split(", ")
-                .map(s => `<span class="target">${s}</span>`)
-                .join(", ");
-        });
+    $(".target:contains(', ')").replaceWith((i, html) => html
+        .split(", ")
+        .map(s => `<span class="target">${s}</span>`)
+        .join(", ")
+    );
 
+    // http://saucenao.com/search.php?db=999&url=https%3A%2F%2Fraikou4.donmai.us%2Fpreview%2F5e%2F8e%2F5e8e7a03c49906aaad157de8aeb188e4.jpg
     findAndTranslate("artist", "strong:contains('Member: ')+a, strong:contains('Author: ')+a", {
         classes: "inline"
     });
@@ -1639,7 +1642,7 @@ function initializePawoo() {
         }
         /* fix newline in arist tag in cards of following users and followers */
         .ex-artist-tag a {
-            display: inline;
+            display: inline !important;
         }
     `);
 
