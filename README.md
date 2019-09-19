@@ -9,8 +9,10 @@ A userscript that translates tags and artist names on
 [NicoSeiga](https://seiga.nicovideo.jp),
 [Nijie](https://nijie.info),
 [Pawoo](https://pawoo.net/about),
+[pixivFANBOX](https://fanbox.pixiv.net),
 [SauceNAO](http://saucenao.com/),
 [Tinami](https://www.tinami.com),
+[TweetDeck](https://tweetdeck.twitter.com),
 and [Twitter](https://twitter.com).
 
 # Installation
