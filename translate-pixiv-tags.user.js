@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190919222446
+// @version      20190920002046
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -393,7 +393,8 @@ function addDanbooruTags($target, tags, options = {}) {
         <span class="ex-translated-tags ${classes}">
             ${tags.map(tag => noIndents`
                 <a class="ex-translated-tag-category-${tag.category}"
-                   href="${BOORU}/posts?tags=${encodeURIComponent(tag.name)}">
+                   href="${BOORU}/posts?tags=${encodeURIComponent(tag.name)}"
+                   target="_blank">
                         ${_.escape(tag.prettyName)}
                 </a>`)
             .join(", ")}
@@ -453,7 +454,7 @@ function addDanbooruArtist($target, artist, options = {}) {
 
     let $tag = $(noIndents`
         <div class="${classes}">
-            <a href="${BOORU}/artists/${artist.id}">
+            <a href="${BOORU}/artists/${artist.id}" target="_blank">
                 ${artist.escapedName}
             </a>
         </div>`);
@@ -766,7 +767,8 @@ function buildArtistTooltipContent(artist, [tag = {post_count:0}], posts = []) {
             ${GM_getResourceText('settings_icon')}
             <section class="header">
                 <a class="artist-name tag-category-artist"
-                   href="${BOORU}/artists/${artist.id}">
+                   href="${BOORU}/artists/${artist.id}"
+                   target="_blank>
                     ${_.escape(artist.prettyName)}
                 </a>
                 <span class="post-count">${tag.post_count}</span>
@@ -774,7 +776,8 @@ function buildArtistTooltipContent(artist, [tag = {post_count:0}], posts = []) {
                 <ul class="other-names scrollable" part="other-names">
                     ${artist.other_names.filter(String).sort().map(other_name => `
                         <li>
-                            <a href="${BOORU}/artists?search[name]=${encodeURIComponent(other_name)}">
+                            <a href="${BOORU}/artists?search[name]=${encodeURIComponent(other_name)}"
+                               target="_blank">
                                 ${_.escape(other_name.replace(/_/g, " "))}
                             </a>
                         </li>`
@@ -784,7 +787,7 @@ function buildArtistTooltipContent(artist, [tag = {post_count:0}], posts = []) {
             <section class="urls">
                 <h2>
                     URLs
-                    (<a href="${BOORU}/artists/${artist.id}/edit">edit</a>)
+                    (<a href="${BOORU}/artists/${artist.id}/edit" target="_blank">edit</a>)
                 </h2>
                 <ul class="scrollable" part="url-list">
                     ${buildArtistUrlsHtml(artist)}
@@ -793,7 +796,7 @@ function buildArtistTooltipContent(artist, [tag = {post_count:0}], posts = []) {
             <section class="posts">
                 <h2>
                     Posts
-                    <a href="${BOORU}/posts?tags=${artist.encodedName}">»</a>
+                    <a href="${BOORU}/posts?tags=${artist.encodedName}" target="_blank">»</a>
                 </h2>
                 <div class="post-list scrollable" part="post-list"></div>
             </section>
@@ -818,7 +821,7 @@ function buildArtistUrlsHtml(artist) {
 
         return noIndents`
             <li class="${urlClass}">
-                <a href="${normalized_url}">
+                <a href="${normalized_url}" target="_blank">
                     ${_.escape(normalized_url)}
                 </a>
             </li>`;
@@ -911,7 +914,7 @@ function buildPostPreview(post) {
                  itemtype="http://schema.org/ImageObject"
                  class="${preview_class}"
                  ${data_attributes} >
-            <a href="${BOORU}/posts/${post.id}">
+            <a href="${BOORU}/posts/${post.id}" target="_blank">
                 <img width="${width}"
                      height="${height}"
                      src="${preview_file_url}"
