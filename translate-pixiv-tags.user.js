@@ -411,7 +411,7 @@ async function translateArtistByURL(element, profileUrl, options) {
     artists
         // fix of #18: for some unsupported domains, Danbooru returns false-positive results
         .filter(({urls}) => urls
-            .reduce((urls, {url, normalized_url}) => [...urls, url, normalized_url], []) // for old Firefox
+            .reduce((urls, {url, normalized_url}) => { urls.push(url, normalized_url); return urls; }, []) // for old Firefox
             .map(url => new URL(url.replace(/\/$/,"").toLowerCase()))
             .some(aUrl => (pUrl.host==aUrl.host && pUrl.pathname==aUrl.pathname && pUrl.search==aUrl.search)))
         .map(artist => addDanbooruArtist($(element), artist, options));
