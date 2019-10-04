@@ -348,7 +348,10 @@ const getJSONMemoized = _.memoize(
 
 function get(url, params, cache = CACHE_LIFETIME, base_url = BOORU) {
     if (cache > 0) {
-        params = { ...params, expires_in: cache };
+        params = {
+            ...params,
+            expires_in: cache,
+        };
     }
     return getJSONMemoized(`${base_url}${url}.json`, params)
         .catch(xhr => {
@@ -367,7 +370,16 @@ async function translateTag(target, tagName, options) {
 
     let tags = [];
 
-    const wikiPages = await get("/wiki_pages", { search: { other_names_match: normalizedTag, is_deleted: false }, only: WIKI_FIELDS });
+    const wikiPages = await get(
+        "/wiki_pages",
+        {
+            search: {
+                other_names_match: normalizedTag,
+                is_deleted: false,
+            },
+            only: WIKI_FIELDS,
+        }
+    );
     if (wikiPages.length) {
         tags = wikiPages.map(wikiPage => new Object({
             name: wikiPage.title,
@@ -375,7 +387,13 @@ async function translateTag(target, tagName, options) {
             category: wikiPage.category_name,
         }));
     } else if (normalizedTag.match(/^[\x20-\x24\x26-\x29\x2B\x2D-\x7F]+$/)) { // ASCII characters except percent, asterics, and comma
-        tags = await get("/tags", { search: { name: normalizedTag }, only: TAG_FIELDS });
+        tags = await get(
+            "/tags",
+            {
+                search: { name: normalizedTag },
+                only: TAG_FIELDS,
+            }
+        );
         tags = tags.map(tag => new Object({
             name: tag.name,
             prettyName: tag.name.replace(/_/g, " "),
@@ -389,7 +407,8 @@ function addDanbooruTags($target, tags, options = {}) {
     if (tags.length === 0) {
         return;
     }
-    let { classes = "",
+    let {
+        classes = "",
         onadded = null, // ($tag)=>{},
         tagPosition: {
             searchAt = "nextAll",
@@ -414,7 +433,16 @@ function addDanbooruTags($target, tags, options = {}) {
 async function translateArtistByURL(element, profileUrl, options) {
     if (!profileUrl) return;
 
-    const artists = await get("/artists", { search: { url_matches: profileUrl, is_active: true }, only: ARTIST_FIELDS });
+    const artists = await get(
+        "/artists",
+        {
+            search: {
+                url_matches: profileUrl,
+                is_active: true,
+            },
+            only: ARTIST_FIELDS,
+        }
+    );
     const pUrl = new URL(profileUrl.replace(/\/$/,"").toLowerCase());
     artists
         // Fix of #18: for some unsupported domains, Danbooru returns false-positive results
@@ -430,12 +458,21 @@ async function translateArtistByURL(element, profileUrl, options) {
 async function translateArtistByName(element, artistName, options) {
     if (!artistName) return;
 
-    const artists = await get("/artists", { search: { name: artistName.replace(/ /g, "_"), is_active: true }, only: ARTIST_FIELDS });
+    const artists = await get(
+        "/artists",
+        {
+            search: {
+                name: artistName.replace(/ /g, "_"),
+                is_active: true,
+            },
+            only: ARTIST_FIELDS,
+        });
     artists.map(artist => addDanbooruArtist($(element), artist, options));
 }
 
 function addDanbooruArtist($target, artist, options = {}) {
-    let { classes = "",
+    let {
+        classes = "",
         onadded = null, // ($tag)=>{},
         tagPosition: {
             searchAt = "nextAll",
@@ -520,8 +557,21 @@ function chooseBackgroundColorScheme($element) {
 async function buildArtistTooltip(artist, qtip) {
     attachShadow(qtip.elements.content.get(0), async () => {
         if (!(artist.name in rendered_qtips)) {
-            const posts = get(`/posts`, { tags: `status:any ${artist.name}`, limit: ARTIST_POST_PREVIEW_LIMIT, only: POST_FIELDS });
-            const tags = get(`/tags`, { search: { name: artist.name }, only: POST_COUNT_FIELDS });
+            const posts = get(
+                "/posts",
+                {
+                    tags: `status:any ${artist.name}`,
+                    limit: ARTIST_POST_PREVIEW_LIMIT,
+                    only: POST_FIELDS,
+                }
+            );
+            const tags = get(
+                "/tags",
+                {
+                    search: { name: artist.name },
+                    only: POST_COUNT_FIELDS,
+                }
+            );
 
             rendered_qtips[artist.name] = buildArtistTooltipContent(artist, await tags, await posts);
             return rendered_qtips[artist.name];
@@ -874,7 +924,11 @@ function formatBytes(bytes) {
 }
 
 function buildPostPreview(post) {
-    const RATINGS = { s:0, q:1, e:2 }; // eslint-disable-line id-blacklist
+    const RATINGS = {
+        s:0,
+        q:1,
+        e:2, // eslint-disable-line id-blacklist
+    };
     let [width, height] = [150, 150];
     let preview_file_url = `${BOORU}/images/download-preview.png`;
 
@@ -1080,12 +1134,30 @@ function findAndTranslate(mode, selector, options = {}) {
         const predicateSelector = options.predicate;
         options.predicate = (el) => $(el).is(predicateSelector);
     }
-    options.tagPosition = {
-        beforebegin: { searchAt:"prevAll", insertAt:"insertBefore" },
-        afterbegin:  { searchAt:"find",    insertAt:"prependTo" },
-        beforeend:   { searchAt:"find",    insertAt:"appendTo" },
-        afterend:    { searchAt:"nextAll", insertAt:"insertAfter" },
-    }[options.tagPosition] || { searchAt:"nextAll", insertAt:"insertAfter" };
+    options.tagPosition = (
+        {
+            beforebegin: {
+                searchAt:"prevAll",
+                insertAt:"insertBefore",
+            },
+            afterbegin:  {
+                searchAt:"find",
+                insertAt:"prependTo",
+            },
+            beforeend:   {
+                searchAt:"find",
+                insertAt:"appendTo",
+            },
+            afterend:    {
+                searchAt:"nextAll",
+                insertAt:"insertAfter",
+            },
+        }[options.tagPosition]
+        || {
+            searchAt:"nextAll",
+            insertAt:"insertAfter",
+        }
+    );
 
     const tryToTranslate = (elem) => {
         if (!options.predicate || options.predicate(elem)) {
