@@ -326,7 +326,7 @@ async function getJSONRateLimited(url, params) {
     for (let i = 0; i < MAX_NETWORK_RETRIES; i++) {
         getJSONRateLimited[domain].pending++;
         try {
-            var resp = await $.getJSON(url, params).always(()=>{getJSONRateLimited[domain].pending--;});
+            return await $.getJSON(url, params).always(()=>{getJSONRateLimited[domain].pending--;});
         } catch (ex) {
             // Backing off maximum to adjust to current network conditions
             getJSONRateLimited[domain].current_max = Math.max(getJSONRateLimited[domain].current_max - 1, MIN_PENDING_NETWORK_REQUESTS);
@@ -337,7 +337,6 @@ async function getJSONRateLimited(url, params) {
             await new Promise(sleepHalfSecond);
             continue;
         }
-        return resp;
     }
     return [];
 }
