@@ -283,7 +283,7 @@ function getImage(image_url) {
 function rateLimitedLog(level, ...messageData) {
     // Assumes that only simple arguments will be passed in
     let key = messageData.join(",");
-    rateLimitedLog[key] = rateLimitedLog[key] || {log: true};
+    rateLimitedLog[key] = rateLimitedLog[key] || { log: true };
     if (rateLimitedLog[key].log) {
         console[level](...messageData);
         rateLimitedLog[key].log = false;
@@ -293,7 +293,7 @@ function rateLimitedLog(level, ...messageData) {
 }
 
 function checkNetworkErrors(domain,hasError) {
-    checkNetworkErrors[domain] = checkNetworkErrors[domain] || {error: 0};
+    checkNetworkErrors[domain] = checkNetworkErrors[domain] || { error: 0 };
     if (hasError) {
         console.log("Total errors:", ++checkNetworkErrors[domain].error);
     }
@@ -307,7 +307,7 @@ function checkNetworkErrors(domain,hasError) {
 async function getJSONRateLimited(url, params) {
     const sleepHalfSecond = resolve => setTimeout(resolve, 500);
     let domain = new URL(url).hostname;
-    getJSONRateLimited[domain] = getJSONRateLimited[domain] || {pending: 0, current_max: MAX_PENDING_NETWORK_REQUESTS};
+    getJSONRateLimited[domain] = getJSONRateLimited[domain] || { pending: 0, current_max: MAX_PENDING_NETWORK_REQUESTS };
     // Wait until the number of pending network requests is below the max threshold
     while (getJSONRateLimited[domain].pending >= getJSONRateLimited[domain].current_max) {
         // Bail if the maximum number of network errors has been exceeded
@@ -343,7 +343,7 @@ const getJSONMemoized = _.memoize(
 
 function get(url, params, cache = CACHE_LIFETIME, base_url = BOORU) {
     if (cache > 0) {
-        params = { ...params, expires_in: cache};
+        params = { ...params, expires_in: cache };
     }
     return getJSONMemoized(`${base_url}${url}.json`, params)
         .catch(xhr => {
@@ -362,7 +362,7 @@ async function translateTag(target, tagName, options) {
 
     let tags = [];
 
-    const wikiPages = await get("/wiki_pages", {search: {other_names_match: normalizedTag, is_deleted: false}, only: WIKI_FIELDS});
+    const wikiPages = await get("/wiki_pages", { search: { other_names_match: normalizedTag, is_deleted: false }, only: WIKI_FIELDS });
     if (wikiPages.length) {
         tags = wikiPages.map(wikiPage => new Object({
             name: wikiPage.title,
@@ -370,7 +370,7 @@ async function translateTag(target, tagName, options) {
             category: wikiPage.category_name,
         }));
     } else if (normalizedTag.match(/^[\x20-\x24\x26-\x29\x2B\x2D-\x7F]+$/)) { // ASCII characters except percent, asterics, and comma
-        tags = await get("/tags", {search: {name: normalizedTag}, only: TAG_FIELDS});
+        tags = await get("/tags", { search: { name: normalizedTag }, only: TAG_FIELDS });
         tags = tags.map(tag => new Object({
             name: tag.name,
             prettyName: tag.name.replace(/_/g, " "),
@@ -409,11 +409,11 @@ function addDanbooruTags($target, tags, options = {}) {
 async function translateArtistByURL(element, profileUrl, options) {
     if (!profileUrl) return;
 
-    const artists = await get("/artists", {search: {url_matches: profileUrl, is_active: true}, only: ARTIST_FIELDS});
+    const artists = await get("/artists", { search: { url_matches: profileUrl, is_active: true }, only: ARTIST_FIELDS });
     const pUrl = new URL(profileUrl.replace(/\/$/,"").toLowerCase());
     artists
         // Fix of #18: for some unsupported domains, Danbooru returns false-positive results
-        .filter(({urls}) => urls.some(({url, normalized_url}) => {
+        .filter(({ urls }) => urls.some(({ url, normalized_url }) => {
             const aUrl = new URL(url.replace(/\/$/,"").toLowerCase());
             const nUrl = new URL(normalized_url.replace(/\/$/,"").toLowerCase());
             return pUrl.host==aUrl.host && pUrl.pathname==aUrl.pathname && pUrl.search==aUrl.search
@@ -425,7 +425,7 @@ async function translateArtistByURL(element, profileUrl, options) {
 async function translateArtistByName(element, artistName, options) {
     if (!artistName) return;
 
-    const artists = await get("/artists", {search: {name: artistName.replace(/ /g, "_"), is_active: true}, only: ARTIST_FIELDS});
+    const artists = await get("/artists", { search: { name: artistName.replace(/ /g, "_"), is_active: true }, only: ARTIST_FIELDS });
     artists.map(artist => addDanbooruArtist($(element), artist, options));
 }
 
@@ -515,8 +515,8 @@ function chooseBackgroundColorScheme($element) {
 async function buildArtistTooltip(artist, qtip) {
     attachShadow(qtip.elements.content.get(0), async () => {
         if (!(artist.name in rendered_qtips)) {
-            const posts = get(`/posts`, {tags: `status:any ${artist.name}`, limit: ARTIST_POST_PREVIEW_LIMIT, only: POST_FIELDS});
-            const tags = get(`/tags`, {search: {name: artist.name}, only: POST_COUNT_FIELDS});
+            const posts = get(`/posts`, { tags: `status:any ${artist.name}`, limit: ARTIST_POST_PREVIEW_LIMIT, only: POST_FIELDS });
+            const tags = get(`/tags`, { search: { name: artist.name }, only: POST_COUNT_FIELDS });
 
             rendered_qtips[artist.name] = buildArtistTooltipContent(artist, await tags, await posts);
             return rendered_qtips[artist.name];
@@ -533,7 +533,7 @@ async function buildArtistTooltip(artist, qtip) {
     }
 }
 
-function buildArtistTooltipContent(artist, [tag = {post_count:0}], posts = []) {
+function buildArtistTooltipContent(artist, [tag = { post_count:0 }], posts = []) {
     let $content = $(noIndents`
         <style>
             :host {
@@ -856,7 +856,7 @@ function timeToAgo(time) {
         value: interval.getUTCMinutes(),
         unit: "minute",
     }];
-    for (let {value, unit} of values) {
+    for (let { value, unit } of values) {
         if (value) return `${value} ${(value>1 ? unit+"s" : unit)} ago`;
     }
     return "∞ ago";
@@ -869,7 +869,7 @@ function formatBytes(bytes) {
 }
 
 function buildPostPreview(post) {
-    const RATINGS = {s:0, q:1, e:2}; // eslint-disable-line id-blacklist
+    const RATINGS = { s:0, q:1, e:2 }; // eslint-disable-line id-blacklist
     let [width, height] = [150, 150];
     let preview_file_url = `${BOORU}/images/download-preview.png`;
 
@@ -1076,11 +1076,11 @@ function findAndTranslate(mode, selector, options = {}) {
         options.predicate = (el) => $(el).is(predicateSelector);
     }
     options.tagPosition = {
-        beforebegin: {searchAt:"prevAll", insertAt:"insertBefore"},
-        afterbegin:  {searchAt:"find",    insertAt:"prependTo"},
-        beforeend:   {searchAt:"find",    insertAt:"appendTo"},
-        afterend:    {searchAt:"nextAll", insertAt:"insertAfter"},
-    }[options.tagPosition] || {searchAt:"nextAll", insertAt:"insertAfter"};
+        beforebegin: { searchAt:"prevAll", insertAt:"insertBefore" },
+        afterbegin:  { searchAt:"find",    insertAt:"prependTo" },
+        beforeend:   { searchAt:"find",    insertAt:"appendTo" },
+        afterend:    { searchAt:"nextAll", insertAt:"insertAfter" },
+    }[options.tagPosition] || { searchAt:"nextAll", insertAt:"insertAfter" };
 
     const tryToTranslate = (elem) => {
         if (!options.predicate || options.predicate(elem)) {
@@ -1187,7 +1187,7 @@ function initializePixiv() {
     ].join(", "));
 
     // https://dic.pixiv.net/a/東方
-    findAndTranslate("tag", "#content_title #article-name", {tagPosition: "beforeend"});
+    findAndTranslate("tag", "#content_title #article-name", { tagPosition: "beforeend" });
 
     // Tags on work pages: https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
     findAndTranslate("tag", "span", {
@@ -1360,7 +1360,7 @@ function initializeBCY() {
     });
 
     // Illust pages https://bcy.net/item/detail/6561698116674781447
-    findAndTranslate("tag", ".dm-tag-a", {tagPosition: "beforeend"});
+    findAndTranslate("tag", ".dm-tag-a", { tagPosition: "beforeend" });
 }
 
 function initializeDeviantArt() {
