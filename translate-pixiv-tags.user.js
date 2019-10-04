@@ -129,7 +129,7 @@ const ARTIST_POST_PREVIEW_LIMIT = SETTINGS.get("preview_limit");
 // The upper level of rating to show preview. Higher ratings will be blurred.
 const SHOW_PREVIEW_RATING = SETTINGS.get("show_preview_rating");
 
-//Values needed from Danbooru API calls using the "only" parameter
+// Values needed from Danbooru API calls using the "only" parameter
 const POST_FIELDS = "id,is_pending,is_flagged,is_deleted,parent_id,has_visible_children,tag_string,image_width,image_height,preview_file_url,source,file_size,rating,created_at";
 const POST_COUNT_FIELDS = "post_count";
 const TAG_FIELDS = "name,category";
@@ -155,15 +155,15 @@ const ARTIST_QTIP_SETTINGS = {
     },
 };
 
-//Domains where images outside of whitelist are blocked
+// Domains where images outside of whitelist are blocked
 const CORS_IMAGE_DOMAINS = [
     'twitter.com',
 ];
 
-//Memory storage for already rendered artist tooltips
+// Memory storage for already rendered artist tooltips
 const rendered_qtips = {};
 
-//For network rate and error management
+// For network rate and error management
 const MAX_PENDING_NETWORK_REQUESTS = 40;
 const MIN_PENDING_NETWORK_REQUESTS = 5;
 const MAX_NETWORK_ERRORS = 25;
@@ -280,13 +280,13 @@ function getImage(image_url) {
 }
 
 function rateLimitedLog(level, ...messageData) {
-    //Assumes that only simple arguments will be passed in
+    // Assumes that only simple arguments will be passed in
     let key = messageData.join(',');
     rateLimitedLog[key] = rateLimitedLog[key] || {log: true};
     if (rateLimitedLog[key].log) {
         console[level](...messageData);
         rateLimitedLog[key].log = false;
-        //Have only one message with the same parameters per second
+        // Have only one message with the same parameters per second
         setTimeout(()=>{rateLimitedLog[key].log = true;}, 1000);
     }
 }
@@ -307,9 +307,9 @@ async function getJSONRateLimited(url, params) {
     const sleepHalfSecond = resolve => setTimeout(resolve, 500);
     let domain = new URL(url).hostname;
     getJSONRateLimited[domain] = getJSONRateLimited[domain] || {pending: 0, current_max: MAX_PENDING_NETWORK_REQUESTS};
-    //Wait until the number of pending network requests is below the max threshold
+    // Wait until the number of pending network requests is below the max threshold
     while (getJSONRateLimited[domain].pending >= getJSONRateLimited[domain].current_max) {
-        //Bail if the maximum number of network errors has been exceeded
+        // Bail if the maximum number of network errors has been exceeded
         if (!(checkNetworkErrors(domain, false))) {
             return [];
         }
@@ -321,7 +321,7 @@ async function getJSONRateLimited(url, params) {
         try {
             var resp = await $.getJSON(url, params).always(()=>{getJSONRateLimited[domain].pending--;});
         } catch (ex) {
-            //Backing off maximum to adjust to current network conditions
+            // Backing off maximum to adjust to current network conditions
             getJSONRateLimited[domain].current_max = Math.max(getJSONRateLimited[domain].current_max - 1, MIN_PENDING_NETWORK_REQUESTS);
             console.error("Failed try #", i + 1, "\nURL:", url, "\nParameters:", params, "\nHTTP Error:", ex.status);
             if (!checkNetworkErrors(domain, true)) {
@@ -482,7 +482,7 @@ async function attachShadow(target, callback) {
 
 function chooseBackgroundColorScheme($element) {
     const TRANSPARENT_COLOR = "rgba(0, 0, 0, 0)";
-    //Halfway between white/black in the RGB scheme
+    // Halfway between white/black in the RGB scheme
     const MIDDLE_LUMINOSITY = 128;
 
     // Get background colors of all parent elements with a nontransparent background color
@@ -1744,6 +1744,8 @@ function initialize() {
     }
 }
 
-/****Program execution start****/
+//------------------------
+// Program execution start
+//------------------------
 
 initialize();
