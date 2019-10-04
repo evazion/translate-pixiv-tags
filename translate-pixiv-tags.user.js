@@ -410,10 +410,12 @@ async function translateArtistByURL(element, profileUrl, options) {
     const pUrl = new URL(profileUrl.replace(/\/$/,"").toLowerCase());
     artists
         // fix of #18: for some unsupported domains, Danbooru returns false-positive results
-        .filter(({urls}) => urls
-            .flatMap(({url, normalized_url}) => [url, normalized_url])
-            .map(url => new URL(url.replace(/\/$/,"").toLowerCase()))
-            .some(aUrl => (pUrl.host==aUrl.host && pUrl.pathname==aUrl.pathname && pUrl.search==aUrl.search)))
+        .filter(({urls}) => urls.some(({url, normalized_url}) => {
+            const aUrl = new URL(url.replace(/\/$/,"").toLowerCase());
+            const nUrl = new URL(normalized_url.replace(/\/$/,"").toLowerCase());
+            return pUrl.host==aUrl.host && pUrl.pathname==aUrl.pathname && pUrl.search==aUrl.search
+                || pUrl.host==nUrl.host && pUrl.pathname==nUrl.pathname && pUrl.search==nUrl.search;
+        }))
         .map(artist => addDanbooruArtist($(element), artist, options));
 }
 
