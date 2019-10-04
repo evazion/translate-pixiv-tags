@@ -307,7 +307,13 @@ function checkNetworkErrors(domain,hasError) {
 async function getJSONRateLimited(url, params) {
     const sleepHalfSecond = resolve => setTimeout(resolve, 500);
     let domain = new URL(url).hostname;
-    getJSONRateLimited[domain] = getJSONRateLimited[domain] || { pending: 0, current_max: MAX_PENDING_NETWORK_REQUESTS };
+    getJSONRateLimited[domain] = (
+        getJSONRateLimited[domain]
+        || {
+            pending: 0,
+            current_max: MAX_PENDING_NETWORK_REQUESTS,
+        }
+    );
     // Wait until the number of pending network requests is below the max threshold
     while (getJSONRateLimited[domain].pending >= getJSONRateLimited[domain].current_max) {
         // Bail if the maximum number of network errors has been exceeded
