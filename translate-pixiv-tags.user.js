@@ -913,7 +913,7 @@ function buildArtistUrlsHtml(artist) {
 function timeToAgo(time) {
     const interval = new Date(Date.now() - new Date(time));
     if (interval < 60000) return "less than a minute ago";
-    const values = [{
+    const ranks = [{
         value: interval.getUTCFullYear()-1970,
         unit: "year",
     }, {
@@ -929,8 +929,9 @@ function timeToAgo(time) {
         value: interval.getUTCMinutes(),
         unit: "minute",
     }];
-    for (let { value, unit } of values) {
-        if (value) return `${value} ${(value>1 ? unit+"s" : unit)} ago`;
+    const rank = ranks.find(({ value }) => value);
+    if (rank.value) {
+        return `${rank.value} ${(rank.value>1 ? rank.unit+"s" : rank.unit)} ago`;
     }
     return "∞ ago";
 }
