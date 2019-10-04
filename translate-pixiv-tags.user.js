@@ -1779,7 +1779,7 @@ function initializePawoo() {
     // https://pawoo.net/@yamadorikodi
     // artist name in his card info
     findAndTranslate("artist", ".name small", {
-        toProfileUrl: () => "https://pawoo.net" + window.location.pathname.match(/\/[^\/]+/)[0],
+        toProfileUrl: () => "https://pawoo.net" + window.location.pathname.match(/\/[^/]+/)[0],
         tagPosition: TAG_POSITIONS.afterbegin,
     });
     // Post author, commentor
