@@ -77,10 +77,10 @@ const SETTINGS = {
             },
         },
     ],
-    isValid: function(name, value) {
-        const setting = this.list.find(s => s.name===name);
+    isValid: function(settingName, value) {
+        const setting = this.list.find(s => s.name===settingName);
         if (!setting) {
-            console.error("No setting "+name);
+            console.error("No setting "+settingName);
             return false;
         }
         switch (setting.type) {
@@ -91,30 +91,30 @@ const SETTINGS = {
                 return false;
         }
     },
-    get: function(name) {
-        const setting = this.list.find(s => s.name===name);
+    get: function(settingName) {
+        const setting = this.list.find(s => s.settingName===settingName);
         if (!setting) {
-            console.error("no setting "+name);
+            console.error("no setting "+settingName);
             return null;
         }
-        const value = GM_getValue(name);
-        if (typeof value === "undefined" || !this.isValid(name, value)) {
-            GM_setValue(name, setting.defValue);
+        const value = GM_getValue(settingName);
+        if (typeof value === "undefined" || !this.isValid(settingName, value)) {
+            GM_setValue(settingName, setting.defValue);
             return setting.defValue;
         }
         return value;
     },
-    set: function(name, value) {
-        const setting = this.list.find(s => s.name===name);
+    set: function(settingName, value) {
+        const setting = this.list.find(s => s.name===settingName);
         if (!setting) {
-            console.error("no setting "+name);
+            console.error("no setting "+settingName);
             return null;
         }
-        if (this.isValid(name, value)) {
-            GM_setValue(name, value);
+        if (this.isValid(settingName, value)) {
+            GM_setValue(settingName, value);
             return true;
         } else {
-            console.warn(`Invalid value ${value} for ${name}`);
+            console.warn(`Invalid value ${value} for ${settingName}`);
             return false;
         }
     },
@@ -260,7 +260,7 @@ const PROGRAM_CSS = `
 // tag function for template literals to remove newlines and leading spaces
 function noIndents(strings, ...values) {
     // remove all spaces before/after a tag and leave one in other cases
-    strings = strings.map(s => s.replace(/(>)?\n *(<)?/g, (s, lt, gt) => lt&&gt ? lt+gt : lt||gt ? (lt||gt) : " "));
+    strings = strings.map(str => str.replace(/(>)?\n *(<)?/g, (s, lt, gt) => lt&&gt ? lt+gt : lt||gt ? (lt||gt) : " "));
     let res = new Array(values.length*2+1);
     for (let i = 0; i < values.length; i++) {
         res[i*2] = strings[i];
@@ -443,7 +443,7 @@ function addDanbooruArtist($target, artist, options = {}) {
     artist.encodedName = encodeURIComponent(artist.name);
 
     const qtip_settings = Object.assign(ARTIST_QTIP_SETTINGS, {
-        content: { text: (event, qtip) => buildArtistTooltip(artist, qtip) },
+        content: { text: (ev, qtip) => buildArtistTooltip(artist, qtip) },
     });
 
     let duplicates = $target[searchAt](".ex-artist-tag")
