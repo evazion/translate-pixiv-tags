@@ -271,7 +271,8 @@ function noIndents(strings, ...values) {
 }
 
 function getImage(image_url) {
-    return GM.xmlHttpRequest({
+    return GM
+        .xmlHttpRequest({
             method: "GET",
             url: image_url,
             responseType: "blob",
@@ -384,11 +385,11 @@ function addDanbooruTags($target, tags, options = {}) {
         return;
     }
     let { classes = "",
-          onadded = null, // ($tag)=>{},
-          tagPosition: {
+        onadded = null, // ($tag)=>{},
+        tagPosition: {
             searchAt = "nextAll",
             insertAt = "insertAfter",
-          } = {},
+        } = {},
     } = options;
 
     const $tagsContainer = $(noIndents`
@@ -430,11 +431,11 @@ async function translateArtistByName(element, artistName, options) {
 
 function addDanbooruArtist($target, artist, options = {}) {
     let { classes = "",
-          onadded = null, // ($tag)=>{},
-          tagPosition: {
+        onadded = null, // ($tag)=>{},
+        tagPosition: {
             searchAt = "nextAll",
             insertAt = "insertAfter",
-          } = {},
+        } = {},
     } = options;
 
     classes += artist.is_banned ? " ex-artist-tag ex-banned-artist-tag" : " ex-artist-tag";
@@ -446,8 +447,9 @@ function addDanbooruArtist($target, artist, options = {}) {
         content: { text: (ev, qtip) => buildArtistTooltip(artist, qtip) },
     });
 
-    let duplicates = $target[searchAt](".ex-artist-tag")
-                        .filter((i,el) => el.innerText.trim() == artist.escapedName);
+    let duplicates = $target
+        [searchAt](".ex-artist-tag")
+        .filter((i,el) => el.innerText.trim() == artist.escapedName);
     if (duplicates.length) {
         // If qtip was removed then add it back
         if (!$.data(duplicates.find("a")[0]).qtip) {
@@ -522,7 +524,7 @@ async function buildArtistTooltip(artist, qtip) {
         return rendered_qtips[artist.name].clone()
             .find(".settings-icon").click(showSettings).end();
     })
-    .then(() => qtip.reposition(null, false));
+        .then(() => qtip.reposition(null, false));
     if (!qtip.elements.tooltip.hasClass("qtip-dark") && !qtip.elements.tooltip.hasClass("qtip-light")) {
         // Select theme and background color based upon the background of surrounding elements
         let [qtip_class, adjusted_color] = chooseBackgroundColorScheme(qtip.elements.target);
@@ -813,11 +815,12 @@ function buildArtistTooltipContent(artist, [tag = {post_count:0}], posts = []) {
 
 function buildArtistUrlsHtml(artist) {
     const domainSorter = artist_url => new URL(artist_url.normalized_url).host.match(/[^.]*\.[^.]*$/)[0];
-    const artist_urls = _(artist.urls).chain()
-                                      .uniq("normalized_url")
-                                      .sortBy("normalized_url")
-                                      .sortBy(domainSorter)
-                                      .sortBy(artist_url => !artist_url.is_active);
+    const artist_urls = _(artist.urls)
+        .chain()
+        .uniq("normalized_url")
+        .sortBy("normalized_url")
+        .sortBy(domainSorter)
+        .sortBy(artist_url => !artist_url.is_active);
 
     const html = artist_urls.map(artist_url => {
         const normalized_url = artist_url.normalized_url.replace(/\/$/, "");
@@ -907,11 +910,11 @@ function buildPostPreview(post) {
     }
 
     const domain = post.source.match(/^https?:\/\//)
-                    ? new URL(post.source).hostname.split(".").slice(-2).join(".")
-                    : "NON-WEB";
+        ? new URL(post.source).hostname.split(".").slice(-2).join(".")
+        : "NON-WEB";
     const img_size = [post.file_size, post.image_width, post.image_height].every(_.isFinite)
-                    ? `${formatBytes(post.file_size)} (${post.image_width}x${post.image_height})`
-                    : "";
+        ? `${formatBytes(post.file_size)} (${post.image_width}x${post.image_height})`
+        : "";
 
     $preview = $(noIndents`
         <article itemscope
