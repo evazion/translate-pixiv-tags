@@ -171,20 +171,20 @@ const MAX_NETWORK_RETRIES = 3;
 
 const TAG_POSITIONS = {
     beforebegin: {
-        searchAt:"prevAll",
-        insertAt:"insertBefore",
+        searchAt: "prevAll",
+        insertAt: "insertBefore",
     },
     afterbegin:  {
-        searchAt:"find",
-        insertAt:"prependTo",
+        searchAt: "find",
+        insertAt: "prependTo",
     },
     beforeend:   {
-        searchAt:"find",
-        insertAt:"appendTo",
+        searchAt: "find",
+        insertAt: "appendTo",
     },
     afterend:    {
-        searchAt:"nextAll",
-        insertAt:"insertAfter",
+        searchAt: "nextAll",
+        insertAt: "insertAfter",
     },
 };
 
