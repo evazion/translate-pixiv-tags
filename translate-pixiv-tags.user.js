@@ -621,10 +621,12 @@ async function buildArtistTooltip(artist, qtip) {
                 }
             );
 
-            rendered_qtips[artist.name] = (
-                buildArtistTooltipContent(artist, await tags, await posts)
-            );
-            return rendered_qtips[artist.name];
+            rendered_qtips[artist.name] = Promise
+                .all([tags, posts])
+                // eslint-disable-next-line no-shadow
+                .then(([tags, posts]) => buildArtistTooltipContent(artist, tags, posts));
+
+            return await rendered_qtips[artist.name];
         }
         return rendered_qtips[artist.name].clone()
             .find(".settings-icon").click(showSettings).end();
