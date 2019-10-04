@@ -1408,7 +1408,7 @@ function initializeTinami() {
     });
 
     // Triggers on http://www.tinami.com/view/934323
-    findAndTranslate("artist", "p:has(>a[href^="/creator/profile/"])", {
+    findAndTranslate("artist", "p:has(>a[href^='/creator/profile/'])", {
         toProfileUrl: el => $(el).find("a").prop("href"),
     });
 }
@@ -1828,7 +1828,7 @@ function initializePixivFanbox() {
 
 function initializeQtipContainer() {
     // Container and viewport for qTips
-    $div = $(`<div id="ex-qtips"></div>`).appendTo("body");
+    const $div = $(`<div id="ex-qtips"></div>`).appendTo("body");
     ARTIST_QTIP_SETTINGS.position.viewport = $div;
     ARTIST_QTIP_SETTINGS.position.container = $div;
 }
