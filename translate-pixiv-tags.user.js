@@ -169,6 +169,25 @@ const MIN_PENDING_NETWORK_REQUESTS = 5;
 const MAX_NETWORK_ERRORS = 25;
 const MAX_NETWORK_RETRIES = 3;
 
+const TAG_POSITIONS = {
+    beforebegin: {
+        searchAt:"prevAll",
+        insertAt:"insertBefore",
+    },
+    afterbegin:  {
+        searchAt:"find",
+        insertAt:"prependTo",
+    },
+    beforeend:   {
+        searchAt:"find",
+        insertAt:"appendTo",
+    },
+    afterend:    {
+        searchAt:"nextAll",
+        insertAt:"insertAfter",
+    },
+};
+
 const PROGRAM_CSS = `
 .ex-translated-tags {
     margin: 0 0.5em;
@@ -1125,7 +1144,7 @@ function findAndTranslate(mode, selector, options = {}) {
         predicate: null, // (el) => true,
         toProfileUrl: (el) => $(el).closest("a").prop("href"),
         toTagName: (el) => el.innerText,
-        tagPosition: "afterend", // Values: beforebegin, afterbegin, beforeend, afterend
+        tagPosition: TAG_POSITIONS.afterend,
         classes: "",
         onadded: null, // ($tag) => {},
     }, options);
@@ -1134,30 +1153,6 @@ function findAndTranslate(mode, selector, options = {}) {
         const predicateSelector = options.predicate;
         options.predicate = (el) => $(el).is(predicateSelector);
     }
-    options.tagPosition = (
-        {
-            beforebegin: {
-                searchAt:"prevAll",
-                insertAt:"insertBefore",
-            },
-            afterbegin:  {
-                searchAt:"find",
-                insertAt:"prependTo",
-            },
-            beforeend:   {
-                searchAt:"find",
-                insertAt:"appendTo",
-            },
-            afterend:    {
-                searchAt:"nextAll",
-                insertAt:"insertAfter",
-            },
-        }[options.tagPosition]
-        || {
-            searchAt:"nextAll",
-            insertAt:"insertAfter",
-        }
-    );
 
     const tryToTranslate = (elem) => {
         if (!options.predicate || options.predicate(elem)) {
@@ -1264,7 +1259,7 @@ function initializePixiv() {
     ].join(", "));
 
     // https://dic.pixiv.net/a/東方
-    findAndTranslate("tag", "#content_title #article-name", { tagPosition: "beforeend" });
+    findAndTranslate("tag", "#content_title #article-name", { tagPosition: TAG_POSITIONS.beforeend });
 
     // Tags on work pages: https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
     findAndTranslate("tag", "span", {
@@ -1276,7 +1271,7 @@ function initializePixiv() {
     findAndTranslate("artist", "h2", {
         predicate: "main+aside>section>h2",
         toProfileUrl: el => $(el).find("a").prop("href"),
-        tagPosition: "beforeend",
+        tagPosition: TAG_POSITIONS.beforeend,
         asyncMode: true,
         onadded: ($tag) => {
             const $container = $tag.prev();
@@ -1339,11 +1334,11 @@ function initializeNijie() {
 
     // http://nijie.info/view.php?id=208491
     findAndTranslate("tag", ".tag .tag_name a:first-child", {
-        tagPosition: "beforeend",
+        tagPosition: TAG_POSITIONS.beforeend,
     });
     // https://nijie.info/dic/seiten/d/東方
     findAndTranslate("tag", "#seiten_dic h1#dic_title", {
-        tagPosition: "beforeend",
+        tagPosition: TAG_POSITIONS.beforeend,
     });
 }
 
@@ -1362,7 +1357,7 @@ function initializeTinami() {
     // Triggers on http://www.tinami.com/creator/profile/10262
     findAndTranslate("artist", "div.cre_name h1", {
         toProfileUrl: el => window.location.href,
-        tagPosition: "beforeend",
+        tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
     });
 
@@ -1391,12 +1386,12 @@ function initializeNicoSeiga() {
 
     // http://seiga.nicovideo.jp/tag/艦これ
     findAndTranslate("tag", "h1:has(.icon_tag_big)", {
-        tagPosition: "beforeend",
+        tagPosition: TAG_POSITIONS.beforeend,
     });
     // http://seiga.nicovideo.jp/seiga/im7741859
     findAndTranslate("tag", "a", {
         predicate: ".tag > a",
-        tagPosition: "beforeend",
+        tagPosition: TAG_POSITIONS.beforeend,
         asyncMode: true,
     });
     // http://seiga.nicovideo.jp/user/illust/14767435
@@ -1405,7 +1400,7 @@ function initializeNicoSeiga() {
     });
     // http://seiga.nicovideo.jp/seiga/im7741859
     findAndTranslate("artist", ".user_link > a .user_name", {
-        tagPosition: "beforeend",
+        tagPosition: TAG_POSITIONS.beforeend,
     });
 }
 
@@ -1425,19 +1420,19 @@ function initializeBCY() {
     // Search pages https://bcy.net/tags/name/看板娘
     findAndTranslate("artist", "a.title-txt", {
         toProfileUrl: el => el.href.replace(/\?.*$/,""),
-        tagPosition: "beforeend",
+        tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
         asyncMode: true,
     });
 
     // Search pages https://bcy.net/tags/name/看板娘
     findAndTranslate("tag", ".circle-desc-name, .tag", {
-        tagPosition: "beforeend",
+        tagPosition: TAG_POSITIONS.beforeend,
         asyncMode: true,
     });
 
     // Illust pages https://bcy.net/item/detail/6561698116674781447
-    findAndTranslate("tag", ".dm-tag-a", { tagPosition: "beforeend" });
+    findAndTranslate("tag", ".dm-tag-a", { tagPosition: TAG_POSITIONS.beforeend });
 }
 
 function initializeDeviantArt() {
@@ -1460,7 +1455,7 @@ function initializeHentaiFoundry() {
     // Profile tab https://www.hentai-foundry.com/user/DrGraevling/profile
     findAndTranslate("artist", ".breadcrumbs a:contains('Users') + span", {
         toProfileUrl: el => window.location.href,
-        tagPosition: "beforeend",
+        tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
     });
     // Orher tabs https://www.hentai-foundry.com/pictures/user/DrGraevling
@@ -1571,7 +1566,7 @@ function initializeTwitter() {
     // User card info
     findAndTranslate("artist", "a", {
         predicate: "div.r-1g94qm0 > a",
-        tagPosition: "beforeend",
+        tagPosition: TAG_POSITIONS.beforeend,
         asyncMode: true,
     });
 }
@@ -1651,7 +1646,7 @@ function initializeArtStation() {
         asyncMode: true,
     });
     findAndTranslate("tag", ".label-tag", {
-        tagPosition: "beforeend",
+        tagPosition: TAG_POSITIONS.beforeend,
         asyncMode: true,
     });
     // Hover card
@@ -1708,11 +1703,11 @@ function initializeSauceNAO() {
         classes: "inline",
     });
     findAndTranslate("artistByName", ".resulttitle .target", {
-        tagPosition: "beforebegin",
+        tagPosition: TAG_POSITIONS.beforebegin,
         classes: "inline",
     });
     findAndTranslate("tag", ".resultcontentcolumn .target", {
-        tagPosition: "beforebegin",
+        tagPosition: TAG_POSITIONS.beforebegin,
     });
 }
 
@@ -1737,7 +1732,7 @@ function initializePawoo() {
     // artist name in his card info
     findAndTranslate("artist", ".name small", {
         toProfileUrl: () => "https://pawoo.net" + window.location.pathname.match(/\/[^\/]+/)[0],
-        tagPosition: "afterbegin",
+        tagPosition: TAG_POSITIONS.afterbegin,
     });
     // Post author, commentor
     findAndTranslate("artist", "a.status__display-name span span", {
@@ -1777,7 +1772,7 @@ function initializePixivFanbox() {
     // Post author
     findAndTranslate("artist", "div.sc-7161tb-4", {
         toProfileUrl: el => ($(el).closest("a").prop("href")||"").replace(/\/post\/\d+/,""),
-        tagPosition: "beforeend",
+        tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
         asyncMode: true,
     });
