@@ -74,8 +74,8 @@ const SETTINGS = {
                 s: "Safe",
                 q: "Questionable",
                 e: "Explicit",
-            }
-        }
+            },
+        },
     ],
     isValid: function(name, value) {
         const setting = this.list.find(s => s.name===name);
@@ -117,7 +117,7 @@ const SETTINGS = {
             console.warn(`Invalid value ${value} for ${name}`);
             return false;
         }
-    }
+    },
 };
 
 // Which domain to send requests to
@@ -157,7 +157,7 @@ const ARTIST_QTIP_SETTINGS = {
 
 //Domains where images outside of whitelist are blocked
 const CORS_IMAGE_DOMAINS = [
-    'twitter.com'
+    'twitter.com',
 ];
 
 //Memory storage for already rendered artist tooltips
@@ -387,8 +387,8 @@ function addDanbooruTags($target, tags, options = {}) {
           onadded = null, // ($tag)=>{},
           tagPosition: {
             searchAt = "nextAll",
-            insertAt = "insertAfter"
-          } = {}
+            insertAt = "insertAfter",
+          } = {},
     } = options;
 
     const $tagsContainer = $(noIndents`
@@ -433,8 +433,8 @@ function addDanbooruArtist($target, artist, options = {}) {
           onadded = null, // ($tag)=>{},
           tagPosition: {
             searchAt = "nextAll",
-            insertAt = "insertAfter"
-          } = {}
+            insertAt = "insertAfter",
+          } = {},
     } = options;
 
     classes += artist.is_banned ? " ex-artist-tag ex-banned-artist-tag" : " ex-artist-tag";
@@ -443,7 +443,7 @@ function addDanbooruArtist($target, artist, options = {}) {
     artist.encodedName = encodeURIComponent(artist.name);
 
     const qtip_settings = Object.assign(ARTIST_QTIP_SETTINGS, {
-        content: { text: (event, qtip) => buildArtistTooltip(artist, qtip) }
+        content: { text: (event, qtip) => buildArtistTooltip(artist, qtip) },
     });
 
     let duplicates = $target[searchAt](".ex-artist-tag")
@@ -1111,7 +1111,7 @@ function findAndTranslate(mode, selector, options = {}) {
                 elems = elems.concat(Object.values(summary.attributeChanged).flat(1));
             }
             elems.forEach(tryToTranslate);
-        }
+        },
     });
 }
 
@@ -1189,7 +1189,7 @@ function initializePixiv() {
     // tags on work pages: https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
     findAndTranslate("tag", 'span', {
         predicate: "figcaption li > span:first-child",
-        asyncMode: true
+        asyncMode: true,
     });
 
     // illust author https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
@@ -1208,23 +1208,23 @@ function initializePixiv() {
                     findAndTranslate("artist", $container, {
                         toProfileUrl: el => $(el).find("a").prop("href"),
                     });
-                }
+                },
             });
-        }
+        },
     });
 
     // related work's artists https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
     findAndTranslate("artist", "div", {
         predicate: "aside li>div>div:last-child>div:first-child",
         toProfileUrl: el => $(el).find("a").prop("href"),
-        asyncMode: true
+        asyncMode: true,
     });
 
     // artist profile pages: https://www.pixiv.net/member.php?id=29310, https://www.pixiv.net/member_illust.php?id=104471&type=illust
     let normalizePageUrl = () => `https://www.pixiv.net/member.php?id=${new URL(window.location.href).searchParams.get("id")}`;
     findAndTranslate("artist", ".VyO6wL2", {
         toProfileUrl: normalizePageUrl,
-        asyncMode: true
+        asyncMode: true,
     });
 
     // search pages: https://www.pixiv.net/bookmark_new_illust.php
@@ -1232,13 +1232,13 @@ function initializePixiv() {
     findAndTranslate("artist", ".ui-profile-popup", {
         predicate: "figcaption._3HwPt89 > ul > li > a.ui-profile-popup",
         toProfileUrl: toProfileUrl,
-        asyncMode: true
+        asyncMode: true,
     });
 
     // ranking pages: https://www.pixiv.net/ranking.php?mode=original
     findAndTranslate("artist", ".user-container.ui-profile-popup", {
         toProfileUrl: toProfileUrl,
-        asyncMode: true
+        asyncMode: true,
     });
 }
 
@@ -1259,11 +1259,11 @@ function initializeNijie() {
 
     // http://nijie.info/view.php?id=208491
     findAndTranslate("tag", ".tag .tag_name a:first-child", {
-        tagPosition: "beforeend"
+        tagPosition: "beforeend",
     });
     // https://nijie.info/dic/seiten/d/東方
     findAndTranslate("tag", "#seiten_dic h1#dic_title", {
-        tagPosition: "beforeend"
+        tagPosition: "beforeend",
     });
 }
 
@@ -1283,12 +1283,12 @@ function initializeTinami() {
     findAndTranslate("artist", "div.cre_name h1", {
         toProfileUrl: el => window.location.href,
         tagPosition: "beforeend",
-        classes: "inline"
+        classes: "inline",
     });
 
     // triggers on http://www.tinami.com/view/934323
     findAndTranslate("artist", 'p:has(>a[href^="/creator/profile/"])', {
-        toProfileUrl: el => $(el).find("a").prop("href")
+        toProfileUrl: el => $(el).find("a").prop("href"),
     });
 }
 
@@ -1311,21 +1311,21 @@ function initializeNicoSeiga() {
 
     // http://seiga.nicovideo.jp/tag/艦これ
     findAndTranslate("tag", "h1:has(.icon_tag_big)", {
-        tagPosition: "beforeend"
+        tagPosition: "beforeend",
     });
     // http://seiga.nicovideo.jp/seiga/im7741859
     findAndTranslate("tag", "a", {
         predicate: ".tag > a",
         tagPosition: "beforeend",
-        asyncMode: true
+        asyncMode: true,
     });
     // http://seiga.nicovideo.jp/user/illust/14767435
     findAndTranslate("artist", ".user_info h1 a", {
-        classes: "inline"
+        classes: "inline",
     });
     // http://seiga.nicovideo.jp/seiga/im7741859
     findAndTranslate("artist", ".user_link > a .user_name", {
-        tagPosition: "beforeend"
+        tagPosition: "beforeend",
     });
 }
 
@@ -1334,12 +1334,12 @@ function initializeBCY() {
 
     // prfile page https://bcy.net/u/3935930
     findAndTranslate("artist", "div:has(>a.uname)", {
-        toProfileUrl: el => $(el).find("a").prop("href")
+        toProfileUrl: el => $(el).find("a").prop("href"),
     });
 
     // illust pages https://bcy.net/item/detail/6643704430988361988
     findAndTranslate("artist", ".js-userTpl .user-name a", {
-        toProfileUrl: el => el.href.replace(/\?.*$/,"")
+        toProfileUrl: el => el.href.replace(/\?.*$/,""),
     });
 
     // search pages https://bcy.net/tags/name/看板娘
@@ -1347,13 +1347,13 @@ function initializeBCY() {
         toProfileUrl: el => el.href.replace(/\?.*$/,""),
         tagPosition: "beforeend",
         classes: "inline",
-        asyncMode: true
+        asyncMode: true,
     });
 
     // search pages https://bcy.net/tags/name/看板娘
     findAndTranslate("tag", ".circle-desc-name, .tag", {
         tagPosition: "beforeend",
-        asyncMode: true
+        asyncMode: true,
     });
 
     // illust pages https://bcy.net/item/detail/6561698116674781447
@@ -1364,7 +1364,7 @@ function initializeDeviantArt() {
     // https://www.deviantart.com/koyorin
     // https://www.deviantart.com/koyorin/art/Ruby-570526828
     findAndTranslate("artist", ".gruserbadge .username, .dev-title-container .author .username", {
-        classes: "inline"
+        classes: "inline",
     });
 
     findAndTranslate("tag", ".dev-about-tags-cc .discoverytag");
@@ -1375,17 +1375,17 @@ function initializeHentaiFoundry() {
 
     // posts on https://www.hentai-foundry.com/user/Calm/profile
     findAndTranslate("artist", ".galleryViewTable .thumb_square > a:nth-child(4)", {
-        classes: "inline"
+        classes: "inline",
     });
     // profile tab https://www.hentai-foundry.com/user/DrGraevling/profile
     findAndTranslate("artist", ".breadcrumbs a:contains('Users') + span", {
         toProfileUrl: el => window.location.href,
         tagPosition: "beforeend",
-        classes: "inline"
+        classes: "inline",
     });
     // orher tabs https://www.hentai-foundry.com/pictures/user/DrGraevling
     findAndTranslate("artist", ".breadcrumbs a[href^='/user/']", {
-        classes: "inline"
+        classes: "inline",
     });
 }
 
@@ -1418,29 +1418,29 @@ function initializeTwitter() {
     // old dedsign
     if ($("body > div#doc").length) {
         findAndTranslate("tag", ".twitter-hashtag", {
-            asyncMode: true
+            asyncMode: true,
         });
 
         // header card
         findAndTranslate("artist", ".ProfileHeaderCard-screennameLink", {
-            asyncMode: true
+            asyncMode: true,
         });
         // popuping user card info
         findAndTranslate("artist", ".ProfileCard-screennameLink", {
-            asyncMode: true
+            asyncMode: true,
         });
         // tweet authors and comments
         findAndTranslate("artist", "a.js-user-profile-link", {
             predicate: ":not(.js-retweet-text) > a",
             classes: "inline",
-            asyncMode: true
+            asyncMode: true,
         });
         // quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
         findAndTranslate("artist", ".username", {
             predicate: "div.js-user-profile-link .username",
             toProfileUrl: e => "https://twitter.com/" + $(e).find("b").text(),
             asyncMode: true,
-            classes: "inline"
+            classes: "inline",
         });
 
         return;
@@ -1470,9 +1470,9 @@ function initializeTwitter() {
                         toProfileUrl: URLfromLocation,
                         classes: "inline",
                     });
-                }
+                },
             });
-        }
+        },
     });
     // tweet, expanded tweet and comment authors
     // https://twitter.com/mugosatomi/status/1173231575959363584
@@ -1486,7 +1486,7 @@ function initializeTwitter() {
     findAndTranslate("artist", "div.r-1wbh5a2.r-1udh08x", {
         toProfileUrl: el => "https://twitter.com/"+$(el).find(".r-1f6r7vd").text().substr(1),
         classes: "inline",
-        asyncMode: true
+        asyncMode: true,
     });
     // user card info
     findAndTranslate("artist", "a", {
@@ -1561,7 +1561,7 @@ function initializeArtStation() {
     // https://www.artstation.com/jubi/*
     findAndTranslate("artist", "h1.artist-name", {
         toProfileUrl: toFullURL,
-        asyncMode: true
+        asyncMode: true,
     });
     // https://www.artstation.com/artwork/0X40zG
     findAndTranslate("artist", "a[hover-card]", {
@@ -1572,7 +1572,7 @@ function initializeArtStation() {
     });
     findAndTranslate("tag", ".label-tag", {
         tagPosition: "beforeend",
-        asyncMode: true
+        asyncMode: true,
     });
     // hover card
     findAndTranslate("artist", "a", {
@@ -1584,7 +1584,7 @@ function initializeArtStation() {
     // https://www.artstation.com/jubi/followers
     findAndTranslate("artist", ".users-grid-name", {
         toProfileUrl: el => toFullURL($(el).find("a")),
-        asyncMode: true
+        asyncMode: true,
     });
 
     // default personal websites:
@@ -1596,7 +1596,7 @@ function initializeArtStation() {
     // https://tinadraw.artstation.com/
     // https://dylan-kowalski.artstation.com/
     findAndTranslate("artist", ".site-title a", {
-        toProfileUrl: toFullURL
+        toProfileUrl: toFullURL,
     });
 }
 
@@ -1625,14 +1625,14 @@ function initializeSauceNAO() {
 
     // http://saucenao.com/search.php?db=999&url=https%3A%2F%2Fraikou4.donmai.us%2Fpreview%2F5e%2F8e%2F5e8e7a03c49906aaad157de8aeb188e4.jpg
     findAndTranslate("artist", "strong:contains('Member: ')+a, strong:contains('Author: ')+a", {
-        classes: "inline"
+        classes: "inline",
     });
     findAndTranslate("artistByName", ".resulttitle .target", {
         tagPosition: "beforebegin",
-        classes: "inline"
+        classes: "inline",
     });
     findAndTranslate("tag", ".resultcontentcolumn .target", {
-        tagPosition: "beforebegin"
+        tagPosition: "beforebegin",
     });
 }
 
@@ -1657,11 +1657,11 @@ function initializePawoo() {
     // artist name in his card info
     findAndTranslate("artist", ".name small", {
         toProfileUrl: () => "https://pawoo.net" + window.location.pathname.match(/\/[^\/]+/)[0],
-        tagPosition: "afterbegin"
+        tagPosition: "afterbegin",
     });
     // post author, commentor
     findAndTranslate("artist", "a.status__display-name span span", {
-        classes: "inline"
+        classes: "inline",
     });
     // users in sidebar
     findAndTranslate("artist", "a.account__display-name span span");
@@ -1674,16 +1674,16 @@ function initializePawoo() {
 function initializeTweetDeck() {
     findAndTranslate("tag", "span.link-complex-target", {
         predicate: "a[rel='hashtag'] span.link-complex-target",
-        asyncMode: true
+        asyncMode: true,
     });
     // user card info
     findAndTranslate("artist", "p.username", {
-        asyncMode: true
+        asyncMode: true,
     });
     // tweet authors and comments
     findAndTranslate("artist", "a.account-link", {
         predicate: "a:has(.username)",
-        asyncMode: true
+        asyncMode: true,
     });
 }
 
@@ -1692,14 +1692,14 @@ function initializePixivFanbox() {
     // channel header
     findAndTranslate("artist", "a.sc-1upaq18-16", {
         classes: "inline a.sc-1upaq18-16",
-        asyncMode: true
+        asyncMode: true,
     });
     // post author
     findAndTranslate("artist", "div.sc-7161tb-4", {
         toProfileUrl: el => ($(el).closest("a").prop("href")||"").replace(/\/post\/\d+/,""),
         tagPosition: "beforeend",
         classes: "inline",
-        asyncMode: true
+        asyncMode: true,
     });
 }
 
