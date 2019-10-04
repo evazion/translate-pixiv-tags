@@ -257,9 +257,9 @@ const PROGRAM_CSS = `
 }
 `;
 
-// tag function for template literals to remove newlines and leading spaces
+// Tag function for template literals to remove newlines and leading spaces
 function noIndents(strings, ...values) {
-    // remove all spaces before/after a tag and leave one in other cases
+    // Remove all spaces before/after a tag and leave one in other cases
     strings = strings.map(str => str.replace(/(>)?\n *(<)?/g, (s, lt, gt) => lt&&gt ? lt+gt : lt||gt ? (lt||gt) : " "));
     let res = new Array(values.length*2+1);
     for (let i = 0; i < values.length; i++) {
@@ -354,7 +354,7 @@ function get(url, params, cache = CACHE_LIFETIME, base_url = BOORU) {
 async function translateTag(target, tagName, options) {
     const normalizedTag = tagName.trim().normalize("NFKC").replace(/\d+users入り$/, "").replace(/^#/, "");
 
-    /* tags like "5000users入り$" become empty after normalization; don't search for empty tags. */
+    /* Tags like "5000users入り$" become empty after normalization; don't search for empty tags. */
     if (normalizedTag.length === 0) {
         return [];
     }
@@ -411,7 +411,7 @@ async function translateArtistByURL(element, profileUrl, options) {
     const artists = await get("/artists", {search: {url_matches: profileUrl, is_active: true}, only: ARTIST_FIELDS});
     const pUrl = new URL(profileUrl.replace(/\/$/,"").toLowerCase());
     artists
-        // fix of #18: for some unsupported domains, Danbooru returns false-positive results
+        // Fix of #18: for some unsupported domains, Danbooru returns false-positive results
         .filter(({urls}) => urls.some(({url, normalized_url}) => {
             const aUrl = new URL(url.replace(/\/$/,"").toLowerCase());
             const nUrl = new URL(normalized_url.replace(/\/$/,"").toLowerCase());
@@ -449,7 +449,7 @@ function addDanbooruArtist($target, artist, options = {}) {
     let duplicates = $target[searchAt](".ex-artist-tag")
                         .filter((i,el) => el.innerText.trim() == artist.escapedName);
     if (duplicates.length) {
-        // if qtip was removed then add it back
+        // If qtip was removed then add it back
         if (!$.data(duplicates.find("a")[0]).qtip) {
             $(duplicates).find("a").qtip(qtip_settings);
         }
@@ -490,7 +490,7 @@ function chooseBackgroundColorScheme($element) {
         .map((i,el) => $(el).css("background-color"))
         .get()
         .filter(color => color !== TRANSPARENT_COLOR);
-    // calculate summary color and get RGB channels
+    // Calculate summary color and get RGB channels
     let color_array = background_colors
         .map(color => color.match(/(\d+(\.\d+)?)+/g))
         .reverse()
@@ -524,7 +524,7 @@ async function buildArtistTooltip(artist, qtip) {
     })
     .then(() => qtip.reposition(null, false));
     if (!qtip.elements.tooltip.hasClass("qtip-dark") && !qtip.elements.tooltip.hasClass("qtip-light")) {
-        // select theme and background color based upon the background of surrounding elements
+        // Select theme and background color based upon the background of surrounding elements
         let [qtip_class, adjusted_color] = chooseBackgroundColorScheme(qtip.elements.target);
         qtip.elements.tooltip.addClass(qtip_class);
         qtip.elements.tooltip.css("background-color", adjusted_color);
@@ -858,7 +858,7 @@ function timeToAgo(time) {
     }
     return "∞ ago";
 }
-// based on https://stackoverflow.com/questions/15900485/correct-way-to-convert-size-in-bytes-to-kb-mb-gb-in-javascript
+// Based on https://stackoverflow.com/questions/15900485/correct-way-to-convert-size-in-bytes-to-kb-mb-gb-in-javascript
 function formatBytes(bytes) {
     const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
@@ -894,7 +894,7 @@ function buildPostPreview(post) {
         width = Math.round(post.image_width * scale);
         height = Math.round(post.image_height * scale);
         if (CORS_IMAGE_DOMAINS.includes(location.host)) {
-            // temporaly set transparent 1x1 image
+            // Temporaly set transparent 1x1 image
             preview_file_url = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
             getImage(post.preview_file_url).then((blob) => {
                 let image_blob = blob.slice(0, blob.size, "image/jpeg");
@@ -1063,7 +1063,7 @@ function findAndTranslate(mode, selector, options = {}) {
         predicate: null, // (el) => true,
         toProfileUrl: (el) => $(el).closest("a").prop("href"),
         toTagName: (el) => el.innerText,
-        tagPosition: "afterend", // beforebegin, afterbegin, beforeend, afterend
+        tagPosition: "afterend", // Values: beforebegin, afterbegin, beforeend, afterend
         classes: "",
         onadded: null, // ($tag) => {},
     }, options);
@@ -1186,13 +1186,13 @@ function initializePixiv() {
     // https://dic.pixiv.net/a/東方
     findAndTranslate("tag", "#content_title #article-name", {tagPosition: "beforeend"});
 
-    // tags on work pages: https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
+    // Tags on work pages: https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
     findAndTranslate("tag", "span", {
         predicate: "figcaption li > span:first-child",
         asyncMode: true,
     });
 
-    // illust author https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
+    // Illust author https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
     findAndTranslate("artist", "h2", {
         predicate: "main+aside>section>h2",
         toProfileUrl: el => $(el).find("a").prop("href"),
@@ -1213,21 +1213,21 @@ function initializePixiv() {
         },
     });
 
-    // related work's artists https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
+    // Related work's artists https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
     findAndTranslate("artist", "div", {
         predicate: "aside li>div>div:last-child>div:first-child",
         toProfileUrl: el => $(el).find("a").prop("href"),
         asyncMode: true,
     });
 
-    // artist profile pages: https://www.pixiv.net/member.php?id=29310, https://www.pixiv.net/member_illust.php?id=104471&type=illust
+    // Artist profile pages: https://www.pixiv.net/member.php?id=29310, https://www.pixiv.net/member_illust.php?id=104471&type=illust
     let normalizePageUrl = () => `https://www.pixiv.net/member.php?id=${new URL(window.location.href).searchParams.get("id")}`;
     findAndTranslate("artist", ".VyO6wL2", {
         toProfileUrl: normalizePageUrl,
         asyncMode: true,
     });
 
-    // search pages: https://www.pixiv.net/bookmark_new_illust.php
+    // Search pages: https://www.pixiv.net/bookmark_new_illust.php
     let toProfileUrl = (el => $(el).prop("href").replace(/member_illust/, "member").replace(/&ref=.*$/, ""));
     findAndTranslate("artist", ".ui-profile-popup", {
         predicate: "figcaption._3HwPt89 > ul > li > a.ui-profile-popup",
@@ -1235,7 +1235,7 @@ function initializePixiv() {
         asyncMode: true,
     });
 
-    // ranking pages: https://www.pixiv.net/ranking.php?mode=original
+    // Ranking pages: https://www.pixiv.net/ranking.php?mode=original
     findAndTranslate("artist", ".user-container.ui-profile-popup", {
         toProfileUrl: toProfileUrl,
         asyncMode: true,
@@ -1279,14 +1279,14 @@ function initializeTinami() {
     // http://www.tinami.com/view/979474
     findAndTranslate("tag", ".tag > span > a:nth-child(2)");
 
-    // triggers on http://www.tinami.com/creator/profile/10262
+    // Triggers on http://www.tinami.com/creator/profile/10262
     findAndTranslate("artist", "div.cre_name h1", {
         toProfileUrl: el => window.location.href,
         tagPosition: "beforeend",
         classes: "inline",
     });
 
-    // triggers on http://www.tinami.com/view/934323
+    // Triggers on http://www.tinami.com/view/934323
     findAndTranslate("artist", "p:has(>a[href^="/creator/profile/"])", {
         toProfileUrl: el => $(el).find("a").prop("href"),
     });
@@ -1332,17 +1332,17 @@ function initializeNicoSeiga() {
 function initializeBCY() {
     $("body").attr("id", "ex-bcy");
 
-    // prfile page https://bcy.net/u/3935930
+    // Prfile page https://bcy.net/u/3935930
     findAndTranslate("artist", "div:has(>a.uname)", {
         toProfileUrl: el => $(el).find("a").prop("href"),
     });
 
-    // illust pages https://bcy.net/item/detail/6643704430988361988
+    // Illust pages https://bcy.net/item/detail/6643704430988361988
     findAndTranslate("artist", ".js-userTpl .user-name a", {
         toProfileUrl: el => el.href.replace(/\?.*$/,""),
     });
 
-    // search pages https://bcy.net/tags/name/看板娘
+    // Search pages https://bcy.net/tags/name/看板娘
     findAndTranslate("artist", "a.title-txt", {
         toProfileUrl: el => el.href.replace(/\?.*$/,""),
         tagPosition: "beforeend",
@@ -1350,13 +1350,13 @@ function initializeBCY() {
         asyncMode: true,
     });
 
-    // search pages https://bcy.net/tags/name/看板娘
+    // Search pages https://bcy.net/tags/name/看板娘
     findAndTranslate("tag", ".circle-desc-name, .tag", {
         tagPosition: "beforeend",
         asyncMode: true,
     });
 
-    // illust pages https://bcy.net/item/detail/6561698116674781447
+    // Illust pages https://bcy.net/item/detail/6561698116674781447
     findAndTranslate("tag", ".dm-tag-a", {tagPosition: "beforeend"});
 }
 
@@ -1373,17 +1373,17 @@ function initializeDeviantArt() {
 function initializeHentaiFoundry() {
     $("body").attr("id", "ex-hentaifoundry");
 
-    // posts on https://www.hentai-foundry.com/user/Calm/profile
+    // Posts on https://www.hentai-foundry.com/user/Calm/profile
     findAndTranslate("artist", ".galleryViewTable .thumb_square > a:nth-child(4)", {
         classes: "inline",
     });
-    // profile tab https://www.hentai-foundry.com/user/DrGraevling/profile
+    // Profile tab https://www.hentai-foundry.com/user/DrGraevling/profile
     findAndTranslate("artist", ".breadcrumbs a:contains('Users') + span", {
         toProfileUrl: el => window.location.href,
         tagPosition: "beforeend",
         classes: "inline",
     });
-    // orher tabs https://www.hentai-foundry.com/pictures/user/DrGraevling
+    // Orher tabs https://www.hentai-foundry.com/pictures/user/DrGraevling
     findAndTranslate("artist", ".breadcrumbs a[href^='/user/']", {
         classes: "inline",
     });
@@ -1415,27 +1415,27 @@ function initializeTwitter() {
         }
     `);
 
-    // old dedsign
+    // Old dedsign
     if ($("body > div#doc").length) {
         findAndTranslate("tag", ".twitter-hashtag", {
             asyncMode: true,
         });
 
-        // header card
+        // Header card
         findAndTranslate("artist", ".ProfileHeaderCard-screennameLink", {
             asyncMode: true,
         });
-        // popuping user card info
+        // Popuping user card info
         findAndTranslate("artist", ".ProfileCard-screennameLink", {
             asyncMode: true,
         });
-        // tweet authors and comments
+        // Tweet authors and comments
         findAndTranslate("artist", "a.js-user-profile-link", {
             predicate: ":not(.js-retweet-text) > a",
             classes: "inline",
             asyncMode: true,
         });
-        // quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
+        // Quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
         findAndTranslate("artist", ".username", {
             predicate: "div.js-user-profile-link .username",
             toProfileUrl: el => "https://twitter.com/" + $(el).find("b").text(),
@@ -1446,13 +1446,13 @@ function initializeTwitter() {
         return;
     }
 
-    // new design
-    // tags https://twitter.com/mugosatomi/status/1173231575959363584
+    // New design
+    // Tags https://twitter.com/mugosatomi/status/1173231575959363584
     findAndTranslate("tag", "a.r-1n1174f", {
         predicate: "a.r-1n1174f[href^='/hashtag/']",
         asyncMode: true,
     });
-    // floating name of a channel https://twitter.com/mugosatomi
+    // Floating name of a channel https://twitter.com/mugosatomi
     const URLfromLocation = () => "https://twitter.com"+(window.location.pathname.match(/\/\w+/)||[])[0];
     findAndTranslate("artist", "div.css-1dbjc4n.r-xoduu5.r-18u37iz.r-dnmrzs", {
         predicate: "h2>div>div>div",
@@ -1474,7 +1474,7 @@ function initializeTwitter() {
             });
         },
     });
-    // tweet, expanded tweet and comment authors
+    // Tweet, expanded tweet and comment authors
     // https://twitter.com/mugosatomi/status/1173231575959363584
     findAndTranslate("artist", "div.r-1wbh5a2.r-dnmrzs", {
         predicate: "div[data-testid='primaryColumn'] article div:has(>a.r-1wbh5a2)",
@@ -1482,13 +1482,13 @@ function initializeTwitter() {
         classes: "inline",
         asyncMode: true,
     });
-    // quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
+    // Quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
     findAndTranslate("artist", "div.r-1wbh5a2.r-1udh08x", {
         toProfileUrl: el => "https://twitter.com/"+$(el).find(".r-1f6r7vd").text().substr(1),
         classes: "inline",
         asyncMode: true,
     });
-    // user card info
+    // User card info
     findAndTranslate("artist", "a", {
         predicate: "div.r-1g94qm0 > a",
         tagPosition: "beforeend",
@@ -1574,7 +1574,7 @@ function initializeArtStation() {
         tagPosition: "beforeend",
         asyncMode: true,
     });
-    // hover card
+    // Hover card
     findAndTranslate("artist", "a", {
         requiredAttributes: "href",
         predicate: (el) => el.matches(".hover-card-name > a") && hasValidHref(el),
@@ -1587,10 +1587,10 @@ function initializeArtStation() {
         asyncMode: true,
     });
 
-    // default personal websites:
+    // Default personal websites:
     // https://jubi.artstation.com/
     // https://anninosart.artstation.com/
-    // customized personal websites:
+    // Customized personal websites:
     // https://inawong.artstation.com/
     // https://kastep.artstation.com/
     // https://tinadraw.artstation.com/
@@ -1615,7 +1615,7 @@ function initializeSauceNAO() {
 
     $(".resulttitle, .resultcontentcolumn")
         .contents()
-        .filter(function(){return this.nodeType==3;}) // get text nodes
+        .filter(function(){return this.nodeType==3;}) // Get text nodes
         .wrap("<span class=target>");
     $(".target:contains(', ')").replaceWith((i, html) => html
         .split(", ")
@@ -1659,15 +1659,15 @@ function initializePawoo() {
         toProfileUrl: () => "https://pawoo.net" + window.location.pathname.match(/\/[^\/]+/)[0],
         tagPosition: "afterbegin",
     });
-    // post author, commentor
+    // Post author, commentor
     findAndTranslate("artist", "a.status__display-name span span", {
         classes: "inline",
     });
-    // users in sidebar
+    // Users in sidebar
     findAndTranslate("artist", "a.account__display-name span span");
-    // cards of following users and followers
+    // Cards of following users and followers
     findAndTranslate("artist", ".account-grid-card .name a");
-    // tags https://pawoo.net/@SilSinn9801
+    // Tags https://pawoo.net/@SilSinn9801
     findAndTranslate("tag", ".hashtag");
 }
 
@@ -1676,11 +1676,11 @@ function initializeTweetDeck() {
         predicate: "a[rel='hashtag'] span.link-complex-target",
         asyncMode: true,
     });
-    // user card info
+    // User card info
     findAndTranslate("artist", "p.username", {
         asyncMode: true,
     });
-    // tweet authors and comments
+    // Tweet authors and comments
     findAndTranslate("artist", "a.account-link", {
         predicate: "a:has(.username)",
         asyncMode: true,
@@ -1694,7 +1694,7 @@ function initializePixivFanbox() {
         classes: "inline a.sc-1upaq18-16",
         asyncMode: true,
     });
-    // post author
+    // Post author
     findAndTranslate("artist", "div.sc-7161tb-4", {
         toProfileUrl: el => ($(el).closest("a").prop("href")||"").replace(/\/post\/\d+/,""),
         tagPosition: "beforeend",
