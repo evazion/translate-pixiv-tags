@@ -1783,9 +1783,9 @@ function initializePixivFanbox() {
 
 function initializeQtipContainer() {
     // Container and viewport for qTips
-    $(`<div id="ex-qtips"></div>`).appendTo("body");
-    ARTIST_QTIP_SETTINGS.position.viewport =
-    ARTIST_QTIP_SETTINGS.position.container = $("#ex-qtips");
+    $div = $(`<div id="ex-qtips"></div>`).appendTo("body");
+    ARTIST_QTIP_SETTINGS.position.viewport = $div;
+    ARTIST_QTIP_SETTINGS.position.container = $div;
 }
 
 function initialize() {
