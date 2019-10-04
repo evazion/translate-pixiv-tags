@@ -73,7 +73,7 @@ const SETTINGS = {
             values: {
                 s: "Safe",
                 q: "Questionable",
-                e: "Explicit",
+                e: "Explicit", // eslint-disable-line id-blacklist
             },
         },
     ],
@@ -320,10 +320,10 @@ async function getJSONRateLimited(url, params) {
         getJSONRateLimited[domain].pending++;
         try {
             var resp = await $.getJSON(url, params).always(()=>{getJSONRateLimited[domain].pending--;});
-        } catch (e) {
+        } catch (ex) {
             //Backing off maximum to adjust to current network conditions
             getJSONRateLimited[domain].current_max = Math.max(getJSONRateLimited[domain].current_max - 1, MIN_PENDING_NETWORK_REQUESTS);
-            console.error("Failed try #", i + 1, "\nURL:", url, "\nParameters:", params, "\nHTTP Error:", e.status);
+            console.error("Failed try #", i + 1, "\nURL:", url, "\nParameters:", params, "\nHTTP Error:", ex.status);
             if (!checkNetworkErrors(domain, true)) {
                 return [];
             }
@@ -866,7 +866,7 @@ function formatBytes(bytes) {
 }
 
 function buildPostPreview(post) {
-    const RATINGS = {s:0, q:1, e:2};
+    const RATINGS = {s:0, q:1, e:2}; // eslint-disable-line id-blacklist
     let [width, height] = [150, 150];
     let preview_file_url = `${BOORU}/images/download-preview.png`;
 
@@ -1228,7 +1228,7 @@ function initializePixiv() {
     });
 
     // search pages: https://www.pixiv.net/bookmark_new_illust.php
-    let toProfileUrl = (e => $(e).prop("href").replace(/member_illust/, "member").replace(/&ref=.*$/, ""));
+    let toProfileUrl = (el => $(el).prop("href").replace(/member_illust/, "member").replace(/&ref=.*$/, ""));
     findAndTranslate("artist", ".ui-profile-popup", {
         predicate: "figcaption._3HwPt89 > ul > li > a.ui-profile-popup",
         toProfileUrl: toProfileUrl,
@@ -1438,7 +1438,7 @@ function initializeTwitter() {
         // quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
         findAndTranslate("artist", ".username", {
             predicate: "div.js-user-profile-link .username",
-            toProfileUrl: e => "https://twitter.com/" + $(e).find("b").text(),
+            toProfileUrl: el => "https://twitter.com/" + $(el).find("b").text(),
             asyncMode: true,
             classes: "inline",
         });
