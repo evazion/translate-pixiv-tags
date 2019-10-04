@@ -85,7 +85,7 @@ const SETTINGS = {
         }
         switch (setting.type) {
             case "number": return Number.isInteger(value) && value>0;
-            case "list": return setting.values.hasOwnProperty(value);
+            case "list": return value in setting.values;
             default:
                 console.error("Unsupported type "+setting.type);
                 return false;
