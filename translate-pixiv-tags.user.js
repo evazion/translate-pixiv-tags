@@ -157,7 +157,7 @@ const ARTIST_QTIP_SETTINGS = {
 
 // Domains where images outside of whitelist are blocked
 const CORS_IMAGE_DOMAINS = [
-    'twitter.com',
+    "twitter.com",
 ];
 
 // Memory storage for already rendered artist tooltips
@@ -222,7 +222,7 @@ const PROGRAM_CSS = `
 .ex-artist-tag::before {
     content: "";
     display: inline-block;
-    background-image: url(${GM_getResourceURL('danbooru_icon')});
+    background-image: url(${GM_getResourceURL("danbooru_icon")});
     background-repeat: no-repeat;
     background-size: 0.8em;
     width: 0.8em;
@@ -274,14 +274,14 @@ function getImage(image_url) {
     return GM.xmlHttpRequest({
             method: "GET",
             url: image_url,
-            responseType: 'blob',
+            responseType: "blob",
         })
         .then(resp => resp.response);
 }
 
 function rateLimitedLog(level, ...messageData) {
     // Assumes that only simple arguments will be passed in
-    let key = messageData.join(',');
+    let key = messageData.join(",");
     rateLimitedLog[key] = rateLimitedLog[key] || {log: true};
     if (rateLimitedLog[key].log) {
         console[level](...messageData);
@@ -768,7 +768,7 @@ function buildArtistTooltipContent(artist, [tag = {post_count:0}], posts = []) {
         </style>
 
         <article class="container" part="container">
-            ${GM_getResourceText('settings_icon')}
+            ${GM_getResourceText("settings_icon")}
             <section class="header">
                 <a class="artist-name tag-category-artist"
                    href="${BOORU}/artists/${artist.id}"
@@ -814,8 +814,8 @@ function buildArtistTooltipContent(artist, [tag = {post_count:0}], posts = []) {
 function buildArtistUrlsHtml(artist) {
     const domainSorter = artist_url => new URL(artist_url.normalized_url).host.match(/[^.]*\.[^.]*$/)[0];
     const artist_urls = _(artist.urls).chain()
-                                      .uniq('normalized_url')
-                                      .sortBy('normalized_url')
+                                      .uniq("normalized_url")
+                                      .sortBy("normalized_url")
                                       .sortBy(domainSorter)
                                       .sortBy(artist_url => !artist_url.is_active);
 
@@ -860,9 +860,9 @@ function timeToAgo(time) {
 }
 // based on https://stackoverflow.com/questions/15900485/correct-way-to-convert-size-in-bytes-to-kb-mb-gb-in-javascript
 function formatBytes(bytes) {
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+    const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return parseFloat((bytes / Math.pow(1024, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(1024, i)).toFixed(2)) + " " + sizes[i];
 }
 
 function buildPostPreview(post) {
@@ -1187,7 +1187,7 @@ function initializePixiv() {
     findAndTranslate("tag", "#content_title #article-name", {tagPosition: "beforeend"});
 
     // tags on work pages: https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
-    findAndTranslate("tag", 'span', {
+    findAndTranslate("tag", "span", {
         predicate: "figcaption li > span:first-child",
         asyncMode: true,
     });
@@ -1287,7 +1287,7 @@ function initializeTinami() {
     });
 
     // triggers on http://www.tinami.com/view/934323
-    findAndTranslate("artist", 'p:has(>a[href^="/creator/profile/"])', {
+    findAndTranslate("artist", "p:has(>a[href^="/creator/profile/"])", {
         toProfileUrl: el => $(el).find("a").prop("href"),
     });
 }
@@ -1714,7 +1714,7 @@ function initialize() {
     initializeQtipContainer();
     GM_jQuery_setup();
     GM_addStyle(PROGRAM_CSS);
-    GM_addStyle(GM_getResourceText('jquery_qtip_css'));
+    GM_addStyle(GM_getResourceText("jquery_qtip_css"));
     GM_registerMenuCommand("Settings", showSettings, "S");
 
     switch (location.host) {
