@@ -40,6 +40,8 @@
 // @noframes
 // ==/UserScript==
 
+"use strict";
+
 const SETTINGS = {
     list: [
         {
