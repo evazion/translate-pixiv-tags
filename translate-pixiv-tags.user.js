@@ -71,9 +71,9 @@ const SETTINGS = {
             descr: "The upper level of rating for preview (higher ratings will be blurred)",
             type: "list",
             values: {
-                "s": "Safe",
-                "q": "Questionable",
-                "e": "Explicit",
+                s: "Safe",
+                q: "Questionable",
+                e: "Explicit",
             }
         }
     ],
