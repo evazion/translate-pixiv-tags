@@ -430,7 +430,6 @@ function addDanbooruTags($target, tags, options = {}) {
         classes = "",
         onadded = null, // ($tag)=>{},
         tagPosition: {
-            searchAt = "nextAll",
             insertAt = "insertAfter",
         } = {},
     } = options;
@@ -1132,7 +1131,7 @@ function showSettings() {
     });
     $settings.find(".cancel").click(closeSettings);
     $(document).keydown(closeSettingsOnEscape);
-    let [className, bgcolor] = chooseBackgroundColorScheme($("#ex-qtips"));
+    let [className] = chooseBackgroundColorScheme($("#ex-qtips"));
     $settings.addClass(className);
     attachShadow($shadowContainer[0], () => $settings);
 }
