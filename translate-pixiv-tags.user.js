@@ -606,7 +606,7 @@ async function buildArtistTooltip(artist, qtip) {
     }
 }
 
-function buildArtistTooltipContent(artist, [tag = { post_count:0 }], posts = []) {
+function buildArtistTooltipContent(artist, [tag = { post_count: 0 }], posts = []) {
     let $content = $(noIndents`
         <style>
             :host {
@@ -943,9 +943,9 @@ function formatBytes(bytes) {
 
 function buildPostPreview(post) {
     const RATINGS = {
-        s:0,
-        q:1,
-        e:2, // eslint-disable-line id-blacklist
+        s: 0,
+        q: 1,
+        e: 2, // eslint-disable-line id-blacklist
     };
     let [width, height] = [150, 150];
     let preview_file_url = `${BOORU}/images/download-preview.png`;
