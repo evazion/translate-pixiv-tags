@@ -279,7 +279,10 @@ const PROGRAM_CSS = `
 // Tag function for template literals to remove newlines and leading spaces
 function noIndents(strings, ...values) {
     // Remove all spaces before/after a tag and leave one in other cases
-    strings = strings.map(str => str.replace(/(>)?\n *(<)?/g, (s, lt, gt) => lt&&gt ? lt+gt : lt||gt ? (lt||gt) : " "));
+    strings = strings.map(str => str.replace(
+        /(>)?\n *(<)?/g,
+        (s, lt, gt) => lt&&gt ? lt+gt : lt||gt ? (lt||gt) : " "
+    ));
     let res = new Array(values.length*2+1);
     for (let i = 0; i < values.length; i++) {
         res[i*2] = strings[i];
@@ -317,7 +320,13 @@ function checkNetworkErrors(domain,hasError) {
         console.log("Total errors:", ++checkNetworkErrors[domain].error);
     }
     if (checkNetworkErrors[domain].error >= MAX_NETWORK_ERRORS) {
-        rateLimitedLog("error", "Maximun number of errors exceeded", MAX_NETWORK_ERRORS, "for", domain);
+        rateLimitedLog(
+            "error",
+            "Maximun number of errors exceeded",
+            MAX_NETWORK_ERRORS,
+            "for",
+            domain
+        );
         return false;
     }
     return true;
@@ -339,7 +348,13 @@ async function getJSONRateLimited(url, params) {
         if (!(checkNetworkErrors(domain, false))) {
             return [];
         }
-        rateLimitedLog("warn", "Exceeded maximum pending requests", getJSONRateLimited[domain].current_max, "for", domain);
+        rateLimitedLog(
+            "warn",
+            "Exceeded maximum pending requests",
+            getJSONRateLimited[domain].current_max,
+            "for",
+            domain
+        );
         await new Promise(sleepHalfSecond);
     }
     for (let i = 0; i < MAX_NETWORK_RETRIES; i++) {
@@ -348,8 +363,19 @@ async function getJSONRateLimited(url, params) {
             return await $.getJSON(url, params).always(()=>{getJSONRateLimited[domain].pending--;});
         } catch (ex) {
             // Backing off maximum to adjust to current network conditions
-            getJSONRateLimited[domain].current_max = Math.max(getJSONRateLimited[domain].current_max - 1, MIN_PENDING_NETWORK_REQUESTS);
-            console.error("Failed try #", i + 1, "\nURL:", url, "\nParameters:", params, "\nHTTP Error:", ex.status);
+            getJSONRateLimited[domain].current_max = (
+                Math.max(getJSONRateLimited[domain].current_max - 1, MIN_PENDING_NETWORK_REQUESTS)
+            );
+            console.error(
+                "Failed try #",
+                i + 1,
+                "\nURL:",
+                url,
+                "\nParameters:",
+                params,
+                "\nHTTP Error:",
+                ex.status
+            );
             if (!checkNetworkErrors(domain, true)) {
                 return [];
             }
@@ -380,7 +406,11 @@ function get(url, params, cache = CACHE_LIFETIME, base_url = BOORU) {
 }
 
 async function translateTag(target, tagName, options) {
-    const normalizedTag = tagName.trim().normalize("NFKC").replace(/\d+users入り$/, "").replace(/^#/, "");
+    const normalizedTag = tagName
+        .trim()
+        .normalize("NFKC")
+        .replace(/\d+users入り$/, "")
+        .replace(/^#/, "");
 
     /* Tags like "5000users入り$" become empty after normalization; don't search for empty tags. */
     if (normalizedTag.length === 0) {
@@ -405,7 +435,8 @@ async function translateTag(target, tagName, options) {
             prettyName: wikiPage.title.replace(/_/g, " "),
             category: wikiPage.category_name,
         }));
-    } else if (normalizedTag.match(/^[\x20-\x24\x26-\x29\x2B\x2D-\x7F]+$/)) { // ASCII characters except percent, asterics, and comma
+    // `normalizedTag` consists of only ASCII characters except percent, asterics, and comma
+    } else if (normalizedTag.match(/^[\x20-\x24\x26-\x29\x2B\x2D-\x7F]+$/)) {
         tags = await get(
             "/tags",
             {
@@ -591,14 +622,19 @@ async function buildArtistTooltip(artist, qtip) {
                 }
             );
 
-            rendered_qtips[artist.name] = buildArtistTooltipContent(artist, await tags, await posts);
+            rendered_qtips[artist.name] = (
+                buildArtistTooltipContent(artist, await tags, await posts)
+            );
             return rendered_qtips[artist.name];
         }
         return rendered_qtips[artist.name].clone()
             .find(".settings-icon").click(showSettings).end();
     })
         .then(() => qtip.reposition(null, false));
-    if (!qtip.elements.tooltip.hasClass("qtip-dark") && !qtip.elements.tooltip.hasClass("qtip-light")) {
+    if (
+        !qtip.elements.tooltip.hasClass("qtip-dark")
+        && !qtip.elements.tooltip.hasClass("qtip-light")
+    ) {
         // Select theme and background color based upon the background of surrounding elements
         let [qtip_class, adjusted_color] = chooseBackgroundColorScheme(qtip.elements.target);
         qtip.elements.tooltip.addClass(qtip_class);
@@ -887,12 +923,12 @@ function buildArtistTooltipContent(artist, [tag = { post_count: 0 }], posts = []
 }
 
 function buildArtistUrlsHtml(artist) {
-    const domainSorter = artist_url => new URL(artist_url.normalized_url).host.match(/[^.]*\.[^.]*$/)[0];
+    const getDomain = (url) => new URL(url.normalized_url).host.match(/[^.]*\.[^.]*$/)[0];
     const artist_urls = _(artist.urls)
         .chain()
         .uniq("normalized_url")
         .sortBy("normalized_url")
-        .sortBy(domainSorter)
+        .sortBy(getDomain)
         .sortBy(artist_url => !artist_url.is_active);
 
     const html = artist_urls.map(artist_url => {
@@ -936,7 +972,7 @@ function timeToAgo(time) {
     return "∞ ago";
 }
 
-// Based on https://stackoverflow.com/questions/15900485/correct-way-to-convert-size-in-bytes-to-kb-mb-gb-in-javascript
+// Based on https://stackoverflow.com/questions/15900485
 function formatBytes(bytes) {
     const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
@@ -1262,7 +1298,9 @@ function initializePixiv() {
     ].join(", "));
 
     // https://dic.pixiv.net/a/東方
-    findAndTranslate("tag", "#content_title #article-name", { tagPosition: TAG_POSITIONS.beforeend });
+    findAndTranslate("tag", "#content_title #article-name", {
+        tagPosition: TAG_POSITIONS.beforeend,
+    });
 
     // Tags on work pages: https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
     findAndTranslate("tag", "span", {
@@ -1306,7 +1344,11 @@ function initializePixiv() {
     });
 
     // Search pages: https://www.pixiv.net/bookmark_new_illust.php
-    let toProfileUrl = (el => $(el).prop("href").replace(/member_illust/, "member").replace(/&ref=.*$/, ""));
+    let toProfileUrl = (el => $(el)
+        .prop("href")
+        .replace(/member_illust/, "member")
+        .replace(/&ref=.*$/, "")
+    );
     findAndTranslate("artist", ".ui-profile-popup", {
         predicate: "figcaption._3HwPt89 > ul > li > a.ui-profile-popup",
         toProfileUrl: toProfileUrl,
@@ -1531,7 +1573,9 @@ function initializeTwitter() {
         asyncMode: true,
     });
     // Floating name of a channel https://twitter.com/mugosatomi
-    const URLfromLocation = () => "https://twitter.com"+(window.location.pathname.match(/\/\w+/)||[])[0];
+    const URLfromLocation = () => (
+        "https://twitter.com"+(window.location.pathname.match(/\/\w+/)||[])[0]
+    );
     findAndTranslate("artist", "div.css-1dbjc4n.r-xoduu5.r-18u37iz.r-dnmrzs", {
         predicate: "h2>div>div>div",
         toProfileUrl: URLfromLocation,
