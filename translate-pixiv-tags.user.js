@@ -935,6 +935,7 @@ function timeToAgo(time) {
     }
     return "∞ ago";
 }
+
 // Based on https://stackoverflow.com/questions/15900485/correct-way-to-convert-size-in-bytes-to-kb-mb-gb-in-javascript
 function formatBytes(bytes) {
     const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
@@ -1041,10 +1042,12 @@ function showSettings() {
                 return "";
         }
     }
+
     function closeSettings() {
         $shadowContainer.remove();
         $(document).off("keydown", closeSettingsOnEscape);
     }
+
     function closeSettingsOnEscape(ev) {
         if (ev.key==="Escape" && !ev.altKey && !ev.ctrlKey && !ev.shiftKey) {
             closeSettings();
