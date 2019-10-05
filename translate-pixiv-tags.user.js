@@ -78,7 +78,7 @@ const SETTINGS = {
         },
     ],
     isValid: function(settingName, value) {
-        const setting = this.list.find(s => s.name===settingName);
+        const setting = this.list.find((s) => s.name===settingName);
         if (!setting) {
             console.error("No setting "+settingName);
             return false;
@@ -92,7 +92,7 @@ const SETTINGS = {
         }
     },
     get: function(settingName) {
-        const setting = this.list.find(s => s.name===settingName);
+        const setting = this.list.find((s) => s.name===settingName);
         if (!setting) {
             console.error("no setting "+settingName);
             return null;
@@ -105,7 +105,7 @@ const SETTINGS = {
         return value;
     },
     set: function(settingName, value) {
-        const setting = this.list.find(s => s.name===settingName);
+        const setting = this.list.find((s) => s.name===settingName);
         if (!setting) {
             console.error("no setting "+settingName);
             return null;
@@ -279,7 +279,7 @@ const PROGRAM_CSS = `
 // Tag function for template literals to remove newlines and leading spaces
 function noIndents(strings, ...values) {
     // Remove all spaces before/after a tag and leave one in other cases
-    strings = strings.map(str => str.replace(
+    strings = strings.map((str) => str.replace(
         /(>)?\n *(<)?/g,
         (s, lt, gt) => lt&&gt ? lt+gt : lt||gt ? (lt||gt) : " "
     ));
@@ -299,7 +299,7 @@ function getImage(image_url) {
             url: image_url,
             responseType: "blob",
         })
-        .then(resp => resp.response);
+        .then((resp) => resp.response);
 }
 
 function rateLimitedLog(level, ...messageData) {
@@ -333,7 +333,7 @@ function checkNetworkErrors(domain,hasError) {
 }
 
 async function getJSONRateLimited(url, params) {
-    const sleepHalfSecond = resolve => setTimeout(resolve, 500);
+    const sleepHalfSecond = (resolve) => setTimeout(resolve, 500);
     let domain = new URL(url).hostname;
     getJSONRateLimited[domain] = (
         getJSONRateLimited[domain]
@@ -399,7 +399,7 @@ function get(url, params, cache = CACHE_LIFETIME, base_url = BOORU) {
         };
     }
     return getJSONMemoized(`${base_url}${url}.json`, params)
-        .catch(xhr => {
+        .catch((xhr) => {
             console.error(xhr.status, xhr);
             return [];
         });
@@ -430,7 +430,7 @@ async function translateTag(target, tagName, options) {
         }
     );
     if (wikiPages.length) {
-        tags = wikiPages.map(wikiPage => new Object({
+        tags = wikiPages.map((wikiPage) => new Object({
             name: wikiPage.title,
             prettyName: wikiPage.title.replace(/_/g, " "),
             category: wikiPage.category_name,
@@ -444,7 +444,7 @@ async function translateTag(target, tagName, options) {
                 only: TAG_FIELDS,
             }
         );
-        tags = tags.map(tag => new Object({
+        tags = tags.map((tag) => new Object({
             name: tag.name,
             prettyName: tag.name.replace(/_/g, " "),
             category: tag.category,
@@ -467,7 +467,7 @@ function addDanbooruTags($target, tags, options = {}) {
 
     const $tagsContainer = $(noIndents`
         <span class="ex-translated-tags ${classes}">
-            ${tags.map(tag => noIndents`
+            ${tags.map((tag) => noIndents`
                 <a class="ex-translated-tag-category-${tag.category}"
                    href="${BOORU}/posts?tags=${encodeURIComponent(tag.name)}"
                    target="_blank">
@@ -501,7 +501,7 @@ async function translateArtistByURL(element, profileUrl, options) {
             return pUrl.host==aUrl.host && pUrl.pathname==aUrl.pathname && pUrl.search==aUrl.search
                 || pUrl.host==nUrl.host && pUrl.pathname==nUrl.pathname && pUrl.search==nUrl.search;
         }))
-        .map(artist => addDanbooruArtist($(element), artist, options));
+        .map((artist) => addDanbooruArtist($(element), artist, options));
 }
 
 async function translateArtistByName(element, artistName, options) {
@@ -516,7 +516,7 @@ async function translateArtistByName(element, artistName, options) {
             },
             only: ARTIST_FIELDS,
         });
-    artists.map(artist => addDanbooruArtist($(element), artist, options));
+    artists.map((artist) => addDanbooruArtist($(element), artist, options));
 }
 
 function addDanbooruArtist($target, artist, options = {}) {
@@ -581,10 +581,10 @@ function chooseBackgroundColorScheme($element) {
     let background_colors = $element.parents()
         .map((i,el) => $(el).css("background-color"))
         .get()
-        .filter(color => color !== TRANSPARENT_COLOR);
+        .filter((color) => color !== TRANSPARENT_COLOR);
     // Calculate summary color and get RGB channels
     let color_array = background_colors
-        .map(color => color.match(/(\d+(\.\d+)?)+/g))
+        .map((color) => color.match(/(\d+(\.\d+)?)+/g))
         .reverse()
         .reduce(([r1,g1,b1],[r2,g2,b2,al=1]) => [r1*(1-al)+r2*al, g1*(1-al)+g2*al, b1*(1-al)+b2*al])
         .slice(0, 3); // Ignore alpha
@@ -890,7 +890,7 @@ function buildArtistTooltipContent(artist, [tag = { post_count: 0 }], posts = []
                 <span class="post-count">${tag.post_count}</span>
 
                 <ul class="other-names scrollable" part="other-names">
-                    ${artist.other_names.filter(String).sort().map(other_name => `
+                    ${artist.other_names.filter(String).sort().map((other_name) => `
                         <li>
                             <a href="${BOORU}/artists?search[name]=${encodeURIComponent(other_name)}"
                                target="_blank">
@@ -930,9 +930,9 @@ function buildArtistUrlsHtml(artist) {
         .uniq("normalized_url")
         .sortBy("normalized_url")
         .sortBy(getDomain)
-        .sortBy(artist_url => !artist_url.is_active);
+        .sortBy((artist_url) => !artist_url.is_active);
 
-    const html = artist_urls.map(artist_url => {
+    const html = artist_urls.map((artist_url) => {
         const normalized_url = artist_url.normalized_url.replace(/\/$/, "");
         const urlClass = artist_url.is_active ? "artist-url-active" : "artist-url-inactive";
 
@@ -1139,7 +1139,7 @@ function showSettings() {
             <div class="container">
                 <h2>Translate Pixiv Tags settings</h2>
                 ${SETTINGS.list
-                    .map(setting => noIndents`
+                    .map((setting) => noIndents`
                         <div>${setting.descr}:</div>
                         <div>${settingToInput(setting)}</div>`)
                     .join("")
@@ -1312,7 +1312,7 @@ function initializePixiv() {
     // Illust author https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
     findAndTranslate("artist", "h2", {
         predicate: "main+aside>section>h2",
-        toProfileUrl: el => $(el).find("a").prop("href"),
+        toProfileUrl: (el) => $(el).find("a").prop("href"),
         tagPosition: TAG_POSITIONS.beforeend,
         asyncMode: true,
         onadded: ($tag) => {
@@ -1323,7 +1323,7 @@ function initializePixiv() {
                 callback: () => {
                     $container.siblings(".ex-artist-tag").remove();
                     findAndTranslate("artist", $container, {
-                        toProfileUrl: el => $(el).find("a").prop("href"),
+                        toProfileUrl: (el) => $(el).find("a").prop("href"),
                     });
                 },
             });
@@ -1333,7 +1333,7 @@ function initializePixiv() {
     // Related work's artists https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
     findAndTranslate("artist", "div", {
         predicate: "aside li>div>div:last-child>div:first-child",
-        toProfileUrl: el => $(el).find("a").prop("href"),
+        toProfileUrl: (el) => $(el).find("a").prop("href"),
         asyncMode: true,
     });
 
@@ -1345,7 +1345,7 @@ function initializePixiv() {
     });
 
     // Search pages: https://www.pixiv.net/bookmark_new_illust.php
-    let toProfileUrl = (el => $(el)
+    let toProfileUrl = ((el) => $(el)
         .prop("href")
         .replace(/member_illust/, "member")
         .replace(/&ref=.*$/, "")
@@ -1402,14 +1402,14 @@ function initializeTinami() {
 
     // Triggers on http://www.tinami.com/creator/profile/10262
     findAndTranslate("artist", "div.cre_name h1", {
-        toProfileUrl: el => window.location.href,
+        toProfileUrl: (el) => window.location.href,
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
     });
 
     // Triggers on http://www.tinami.com/view/934323
     findAndTranslate("artist", "p:has(>a[href^='/creator/profile/'])", {
-        toProfileUrl: el => $(el).find("a").prop("href"),
+        toProfileUrl: (el) => $(el).find("a").prop("href"),
     });
 }
 
@@ -1455,17 +1455,17 @@ function initializeBCY() {
 
     // Prfile page https://bcy.net/u/3935930
     findAndTranslate("artist", "div:has(>a.uname)", {
-        toProfileUrl: el => $(el).find("a").prop("href"),
+        toProfileUrl: (el) => $(el).find("a").prop("href"),
     });
 
     // Illust pages https://bcy.net/item/detail/6643704430988361988
     findAndTranslate("artist", ".js-userTpl .user-name a", {
-        toProfileUrl: el => el.href.replace(/\?.*$/,""),
+        toProfileUrl: (el) => el.href.replace(/\?.*$/,""),
     });
 
     // Search pages https://bcy.net/tags/name/看板娘
     findAndTranslate("artist", "a.title-txt", {
-        toProfileUrl: el => el.href.replace(/\?.*$/,""),
+        toProfileUrl: (el) => el.href.replace(/\?.*$/,""),
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
         asyncMode: true,
@@ -1500,7 +1500,7 @@ function initializeHentaiFoundry() {
     });
     // Profile tab https://www.hentai-foundry.com/user/DrGraevling/profile
     findAndTranslate("artist", ".breadcrumbs a:contains('Users') + span", {
-        toProfileUrl: el => window.location.href,
+        toProfileUrl: () => window.location.href,
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
     });
@@ -1559,7 +1559,7 @@ function initializeTwitter() {
         // Quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
         findAndTranslate("artist", ".username", {
             predicate: "div.js-user-profile-link .username",
-            toProfileUrl: el => "https://twitter.com/" + $(el).find("b").text(),
+            toProfileUrl: (el) => "https://twitter.com/" + $(el).find("b").text(),
             asyncMode: true,
             classes: "inline",
         });
@@ -1601,13 +1601,13 @@ function initializeTwitter() {
     // https://twitter.com/mugosatomi/status/1173231575959363584
     findAndTranslate("artist", "div.r-1wbh5a2.r-dnmrzs", {
         predicate: "div[data-testid='primaryColumn'] article div:has(>a.r-1wbh5a2)",
-        toProfileUrl: el => $(el).find("a").prop("href"),
+        toProfileUrl: (el) => $(el).find("a").prop("href"),
         classes: "inline",
         asyncMode: true,
     });
     // Quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
     findAndTranslate("artist", "div.r-1wbh5a2.r-1udh08x", {
-        toProfileUrl: el => "https://twitter.com/"+$(el).find(".r-1f6r7vd").text().substr(1),
+        toProfileUrl: (el) => "https://twitter.com/"+$(el).find(".r-1f6r7vd").text().substr(1),
         classes: "inline",
         asyncMode: true,
     });
@@ -1706,7 +1706,7 @@ function initializeArtStation() {
     // https://www.artstation.com/jubi/following
     // https://www.artstation.com/jubi/followers
     findAndTranslate("artist", ".users-grid-name", {
-        toProfileUrl: el => toFullURL($(el).find("a")),
+        toProfileUrl: (el) => toFullURL($(el).find("a")),
         asyncMode: true,
     });
 
@@ -1742,7 +1742,7 @@ function initializeSauceNAO() {
         .wrap("<span class=target>");
     $(".target:contains(', ')").replaceWith((i, html) => html
         .split(", ")
-        .map(s => `<span class="target">${s}</span>`)
+        .map((str) => `<span class="target">${str}</span>`)
         .join(", ")
     );
 
@@ -1819,7 +1819,7 @@ function initializePixivFanbox() {
     });
     // Post author
     findAndTranslate("artist", "div.sc-7161tb-4", {
-        toProfileUrl: el => ($(el).closest("a").prop("href")||"").replace(/\/post\/\d+/,""),
+        toProfileUrl: (el) => ($(el).closest("a").prop("href")||"").replace(/\/post\/\d+/,""),
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
         asyncMode: true,
