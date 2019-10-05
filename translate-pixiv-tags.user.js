@@ -561,16 +561,15 @@ function addDanbooruArtist($target, artist, options = {}) {
     if (onadded) onadded($tag);
 }
 
-async function attachShadow(target, callback) {
-    if (target.shadowRoot) {
+function attachShadow($target, $content) {
+    // If the target already has shadow
+    if ($target.prop("shadowRoot")) {
         return;
     } else if (!_.isFunction(document.body.attachShadow)) {
-        const element = await callback();
-        $(target).html(element);
+        $target.empty().append($content);
     } else {
-        const shadowRoot = target.attachShadow({ mode: "open" });
-        const element = await callback();
-        $(shadowRoot).append(element);
+        const shadowRoot = $target.get(0).attachShadow({ mode: "open" });
+        $(shadowRoot).append($content);
     }
 }
 
@@ -605,35 +604,28 @@ function chooseBackgroundColorScheme($element) {
 }
 
 async function buildArtistTooltip(artist, qtip) {
-    attachShadow(qtip.elements.content.get(0), async () => {
-        if (!(artist.name in rendered_qtips)) {
-            const posts = get(
-                "/posts",
-                {
-                    tags: `status:any ${artist.name}`,
-                    limit: ARTIST_POST_PREVIEW_LIMIT,
-                    only: POST_FIELDS,
-                }
-            );
-            const tags = get(
-                "/tags",
-                {
-                    search: { name: artist.name },
-                    only: POST_COUNT_FIELDS,
-                }
-            );
+    if (!(artist.name in rendered_qtips)) {
+        const waitPosts = get(
+            "/posts",
+            {
+                tags: `status:any ${artist.name}`,
+                limit: ARTIST_POST_PREVIEW_LIMIT,
+                only: POST_FIELDS,
+            }
+        );
+        const waitTags = get(
+            "/tags",
+            {
+                search: { name: artist.name },
+                only: POST_COUNT_FIELDS,
+            }
+        );
 
-            rendered_qtips[artist.name] = Promise
-                .all([tags, posts])
-                // eslint-disable-next-line no-shadow
-                .then(([tags, posts]) => buildArtistTooltipContent(artist, tags, posts));
+        rendered_qtips[artist.name] = Promise
+            .all([waitTags, waitPosts])
+            .then(([tags, posts]) => buildArtistTooltipContent(artist, tags, posts));
+    }
 
-            return await rendered_qtips[artist.name];
-        }
-        return rendered_qtips[artist.name].clone()
-            .find(".settings-icon").click(showSettings).end();
-    })
-        .then(() => qtip.reposition(null, false));
     if (
         !qtip.elements.tooltip.hasClass("qtip-dark")
         && !qtip.elements.tooltip.hasClass("qtip-light")
@@ -643,6 +635,10 @@ async function buildArtistTooltip(artist, qtip) {
         qtip.elements.tooltip.addClass(qtip_class);
         qtip.elements.tooltip.css("background-color", adjusted_color);
     }
+
+    const $qtipContent = (await rendered_qtips[artist.name]).clone(true, true);
+    attachShadow(qtip.elements.content, $qtipContent);
+    qtip.reposition(null, false);
 }
 
 function buildArtistTooltipContent(artist, [tag = { post_count: 0 }], posts = []) {
@@ -1176,7 +1172,7 @@ function showSettings() {
     $(document).keydown(closeSettingsOnEscape);
     let [className] = chooseBackgroundColorScheme($("#ex-qtips"));
     $settings.addClass(className);
-    attachShadow($shadowContainer[0], () => $settings);
+    attachShadow($shadowContainer, $settings);
 }
 
 function findAndTranslate(mode, selector, options = {}) {
