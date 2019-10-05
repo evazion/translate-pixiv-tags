@@ -314,7 +314,7 @@ function rateLimitedLog(level, ...messageData) {
     }
 }
 
-function checkNetworkErrors(domain,hasError) {
+function checkNetworkErrors(domain, hasError) {
     checkNetworkErrors[domain] = checkNetworkErrors[domain] || { error: 0 };
     if (hasError) {
         console.log("Total errors:", ++checkNetworkErrors[domain].error);
@@ -494,12 +494,12 @@ async function translateArtistByURL(element, profileUrl, options) {
             only: ARTIST_FIELDS,
         }
     );
-    const pUrl = new URL(profileUrl.replace(/\/$/,"").toLowerCase());
+    const pUrl = new URL(profileUrl.replace(/\/$/, "").toLowerCase());
     artists
         // Fix of #18: for some unsupported domains, Danbooru returns false-positive results
         .filter(({ urls }) => urls.some(({ url, normalized_url: url2 }) => {
-            const aUrl = new URL(url.replace(/\/$/,"").toLowerCase());
-            const nUrl = new URL(url2.replace(/\/$/,"").toLowerCase());
+            const aUrl = new URL(url.replace(/\/$/, "").toLowerCase());
+            const nUrl = new URL(url2.replace(/\/$/, "").toLowerCase());
             return pUrl.host==aUrl.host && pUrl.pathname==aUrl.pathname && pUrl.search==aUrl.search
                 || pUrl.host==nUrl.host && pUrl.pathname==nUrl.pathname && pUrl.search==nUrl.search;
         }))
@@ -541,7 +541,7 @@ function addDanbooruArtist($target, artist, options = {}) {
     });
 
     let duplicates = $target[searchAt](".ex-artist-tag")
-        .filter((i,el) => el.innerText.trim() == artist.escapedName);
+        .filter((i, el) => el.innerText.trim() == artist.escapedName);
     if (duplicates.length) {
         // If qtip was removed then add it back
         if (!$.data(duplicates.find("a")[0]).qtip) {
@@ -580,14 +580,14 @@ function chooseBackgroundColorScheme($element) {
 
     // Get background colors of all parent elements with a nontransparent background color
     let backgroundColors = $element.parents()
-        .map((i,el) => $(el).css("background-color"))
+        .map((i, el) => $(el).css("background-color"))
         .get()
         .filter((color) => color !== TRANSPARENT_COLOR);
     // Calculate summary color and get RGB channels
     let colorArray = backgroundColors
         .map((color) => color.match(/(\d+(\.\d+)?)+/g))
         .reverse()
-        .reduce(([r1,g1,b1],[r2,g2,b2,al=1]) => [r1*(1-al)+r2*al, g1*(1-al)+g2*al, b1*(1-al)+b2*al])
+        .reduce(([r1, g1, b1], [r2, g2, b2, al=1]) => [r1*(1-al)+r2*al, g1*(1-al)+g2*al, b1*(1-al)+b2*al])
         .slice(0, 3); // Ignore alpha
     let medianLuminosity = (Math.max(...colorArray) + Math.min(...colorArray)) / 2;
     let qtipClass = (medianLuminosity < MIDDLE_LUMINOSITY ? "qtip-dark" : "qtip-light");
@@ -1065,7 +1065,7 @@ function showSettings() {
                     <select name="${setting.name}">
                         ${Object
                             .entries(setting.values)
-                            .map(([val,descr]) =>
+                            .map(([val, descr]) =>
                                 noIndents`
                                 <option value="${val}" ${val==value?"selected":""}>
                                     ${descr}
@@ -1458,12 +1458,12 @@ function initializeBCY() {
 
     // Illust pages https://bcy.net/item/detail/6643704430988361988
     findAndTranslate("artist", ".js-userTpl .user-name a", {
-        toProfileUrl: (el) => el.href.replace(/\?.*$/,""),
+        toProfileUrl: (el) => el.href.replace(/\?.*$/, ""),
     });
 
     // Search pages https://bcy.net/tags/name/看板娘
     findAndTranslate("artist", "a.title-txt", {
-        toProfileUrl: (el) => el.href.replace(/\?.*$/,""),
+        toProfileUrl: (el) => el.href.replace(/\?.*$/, ""),
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
         asyncMode: true,
@@ -1817,7 +1817,7 @@ function initializePixivFanbox() {
     });
     // Post author
     findAndTranslate("artist", "div.sc-7161tb-4", {
-        toProfileUrl: (el) => ($(el).closest("a").prop("href")||"").replace(/\/post\/\d+/,""),
+        toProfileUrl: (el) => ($(el).closest("a").prop("href")||"").replace(/\/post\/\d+/, ""),
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
         asyncMode: true,
