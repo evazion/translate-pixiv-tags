@@ -310,7 +310,7 @@ function rateLimitedLog(level, ...messageData) {
         console[level](...messageData);
         rateLimitedLog[key].log = false;
         // Have only one message with the same parameters per second
-        setTimeout(()=>{rateLimitedLog[key].log = true;}, 1000);
+        setTimeout(() => {rateLimitedLog[key].log = true;}, 1000);
     }
 }
 
@@ -360,7 +360,9 @@ async function getJSONRateLimited(url, params) {
     for (let i = 0; i < MAX_NETWORK_RETRIES; i++) {
         getJSONRateLimited[domain].pending++;
         try {
-            return await $.getJSON(url, params).always(()=>{getJSONRateLimited[domain].pending--;});
+            return await $
+                .getJSON(url, params)
+                .always(() => {getJSONRateLimited[domain].pending--;});
         } catch (ex) {
             // Backing off maximum to adjust to current network conditions
             getJSONRateLimited[domain].current_max = (
