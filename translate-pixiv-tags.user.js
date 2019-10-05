@@ -416,7 +416,7 @@ async function translateTag(target, tagName, options) {
 
     /* Tags like "5000users入り$" become empty after normalization; don't search for empty tags. */
     if (normalizedTag.length === 0) {
-        return [];
+        return;
     }
 
     let tags = [];
@@ -1088,6 +1088,7 @@ function showSettings() {
             closeSettings();
             return false;
         }
+        return true;
     }
 
     const $settings = $(
