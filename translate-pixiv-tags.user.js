@@ -310,7 +310,7 @@ function rateLimitedLog(level, ...messageData) {
         console[level](...messageData);
         rateLimitedLog[key].log = false;
         // Have only one message with the same parameters per second
-        setTimeout(() => {rateLimitedLog[key].log = true;}, 1000);
+        setTimeout(() => { rateLimitedLog[key].log = true; }, 1000);
     }
 }
 
@@ -362,7 +362,7 @@ async function getJSONRateLimited(url, params) {
         try {
             return await $
                 .getJSON(url, params)
-                .always(() => {getJSONRateLimited[domain].pending--;});
+                .always(() => { getJSONRateLimited[domain].pending--; });
         } catch (ex) {
             // Backing off maximum to adjust to current network conditions
             getJSONRateLimited[domain].current_max = (
@@ -1740,7 +1740,7 @@ function initializeSauceNAO() {
 
     $(".resulttitle, .resultcontentcolumn")
         .contents()
-        .filter(function(){return this.nodeType==3;}) // Get text nodes
+        .filter(function() { return this.nodeType==3; }) // Get text nodes
         .wrap("<span class=target>");
     $(".target:contains(', ')").replaceWith((i, html) => html
         .split(", ")
