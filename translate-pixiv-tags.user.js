@@ -517,7 +517,8 @@ async function translateArtistByName(element, artistName, options) {
                 is_active: true,
             },
             only: ARTIST_FIELDS,
-        });
+        }
+    );
     artists.map((artist) => addDanbooruArtist($(element), artist, options));
 }
 
@@ -888,14 +889,18 @@ function buildArtistTooltipContent(artist, [tag = { post_count: 0 }], posts = []
                 <span class="post-count">${tag.post_count}</span>
 
                 <ul class="other-names scrollable" part="other-names">
-                    ${artist.other_names.filter(String).sort().map((otherName) => `
-                        <li>
-                            <a href="${BOORU}/artists?search[name]=${encodeURIComponent(otherName)}"
-                               target="_blank">
-                                ${_.escape(otherName.replace(/_/g, " "))}
-                            </a>
-                        </li>`
-                    ).join("")}
+                    ${artist.other_names
+                        .filter(String)
+                        .sort()
+                        .map((otherName) => `
+                            <li>
+                                <a href="${BOORU}/artists?search[name]=${encodeURIComponent(otherName)}"
+                                   target="_blank">
+                                    ${_.escape(otherName.replace(/_/g, " "))}
+                                </a>
+                            </li>
+                        `)
+                        .join("")}
                 </ul>
             </section>
             <section class="urls">
@@ -1091,8 +1096,7 @@ function showSettings() {
         return true;
     }
 
-    const $settings = $(
-        noIndents`
+    const $settings = $(noIndents`
         <style>
             #ui-settings {
                 width: 100vw;
@@ -1739,10 +1743,11 @@ function initializeSauceNAO() {
         .contents()
         .filter(function() { return this.nodeType===3; }) // Get text nodes
         .wrap("<span class=target>");
-    $(".target:contains(', ')").replaceWith((i, html) => html
-        .split(", ")
-        .map((str) => `<span class="target">${str}</span>`)
-        .join(", ")
+    $(".target:contains(', ')").replaceWith(
+        (i, html) => html
+            .split(", ")
+            .map((str) => `<span class="target">${str}</span>`)
+            .join(", ")
     );
 
     // http://saucenao.com/search.php?db=999&url=https%3A%2F%2Fraikou4.donmai.us%2Fpreview%2F5e%2F8e%2F5e8e7a03c49906aaad157de8aeb188e4.jpg
