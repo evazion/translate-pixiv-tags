@@ -92,7 +92,7 @@ const SETTINGS = {
         }
     },
     get: function(settingName) {
-        const setting = this.list.find(s => s.settingName===settingName);
+        const setting = this.list.find(s => s.name===settingName);
         if (!setting) {
             console.error("no setting "+settingName);
             return null;
