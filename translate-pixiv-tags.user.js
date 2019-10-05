@@ -500,8 +500,8 @@ async function translateArtistByURL(element, profileUrl, options) {
         .filter(({ urls }) => urls.some(({ url, normalized_url: url2 }) => {
             const aUrl = new URL(url.replace(/\/$/, "").toLowerCase());
             const nUrl = new URL(url2.replace(/\/$/, "").toLowerCase());
-            return pUrl.host==aUrl.host && pUrl.pathname==aUrl.pathname && pUrl.search==aUrl.search
-                || pUrl.host==nUrl.host && pUrl.pathname==nUrl.pathname && pUrl.search==nUrl.search;
+            return pUrl.host===aUrl.host && pUrl.pathname===aUrl.pathname && pUrl.search===aUrl.search
+                || pUrl.host===nUrl.host && pUrl.pathname===nUrl.pathname && pUrl.search===nUrl.search;
         }))
         .map((artist) => addDanbooruArtist($(element), artist, options));
 }
@@ -541,7 +541,7 @@ function addDanbooruArtist($target, artist, options = {}) {
     });
 
     let duplicates = $target[searchAt](".ex-artist-tag")
-        .filter((i, el) => el.innerText.trim() == artist.escapedName);
+        .filter((i, el) => el.innerText.trim() === artist.escapedName);
     if (duplicates.length) {
         // If qtip was removed then add it back
         if (!$.data(duplicates.find("a")[0]).qtip) {
@@ -1067,7 +1067,7 @@ function showSettings() {
                             .entries(setting.values)
                             .map(([val, descr]) =>
                                 noIndents`
-                                <option value="${val}" ${val==value?"selected":""}>
+                                <option value="${val}" ${val===value?"selected":""}>
                                     ${descr}
                                 </option>`)
                             .join("")}
@@ -1737,7 +1737,7 @@ function initializeSauceNAO() {
 
     $(".resulttitle, .resultcontentcolumn")
         .contents()
-        .filter(function() { return this.nodeType==3; }) // Get text nodes
+        .filter(function() { return this.nodeType===3; }) // Get text nodes
         .wrap("<span class=target>");
     $(".target:contains(', ')").replaceWith((i, html) => html
         .split(", ")
