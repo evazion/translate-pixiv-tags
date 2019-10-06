@@ -1086,6 +1086,8 @@ function showSettings() {
         }
     }
 
+    let $shadowContainer = $("<div>").appendTo("#ex-qtips");
+
     function closeSettings() {
         $shadowContainer.remove();
         $(document).off("keydown", closeSettingsOnEscape);
@@ -1160,7 +1162,6 @@ function showSettings() {
             </div>
         </div>
     `);
-    let $shadowContainer = $("<div>").appendTo("#ex-qtips");
     $settings.click((ev) => {
         if ($(ev.target).is("#ui-settings")) closeSettings();
     });
