@@ -1070,8 +1070,7 @@ function showSettings() {
                     <select name="${setting.name}">
                         ${Object
                             .entries(setting.values)
-                            .map(([val, descr]) =>
-                                noIndents`
+                            .map(([val, descr]) => noIndents`
                                 <option value="${val}" ${val===value?"selected":""}>
                                     ${descr}
                                 </option>`)
