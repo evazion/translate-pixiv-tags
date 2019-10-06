@@ -57,7 +57,7 @@ const SETTINGS = {
             },
         }, {
             name: "cache_lifetime",
-            defValue: 60*5,
+            defValue: 60 * 5,
             descr: "The amount of time in seconds to cache data from Danbooru before querying again",
             type: "number",
         }, {
@@ -78,13 +78,13 @@ const SETTINGS = {
         },
     ],
     isValid (settingName, value) {
-        const setting = this.list.find((s) => s.name===settingName);
+        const setting = this.list.find((s) => s.name === settingName);
         if (!setting) {
             console.error(`No setting ${settingName}`);
             return false;
         }
         switch (setting.type) {
-            case "number": return Number.isInteger(value) && value>0;
+            case "number": return Number.isInteger(value) && value > 0;
             case "list": return value in setting.values;
             default:
                 console.error(`Unsupported type ${setting.type}`);
@@ -92,7 +92,7 @@ const SETTINGS = {
         }
     },
     get (settingName) {
-        const setting = this.list.find((s) => s.name===settingName);
+        const setting = this.list.find((s) => s.name === settingName);
         if (!setting) {
             console.error(`No setting ${settingName}`);
             return null;
@@ -105,7 +105,7 @@ const SETTINGS = {
         return value;
     },
     set (settingName, value) {
-        const setting = this.list.find((s) => s.name===settingName);
+        const setting = this.list.find((s) => s.name === settingName);
         if (!setting) {
             console.error(`No setting ${settingName}`);
             return null;
@@ -280,14 +280,14 @@ function noIndents (strings, ...values) {
     // Remove all spaces before/after a tag and leave one in other cases
     const compactStrings = strings.map((str) => str.replace(
         /(>)?\n *(<)?/g,
-        (s, lt, gt) => (lt&&gt ? lt+gt : lt||gt ? (lt||gt) : " ")
+        (s, lt, gt) => (lt && gt ? lt + gt : lt || gt ? (lt || gt) : " ")
     ));
-    const res = new Array(values.length*2+1);
+    const res = new Array(values.length * 2 + 1);
     for (let i = 0; i < values.length; i++) {
-        res[i*2] = compactStrings[i];
-        res[i*2+1] = values[i];
+        res[i * 2] = compactStrings[i];
+        res[i * 2 + 1] = values[i];
     }
-    res[res.length-1] = strings[strings.length-1];
+    res[res.length - 1] = strings[strings.length - 1];
     return res.join("");
 }
 
@@ -502,8 +502,8 @@ async function translateArtistByURL (element, profileUrl, options) {
         .filter(({ urls }) => urls.some(({ url, normalized_url: url2 }) => {
             const aUrl = new URL(url.replace(/\/$/, "").toLowerCase());
             const nUrl = new URL(url2.replace(/\/$/, "").toLowerCase());
-            return pUrl.host===aUrl.host && pUrl.pathname===aUrl.pathname && pUrl.search===aUrl.search
-                || pUrl.host===nUrl.host && pUrl.pathname===nUrl.pathname && pUrl.search===nUrl.search;
+            return pUrl.host === aUrl.host && pUrl.pathname === aUrl.pathname && pUrl.search === aUrl.search
+                || pUrl.host === nUrl.host && pUrl.pathname === nUrl.pathname && pUrl.search === nUrl.search;
         }))
         .map((artist) => addDanbooruArtist($(element), artist, options));
 }
@@ -592,16 +592,20 @@ function chooseBackgroundColorScheme ($element) {
     const colorArray = backgroundColors
         .map((color) => color.match(/(\d+(\.\d+)?)+/g))
         .reverse()
-        .reduce(([r1, g1, b1], [r2, g2, b2, al=1]) => [r1*(1-al)+r2*al, g1*(1-al)+g2*al, b1*(1-al)+b2*al])
+        .reduce(([r1, g1, b1], [r2, g2, b2, al = 1]) => [
+            r1 * (1 - al) + r2 * al,
+            g1 * (1 - al) + g2 * al,
+            b1 * (1 - al) + b2 * al,
+        ])
         .slice(0, 3); // Ignore alpha
     const medianLuminosity = (Math.max(...colorArray) + Math.min(...colorArray)) / 2;
     const qtipClass = (medianLuminosity < MIDDLE_LUMINOSITY ? "qtip-dark" : "qtip-light");
     const adjustedArray = colorArray.map((color) => {
         const colorScale = (color - MIDDLE_LUMINOSITY) / MIDDLE_LUMINOSITY;
-        const adjustedColor = ((Math.abs(colorScale)**0.7) // Exponentiation to reduce the scale
-                             * Math.sign(colorScale)      // Get original sign back
-                             * MIDDLE_LUMINOSITY)          // Get original amplitude back
-                             + MIDDLE_LUMINOSITY;          // Get back to the RGB color range
+        const adjustedColor = ((Math.abs(colorScale) ** 0.7) // Exponentiation to reduce the scale
+                             * Math.sign(colorScale)         // Get original sign back
+                             * MIDDLE_LUMINOSITY)            // Get original amplitude back
+                             + MIDDLE_LUMINOSITY;            // Get back to the RGB color range
         return Math.round(adjustedColor);
     });
     const adjustedColor = `rgb(${adjustedArray.join(", ")})`;
@@ -958,13 +962,13 @@ function timeToAgo (time) {
     const interval = new Date(Date.now() - new Date(time));
     if (interval < 60000) return "less than a minute ago";
     const ranks = [{
-        value: interval.getUTCFullYear()-1970,
+        value: interval.getUTCFullYear() - 1970,
         unit: "year",
     }, {
         value: interval.getUTCMonth(),
         unit: "month",
     }, {
-        value: interval.getUTCDate()-1,
+        value: interval.getUTCDate() - 1,
         unit: "day",
     }, {
         value: interval.getUTCHours(),
@@ -975,7 +979,7 @@ function timeToAgo (time) {
     }];
     const rank = ranks.find(({ value }) => value);
     if (rank.value) {
-        return `${rank.value} ${(rank.value>1 ? `${rank.unit}s` : rank.unit)} ago`;
+        return `${rank.value} ${(rank.value > 1 ? `${rank.unit}s` : rank.unit)} ago`;
     }
     return "∞ ago";
 }
@@ -1075,7 +1079,7 @@ function showSettings () {
                         ${Object
                             .entries(setting.values)
                             .map(([val, descr]) => noIndents`
-                                <option value="${val}" ${val===value?"selected":""}>
+                                <option value="${val}" ${val === value ? "selected" : ""}>
                                     ${descr}
                                 </option>`)
                             .join("")}
@@ -1094,7 +1098,7 @@ function showSettings () {
     }
 
     function closeSettingsOnEscape (ev) {
-        if (ev.key==="Escape" && !ev.altKey && !ev.ctrlKey && !ev.shiftKey) {
+        if (ev.key === "Escape" && !ev.altKey && !ev.ctrlKey && !ev.shiftKey) {
             closeSettings();
             return false;
         }
@@ -1583,7 +1587,7 @@ function initializeTwitter () {
     });
     // Floating name of a channel https://twitter.com/mugosatomi
     const URLfromLocation = () => (
-        `https://twitter.com${(window.location.pathname.match(/\/\w+/)||[])[0]}`
+        `https://twitter.com${(window.location.pathname.match(/\/\w+/) || [])[0]}`
     );
     findAndTranslate("artist", "div.css-1dbjc4n.r-xoduu5.r-18u37iz.r-dnmrzs", {
         predicate: "h2>div>div>div",
@@ -1686,7 +1690,7 @@ function initializeArtStation () {
 
     function hasValidHref (el) {
         const href = el.getAttribute("href");
-        return href && (href.startsWith("http") || href.startsWith("/")&&href.length>1);
+        return href && (href.startsWith("http") || href.startsWith("/") && href.length > 1);
     }
 
     // https://www.artstation.com/jubi
@@ -1829,7 +1833,7 @@ function initializePixivFanbox () {
     });
     // Post author
     findAndTranslate("artist", "div.sc-7161tb-4", {
-        toProfileUrl: (el) => ($(el).closest("a").prop("href")||"").replace(/\/post\/\d+/, ""),
+        toProfileUrl: (el) => ($(el).closest("a").prop("href") || "").replace(/\/post\/\d+/, ""),
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
         asyncMode: true,
