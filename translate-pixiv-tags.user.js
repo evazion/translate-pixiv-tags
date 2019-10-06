@@ -282,7 +282,7 @@ function noIndents(strings, ...values) {
         /(>)?\n *(<)?/g,
         (s, lt, gt) => (lt&&gt ? lt+gt : lt||gt ? (lt||gt) : " ")
     ));
-    let res = new Array(values.length*2+1);
+    const res = new Array(values.length*2+1);
     for (let i = 0; i < values.length; i++) {
         res[i*2] = compactStrings[i];
         res[i*2+1] = values[i];
@@ -303,7 +303,7 @@ function getImage(imageUrl) {
 
 function rateLimitedLog(level, ...messageData) {
     // Assumes that only simple arguments will be passed in
-    let key = messageData.join(",");
+    const key = messageData.join(",");
     rateLimitedLog[key] = rateLimitedLog[key] || { log: true };
     if (rateLimitedLog[key].log) {
         console[level](...messageData);
@@ -334,7 +334,7 @@ function checkNetworkErrors(domain, hasError) {
 
 async function getJSONRateLimited(url, params) {
     const sleepHalfSecond = (resolve) => setTimeout(resolve, 500);
-    let domain = new URL(url).hostname;
+    const domain = new URL(url).hostname;
     getJSONRateLimited[domain] = (
         getJSONRateLimited[domain]
         || {
@@ -461,7 +461,7 @@ function addDanbooruTags($target, tags, options = {}) {
     if (tags.length === 0) {
         return;
     }
-    let {
+    const {
         classes = "",
         onadded = null, // ($tag)=>{},
         tagPosition: {
@@ -525,14 +525,14 @@ async function translateArtistByName(element, artistName, options) {
 }
 
 function addDanbooruArtist($target, artist, options = {}) {
-    let {
-        classes = "",
+    const {
         onadded = null, // ($tag)=>{},
         tagPosition: {
             searchAt = "nextAll",
             insertAt = "insertAfter",
         } = {},
     } = options;
+    let { classes = "" } = options;
 
     classes += artist.is_banned ? " ex-artist-tag ex-banned-artist-tag" : " ex-artist-tag";
     /* eslint-disable no-param-reassign */
@@ -545,7 +545,7 @@ function addDanbooruArtist($target, artist, options = {}) {
         content: { text: (ev, qtip) => buildArtistTooltip(artist, qtip) },
     });
 
-    let duplicates = $target[searchAt](".ex-artist-tag")
+    const duplicates = $target[searchAt](".ex-artist-tag")
         .filter((i, el) => el.innerText.trim() === artist.escapedName);
     if (duplicates.length) {
         // If qtip was removed then add it back
@@ -555,7 +555,7 @@ function addDanbooruArtist($target, artist, options = {}) {
         return;
     }
 
-    let $tag = $(noIndents`
+    const $tag = $(noIndents`
         <div class="${classes}">
             <a href="${BOORU}/artists/${artist.id}" target="_blank">
                 ${artist.escapedName}
@@ -584,27 +584,27 @@ function chooseBackgroundColorScheme($element) {
     const MIDDLE_LUMINOSITY = 128;
 
     // Get background colors of all parent elements with a nontransparent background color
-    let backgroundColors = $element.parents()
+    const backgroundColors = $element.parents()
         .map((i, el) => $(el).css("background-color"))
         .get()
         .filter((color) => color !== TRANSPARENT_COLOR);
     // Calculate summary color and get RGB channels
-    let colorArray = backgroundColors
+    const colorArray = backgroundColors
         .map((color) => color.match(/(\d+(\.\d+)?)+/g))
         .reverse()
         .reduce(([r1, g1, b1], [r2, g2, b2, al=1]) => [r1*(1-al)+r2*al, g1*(1-al)+g2*al, b1*(1-al)+b2*al])
         .slice(0, 3); // Ignore alpha
-    let medianLuminosity = (Math.max(...colorArray) + Math.min(...colorArray)) / 2;
-    let qtipClass = (medianLuminosity < MIDDLE_LUMINOSITY ? "qtip-dark" : "qtip-light");
-    let adjustedArray = colorArray.map((color) => {
-        let colorScale = (color - MIDDLE_LUMINOSITY) / MIDDLE_LUMINOSITY;
-        let adjustedColor = ((Math.abs(colorScale)**0.7) // Exponentiation to reduce the scale
+    const medianLuminosity = (Math.max(...colorArray) + Math.min(...colorArray)) / 2;
+    const qtipClass = (medianLuminosity < MIDDLE_LUMINOSITY ? "qtip-dark" : "qtip-light");
+    const adjustedArray = colorArray.map((color) => {
+        const colorScale = (color - MIDDLE_LUMINOSITY) / MIDDLE_LUMINOSITY;
+        const adjustedColor = ((Math.abs(colorScale)**0.7) // Exponentiation to reduce the scale
                              * Math.sign(colorScale)      // Get original sign back
                              * MIDDLE_LUMINOSITY)          // Get original amplitude back
                              + MIDDLE_LUMINOSITY;          // Get back to the RGB color range
         return Math.round(adjustedColor);
     });
-    let adjustedColor = `rgb(${adjustedArray.join(", ")})`;
+    const adjustedColor = `rgb(${adjustedArray.join(", ")})`;
     return [qtipClass, adjustedColor];
 }
 
@@ -636,7 +636,7 @@ async function buildArtistTooltip(artist, qtip) {
         && !qtip.elements.tooltip.hasClass("qtip-light")
     ) {
         // Select theme and background color based upon the background of surrounding elements
-        let [qtipClass, adjustedColor] = chooseBackgroundColorScheme(qtip.elements.target);
+        const [qtipClass, adjustedColor] = chooseBackgroundColorScheme(qtip.elements.target);
         qtip.elements.tooltip.addClass(qtipClass);
         qtip.elements.tooltip.css("background-color", adjustedColor);
     }
@@ -647,7 +647,7 @@ async function buildArtistTooltip(artist, qtip) {
 }
 
 function buildArtistTooltipContent(artist, [tag = { post_count: 0 }], posts = []) {
-    let $content = $(noIndents`
+    const $content = $(noIndents`
         <style>
             :host {
                 --preview_has_children_color: #0F0;
@@ -994,7 +994,7 @@ function buildPostPreview(post) {
         e: 2, // eslint-disable-line id-blacklist
     };
     let [width, height] = [150, 150];
-    let previewFileUrl = `${BOORU}/images/download-preview.png`;
+    const previewFileUrl = `${BOORU}/images/download-preview.png`;
 
     let previewClass = "post-preview";
     previewClass += post.is_pending           ? " post-status-pending"      : "";
@@ -1015,23 +1015,6 @@ function buildPostPreview(post) {
     let scale = Math.min(150 / post.image_width, 150 / post.image_height);
     scale = Math.min(1, scale);
 
-    let $preview;
-    if (post.preview_file_url) {
-        width = Math.round(post.image_width * scale);
-        height = Math.round(post.image_height * scale);
-        if (CORS_IMAGE_DOMAINS.includes(location.host)) {
-            // Temporaly set transparent 1x1 image
-            previewFileUrl = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
-            getImage(post.preview_file_url).then((blob) => {
-                let imageBlob = blob.slice(0, blob.size, "image/jpeg");
-                let blobUrl = window.URL.createObjectURL(imageBlob);
-                $preview.find("img").prop("src", blobUrl);
-            });
-        } else {
-            previewFileUrl = post.preview_file_url;
-        }
-    }
-
     const domain = post.source.match(/^https?:\/\//)
         ? new URL(post.source).hostname.split(".").slice(-2).join(".")
         : "NON-WEB";
@@ -1039,7 +1022,7 @@ function buildPostPreview(post) {
         ? `${formatBytes(post.file_size)} (${post.image_width}x${post.image_height})`
         : "";
 
-    $preview = $(noIndents`
+    const $preview = $(noIndents`
         <article itemscope
                  itemtype="http://schema.org/ImageObject"
                  class="${previewClass}"
@@ -1056,6 +1039,23 @@ function buildPostPreview(post) {
             <p>${timeToAgo(post.created_at)}</p>
         </article>
     `);
+
+    if (post.preview_file_url) {
+        width = Math.round(post.image_width * scale);
+        height = Math.round(post.image_height * scale);
+        if (CORS_IMAGE_DOMAINS.includes(location.host)) {
+            // Temporaly set transparent 1x1 image
+            $preview.find("img").prop("src", "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
+            getImage(post.preview_file_url).then((blob) => {
+                const imageBlob = blob.slice(0, blob.size, "image/jpeg");
+                const blobUrl = window.URL.createObjectURL(imageBlob);
+                $preview.find("img").prop("src", blobUrl);
+            });
+        } else {
+            $preview.find("img").prop("src", post.preview_file_url);
+        }
+    }
+
     return $preview;
 }
 
@@ -1086,7 +1086,7 @@ function showSettings() {
         }
     }
 
-    let $shadowContainer = $("<div>").appendTo("#ex-qtips");
+    const $shadowContainer = $("<div>").appendTo("#ex-qtips");
 
     function closeSettings() {
         $shadowContainer.remove();
@@ -1170,8 +1170,8 @@ function showSettings() {
     });
     $settings.find(".refresh-page").click((ev) => {
         $settings.find("input[type='number'], select").each((i, el) => {
-            let $input = $(el);
-            let value = $input.is("input[type='number']") ? Number($input.val()) : $input.val();
+            const $input = $(el);
+            const value = $input.is("input[type='number']") ? Number($input.val()) : $input.val();
             SETTINGS.set($input.prop("name"), value);
         });
         closeSettings();
@@ -1179,7 +1179,7 @@ function showSettings() {
     });
     $settings.find(".cancel").click(closeSettings);
     $(document).keydown(closeSettingsOnEscape);
-    let [className] = chooseBackgroundColorScheme($("#ex-qtips"));
+    const [className] = chooseBackgroundColorScheme($("#ex-qtips"));
     $settings.addClass(className);
     attachShadow($shadowContainer, $settings);
 }
@@ -1345,14 +1345,14 @@ function initializePixiv() {
     });
 
     // Artist profile pages: https://www.pixiv.net/member.php?id=29310, https://www.pixiv.net/member_illust.php?id=104471&type=illust
-    let normalizePageUrl = () => `https://www.pixiv.net/member.php?id=${new URL(window.location.href).searchParams.get("id")}`;
+    const normalizePageUrl = () => `https://www.pixiv.net/member.php?id=${new URL(window.location.href).searchParams.get("id")}`;
     findAndTranslate("artist", ".VyO6wL2", {
         toProfileUrl: normalizePageUrl,
         asyncMode: true,
     });
 
     // Search pages: https://www.pixiv.net/bookmark_new_illust.php
-    let toProfileUrl = ((el) => $(el)
+    const toProfileUrl = ((el) => $(el)
         .prop("href")
         .replace(/member_illust/, "member")
         .replace(/&ref=.*$/, "")
@@ -1662,13 +1662,13 @@ function initializeArtStation() {
             if (!ref) {
                 return "";
             } else if (ref.startsWith("/")) {
-                let word = ref.match(/[a-z0-9_-]+/i);
+                const word = ref.match(/[a-z0-9_-]+/i);
                 if (word) return word[0];
             } else if (ref.startsWith("https://www")) {
-                let word = ref.match(/artstation\.com\/([a-z0-9_-]+)/i);
+                const word = ref.match(/artstation\.com\/([a-z0-9_-]+)/i);
                 if (word) return word[1];
             } else if (ref.startsWith("https://")) {
-                let word = ref.match(/\/\/([a-z0-9_-]+)\.artstation\.com/i);
+                const word = ref.match(/\/\/([a-z0-9_-]+)\.artstation\.com/i);
                 if (word) return word[1];
             }
             return "";
@@ -1684,7 +1684,7 @@ function initializeArtStation() {
     }
 
     function hasValidHref(el) {
-        let href = el.getAttribute("href");
+        const href = el.getAttribute("href");
         return href && (href.startsWith("http") || href.startsWith("/")&&href.length>1);
     }
 
