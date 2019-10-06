@@ -278,13 +278,13 @@ const PROGRAM_CSS = `
 // Tag function for template literals to remove newlines and leading spaces
 function noIndents(strings, ...values) {
     // Remove all spaces before/after a tag and leave one in other cases
-    strings = strings.map((str) => str.replace(
+    const compactStrings = strings.map((str) => str.replace(
         /(>)?\n *(<)?/g,
         (s, lt, gt) => (lt&&gt ? lt+gt : lt||gt ? (lt||gt) : " ")
     ));
     let res = new Array(values.length*2+1);
     for (let i = 0; i < values.length; i++) {
-        res[i*2] = strings[i];
+        res[i*2] = compactStrings[i];
         res[i*2+1] = values[i];
     }
     res[res.length-1] = strings[strings.length-1];
@@ -395,13 +395,13 @@ const getJSONMemoized = _.memoize(
 );
 
 function get(url, params, cache = CACHE_LIFETIME, baseUrl = BOORU) {
-    if (cache > 0) {
-        params = {
+    const finalParams = (cache > 0)
+        ? {
             ...params,
             expires_in: cache,
-        };
-    }
-    return getJSONMemoized(`${baseUrl}${url}.json`, params)
+        }
+        : params;
+    return getJSONMemoized(`${baseUrl}${url}.json`, finalParams)
         .catch((xhr) => {
             console.error(xhr.status, xhr);
             return [];
@@ -534,9 +534,11 @@ function addDanbooruArtist($target, artist, options = {}) {
     } = options;
 
     classes += artist.is_banned ? " ex-artist-tag ex-banned-artist-tag" : " ex-artist-tag";
+    /* eslint-disable no-param-reassign */
     artist.prettyName = artist.name.replace(/_/g, " ");
     artist.escapedName = _.escape(artist.prettyName);
     artist.encodedName = encodeURIComponent(artist.name);
+    /* eslint-enable no-param-reassign */
 
     const qtipSettings = Object.assign(ARTIST_QTIP_SETTINGS, {
         content: { text: (ev, qtip) => buildArtistTooltip(artist, qtip) },
@@ -1181,7 +1183,7 @@ function showSettings() {
 }
 
 function findAndTranslate(mode, selector, options = {}) {
-    options = Object.assign({
+    const fullOptions = Object.assign({
         asyncMode: false,
         requiredAttributes: null,
         predicate: null, // (el) => true,
@@ -1192,22 +1194,22 @@ function findAndTranslate(mode, selector, options = {}) {
         onadded: null, // ($tag) => {},
     }, options);
 
-    if (typeof options.predicate === "string") {
-        const predicateSelector = options.predicate;
-        options.predicate = (el) => $(el).is(predicateSelector);
+    if (typeof fullOptions.predicate === "string") {
+        const predicateSelector = fullOptions.predicate;
+        fullOptions.predicate = (el) => $(el).is(predicateSelector);
     }
 
     const tryToTranslate = (elem) => {
-        if (!options.predicate || options.predicate(elem)) {
+        if (!fullOptions.predicate || fullOptions.predicate(elem)) {
             switch (mode) {
                 case "artist":
-                    translateArtistByURL(elem, options.toProfileUrl(elem), options);
+                    translateArtistByURL(elem, fullOptions.toProfileUrl(elem), fullOptions);
                     break;
                 case "artistByName":
-                    translateArtistByName(elem, options.toTagName(elem), options);
+                    translateArtistByName(elem, fullOptions.toTagName(elem), fullOptions);
                     break;
                 case "tag":
-                    translateTag(elem, options.toTagName(elem), options);
+                    translateTag(elem, fullOptions.toTagName(elem), fullOptions);
                     break;
                 default:
                     console.error("Unsupported mode "+mode);
@@ -1217,10 +1219,10 @@ function findAndTranslate(mode, selector, options = {}) {
 
     $(selector).each((i, elem) => tryToTranslate(elem));
 
-    if (!options.asyncMode) return;
+    if (!fullOptions.asyncMode) return;
 
     const query = { element: selector };
-    if (options.requiredAttributes) query.elementAttributes = options.requiredAttributes;
+    if (fullOptions.requiredAttributes) query.elementAttributes = fullOptions.requiredAttributes;
     new MutationSummary({
         queries: [query],
         callback: ([summary]) => {
@@ -1650,6 +1652,7 @@ function initializeArtStation() {
 
     function toFullURL(url) {
         if (url && typeof url !== "string") {
+            // eslint-disable-next-line no-param-reassign
             url = (url[0] || url).getAttribute("href");
         }
 
