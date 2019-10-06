@@ -77,7 +77,7 @@ const SETTINGS = {
             },
         },
     ],
-    isValid(settingName, value) {
+    isValid (settingName, value) {
         const setting = this.list.find((s) => s.name===settingName);
         if (!setting) {
             console.error(`No setting ${settingName}`);
@@ -91,7 +91,7 @@ const SETTINGS = {
                 return false;
         }
     },
-    get(settingName) {
+    get (settingName) {
         const setting = this.list.find((s) => s.name===settingName);
         if (!setting) {
             console.error(`No setting ${settingName}`);
@@ -104,7 +104,7 @@ const SETTINGS = {
         }
         return value;
     },
-    set(settingName, value) {
+    set (settingName, value) {
         const setting = this.list.find((s) => s.name===settingName);
         if (!setting) {
             console.error(`No setting ${settingName}`);
@@ -276,7 +276,7 @@ const PROGRAM_CSS = `
 `;
 
 // Tag function for template literals to remove newlines and leading spaces
-function noIndents(strings, ...values) {
+function noIndents (strings, ...values) {
     // Remove all spaces before/after a tag and leave one in other cases
     const compactStrings = strings.map((str) => str.replace(
         /(>)?\n *(<)?/g,
@@ -291,7 +291,7 @@ function noIndents(strings, ...values) {
     return res.join("");
 }
 
-function getImage(imageUrl) {
+function getImage (imageUrl) {
     return GM
         .xmlHttpRequest({
             method: "GET",
@@ -301,7 +301,7 @@ function getImage(imageUrl) {
         .then((resp) => resp.response);
 }
 
-function rateLimitedLog(level, ...messageData) {
+function rateLimitedLog (level, ...messageData) {
     // Assumes that only simple arguments will be passed in
     const key = messageData.join(",");
     rateLimitedLog[key] = rateLimitedLog[key] || { log: true };
@@ -313,7 +313,7 @@ function rateLimitedLog(level, ...messageData) {
     }
 }
 
-function checkNetworkErrors(domain, hasError) {
+function checkNetworkErrors (domain, hasError) {
     checkNetworkErrors[domain] = checkNetworkErrors[domain] || { error: 0 };
     if (hasError) {
         console.log("Total errors:", checkNetworkErrors[domain].error);
@@ -332,7 +332,7 @@ function checkNetworkErrors(domain, hasError) {
     return true;
 }
 
-async function getJSONRateLimited(url, params) {
+async function getJSONRateLimited (url, params) {
     const sleepHalfSecond = (resolve) => setTimeout(resolve, 500);
     const domain = new URL(url).hostname;
     getJSONRateLimited[domain] = (
@@ -395,7 +395,7 @@ const getJSONMemoized = _.memoize(
     (url, params) => url + $.param(params)
 );
 
-function get(url, params, cache = CACHE_LIFETIME, baseUrl = BOORU) {
+function get (url, params, cache = CACHE_LIFETIME, baseUrl = BOORU) {
     const finalParams = (cache > 0)
         ? {
             ...params,
@@ -409,7 +409,7 @@ function get(url, params, cache = CACHE_LIFETIME, baseUrl = BOORU) {
         });
 }
 
-async function translateTag(target, tagName, options) {
+async function translateTag (target, tagName, options) {
     const normalizedTag = tagName
         .trim()
         .normalize("NFKC")
@@ -457,7 +457,7 @@ async function translateTag(target, tagName, options) {
     addDanbooruTags($(target), tags, options);
 }
 
-function addDanbooruTags($target, tags, options = {}) {
+function addDanbooruTags ($target, tags, options = {}) {
     if (tags.length === 0) {
         return;
     }
@@ -483,7 +483,7 @@ function addDanbooruTags($target, tags, options = {}) {
     if (onadded) onadded($tagsContainer);
 }
 
-async function translateArtistByURL(element, profileUrl, options) {
+async function translateArtistByURL (element, profileUrl, options) {
     if (!profileUrl) return;
 
     const artists = await get(
@@ -508,7 +508,7 @@ async function translateArtistByURL(element, profileUrl, options) {
         .map((artist) => addDanbooruArtist($(element), artist, options));
 }
 
-async function translateArtistByName(element, artistName, options) {
+async function translateArtistByName (element, artistName, options) {
     if (!artistName) return;
 
     const artists = await get(
@@ -524,7 +524,7 @@ async function translateArtistByName(element, artistName, options) {
     artists.map((artist) => addDanbooruArtist($(element), artist, options));
 }
 
-function addDanbooruArtist($target, artist, options = {}) {
+function addDanbooruArtist ($target, artist, options = {}) {
     const {
         onadded = null, // ($tag)=>{},
         tagPosition: {
@@ -566,7 +566,7 @@ function addDanbooruArtist($target, artist, options = {}) {
     if (onadded) onadded($tag);
 }
 
-function attachShadow($target, $content) {
+function attachShadow ($target, $content) {
     // If the target doesn't have shadow yet
     if (!$target.prop("shadowRoot")) {
         if (_.isFunction(document.body.attachShadow)) {
@@ -578,7 +578,7 @@ function attachShadow($target, $content) {
     }
 }
 
-function chooseBackgroundColorScheme($element) {
+function chooseBackgroundColorScheme ($element) {
     const TRANSPARENT_COLOR = "rgba(0, 0, 0, 0)";
     // Halfway between white/black in the RGB scheme
     const MIDDLE_LUMINOSITY = 128;
@@ -608,7 +608,7 @@ function chooseBackgroundColorScheme($element) {
     return [qtipClass, adjustedColor];
 }
 
-async function buildArtistTooltip(artist, qtip) {
+async function buildArtistTooltip (artist, qtip) {
     if (!(artist.name in renderedQtips)) {
         const waitPosts = get(
             "/posts",
@@ -646,7 +646,7 @@ async function buildArtistTooltip(artist, qtip) {
     qtip.reposition(null, false);
 }
 
-function buildArtistTooltipContent(artist, [tag = { post_count: 0 }], posts = []) {
+function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = []) {
     const $content = $(noIndents`
         <style>
             :host {
@@ -930,7 +930,7 @@ function buildArtistTooltipContent(artist, [tag = { post_count: 0 }], posts = []
     return $content;
 }
 
-function buildArtistUrlsHtml(artist) {
+function buildArtistUrlsHtml (artist) {
     const getDomain = (url) => new URL(url.normalized_url).host.match(/[^.]*\.[^.]*$/)[0];
     const artistUrls = _(artist.urls)
         .chain()
@@ -954,7 +954,7 @@ function buildArtistUrlsHtml(artist) {
     return html;
 }
 
-function timeToAgo(time) {
+function timeToAgo (time) {
     const interval = new Date(Date.now() - new Date(time));
     if (interval < 60000) return "less than a minute ago";
     const ranks = [{
@@ -981,13 +981,13 @@ function timeToAgo(time) {
 }
 
 // Based on https://stackoverflow.com/questions/15900485
-function formatBytes(bytes) {
+function formatBytes (bytes) {
     const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return `${parseFloat((bytes / (1024 ** i)).toFixed(2))} ${sizes[i]}`;
 }
 
-function buildPostPreview(post) {
+function buildPostPreview (post) {
     const RATINGS = {
         s: 0,
         q: 1,
@@ -1059,8 +1059,8 @@ function buildPostPreview(post) {
     return $preview;
 }
 
-function showSettings() {
-    function settingToInput(setting) {
+function showSettings () {
+    function settingToInput (setting) {
         const value = SETTINGS.get(setting.name);
         switch (setting.type) {
             case "number":
@@ -1088,12 +1088,12 @@ function showSettings() {
 
     const $shadowContainer = $("<div>").appendTo("#ex-qtips");
 
-    function closeSettings() {
+    function closeSettings () {
         $shadowContainer.remove();
         $(document).off("keydown", closeSettingsOnEscape);
     }
 
-    function closeSettingsOnEscape(ev) {
+    function closeSettingsOnEscape (ev) {
         if (ev.key==="Escape" && !ev.altKey && !ev.ctrlKey && !ev.shiftKey) {
             closeSettings();
             return false;
@@ -1184,7 +1184,7 @@ function showSettings() {
     attachShadow($shadowContainer, $settings);
 }
 
-function findAndTranslate(mode, selector, options = {}) {
+function findAndTranslate (mode, selector, options = {}) {
     const fullOptions = {
         asyncMode: false,
         requiredAttributes: null,
@@ -1238,7 +1238,7 @@ function findAndTranslate(mode, selector, options = {}) {
     });
 }
 
-function initializePixiv() {
+function initializePixiv () {
     GM_addStyle(`
         /* Fix https://www.pixiv.net/tags.php to display tags as vertical list. */
         .tag-list.slash-separated li {
@@ -1371,7 +1371,7 @@ function initializePixiv() {
     });
 }
 
-function initializeNijie() {
+function initializeNijie () {
     GM_addStyle(`
         .ex-translated-tags {
             font-family: Verdana, Helvetica, sans-serif;
@@ -1396,7 +1396,7 @@ function initializeNijie() {
     });
 }
 
-function initializeTinami() {
+function initializeTinami () {
     GM_addStyle(`
         .ex-translated-tags {
             font-family: Verdana, Helvetica, sans-serif;
@@ -1421,7 +1421,7 @@ function initializeTinami() {
     });
 }
 
-function initializeNicoSeiga() {
+function initializeNicoSeiga () {
     GM_addStyle(`
         /* Fix tags in http://seiga.nicovideo.jp/seiga/im7626097 */
         .illust_tag .tag {
@@ -1458,7 +1458,7 @@ function initializeNicoSeiga() {
     });
 }
 
-function initializeBCY() {
+function initializeBCY () {
     $("body").attr("id", "ex-bcy");
 
     // Prfile page https://bcy.net/u/3935930
@@ -1489,7 +1489,7 @@ function initializeBCY() {
     findAndTranslate("tag", ".dm-tag-a", { tagPosition: TAG_POSITIONS.beforeend });
 }
 
-function initializeDeviantArt() {
+function initializeDeviantArt () {
     // https://www.deviantart.com/koyorin
     // https://www.deviantart.com/koyorin/art/Ruby-570526828
     findAndTranslate("artist", ".gruserbadge .username, .dev-title-container .author .username", {
@@ -1499,7 +1499,7 @@ function initializeDeviantArt() {
     findAndTranslate("tag", ".dev-about-tags-cc .discoverytag");
 }
 
-function initializeHentaiFoundry() {
+function initializeHentaiFoundry () {
     $("body").attr("id", "ex-hentaifoundry");
 
     // Posts on https://www.hentai-foundry.com/user/Calm/profile
@@ -1518,7 +1518,7 @@ function initializeHentaiFoundry() {
     });
 }
 
-function initializeTwitter() {
+function initializeTwitter () {
     GM_addStyle(`
         .ex-artist-tag {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
@@ -1627,7 +1627,7 @@ function initializeTwitter() {
     });
 }
 
-function initializeArtStation() {
+function initializeArtStation () {
     GM_addStyle(`
         .qtip-content {
             box-sizing: initial;
@@ -1653,7 +1653,7 @@ function initializeArtStation() {
         }
     `);
 
-    function toFullURL(url) {
+    function toFullURL (url) {
         if (url && typeof url !== "string") {
             // eslint-disable-next-line no-param-reassign
             url = (url[0] || url).getAttribute("href");
@@ -1684,7 +1684,7 @@ function initializeArtStation() {
         return `https://www.artstation.com/${artistName}`;
     }
 
-    function hasValidHref(el) {
+    function hasValidHref (el) {
         const href = el.getAttribute("href");
         return href && (href.startsWith("http") || href.startsWith("/")&&href.length>1);
     }
@@ -1732,7 +1732,7 @@ function initializeArtStation() {
     });
 }
 
-function initializeSauceNAO() {
+function initializeSauceNAO () {
     GM_addStyle(`
         .ex-translated-tags {
             margin: 0;
@@ -1769,7 +1769,7 @@ function initializeSauceNAO() {
     });
 }
 
-function initializePawoo() {
+function initializePawoo () {
     GM_addStyle(`
         .ex-artist-tag {
             line-height: 100%;
@@ -1804,7 +1804,7 @@ function initializePawoo() {
     findAndTranslate("tag", ".hashtag");
 }
 
-function initializeTweetDeck() {
+function initializeTweetDeck () {
     findAndTranslate("tag", "span.link-complex-target", {
         predicate: "a[rel='hashtag'] span.link-complex-target",
         asyncMode: true,
@@ -1820,7 +1820,7 @@ function initializeTweetDeck() {
     });
 }
 
-function initializePixivFanbox() {
+function initializePixivFanbox () {
     // https://www.pixiv.net/fanbox/creator/310631
     // channel header
     findAndTranslate("artist", "a.sc-1upaq18-16", {
@@ -1836,14 +1836,14 @@ function initializePixivFanbox() {
     });
 }
 
-function initializeQtipContainer() {
+function initializeQtipContainer () {
     // Container and viewport for qTips
     const $div = $(`<div id="ex-qtips"></div>`).appendTo("body");
     ARTIST_QTIP_SETTINGS.position.viewport = $div;
     ARTIST_QTIP_SETTINGS.position.container = $div;
 }
 
-function initialize() {
+function initialize () {
     initializeQtipContainer();
     GM_jQuery_setup();
     GM_addStyle(PROGRAM_CSS);
