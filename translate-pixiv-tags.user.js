@@ -58,7 +58,8 @@ const SETTINGS = {
         }, {
             name: "cache_lifetime",
             defValue: 60 * 5,
-            descr: "The amount of time in seconds to cache data from Danbooru before querying again",
+            descr:
+                "The amount of time in seconds to cache data from Danbooru before querying again",
             type: "number",
         }, {
             name: "preview_limit",
@@ -129,7 +130,22 @@ const ARTIST_POST_PREVIEW_LIMIT = SETTINGS.get("preview_limit");
 const SHOW_PREVIEW_RATING = SETTINGS.get("show_preview_rating");
 
 // Values needed from Danbooru API calls using the "only" parameter
-const POST_FIELDS = "id,is_pending,is_flagged,is_deleted,parent_id,has_visible_children,tag_string,image_width,image_height,preview_file_url,source,file_size,rating,created_at";
+const POST_FIELDS = [
+    "created_at",
+    "file_size",
+    "has_visible_children",
+    "id",
+    "image_height",
+    "image_width",
+    "is_flagged",
+    "is_pending",
+    "is_deleted",
+    "parent_id",
+    "preview_file_url",
+    "rating",
+    "source",
+    "tag_string",
+].join(",");
 const POST_COUNT_FIELDS = "post_count";
 const TAG_FIELDS = "name,category";
 const WIKI_FIELDS = "title,category_name";
@@ -483,6 +499,18 @@ function addDanbooruTags ($target, tags, options = {}) {
     if (onadded) onadded($tagsContainer);
 }
 
+function normalizeURL (url) {
+    return url.replace(/\/$/, "").toLowerCase();
+}
+
+function areURLsEqual (ref1, ref2) {
+    const url1 = typeof ref1 === "string" ? new URL(normalizeURL(ref1)) : ref1;
+    const url2 = typeof ref2 === "string" ? new URL(normalizeURL(ref2)) : ref2;
+    return url1.host === url2.host
+        && url1.pathname === url2.pathname
+        && url1.search === url2.search;
+}
+
 async function translateArtistByURL (element, profileUrl, options) {
     if (!profileUrl) return;
 
@@ -496,15 +524,12 @@ async function translateArtistByURL (element, profileUrl, options) {
             only: ARTIST_FIELDS,
         }
     );
-    const pUrl = new URL(profileUrl.replace(/\/$/, "").toLowerCase());
+    const pUrl = new URL(normalizeURL(profileUrl));
     artists
         // Fix of #18: for some unsupported domains, Danbooru returns false-positive results
-        .filter(({ urls }) => urls.some(({ url, normalized_url: url2 }) => {
-            const aUrl = new URL(url.replace(/\/$/, "").toLowerCase());
-            const nUrl = new URL(url2.replace(/\/$/, "").toLowerCase());
-            return pUrl.host === aUrl.host && pUrl.pathname === aUrl.pathname && pUrl.search === aUrl.search
-                || pUrl.host === nUrl.host && pUrl.pathname === nUrl.pathname && pUrl.search === nUrl.search;
-        }))
+        .filter(({ urls }) => urls.some(({ url, normalized_url: url2 }) => (
+            areURLsEqual(pUrl, url) || areURLsEqual(pUrl, url2)
+        )))
         .map((artist) => addDanbooruArtist($(element), artist, options));
 }
 
