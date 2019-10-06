@@ -562,7 +562,7 @@ function addDanbooruArtist ($target, artist, options = {}) {
             </a>
         </div>`);
     $tag[insertAt]($target);
-    $tag.find("a").qtip(qtipSettings).end();
+    $tag.find("a").qtip(qtipSettings);
     if (onadded) onadded($tag);
 }
 
