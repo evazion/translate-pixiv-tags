@@ -343,6 +343,7 @@ async function getJSONRateLimited(url, params) {
         }
     );
     // Wait until the number of pending network requests is below the max threshold
+    /* eslint-disable no-await-in-loop */
     while (getJSONRateLimited[domain].pending >= getJSONRateLimited[domain].current_max) {
         // Bail if the maximum number of network errors has been exceeded
         if (!(checkNetworkErrors(domain, false))) {
@@ -385,6 +386,7 @@ async function getJSONRateLimited(url, params) {
             continue;
         }
     }
+    /* eslint-enable no-await-in-loop */
     return [];
 }
 
