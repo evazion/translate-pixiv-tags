@@ -1020,7 +1020,10 @@ function buildPostPreview (post) {
     scale = Math.min(1, scale);
 
     const domain = post.source.match(/^https?:\/\//)
-        ? new URL(post.source).hostname.split(".").slice(-2).join(".")
+        ? new URL(post.source).hostname
+            .split(".")
+            .slice(-2)
+            .join(".")
         : "NON-WEB";
     const imgSize = [post.file_size, post.image_width, post.image_height].every(_.isFinite)
         ? `${formatBytes(post.file_size)} (${post.image_width}x${post.image_height})`
@@ -1242,6 +1245,8 @@ function findAndTranslate (mode, selector, options = {}) {
     });
 }
 
+const linkInChildren = (el) => $(el).find("a").prop("href");
+
 function initializePixiv () {
     GM_addStyle(`
         /* Fix https://www.pixiv.net/tags.php to display tags as vertical list. */
@@ -1324,7 +1329,7 @@ function initializePixiv () {
     // Illust author https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
     findAndTranslate("artist", "h2", {
         predicate: "main+aside>section>h2",
-        toProfileUrl: (el) => $(el).find("a").prop("href"),
+        toProfileUrl: linkInChildren,
         tagPosition: TAG_POSITIONS.beforeend,
         asyncMode: true,
         onadded: ($tag) => {
@@ -1335,7 +1340,7 @@ function initializePixiv () {
                 callback: () => {
                     $container.siblings(".ex-artist-tag").remove();
                     findAndTranslate("artist", $container, {
-                        toProfileUrl: (el) => $(el).find("a").prop("href"),
+                        toProfileUrl: linkInChildren,
                     });
                 },
             });
@@ -1345,7 +1350,7 @@ function initializePixiv () {
     // Related work's artists https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
     findAndTranslate("artist", "div", {
         predicate: "aside li>div>div:last-child>div:first-child",
-        toProfileUrl: (el) => $(el).find("a").prop("href"),
+        toProfileUrl: linkInChildren,
         asyncMode: true,
     });
 
@@ -1421,7 +1426,7 @@ function initializeTinami () {
 
     // Triggers on http://www.tinami.com/view/934323
     findAndTranslate("artist", "p:has(>a[href^='/creator/profile/'])", {
-        toProfileUrl: (el) => $(el).find("a").prop("href"),
+        toProfileUrl: linkInChildren,
     });
 }
 
@@ -1467,7 +1472,7 @@ function initializeBCY () {
 
     // Prfile page https://bcy.net/u/3935930
     findAndTranslate("artist", "div:has(>a.uname)", {
-        toProfileUrl: (el) => $(el).find("a").prop("href"),
+        toProfileUrl: linkInChildren,
     });
 
     // Illust pages https://bcy.net/item/detail/6643704430988361988
@@ -1613,13 +1618,18 @@ function initializeTwitter () {
     // https://twitter.com/mugosatomi/status/1173231575959363584
     findAndTranslate("artist", "div.r-1wbh5a2.r-dnmrzs", {
         predicate: "div[data-testid='primaryColumn'] article div:has(>a.r-1wbh5a2)",
-        toProfileUrl: (el) => $(el).find("a").prop("href"),
+        toProfileUrl: (el) => linkInChildren,
         classes: "inline",
         asyncMode: true,
     });
     // Quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
     findAndTranslate("artist", "div.r-1wbh5a2.r-1udh08x", {
-        toProfileUrl: (el) => `https://twitter.com/${$(el).find(".r-1f6r7vd").text().substr(1)}`,
+        toProfileUrl: (el) => `https://twitter.com/${
+            $(el)
+                .find(".r-1f6r7vd")
+                .text()
+                .substr(1)
+        }`,
         classes: "inline",
         asyncMode: true,
     });
