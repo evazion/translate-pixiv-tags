@@ -316,7 +316,8 @@ function rateLimitedLog(level, ...messageData) {
 function checkNetworkErrors(domain, hasError) {
     checkNetworkErrors[domain] = checkNetworkErrors[domain] || { error: 0 };
     if (hasError) {
-        console.log("Total errors:", ++checkNetworkErrors[domain].error);
+        console.log("Total errors:", checkNetworkErrors[domain].error);
+        checkNetworkErrors[domain].error += 1;
     }
     if (checkNetworkErrors[domain].error >= MAX_NETWORK_ERRORS) {
         rateLimitedLog(
@@ -358,11 +359,11 @@ async function getJSONRateLimited(url, params) {
         await new Promise(sleepHalfSecond);
     }
     for (let i = 0; i < MAX_NETWORK_RETRIES; i++) {
-        getJSONRateLimited[domain].pending++;
+        getJSONRateLimited[domain].pending += 1;
         try {
             return await $
                 .getJSON(url, params)
-                .always(() => { getJSONRateLimited[domain].pending--; });
+                .always(() => { getJSONRateLimited[domain].pending -= 1; });
         } catch (ex) {
             // Backing off maximum to adjust to current network conditions
             getJSONRateLimited[domain].currentMax = (
