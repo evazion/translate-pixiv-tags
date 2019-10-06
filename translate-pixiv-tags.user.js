@@ -80,21 +80,21 @@ const SETTINGS = {
     isValid(settingName, value) {
         const setting = this.list.find((s) => s.name===settingName);
         if (!setting) {
-            console.error("No setting "+settingName);
+            console.error(`No setting ${settingName}`);
             return false;
         }
         switch (setting.type) {
             case "number": return Number.isInteger(value) && value>0;
             case "list": return value in setting.values;
             default:
-                console.error("Unsupported type "+setting.type);
+                console.error(`Unsupported type ${setting.type}`);
                 return false;
         }
     },
     get(settingName) {
         const setting = this.list.find((s) => s.name===settingName);
         if (!setting) {
-            console.error("no setting "+settingName);
+            console.error(`No setting ${settingName}`);
             return null;
         }
         const value = GM_getValue(settingName);
@@ -107,7 +107,7 @@ const SETTINGS = {
     set(settingName, value) {
         const setting = this.list.find((s) => s.name===settingName);
         if (!setting) {
-            console.error("no setting "+settingName);
+            console.error(`No setting ${settingName}`);
             return null;
         }
         if (this.isValid(settingName, value)) {
@@ -975,7 +975,7 @@ function timeToAgo(time) {
     }];
     const rank = ranks.find(({ value }) => value);
     if (rank.value) {
-        return `${rank.value} ${(rank.value>1 ? rank.unit+"s" : rank.unit)} ago`;
+        return `${rank.value} ${(rank.value>1 ? `${rank.unit}s` : rank.unit)} ago`;
     }
     return "∞ ago";
 }
@@ -984,7 +984,7 @@ function timeToAgo(time) {
 function formatBytes(bytes) {
     const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return parseFloat((bytes / (1024 ** i)).toFixed(2)) + " " + sizes[i];
+    return `${parseFloat((bytes / (1024 ** i)).toFixed(2))} ${sizes[i]}`;
 }
 
 function buildPostPreview(post) {
@@ -1081,7 +1081,7 @@ function showSettings() {
                             .join("")}
                     </select>`;
             default:
-                console.error("Unsupported type "+setting.type);
+                console.error(`Unsupported type ${setting.type}`);
                 return "";
         }
     }
@@ -1215,7 +1215,7 @@ function findAndTranslate(mode, selector, options = {}) {
                     translateTag(elem, fullOptions.toTagName(elem), fullOptions);
                     break;
                 default:
-                    console.error("Unsupported mode "+mode);
+                    console.error(`Unsupported mode ${mode}`);
             }
         }
     };
@@ -1567,7 +1567,7 @@ function initializeTwitter() {
         // Quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
         findAndTranslate("artist", ".username", {
             predicate: "div.js-user-profile-link .username",
-            toProfileUrl: (el) => "https://twitter.com/" + $(el).find("b").text(),
+            toProfileUrl: (el) => `https://twitter.com/${$(el).find("b").text()}`,
             asyncMode: true,
             classes: "inline",
         });
@@ -1583,7 +1583,7 @@ function initializeTwitter() {
     });
     // Floating name of a channel https://twitter.com/mugosatomi
     const URLfromLocation = () => (
-        "https://twitter.com"+(window.location.pathname.match(/\/\w+/)||[])[0]
+        `https://twitter.com${(window.location.pathname.match(/\/\w+/)||[])[0]}`
     );
     findAndTranslate("artist", "div.css-1dbjc4n.r-xoduu5.r-18u37iz.r-dnmrzs", {
         predicate: "h2>div>div>div",
@@ -1615,7 +1615,7 @@ function initializeTwitter() {
     });
     // Quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
     findAndTranslate("artist", "div.r-1wbh5a2.r-1udh08x", {
-        toProfileUrl: (el) => "https://twitter.com/"+$(el).find(".r-1f6r7vd").text().substr(1),
+        toProfileUrl: (el) => `https://twitter.com/${$(el).find(".r-1f6r7vd").text().substr(1)}`,
         classes: "inline",
         asyncMode: true,
     });
@@ -1681,7 +1681,7 @@ function initializeArtStation() {
             return "";
         }
 
-        return "https://www.artstation.com/" + artistName;
+        return `https://www.artstation.com/${artistName}`;
     }
 
     function hasValidHref(el) {
@@ -1789,7 +1789,7 @@ function initializePawoo() {
     // https://pawoo.net/@yamadorikodi
     // artist name in his card info
     findAndTranslate("artist", ".name small", {
-        toProfileUrl: () => "https://pawoo.net" + window.location.pathname.match(/\/[^/]+/)[0],
+        toProfileUrl: () => `https://pawoo.net${window.location.pathname.match(/\/[^/]+/)[0]}`,
         tagPosition: TAG_POSITIONS.afterbegin,
     });
     // Post author, commentor
