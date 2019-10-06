@@ -1741,7 +1741,7 @@ function initializeSauceNAO() {
 
     $(".resulttitle, .resultcontentcolumn")
         .contents()
-        .filter(function() { return this.nodeType===3; }) // Get text nodes
+        .filter((i, el) => el.nodeType === 3) // Get text nodes
         .wrap("<span class=target>");
     $(".target:contains(', ')").replaceWith(
         (i, html) => html
