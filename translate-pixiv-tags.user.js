@@ -281,7 +281,7 @@ function noIndents(strings, ...values) {
     // Remove all spaces before/after a tag and leave one in other cases
     strings = strings.map((str) => str.replace(
         /(>)?\n *(<)?/g,
-        (s, lt, gt) => lt&&gt ? lt+gt : lt||gt ? (lt||gt) : " "
+        (s, lt, gt) => (lt&&gt ? lt+gt : lt||gt ? (lt||gt) : " ")
     ));
     let res = new Array(values.length*2+1);
     for (let i = 0; i < values.length; i++) {
