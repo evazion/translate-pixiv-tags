@@ -77,7 +77,7 @@ const SETTINGS = {
             },
         },
     ],
-    isValid: function(settingName, value) {
+    isValid(settingName, value) {
         const setting = this.list.find((s) => s.name===settingName);
         if (!setting) {
             console.error("No setting "+settingName);
@@ -91,7 +91,7 @@ const SETTINGS = {
                 return false;
         }
     },
-    get: function(settingName) {
+    get(settingName) {
         const setting = this.list.find((s) => s.name===settingName);
         if (!setting) {
             console.error("no setting "+settingName);
@@ -104,7 +104,7 @@ const SETTINGS = {
         }
         return value;
     },
-    set: function(settingName, value) {
+    set(settingName, value) {
         const setting = this.list.find((s) => s.name===settingName);
         if (!setting) {
             console.error("no setting "+settingName);
@@ -1359,13 +1359,13 @@ function initializePixiv() {
     );
     findAndTranslate("artist", ".ui-profile-popup", {
         predicate: "figcaption._3HwPt89 > ul > li > a.ui-profile-popup",
-        toProfileUrl: toProfileUrl,
+        toProfileUrl,
         asyncMode: true,
     });
 
     // Ranking pages: https://www.pixiv.net/ranking.php?mode=original
     findAndTranslate("artist", ".user-container.ui-profile-popup", {
-        toProfileUrl: toProfileUrl,
+        toProfileUrl,
         asyncMode: true,
     });
 }
