@@ -567,11 +567,11 @@ function attachShadow($target, $content) {
     // If the target already has shadow
     if ($target.prop("shadowRoot")) {
         return;
-    } else if (!_.isFunction(document.body.attachShadow)) {
-        $target.empty().append($content);
-    } else {
+    } else if (_.isFunction(document.body.attachShadow)) {
         const shadowRoot = $target.get(0).attachShadow({ mode: "open" });
         $(shadowRoot).append($content);
+    } else {
+        $target.empty().append($content);
     }
 }
 
