@@ -113,10 +113,9 @@ const SETTINGS = {
         if (this.isValid(settingName, value)) {
             GM_setValue(settingName, value);
             return true;
-        } else {
-            console.warn(`Invalid value ${value} for ${settingName}`);
-            return false;
         }
+        console.warn(`Invalid value ${value} for ${settingName}`);
+        return false;
     },
 };
 
