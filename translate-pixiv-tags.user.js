@@ -1005,7 +1005,7 @@ function buildPostPreview(post) {
 
     const dataAttributes = `
       data-id="${post.id}"
-      data-has-sound="${!!post.tag_string.match(/(video_with_sound|flash_with_sound)/)}"
+      data-has-sound="${Boolean(post.tag_string.match(/(video_with_sound|flash_with_sound)/))}"
       data-tags="${_.escape(post.tag_string)}"
     `;
 
@@ -1167,7 +1167,7 @@ function showSettings() {
     $settings.find(".refresh-page").click((ev) => {
         $settings.find("input[type='number'], select").each((i, el) => {
             let $input = $(el);
-            let value = $input.is("input[type='number']") ? +$input.val() : $input.val();
+            let value = $input.is("input[type='number']") ? Number($input.val()) : $input.val();
             SETTINGS.set($input.prop("name"), value);
         });
         closeSettings();
