@@ -1022,7 +1022,6 @@ function buildPostPreview (post) {
         q: 1,
         e: 2, // eslint-disable-line id-blacklist
     };
-    let [width, height] = [150, 150];
     const previewFileUrl = `${BOORU}/images/download-preview.png`;
 
     let previewClass = "post-preview";
@@ -1043,6 +1042,8 @@ function buildPostPreview (post) {
 
     let scale = Math.min(150 / post.image_width, 150 / post.image_height);
     scale = Math.min(1, scale);
+    const width = Math.round(post.image_width * scale);
+    const height = Math.round(post.image_height * scale);
 
     const domain = post.source.match(/^https?:\/\//)
         ? new URL(post.source).hostname
@@ -1072,20 +1073,16 @@ function buildPostPreview (post) {
         </article>
     `);
 
-    if (post.preview_file_url) {
-        width = Math.round(post.image_width * scale);
-        height = Math.round(post.image_height * scale);
-        if (CORS_IMAGE_DOMAINS.includes(location.host)) {
-            // Temporaly set transparent 1x1 image
-            $preview.find("img").prop("src", "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
-            getImage(post.preview_file_url).then((blob) => {
-                const imageBlob = blob.slice(0, blob.size, "image/jpeg");
-                const blobUrl = window.URL.createObjectURL(imageBlob);
-                $preview.find("img").prop("src", blobUrl);
-            });
-        } else {
-            $preview.find("img").prop("src", post.preview_file_url);
-        }
+    if (CORS_IMAGE_DOMAINS.includes(location.host)) {
+        // Temporaly set transparent 1x1 image
+        $preview.find("img").prop("src", "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
+        getImage(post.preview_file_url).then((blob) => {
+            const imageBlob = blob.slice(0, blob.size, "image/jpeg");
+            const blobUrl = window.URL.createObjectURL(imageBlob);
+            $preview.find("img").prop("src", blobUrl);
+        });
+    } else {
+        $preview.find("img").prop("src", post.preview_file_url);
     }
 
     return $preview;
