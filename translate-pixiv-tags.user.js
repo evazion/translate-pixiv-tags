@@ -433,7 +433,7 @@ async function translateTag(target, tagName, options) {
         }
     );
     if (wikiPages.length) {
-        tags = wikiPages.map((wikiPage) => new Object({
+        tags = wikiPages.map((wikiPage) => ({
             name: wikiPage.title,
             prettyName: wikiPage.title.replace(/_/g, " "),
             category: wikiPage.category_name,
@@ -447,7 +447,7 @@ async function translateTag(target, tagName, options) {
                 only: TAG_FIELDS,
             }
         );
-        tags = tags.map((tag) => new Object({
+        tags = tags.map((tag) => ({
             name: tag.name,
             prettyName: tag.name.replace(/_/g, " "),
             category: tag.category,
