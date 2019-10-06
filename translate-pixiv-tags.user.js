@@ -1234,21 +1234,31 @@ function findAndTranslate (mode, selector, options = {}) {
         fullOptions.predicate = (el) => $(el).is(predicateSelector);
     }
 
+    const { translate, getData } = (function fn () {
+        switch (mode) {
+            case "artist":
+                return {
+                    translate: translateArtistByURL,
+                    getData: fullOptions.toProfileUrl,
+                };
+            case "artistByName":
+                return {
+                    translate: translateArtistByName,
+                    getData: fullOptions.toTagName,
+                };
+            case "tag":
+                return {
+                    translate: translateTag,
+                    getData: fullOptions.toTagName,
+                };
+            default:
+                throw new Error(`Unsupported mode ${mode}`);
+        }
+    }());
+
     const tryToTranslate = (elem) => {
         if (!fullOptions.predicate || fullOptions.predicate(elem)) {
-            switch (mode) {
-                case "artist":
-                    translateArtistByURL(elem, fullOptions.toProfileUrl(elem), fullOptions);
-                    break;
-                case "artistByName":
-                    translateArtistByName(elem, fullOptions.toTagName(elem), fullOptions);
-                    break;
-                case "tag":
-                    translateTag(elem, fullOptions.toTagName(elem), fullOptions);
-                    break;
-                default:
-                    console.error(`Unsupported mode ${mode}`);
-            }
+            translate(elem, getData(elem), fullOptions);
         }
     };
 
