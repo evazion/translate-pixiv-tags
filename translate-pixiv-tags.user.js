@@ -1185,7 +1185,7 @@ function showSettings() {
 }
 
 function findAndTranslate(mode, selector, options = {}) {
-    const fullOptions = Object.assign({
+    const fullOptions = {
         asyncMode: false,
         requiredAttributes: null,
         predicate: null, // (el) => true,
@@ -1194,7 +1194,8 @@ function findAndTranslate(mode, selector, options = {}) {
         tagPosition: TAG_POSITIONS.afterend,
         classes: "",
         onadded: null, // ($tag) => {},
-    }, options);
+        ...options,
+    };
 
     if (typeof fullOptions.predicate === "string") {
         const predicateSelector = fullOptions.predicate;
