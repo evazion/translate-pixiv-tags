@@ -1656,7 +1656,7 @@ function initializeTwitter () {
     // https://twitter.com/mugosatomi/status/1173231575959363584
     findAndTranslate("artist", "div.r-1wbh5a2.r-dnmrzs", {
         predicate: "div[data-testid='primaryColumn'] article div:has(>a.r-1wbh5a2)",
-        toProfileUrl: (el) => linkInChildren,
+        toProfileUrl: linkInChildren,
         classes: "inline",
         asyncMode: true,
     });
