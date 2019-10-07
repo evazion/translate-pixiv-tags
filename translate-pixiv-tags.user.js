@@ -634,7 +634,7 @@ function chooseBackgroundColorScheme ($element) {
         return Math.round(adjustedColor);
     });
     const adjustedColor = `rgb(${adjustedArray.join(", ")})`;
-    return [qtipClass, adjustedColor];
+    return {qtipClass, adjustedColor};
 }
 
 async function buildArtistTooltip (artist, qtip) {
@@ -665,7 +665,7 @@ async function buildArtistTooltip (artist, qtip) {
         && !qtip.elements.tooltip.hasClass("qtip-light")
     ) {
         // Select theme and background color based upon the background of surrounding elements
-        const [qtipClass, adjustedColor] = chooseBackgroundColorScheme(qtip.elements.target);
+        const { qtipClass, adjustedColor } = chooseBackgroundColorScheme(qtip.elements.target);
         qtip.elements.tooltip.addClass(qtipClass);
         qtip.elements.tooltip.css("background-color", adjustedColor);
     }
@@ -1214,7 +1214,7 @@ function showSettings () {
     });
     $settings.find(".cancel").click(closeSettings);
     $(document).keydown(closeSettingsOnEscape);
-    const [className] = chooseBackgroundColorScheme($("#ex-qtips"));
+    const { className } = chooseBackgroundColorScheme($("#ex-qtips"));
     $settings.addClass(className);
     attachShadow($shadowContainer, $settings);
 }
