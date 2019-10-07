@@ -303,7 +303,7 @@ function noIndents (strings, ...values) {
         res[i * 2] = compactStrings[i];
         res[i * 2 + 1] = values[i];
     }
-    res[res.length - 1] = strings[strings.length - 1];
+    res[res.length - 1] = compactStrings[compactStrings.length - 1];
     return res.join("");
 }
 
@@ -1073,16 +1073,22 @@ function buildPostPreview (post) {
         </article>
     `);
 
-    if (CORS_IMAGE_DOMAINS.includes(location.host)) {
-        // Temporaly set transparent 1x1 image
-        $preview.find("img").prop("src", "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
-        getImage(post.preview_file_url).then((blob) => {
-            const imageBlob = blob.slice(0, blob.size, "image/jpeg");
-            const blobUrl = window.URL.createObjectURL(imageBlob);
-            $preview.find("img").prop("src", blobUrl);
-        });
+    if (post.preview_file_url && !post.preview_file_url.endsWith("/images/download-preview.png")) {
+        if (CORS_IMAGE_DOMAINS.includes(location.host)) {
+            // Temporaly set transparent 1x1 image
+            $preview.find("img").prop("src", "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
+            getImage(post.preview_file_url).then((blob) => {
+                const imageBlob = blob.slice(0, blob.size, "image/jpeg");
+                const blobUrl = window.URL.createObjectURL(imageBlob);
+                $preview.find("img").prop("src", blobUrl);
+            });
+        } else {
+            $preview.find("img").prop("src", post.preview_file_url);
+        }
     } else {
-        $preview.find("img").prop("src", post.preview_file_url);
+        $preview.find("img").prop({
+            width: 150, height: 150,
+        });
     }
 
     return $preview;
