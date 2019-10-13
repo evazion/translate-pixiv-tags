@@ -175,9 +175,6 @@ const CORS_IMAGE_DOMAINS = [
     "twitter.com",
 ];
 
-// Memory storage for already rendered artist tooltips
-const renderedQtips = {};
-
 // For network rate and error management
 const MAX_PENDING_NETWORK_REQUESTS = 40;
 const MIN_PENDING_NETWORK_REQUESTS = 5;
@@ -661,6 +658,8 @@ function chooseBackgroundColorScheme ($element) {
 }
 
 async function buildArtistTooltip (artist, qtip) {
+    const renderedQtips = buildArtistTooltip.cache || (buildArtistTooltip.cache = {});
+
     if (!(artist.name in renderedQtips)) {
         const waitPosts = get(
             "/posts",
@@ -693,7 +692,9 @@ async function buildArtistTooltip (artist, qtip) {
         qtip.elements.tooltip.css("background-color", adjustedColor);
     }
 
-    const $qtipContent = (await renderedQtips[artist.name]).clone(true, true);
+    let $qtipContent = (await renderedQtips[artist.name]);
+    // For correct work of CORS images must not be cloned at first displaying
+    if ($qtipContent.parent().length) $qtipContent = $qtipContent.clone(true, true);
     attachShadow(qtip.elements.content, $qtipContent);
     qtip.reposition(null, false);
 }
@@ -1269,8 +1270,8 @@ function showSettings () {
     $settings.find(".cancel").click(closeSettings);
     $(document).keydown(closeSettingsOnEscape);
 
-    const { className } = chooseBackgroundColorScheme($("#ex-qtips"));
-    $settings.addClass(className);
+    const { qtipClass } = chooseBackgroundColorScheme($("#ex-qtips"));
+    $settings.addClass(qtipClass);
 
     attachShadow($shadowContainer, $settings);
 }
