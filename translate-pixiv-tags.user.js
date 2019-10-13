@@ -1515,8 +1515,6 @@ function initializeNicoSeiga () {
 }
 
 function initializeBCY () {
-    $("body").attr("id", "ex-bcy");
-
     // Prfile page https://bcy.net/u/3935930
     findAndTranslate("artist", "div:has(>a.uname)", {
         toProfileUrl: linkInChildren,
@@ -1556,8 +1554,6 @@ function initializeDeviantArt () {
 }
 
 function initializeHentaiFoundry () {
-    $("body").attr("id", "ex-hentaifoundry");
-
     // Posts on https://www.hentai-foundry.com/user/Calm/profile
     findAndTranslate("artist", ".galleryViewTable .thumb_square > a:nth-child(4)", {
         classes: "inline",
