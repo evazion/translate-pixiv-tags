@@ -439,8 +439,6 @@ async function translateTag (target, tagName, options) {
         return;
     }
 
-    let tags = [];
-
     const wikiPages = await get(
         "/wiki_pages",
         {
@@ -451,6 +449,8 @@ async function translateTag (target, tagName, options) {
             only: WIKI_FIELDS,
         }
     );
+
+    let tags = [];
     if (wikiPages.length) {
         tags = wikiPages.map((wikiPage) => ({
             name: wikiPage.title,
@@ -1032,11 +1032,11 @@ function buildPostPreview (post) {
     const previewFileUrl = `${BOORU}/images/download-preview.png`;
 
     let previewClass = "post-preview";
-    previewClass += post.is_pending           ? " post-status-pending"      : "";
-    previewClass += post.is_flagged           ? " post-status-flagged"      : "";
-    previewClass += post.is_deleted           ? " post-status-deleted"      : "";
-    previewClass += post.parent_id            ? " post-status-has-parent"   : "";
-    previewClass += post.has_visible_children ? " post-status-has-children" : "";
+    if (post.is_pending)           previewClass += " post-status-pending";
+    if (post.is_flagged)           previewClass += " post-status-flagged";
+    if (post.is_deleted)           previewClass += " post-status-deleted";
+    if (post.parent_id)            previewClass += " post-status-has-parent";
+    if (post.has_visible_children) previewClass += " post-status-has-children";
     if (RATINGS[post.rating] > RATINGS[SHOW_PREVIEW_RATING]) {
         previewClass += " blur-post";
     }
@@ -1047,8 +1047,7 @@ function buildPostPreview (post) {
       data-tags="${_.escape(post.tag_string)}"
     `;
 
-    let scale = Math.min(150 / post.image_width, 150 / post.image_height);
-    scale = Math.min(1, scale);
+    const scale = Math.min(150 / post.image_width, 150 / post.image_height, 1);
     const width = Math.round(post.image_width * scale);
     const height = Math.round(post.image_height * scale);
 
