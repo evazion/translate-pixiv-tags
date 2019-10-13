@@ -576,12 +576,12 @@ function addDanbooruArtist ($target, artist, options = {}) {
         content: { text: (ev, qtip) => buildArtistTooltip(artist, qtip) },
     });
 
-    const duplicates = $target[searchAt](".ex-artist-tag")
+    const $duplicates = $target[searchAt](".ex-artist-tag")
         .filter((i, el) => el.innerText.trim() === artist.escapedName);
-    if (duplicates.length) {
+    if ($duplicates.length) {
         // If qtip was removed then add it back
-        if (!$.data(duplicates.find("a")[0]).qtip) {
-            $(duplicates).find("a").qtip(qtipSettings);
+        if (!$.data($duplicates.find("a")[0]).qtip) {
+            $duplicates.find("a").qtip(qtipSettings);
         }
         return;
     }
