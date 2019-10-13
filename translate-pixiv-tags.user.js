@@ -186,20 +186,24 @@ const MAX_NETWORK_RETRIES = 3;
 
 const TAG_POSITIONS = {
     beforebegin: {
-        searchAt: "prevAll",
         insertAt: "insertBefore",
+        searchAt: "prevAll",
+        targetAt: "next",
     },
     afterbegin:  {
-        searchAt: "find",
         insertAt: "prependTo",
+        searchAt: "find",
+        targetAt: "parent",
     },
     beforeend:   {
-        searchAt: "find",
         insertAt: "appendTo",
+        searchAt: "find",
+        targetAt: "parent",
     },
     afterend:    {
-        searchAt: "nextAll",
         insertAt: "insertAfter",
+        searchAt: "nextAll",
+        targetAt: "prev",
     },
 };
 
@@ -300,12 +304,14 @@ function noIndents (strings, ...values) {
             (s, lt, gt) => (lt && gt ? lt + gt : lt || gt ? (lt || gt) : " ")
         )
     ));
+
     const res = new Array(values.length * 2 + 1);
     for (let i = 0; i < values.length; i++) {
         res[i * 2] = compactStrings[i];
         res[i * 2 + 1] = values[i];
     }
     res[res.length - 1] = compactStrings[compactStrings.length - 1];
+
     return res.join("");
 }
 
@@ -316,28 +322,30 @@ function getImage (imageUrl) {
             url: imageUrl,
             responseType: "blob",
         })
-        .then((resp) => resp.response);
+        .then(({ response }) => response);
 }
 
 function rateLimitedLog (level, ...messageData) {
     // Assumes that only simple arguments will be passed in
     const key = messageData.join(",");
-    rateLimitedLog[key] = rateLimitedLog[key] || { log: true };
-    if (rateLimitedLog[key].log) {
+    const options = rateLimitedLog[key] || (rateLimitedLog[key] = { log: true });
+
+    if (options.log) {
         console[level](...messageData);
-        rateLimitedLog[key].log = false;
+        options.log = false;
         // Have only one message with the same parameters per second
-        setTimeout(() => { rateLimitedLog[key].log = true; }, 1000);
+        setTimeout(() => { options.log = true; }, 1000);
     }
 }
 
 function checkNetworkErrors (domain, hasError) {
-    checkNetworkErrors[domain] = checkNetworkErrors[domain] || { error: 0 };
+    const data = checkNetworkErrors[domain] || (checkNetworkErrors[domain] = { error: 0 });
+
     if (hasError) {
-        console.log("Total errors:", checkNetworkErrors[domain].error);
-        checkNetworkErrors[domain].error += 1;
+        console.log("Total errors:", data.error);
+        data.error += 1;
     }
-    if (checkNetworkErrors[domain].error >= MAX_NETWORK_ERRORS) {
+    if (data.error >= MAX_NETWORK_ERRORS) {
         rateLimitedLog(
             "error",
             "Maximun number of errors exceeded",
@@ -353,16 +361,17 @@ function checkNetworkErrors (domain, hasError) {
 async function getJSONRateLimited (url, params) {
     const sleepHalfSecond = (resolve) => setTimeout(resolve, 500);
     const domain = new URL(url).hostname;
-    getJSONRateLimited[domain] = (
+    const queries = (
         getJSONRateLimited[domain]
-        || {
+        || (getJSONRateLimited[domain] = {
             pending: 0,
             currentMax: MAX_PENDING_NETWORK_REQUESTS,
-        }
+        })
     );
+
     // Wait until the number of pending network requests is below the max threshold
     /* eslint-disable no-await-in-loop */
-    while (getJSONRateLimited[domain].pending >= getJSONRateLimited[domain].current_max) {
+    while (queries.pending >= queries.currentMax) {
         // Bail if the maximum number of network errors has been exceeded
         if (!(checkNetworkErrors(domain, false))) {
             return [];
@@ -370,23 +379,22 @@ async function getJSONRateLimited (url, params) {
         rateLimitedLog(
             "warn",
             "Exceeded maximum pending requests",
-            getJSONRateLimited[domain].current_max,
+            queries.currentMax,
             "for",
             domain
         );
         await new Promise(sleepHalfSecond);
     }
+
     for (let i = 0; i < MAX_NETWORK_RETRIES; i++) {
-        getJSONRateLimited[domain].pending += 1;
+        queries.pending += 1;
         try {
             return await $
                 .getJSON(url, params)
-                .always(() => { getJSONRateLimited[domain].pending -= 1; });
+                .always(() => { queries.pending -= 1; });
         } catch (ex) {
             // Backing off maximum to adjust to current network conditions
-            getJSONRateLimited[domain].currentMax = (
-                Math.max(getJSONRateLimited[domain].current_max - 1, MIN_PENDING_NETWORK_REQUESTS)
-            );
+            queries.currentMax = Math.max(queries.currentMax - 1, MIN_PENDING_NETWORK_REQUESTS);
             console.error(
                 "Failed try #",
                 i + 1,
@@ -420,6 +428,7 @@ function get (url, params, cache = CACHE_LIFETIME, baseUrl = BOORU) {
             expires_in: cache,
         }
         : params;
+
     return getJSONMemoized(`${baseUrl}${url}.json`, finalParams)
         .catch((xhr) => {
             console.error(xhr.status, xhr);
@@ -472,16 +481,16 @@ async function translateTag (target, tagName, options) {
             category: tag.category,
         }));
     }
+
     addDanbooruTags($(target), tags, options);
 }
 
 function addDanbooruTags ($target, tags, options = {}) {
-    if (tags.length === 0) {
-        return;
-    }
+    if (!tags.length) return;
+
     const {
         classes = "",
-        onadded = null, // ($tag)=>{},
+        onadded = null, // ($tag, options)=>{},
         tagPosition: {
             insertAt = "insertAfter",
         } = {},
@@ -500,7 +509,8 @@ function addDanbooruTags ($target, tags, options = {}) {
             .join(", ")}
         </span>`);
     $tagsContainer[insertAt]($target);
-    if (onadded) onadded($tagsContainer);
+
+    if (onadded) onadded($tagsContainer, options);
 }
 
 function normalizeURL (url) {
@@ -510,6 +520,7 @@ function normalizeURL (url) {
 function areURLsEqual (ref1, ref2) {
     const url1 = typeof ref1 === "string" ? new URL(normalizeURL(ref1)) : ref1;
     const url2 = typeof ref2 === "string" ? new URL(normalizeURL(ref2)) : ref2;
+
     return url1.host === url2.host
         && url1.pathname === url2.pathname
         && url1.search === url2.search;
@@ -529,6 +540,7 @@ async function translateArtistByURL (element, profileUrl, options) {
         }
     );
     const pUrl = new URL(normalizeURL(profileUrl));
+
     artists
         // Fix of #18: for some unsupported domains, Danbooru returns false-positive results
         .filter(({ urls }) => (
@@ -552,12 +564,13 @@ async function translateArtistByName (element, artistName, options) {
             only: ARTIST_FIELDS,
         }
     );
+
     artists.map((artist) => addDanbooruArtist($(element), artist, options));
 }
 
 function addDanbooruArtist ($target, artist, options = {}) {
     const {
-        onadded = null, // ($tag)=>{},
+        onadded = null, // ($tag, options)=>{},
         tagPosition: {
             searchAt = "nextAll",
             insertAt = "insertAfter",
@@ -594,18 +607,19 @@ function addDanbooruArtist ($target, artist, options = {}) {
         </div>`);
     $tag[insertAt]($target);
     $tag.find("a").qtip(qtipSettings);
-    if (onadded) onadded($tag);
+
+    if (onadded) onadded($tag, options);
 }
 
 function attachShadow ($target, $content) {
-    // If the target doesn't have shadow yet
-    if (!$target.prop("shadowRoot")) {
-        if (_.isFunction(document.body.attachShadow)) {
-            const shadowRoot = $target.get(0).attachShadow({ mode: "open" });
-            $(shadowRoot).append($content);
-        } else {
-            $target.empty().append($content);
-        }
+    // Return if the target already have shadow
+    if ($target.prop("shadowRoot")) return;
+
+    if (_.isFunction(document.body.attachShadow)) {
+        const shadowRoot = $target.get(0).attachShadow({ mode: "open" });
+        $(shadowRoot).append($content);
+    } else {
+        $target.empty().append($content);
     }
 }
 
@@ -620,7 +634,7 @@ function chooseBackgroundColorScheme ($element) {
         .get()
         .filter((color) => color !== TRANSPARENT_COLOR);
     // Calculate summary color and get RGB channels
-    const colorArray = backgroundColors
+    const colorChannels = backgroundColors
         .map((color) => color.match(/(\d+(\.\d+)?)+/g))
         .reverse()
         .reduce(([r1, g1, b1], [r2, g2, b2, al = 1]) => [
@@ -629,18 +643,21 @@ function chooseBackgroundColorScheme ($element) {
             b1 * (1 - al) + b2 * al,
         ])
         .slice(0, 3); // Ignore alpha
-    const medianLuminosity = (Math.max(...colorArray) + Math.min(...colorArray)) / 2;
-    const qtipClass = (medianLuminosity < MIDDLE_LUMINOSITY ? "qtip-dark" : "qtip-light");
-    const adjustedArray = colorArray.map((color) => {
-        const colorScale = (color - MIDDLE_LUMINOSITY) / MIDDLE_LUMINOSITY;
-        const adjustedColor = ((Math.abs(colorScale) ** 0.7) // Exponentiation to reduce the scale
-                             * Math.sign(colorScale)         // Get original sign back
-                             * MIDDLE_LUMINOSITY)            // Get original amplitude back
-                             + MIDDLE_LUMINOSITY;            // Get back to the RGB color range
-        return Math.round(adjustedColor);
+    const medianLuminosity = (Math.max(...colorChannels) + Math.min(...colorChannels)) / 2;
+    const adjustedChannels = colorChannels.map((color) => {
+        const colorScale = (color - MIDDLE_LUMINOSITY) / MIDDLE_LUMINOSITY; // To range [-1..+1]
+        return Math.round(
+            (Math.abs(colorScale) ** 0.7)            // "Move" value away from 0 which equal to 128
+            * Math.sign(colorScale)                  // Get original sign back
+            * MIDDLE_LUMINOSITY + MIDDLE_LUMINOSITY  // Get back to the RGB range [0..255]
+        );
     });
-    const adjustedColor = `rgb(${adjustedArray.join(", ")})`;
-    return {qtipClass, adjustedColor};
+    const adjustedColor = `rgb(${adjustedChannels.join(", ")})`;
+    const qtipClass = (medianLuminosity < MIDDLE_LUMINOSITY ? "qtip-dark" : "qtip-light");
+    return {
+        qtipClass,
+        adjustedColor,
+    };
 }
 
 async function buildArtistTooltip (artist, qtip) {
@@ -682,6 +699,20 @@ async function buildArtistTooltip (artist, qtip) {
 }
 
 function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = []) {
+    const otherNames = artist.other_names
+        .filter(String)
+        .sort()
+        .map((otherName) => (
+            noIndents`
+            <li>
+                <a href="${BOORU}/artists?search[name]=${encodeURIComponent(otherName)}"
+                   target="_blank">
+                    ${_.escape(otherName.replace(/_/g, " "))}
+                </a>
+            </li>`
+        ))
+        .join("");
+
     const $content = $(noIndents`
         <style>
             :host {
@@ -794,7 +825,10 @@ function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = [
             }
 
             article.post-preview.post-status-has-children.post-status-has-parent a {
-                border-color: var(--preview_has_children_color) var(--preview_has_parent_color) var(--preview_has_parent_color) var(--preview_has_children_color);
+                border-color: var(--preview_has_children_color)
+                              var(--preview_has_parent_color)
+                              var(--preview_has_parent_color)
+                              var(--preview_has_children_color);
             }
 
             article.post-preview.post-status-deleted a {
@@ -802,15 +836,24 @@ function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = [
             }
 
             article.post-preview.post-status-has-children.post-status-deleted a {
-                border-color: var(--preview_has_children_color) var(--preview_deleted_color) var(--preview_deleted_color) var(--preview_has_children_color);
+                border-color: var(--preview_has_children_color)
+                              var(--preview_deleted_color)
+                              var(--preview_deleted_color)
+                              var(--preview_has_children_color);
             }
 
             article.post-preview.post-status-has-parent.post-status-deleted a {
-                border-color: var(--preview_has_parent_color) var(--preview_deleted_color) var(--preview_deleted_color) var(--preview_has_parent_color);
+                border-color: var(--preview_has_parent_color)
+                              var(--preview_deleted_color)
+                              var(--preview_deleted_color)
+                              var(--preview_has_parent_color);
             }
 
             article.post-preview.post-status-has-children.post-status-has-parent.post-status-deleted a {
-                border-color: var(--preview_has_children_color) var(--preview_deleted_color) var(--preview_deleted_color) var(--preview_has_parent_color);
+                border-color: var(--preview_has_children_color)
+                              var(--preview_deleted_color)
+                              var(--preview_deleted_color)
+                              var(--preview_has_parent_color);
             }
 
             article.post-preview.post-status-pending a,
@@ -820,17 +863,26 @@ function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = [
 
             article.post-preview.post-status-has-children.post-status-pending a,
             article.post-preview.post-status-has-children.post-status-flagged a {
-                border-color: var(--preview_has_children_color) var(--preview_pending_color) var(--preview_pending_color) var(--preview_has_children_color);
+                border-color: var(--preview_has_children_color)
+                              var(--preview_pending_color)
+                              var(--preview_pending_color)
+                              var(--preview_has_children_color);
             }
 
             article.post-preview.post-status-has-parent.post-status-pending a,
             article.post-preview.post-status-has-parent.post-status-flagged a {
-                border-color: var(--preview_has_parent_color) var(--preview_pending_color) var(--preview_pending_color) var(--preview_has_parent_color);
+                border-color: var(--preview_has_parent_color)
+                              var(--preview_pending_color)
+                              var(--preview_pending_color)
+                              var(--preview_has_parent_color);
             }
 
             article.post-preview.post-status-has-children.post-status-has-parent.post-status-pending a,
             article.post-preview.post-status-has-children.post-status-has-parent.post-status-flagged a {
-                border-color: var(--preview_has_children_color) var(--preview_pending_color) var(--preview_pending_color) var(--preview_has_parent_color);
+                border-color: var(--preview_has_children_color)
+                              var(--preview_pending_color)
+                              var(--preview_pending_color)
+                              var(--preview_has_parent_color);
             }
 
             article.post-preview[data-tags~=animated]:before {
@@ -928,19 +980,7 @@ function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = [
                 <span class="post-count">${tag.post_count}</span>
 
                 <ul class="other-names scrollable" part="other-names">
-                    ${artist.other_names
-                        .filter(String)
-                        .sort()
-                        .map((otherName) => (
-                            noIndents`
-                            <li>
-                                <a href="${BOORU}/artists?search[name]=${encodeURIComponent(otherName)}"
-                                   target="_blank">
-                                    ${_.escape(otherName.replace(/_/g, " "))}
-                                </a>
-                            </li>`
-                        ))
-                        .join("")}
+                    ${otherNames}
                 </ul>
             </section>
             <section class="urls">
@@ -975,17 +1015,19 @@ function buildArtistUrlsHtml (artist) {
         .sortBy(getDomain)
         .sortBy((artistUrl) => !artistUrl.is_active);
 
-    const html = artistUrls.map((artistUrl) => {
-        const normalizedUrl = artistUrl.normalized_url.replace(/\/$/, "");
-        const urlClass = artistUrl.is_active ? "artist-url-active" : "artist-url-inactive";
+    const html = artistUrls
+        .map((artistUrl) => {
+            const normalizedUrl = artistUrl.normalized_url.replace(/\/$/, "");
+            const urlClass = artistUrl.is_active ? "artist-url-active" : "artist-url-inactive";
 
-        return noIndents`
-            <li class="${urlClass}">
-                <a href="${normalizedUrl}" target="_blank">
-                    ${_.escape(normalizedUrl)}
-                </a>
-            </li>`;
-    }).join("");
+            return noIndents`
+                <li class="${urlClass}">
+                    <a href="${normalizedUrl}" target="_blank">
+                        ${_.escape(normalizedUrl)}
+                    </a>
+                </li>`;
+        })
+        .join("");
 
     return html;
 }
@@ -1110,17 +1152,20 @@ function showSettings () {
                            min="0"
                            value="${value}"
                            name="${setting.name}" />`;
-            case "list":
+            case "list": {
+                const options = Object
+                    .entries(setting.values)
+                    .map(([val, descr]) => noIndents`
+                        <option value="${val}" ${val === value ? "selected" : ""}>
+                            ${descr}
+                        </option>`)
+                    .join("");
+
                 return noIndents`
                     <select name="${setting.name}">
-                        ${Object
-                            .entries(setting.values)
-                            .map(([val, descr]) => noIndents`
-                                <option value="${val}" ${val === value ? "selected" : ""}>
-                                    ${descr}
-                                </option>`)
-                            .join("")}
+                        ${options}
                     </select>`;
+            }
             default:
                 console.error(`Unsupported type ${setting.type}`);
                 return "";
@@ -1205,6 +1250,7 @@ function showSettings () {
             </div>
         </div>
     `);
+
     $settings.click((ev) => {
         if ($(ev.target).is("#ui-settings")) closeSettings();
     });
@@ -1222,8 +1268,10 @@ function showSettings () {
     });
     $settings.find(".cancel").click(closeSettings);
     $(document).keydown(closeSettingsOnEscape);
+
     const { className } = chooseBackgroundColorScheme($("#ex-qtips"));
     $settings.addClass(className);
+
     attachShadow($shadowContainer, $settings);
 }
 
@@ -1236,7 +1284,8 @@ function findAndTranslate (mode, selector, options = {}) {
         toTagName: (el) => el.innerText,
         tagPosition: TAG_POSITIONS.afterend,
         classes: "",
-        onadded: null, // ($tag) => {},
+        onadded: null, // ($tag, options) => {},
+        mode,
         ...options,
     };
 
@@ -1291,7 +1340,23 @@ function findAndTranslate (mode, selector, options = {}) {
     });
 }
 
-const linkInChildren = (el) => $(el).find("a").prop("href");
+function updateOnChange (targetSelector) {
+    return ($tag, options) => {
+        const $container = $tag[options.tagPosition.targetAt]();
+        new MutationSummary({
+            rootNode: $container.find(targetSelector)[0],
+            queries: [{ characterData: true }],
+            callback: () => {
+                $container[options.tagPosition.searchAt](".ex-artist-tag").remove();
+                findAndTranslate(options.mode, $container, options);
+            },
+        });
+    };
+}
+
+function linkInChildren (el) {
+    return $(el).find("a").prop("href");
+}
 
 function initializePixiv () {
     GM_addStyle(`
@@ -1313,7 +1378,10 @@ function initializePixiv () {
         figcaption li > span:first-child > a::before {
             content: "";
         }
-        /* On the artist profile page, render the danbooru artist tag between the artist's name and follower count. */
+        /**
+         * On the artist profile page, render the danbooru artist tag
+         * between the artist's name and follower count.
+         */
         ._3_qyP5m {
             display: grid;
             grid-auto-rows: 16px;
@@ -1378,19 +1446,7 @@ function initializePixiv () {
         toProfileUrl: linkInChildren,
         tagPosition: TAG_POSITIONS.beforeend,
         asyncMode: true,
-        onadded: ($tag) => {
-            const $container = $tag.prev();
-            new MutationSummary({
-                rootNode: $container.find("div:not(:has(*))")[0],
-                queries: [{ characterData: true }],
-                callback: () => {
-                    $container.siblings(".ex-artist-tag").remove();
-                    findAndTranslate("artist", $container, {
-                        toProfileUrl: linkInChildren,
-                    });
-                },
-            });
-        },
+        onadded: updateOnChange("div:not(:has(*))"),
     });
 
     // Related work's artists https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
@@ -1402,6 +1458,7 @@ function initializePixiv () {
 
     // Artist profile pages: https://www.pixiv.net/member.php?id=29310, https://www.pixiv.net/member_illust.php?id=104471&type=illust
     const normalizePageUrl = () => `https://www.pixiv.net/member.php?id=${new URL(window.location.href).searchParams.get("id")}`;
+
     findAndTranslate("artist", ".VyO6wL2", {
         toProfileUrl: normalizePageUrl,
         asyncMode: true,
@@ -1414,6 +1471,7 @@ function initializePixiv () {
             .replace(/member_illust/, "member")
             .replace(/&ref=.*$/, "")
     ));
+
     findAndTranslate("artist", ".ui-profile-popup", {
         predicate: "figcaption._3HwPt89 > ul > li > a.ui-profile-popup",
         toProfileUrl,
@@ -1446,6 +1504,7 @@ function initializeNijie () {
     findAndTranslate("tag", ".tag .tag_name a:first-child", {
         tagPosition: TAG_POSITIONS.beforeend,
     });
+
     // https://nijie.info/dic/seiten/d/東方
     findAndTranslate("tag", "#seiten_dic h1#dic_title", {
         tagPosition: TAG_POSITIONS.beforeend,
@@ -1498,16 +1557,19 @@ function initializeNicoSeiga () {
     findAndTranslate("tag", "h1:has(.icon_tag_big)", {
         tagPosition: TAG_POSITIONS.beforeend,
     });
+
     // http://seiga.nicovideo.jp/seiga/im7741859
     findAndTranslate("tag", "a", {
         predicate: ".tag > a",
         tagPosition: TAG_POSITIONS.beforeend,
         asyncMode: true,
     });
+
     // http://seiga.nicovideo.jp/user/illust/14767435
     findAndTranslate("artist", ".user_info h1 a", {
         classes: "inline",
     });
+
     // http://seiga.nicovideo.jp/seiga/im7741859
     findAndTranslate("artist", ".user_link > a .user_name", {
         tagPosition: TAG_POSITIONS.beforeend,
@@ -1558,12 +1620,14 @@ function initializeHentaiFoundry () {
     findAndTranslate("artist", ".galleryViewTable .thumb_square > a:nth-child(4)", {
         classes: "inline",
     });
+
     // Profile tab https://www.hentai-foundry.com/user/DrGraevling/profile
     findAndTranslate("artist", ".breadcrumbs a:contains('Users') + span", {
         toProfileUrl: () => window.location.href,
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
     });
+
     // Orher tabs https://www.hentai-foundry.com/pictures/user/DrGraevling
     findAndTranslate("artist", ".breadcrumbs a[href^='/user/']", {
         classes: "inline",
@@ -1573,7 +1637,8 @@ function initializeHentaiFoundry () {
 function initializeTwitter () {
     GM_addStyle(`
         .ex-artist-tag {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont,
+                "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
         }
         /* Old design: on post page locate the artist tag below author's @name. */
         .permalink-header {
@@ -1606,16 +1671,19 @@ function initializeTwitter () {
         findAndTranslate("artist", ".ProfileHeaderCard-screennameLink", {
             asyncMode: true,
         });
+
         // Popuping user card info
         findAndTranslate("artist", ".ProfileCard-screennameLink", {
             asyncMode: true,
         });
+
         // Tweet authors and comments
         findAndTranslate("artist", "a.js-user-profile-link", {
             predicate: ":not(.js-retweet-text) > a",
             classes: "inline",
             asyncMode: true,
         });
+
         // Quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
         findAndTranslate("artist", ".username", {
             predicate: "div.js-user-profile-link .username",
@@ -1633,30 +1701,20 @@ function initializeTwitter () {
         predicate: "a.r-1n1174f[href^='/hashtag/']",
         asyncMode: true,
     });
+
     // Floating name of a channel https://twitter.com/mugosatomi
     const URLfromLocation = () => (
         `https://twitter.com${(window.location.pathname.match(/\/\w+/) || [])[0]}`
     );
+
     findAndTranslate("artist", "div.css-1dbjc4n.r-xoduu5.r-18u37iz.r-dnmrzs", {
         predicate: "h2>div>div>div",
         toProfileUrl: URLfromLocation,
         asyncMode: true,
         classes: "inline",
-        onadded: ($tag) => {
-            const $container = $tag.prev();
-            new MutationSummary({
-                rootNode: $container.find("span>span")[0],
-                queries: [{ characterData: true }],
-                callback: () => {
-                    $container.siblings(".ex-artist-tag").remove();
-                    findAndTranslate("artist", $container, {
-                        toProfileUrl: URLfromLocation,
-                        classes: "inline",
-                    });
-                },
-            });
-        },
+        onadded: updateOnChange("span>span"),
     });
+
     // Tweet, expanded tweet and comment authors
     // https://twitter.com/mugosatomi/status/1173231575959363584
     findAndTranslate("artist", "div.r-1wbh5a2.r-dnmrzs", {
@@ -1665,6 +1723,7 @@ function initializeTwitter () {
         classes: "inline",
         asyncMode: true,
     });
+
     // Quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
     findAndTranslate("artist", "div.r-1wbh5a2.r-1udh08x", {
         toProfileUrl: (el) => `https://twitter.com/${
@@ -1676,6 +1735,7 @@ function initializeTwitter () {
         classes: "inline",
         asyncMode: true,
     });
+
     // User card info
     findAndTranslate("artist", "a", {
         predicate: "div.r-1g94qm0 > a",
@@ -1752,6 +1812,7 @@ function initializeArtStation () {
         toProfileUrl: toFullURL,
         asyncMode: true,
     });
+
     // https://www.artstation.com/artwork/0X40zG
     findAndTranslate("artist", "a[hover-card]", {
         requiredAttributes: "href",
@@ -1759,16 +1820,19 @@ function initializeArtStation () {
         toProfileUrl: toFullURL,
         asyncMode: true,
     });
+
     findAndTranslate("tag", ".label-tag", {
         tagPosition: TAG_POSITIONS.beforeend,
         asyncMode: true,
     });
+
     // Hover card
     findAndTranslate("artist", "a", {
         requiredAttributes: "href",
         predicate: (el) => el.matches(".hover-card-name > a") && hasValidHref(el),
         asyncMode: true,
     });
+
     // https://www.artstation.com/jubi/following
     // https://www.artstation.com/jubi/followers
     findAndTranslate("artist", ".users-grid-name", {
@@ -1818,10 +1882,12 @@ function initializeSauceNAO () {
         classes: "inline",
         // TODO fix DA links
     });
+
     findAndTranslate("artistByName", ".resulttitle .target", {
         tagPosition: TAG_POSITIONS.beforebegin,
         classes: "inline",
     });
+
     findAndTranslate("tag", ".resultcontentcolumn .target", {
         tagPosition: TAG_POSITIONS.beforebegin,
     });
@@ -1850,14 +1916,18 @@ function initializePawoo () {
         toProfileUrl: () => `https://pawoo.net${window.location.pathname.match(/\/[^/]+/)[0]}`,
         tagPosition: TAG_POSITIONS.afterbegin,
     });
+
     // Post author, commentor
     findAndTranslate("artist", "a.status__display-name span span", {
         classes: "inline",
     });
+
     // Users in sidebar
     findAndTranslate("artist", "a.account__display-name span span");
+
     // Cards of following users and followers
     findAndTranslate("artist", ".account-grid-card .name a");
+
     // Tags https://pawoo.net/@SilSinn9801
     findAndTranslate("tag", ".hashtag");
 }
@@ -1867,10 +1937,12 @@ function initializeTweetDeck () {
         predicate: "a[rel='hashtag'] span.link-complex-target",
         asyncMode: true,
     });
+
     // User card info
     findAndTranslate("artist", "p.username", {
         asyncMode: true,
     });
+
     // Tweet authors and comments
     findAndTranslate("artist", "a.account-link", {
         predicate: "a:has(.username)",
@@ -1885,6 +1957,7 @@ function initializePixivFanbox () {
         classes: "inline a.sc-1upaq18-16",
         asyncMode: true,
     });
+
     // Post author
     findAndTranslate("artist", "div.sc-7161tb-4", {
         toProfileUrl: (el) => ($(el).closest("a").prop("href") || "").replace(/\/post\/\d+/, ""),
