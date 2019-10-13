@@ -294,9 +294,11 @@ const PROGRAM_CSS = `
 // Tag function for template literals to remove newlines and leading spaces
 function noIndents (strings, ...values) {
     // Remove all spaces before/after a tag and leave one in other cases
-    const compactStrings = strings.map((str) => str.replace(
-        /(>)?\n *(<)?/g,
-        (s, lt, gt) => (lt && gt ? lt + gt : lt || gt ? (lt || gt) : " ")
+    const compactStrings = strings.map((str) => (
+        str.replace(
+            /(>)?\n *(<)?/g,
+            (s, lt, gt) => (lt && gt ? lt + gt : lt || gt ? (lt || gt) : " ")
+        )
     ));
     const res = new Array(values.length * 2 + 1);
     for (let i = 0; i < values.length; i++) {
@@ -487,12 +489,14 @@ function addDanbooruTags ($target, tags, options = {}) {
 
     const $tagsContainer = $(noIndents`
         <span class="ex-translated-tags ${classes}">
-            ${tags.map((tag) => noIndents`
+            ${tags.map((tag) => (
+                noIndents`
                 <a class="ex-translated-tag-category-${tag.category}"
                    href="${BOORU}/posts?tags=${encodeURIComponent(tag.name)}"
                    target="_blank">
                         ${_.escape(tag.prettyName)}
-                </a>`)
+                </a>`
+            ))
             .join(", ")}
         </span>`);
     $tagsContainer[insertAt]($target);
@@ -527,9 +531,11 @@ async function translateArtistByURL (element, profileUrl, options) {
     const pUrl = new URL(normalizeURL(profileUrl));
     artists
         // Fix of #18: for some unsupported domains, Danbooru returns false-positive results
-        .filter(({ urls }) => urls.some(({ url, normalized_url: url2 }) => (
-            areURLsEqual(pUrl, url) || areURLsEqual(pUrl, url2)
-        )))
+        .filter(({ urls }) => (
+            urls.some(({ url, normalized_url: url2 }) => (
+                areURLsEqual(pUrl, url) || areURLsEqual(pUrl, url2)
+            ))
+        ))
         .map((artist) => addDanbooruArtist($(element), artist, options));
 }
 
@@ -723,7 +729,7 @@ function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = [
 
             ul.other-names li a {
                 background-color: rgba(128,128,128,0.2);
-                padding: 3px;
+                padding: 3px 5px;
                 margin: 0 2px;
                 border-radius: 3px;
                 white-space: nowrap;
@@ -925,14 +931,15 @@ function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = [
                     ${artist.other_names
                         .filter(String)
                         .sort()
-                        .map((otherName) => `
+                        .map((otherName) => (
+                            noIndents`
                             <li>
                                 <a href="${BOORU}/artists?search[name]=${encodeURIComponent(otherName)}"
                                    target="_blank">
                                     ${_.escape(otherName.replace(/_/g, " "))}
                                 </a>
-                            </li>
-                        `)
+                            </li>`
+                        ))
                         .join("")}
                 </ul>
             </section>
@@ -1182,9 +1189,11 @@ function showSettings () {
             <div class="container">
                 <h2>Translate Pixiv Tags settings</h2>
                 ${SETTINGS.list
-                    .map((setting) => noIndents`
+                    .map((setting) => (
+                        noIndents`
                         <div>${setting.descr}:</div>
-                        <div>${settingToInput(setting)}</div>`)
+                        <div>${settingToInput(setting)}</div>`
+                    ))
                     .join("")
                 }
                 <h2>
@@ -1200,9 +1209,9 @@ function showSettings () {
     $settings.click((ev) => {
         if ($(ev.target).is("#ui-settings")) closeSettings();
     });
-    $settings.find("input[type='number'], select").change((ev) => {
-        $settings.find(".refresh-page").removeAttr("disabled");
-    });
+    $settings.find("input[type='number'], select").change((ev) => (
+        $settings.find(".refresh-page").removeAttr("disabled")
+    ));
     $settings.find(".refresh-page").click((ev) => {
         $settings.find("input[type='number'], select").each((i, el) => {
             const $input = $(el);
@@ -1400,11 +1409,12 @@ function initializePixiv () {
     });
 
     // Search pages: https://www.pixiv.net/bookmark_new_illust.php
-    const toProfileUrl = ((el) => $(el)
-        .prop("href")
-        .replace(/member_illust/, "member")
-        .replace(/&ref=.*$/, "")
-    );
+    const toProfileUrl = ((el) => (
+        $(el)
+            .prop("href")
+            .replace(/member_illust/, "member")
+            .replace(/&ref=.*$/, "")
+    ));
     findAndTranslate("artist", ".ui-profile-popup", {
         predicate: "figcaption._3HwPt89 > ul > li > a.ui-profile-popup",
         toProfileUrl,
@@ -1801,16 +1811,17 @@ function initializeSauceNAO () {
         .contents()
         .filter((i, el) => el.nodeType === 3) // Get text nodes
         .wrap("<span class=target>");
-    $(".target:contains(', ')").replaceWith(
-        (i, html) => html
+    $(".target:contains(', ')").replaceWith((i, html) => (
+        html
             .split(", ")
             .map((str) => `<span class="target">${str}</span>`)
             .join(", ")
-    );
+    ));
 
     // http://saucenao.com/search.php?db=999&url=https%3A%2F%2Fraikou4.donmai.us%2Fpreview%2F5e%2F8e%2F5e8e7a03c49906aaad157de8aeb188e4.jpg
     findAndTranslate("artist", "strong:contains('Member: ')+a, strong:contains('Author: ')+a", {
         classes: "inline",
+        // TODO fix DA links
     });
     findAndTranslate("artistByName", ".resulttitle .target", {
         tagPosition: TAG_POSITIONS.beforebegin,
