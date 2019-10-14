@@ -1779,9 +1779,8 @@ function initializeArtStation () {
         }
 
         const getArtistName = (ref) => {
-            if (!ref) {
-                return "";
-            } else if (ref.startsWith("/")) {
+            if (!ref) return "";
+            if (ref.startsWith("/")) {
                 const word = ref.match(/[a-z0-9_-]+/i);
                 if (word) return word[0];
             } else if (ref.startsWith("https://www")) {
