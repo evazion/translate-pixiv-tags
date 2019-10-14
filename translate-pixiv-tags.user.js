@@ -40,6 +40,8 @@
 // @noframes
 // ==/UserScript==
 
+/* globals MutationSummary _ GM_jQuery_setup */
+
 "use strict";
 
 const SETTINGS = {
