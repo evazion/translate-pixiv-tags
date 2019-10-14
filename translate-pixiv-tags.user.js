@@ -300,7 +300,7 @@ function noIndents (strings, ...values) {
     const compactStrings = strings.map((str) => (
         str.replace(
             /(>)?\n *(<)?/g,
-            (s, lt, gt) => (lt && gt ? lt + gt : lt || gt ? (lt || gt) : " ")
+            (s, lt, gt) => (lt && gt ? lt + gt : lt || gt ? (lt || gt) : " "),
         )
     ));
 
@@ -350,7 +350,7 @@ function checkNetworkErrors (domain, hasError) {
             "Maximun number of errors exceeded",
             MAX_NETWORK_ERRORS,
             "for",
-            domain
+            domain,
         );
         return false;
     }
@@ -380,7 +380,7 @@ async function getJSONRateLimited (url, params) {
             "Exceeded maximum pending requests",
             queries.currentMax,
             "for",
-            domain
+            domain,
         );
         await new Promise(sleepHalfSecond);
     }
@@ -402,7 +402,7 @@ async function getJSONRateLimited (url, params) {
                 "\nParameters:",
                 params,
                 "\nHTTP Error:",
-                ex.status
+                ex.status,
             );
             if (!checkNetworkErrors(domain, true)) {
                 return [];
@@ -417,7 +417,7 @@ async function getJSONRateLimited (url, params) {
 
 const getJSONMemoized = _.memoize(
     (url, params) => getJSONRateLimited(url, params),
-    (url, params) => url + $.param(params)
+    (url, params) => url + $.param(params),
 );
 
 function get (url, params, cache = CACHE_LIFETIME, baseUrl = BOORU) {
@@ -455,7 +455,7 @@ async function translateTag (target, tagName, options) {
                 is_deleted: false,
             },
             only: WIKI_FIELDS,
-        }
+        },
     );
 
     let tags = [];
@@ -472,7 +472,7 @@ async function translateTag (target, tagName, options) {
             {
                 search: { name: normalizedTag },
                 only: TAG_FIELDS,
-            }
+            },
         );
         tags = tags.map((tag) => ({
             name: tag.name,
@@ -536,7 +536,7 @@ async function translateArtistByURL (element, profileUrl, options) {
                 is_active: true,
             },
             only: ARTIST_FIELDS,
-        }
+        },
     );
     const pUrl = new URL(normalizeURL(profileUrl));
 
@@ -561,7 +561,7 @@ async function translateArtistByName (element, artistName, options) {
                 is_active: true,
             },
             only: ARTIST_FIELDS,
-        }
+        },
     );
 
     artists.map((artist) => addDanbooruArtist($(element), artist, options));
@@ -648,7 +648,7 @@ function chooseBackgroundColorScheme ($element) {
         return Math.round(
             (Math.abs(colorScale) ** 0.7)            // "Move" value away from 0 which equal to 128
             * Math.sign(colorScale)                  // Get original sign back
-            * MIDDLE_LUMINOSITY + MIDDLE_LUMINOSITY  // Get back to the RGB range [0..255]
+            * MIDDLE_LUMINOSITY + MIDDLE_LUMINOSITY, // Get back to the RGB range [0..255]
         );
     });
     const adjustedColor = `rgb(${adjustedChannels.join(", ")})`;
@@ -669,14 +669,14 @@ async function buildArtistTooltip (artist, qtip) {
                 tags: `status:any ${artist.name}`,
                 limit: ARTIST_POST_PREVIEW_LIMIT,
                 only: POST_FIELDS,
-            }
+            },
         );
         const waitTags = get(
             "/tags",
             {
                 search: { name: artist.name },
                 only: POST_COUNT_FIELDS,
-            }
+            },
         );
 
         renderedQtips[artist.name] = Promise
