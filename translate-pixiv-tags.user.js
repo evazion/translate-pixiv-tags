@@ -408,7 +408,6 @@ async function getJSONRateLimited (url, params) {
                 return [];
             }
             await new Promise(sleepHalfSecond);
-            continue;
         }
     }
     /* eslint-enable no-await-in-loop */
