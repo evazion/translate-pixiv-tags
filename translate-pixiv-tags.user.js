@@ -1124,7 +1124,7 @@ function buildPostPreview (post) {
     `);
 
     if (post.preview_file_url && !post.preview_file_url.endsWith("/images/download-preview.png")) {
-        if (CORS_IMAGE_DOMAINS.includes(location.host)) {
+        if (CORS_IMAGE_DOMAINS.includes(window.location.host)) {
             // Temporaly set transparent 1x1 image
             $preview.find("img").prop("src", "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
             getImage(post.preview_file_url).then((blob) => {
@@ -1982,9 +1982,9 @@ function initialize () {
     GM_addStyle(GM_getResourceText("jquery_qtip_css"));
     GM_registerMenuCommand("Settings", showSettings, "S");
 
-    switch (location.host) {
+    switch (window.location.host) {
         case "www.pixiv.net":
-            if (location.pathname.startsWith("/fanbox")) {
+            if (window.location.pathname.startsWith("/fanbox")) {
                 initializePixivFanbox();
             } else {
                 initializePixiv();
@@ -2003,7 +2003,7 @@ function initialize () {
         case "www.deviantart.com":     initializeDeviantArt();    break;
         case "www.artstation.com":     initializeArtStation();    break;
         default:
-            if (location.host.match(/artstation\.com/)) {
+            if (window.location.host.match(/artstation\.com/)) {
                 initializeArtStation();
             }
     }
