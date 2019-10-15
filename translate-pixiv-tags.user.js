@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20190920004146
+// @version      20191015234846
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -1357,13 +1357,60 @@ function initializeBCY() {
 }
 
 function initializeDeviantArt() {
+    GM_addStyle(`
+        .AEPha + .ex-artist-tag {
+            margin-bottom: 0.3em;
+            font-weight: bold;
+        }
+        .ex-artist-tag + div._2Xb_O {
+            margin-top: 0;
+        }
+        .ex-artist-tag {
+            font-weight: bold;
+        }
+    `);
+
+    // old design
+    if ($("body > div#output").length) {
+        // https://www.deviantart.com/koyorin
+        // https://www.deviantart.com/koyorin/art/Ruby-570526828
+        findAndTranslate("artist", ".gruserbadge .username, .dev-title-container .author .username", {
+            classes: "inline"
+        });
+
+        findAndTranslate("tag", ".dev-about-tags-cc .discoverytag");
+
+        return;
+    }
+
     // https://www.deviantart.com/koyorin
-    // https://www.deviantart.com/koyorin/art/Ruby-570526828
-    findAndTranslate("artist", ".gruserbadge .username, .dev-title-container .author .username", {
-        classes: "inline"
+    findAndTranslate("artist", "div.AEPha", {
+        toProfileUrl: (el) => $(el).find("a").prop("href"),
+        predicate: ":has(a.user-link)",
+        // tagPosition: "beforeend",
+        // classes: "inline",
+        asyncMode: true,
     });
 
-    findAndTranslate("tag", ".dev-about-tags-cc .discoverytag");
+    // https://www.deviantart.com/koyorin/art/Ruby-570526828
+    findAndTranslate("artist", "span._2ai2H", {
+        toProfileUrl: (el) => $(el).find("a").prop("href"),
+        predicate: ":has(a.user-link)",
+        tagPosition: "beforeend",
+        classes: "inline",
+        asyncMode: true,
+    });
+
+    // popup card
+    findAndTranslate("artist", "a.user-link", {
+        // toProfileUrl: (el) => $(el).find("a").prop("href"),
+        predicate: "div._1e1_d > a.user-link",
+        // tagPosition: "beforeend",
+        // classes: "inline",
+        asyncMode: true,
+    });
+
+    findAndTranslate("tag", "._3uQxz", { asyncMode: true });
 }
 
 function initializeHentaiFoundry() {
