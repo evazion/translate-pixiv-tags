@@ -305,6 +305,7 @@ function noIndents (strings, ...values) {
     ));
 
     const res = new Array(values.length * 2 + 1);
+    // eslint-disable-next-line unicorn/no-for-loop
     for (let i = 0; i < values.length; i++) {
         res[i * 2] = compactStrings[i];
         res[i * 2 + 1] = values[i];
