@@ -589,7 +589,7 @@ function addDanbooruArtist ($target, artist, options = {}) {
     });
 
     const $duplicates = $target[searchAt](".ex-artist-tag")
-        .filter((i, el) => el.innerText.trim() === artist.escapedName);
+        .filter((i, el) => el.textContent.trim() === artist.escapedName);
     if ($duplicates.length) {
         // If qtip was removed then add it back
         if (!$.data($duplicates.find("a")[0]).qtip) {
@@ -1284,7 +1284,7 @@ function findAndTranslate (mode, selector, options = {}) {
         requiredAttributes: null,
         predicate: null, // (el) => true,
         toProfileUrl: (el) => $(el).closest("a").prop("href"),
-        toTagName: (el) => el.innerText,
+        toTagName: (el) => el.textContent,
         tagPosition: TAG_POSITIONS.afterend,
         classes: "",
         onadded: null, // ($tag, options) => {},
