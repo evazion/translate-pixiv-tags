@@ -1773,26 +1773,26 @@ function initializeArtStation () {
         }
     `);
 
+    const getArtistName = (ref) => {
+        if (!ref) return "";
+        if (ref.startsWith("/")) {
+            const word = ref.match(/[a-z0-9_-]+/i);
+            if (word) return word[0];
+        } else if (ref.startsWith("https://www")) {
+            const word = ref.match(/artstation\.com\/([a-z0-9_-]+)/i);
+            if (word) return word[1];
+        } else if (ref.startsWith("https://")) {
+            const word = ref.match(/\/\/([a-z0-9_-]+)\.artstation\.com/i);
+            if (word) return word[1];
+        }
+        return "";
+    };
+
     function toFullURL (url) {
         if (url && typeof url !== "string") {
             // eslint-disable-next-line no-param-reassign
             url = (url[0] || url).getAttribute("href");
         }
-
-        const getArtistName = (ref) => {
-            if (!ref) return "";
-            if (ref.startsWith("/")) {
-                const word = ref.match(/[a-z0-9_-]+/i);
-                if (word) return word[0];
-            } else if (ref.startsWith("https://www")) {
-                const word = ref.match(/artstation\.com\/([a-z0-9_-]+)/i);
-                if (word) return word[1];
-            } else if (ref.startsWith("https://")) {
-                const word = ref.match(/\/\/([a-z0-9_-]+)\.artstation\.com/i);
-                if (word) return word[1];
-            }
-            return "";
-        };
 
         let artistName = getArtistName(url) || getArtistName(window.location.href);
         if (artistName === "artwork") artistName = "";
