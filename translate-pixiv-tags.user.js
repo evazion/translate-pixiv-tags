@@ -1018,7 +1018,7 @@ function buildArtistUrlsHtml (artist) {
         .sortBy(getDomain)
         .sortBy((artistUrl) => !artistUrl.is_active);
 
-    const html = artistUrls
+    return artistUrls
         .map((artistUrl) => {
             const normalizedUrl = artistUrl.normalized_url.replace(/\/$/, "");
             const urlClass = artistUrl.is_active ? "artist-url-active" : "artist-url-inactive";
@@ -1031,8 +1031,6 @@ function buildArtistUrlsHtml (artist) {
                 </li>`;
         })
         .join("");
-
-    return html;
 }
 
 function timeToAgo (time) {
