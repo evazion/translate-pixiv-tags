@@ -459,7 +459,7 @@ async function translateTag (target, tagName, options) {
     );
 
     let tags = [];
-    if (wikiPages.length) {
+    if (wikiPages.length > 0) {
         tags = wikiPages.map((wikiPage) => ({
             name: wikiPage.title,
             prettyName: wikiPage.title.replace(/_/g, " "),
@@ -485,7 +485,7 @@ async function translateTag (target, tagName, options) {
 }
 
 function addDanbooruTags ($target, tags, options = {}) {
-    if (!tags.length) return;
+    if (tags.length === 0) return;
 
     const {
         classes = "",
@@ -590,7 +590,7 @@ function addDanbooruArtist ($target, artist, options = {}) {
 
     const $duplicates = $target[searchAt](".ex-artist-tag")
         .filter((i, el) => el.textContent.trim() === artist.escapedName);
-    if ($duplicates.length) {
+    if ($duplicates.length > 0) {
         // If qtip was removed then add it back
         if (!$.data($duplicates.find("a")[0]).qtip) {
             $duplicates.find("a").qtip(qtipSettings);
@@ -696,7 +696,7 @@ async function buildArtistTooltip (artist, qtip) {
 
     let $qtipContent = (await renderedQtips[artist.name]);
     // For correct work of CORS images must not be cloned at first displaying
-    if ($qtipContent.parent().length) $qtipContent = $qtipContent.clone(true, true);
+    if ($qtipContent.parent().length > 0) $qtipContent = $qtipContent.clone(true, true);
     attachShadow(qtip.elements.content, $qtipContent);
     qtip.reposition(null, false);
 }
@@ -1665,7 +1665,7 @@ function initializeTwitter () {
     `);
 
     // Old dedsign
-    if ($("body > div#doc").length) {
+    if ($("body > div#doc").length > 0) {
         findAndTranslate("tag", ".twitter-hashtag", {
             asyncMode: true,
         });
