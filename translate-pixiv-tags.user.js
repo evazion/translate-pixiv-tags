@@ -300,7 +300,7 @@ function noIndents (strings, ...values) {
     const compactStrings = strings.map((str) => (
         str.replace(
             /(>)?\n *(<)?/g,
-            (s, lt, gt) => (lt && gt ? lt + gt : lt || gt ? (lt || gt) : " "),
+            (s, lt, gt) => (lt && gt ? lt + gt : (lt || gt ? (lt || gt) : " ")),
         )
     ));
 
