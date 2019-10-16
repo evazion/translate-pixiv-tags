@@ -634,7 +634,7 @@ function chooseBackgroundColorScheme ($element) {
         .filter((color) => color !== TRANSPARENT_COLOR);
     // Calculate summary color and get RGB channels
     const colorChannels = backgroundColors
-        .map((color) => color.match(/(\d+(\.\d+)?)+/g))
+        .map((color) => color.match(/\d+/g))
         .reverse()
         .reduce(([r1, g1, b1], [r2, g2, b2, al = 1]) => [
             r1 * (1 - al) + r2 * al,
