@@ -1733,7 +1733,7 @@ function initializeTwitter () {
             $(el)
                 .find(".r-1f6r7vd")
                 .text()
-                .substr(1)
+                .slice(1)
         }`,
         classes: "inline",
         asyncMode: true,
