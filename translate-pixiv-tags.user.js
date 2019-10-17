@@ -1607,13 +1607,57 @@ function initializeBCY () {
 }
 
 function initializeDeviantArt () {
+    GM_addStyle(`
+        .AEPha + .ex-artist-tag {
+            margin-bottom: 0.3em;
+            font-weight: bold;
+        }
+        .ex-artist-tag + div._2Xb_O {
+            margin-top: 0;
+        }
+        .ex-artist-tag {
+            font-weight: bold;
+        }
+    `);
+
+    // Old design
+    if ($("body > div#output").length > 0) {
+        // https://www.deviantart.com/koyorin
+        // https://www.deviantart.com/koyorin/art/Ruby-570526828
+        findAndTranslate(
+            "artist",
+            ".gruserbadge .username, .dev-title-container .author .username",
+            { classes: "inline" },
+        );
+
+        findAndTranslate("tag", ".dev-about-tags-cc .discoverytag");
+
+        return;
+    }
+
     // https://www.deviantart.com/koyorin
-    // https://www.deviantart.com/koyorin/art/Ruby-570526828
-    findAndTranslate("artist", ".gruserbadge .username, .dev-title-container .author .username", {
-        classes: "inline",
+    findAndTranslate("artist", "div.AEPha", {
+        toProfileUrl: (el) => $(el).find("a").prop("href"),
+        predicate: ":has(a.user-link)",
+        asyncMode: true,
     });
 
-    findAndTranslate("tag", ".dev-about-tags-cc .discoverytag");
+    // https://www.deviantart.com/koyorin/art/Ruby-570526828
+    findAndTranslate("artist", "span._2Lxll", {
+        toProfileUrl: (el) => $(el).find("a").prop("href"),
+        predicate: ":has(a.user-link)",
+        tagPosition: "beforeend",
+        classes: "inline",
+        asyncMode: true,
+    });
+
+    // Popup card
+    findAndTranslate("artist", "a.user-link", {
+        predicate: "div._1e1_d > a.user-link",
+        asyncMode: true,
+    });
+
+    findAndTranslate("tag", "._3uQxz", { asyncMode: true });
 }
 
 function initializeHentaiFoundry () {
