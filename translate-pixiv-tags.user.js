@@ -315,6 +315,15 @@ function noIndents (strings, ...values) {
     return res.join("");
 }
 
+// For safe ways to use regexes in a single line of code
+function safeMatch (string, regex, group = 0, defaultValue = "") {
+    const match = string.match(regex);
+    if (match) {
+        return match[group];
+    }
+    return defaultValue;
+}
+
 function getImage (imageUrl) {
     return GM
         .xmlHttpRequest({
@@ -1010,7 +1019,7 @@ function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = [
 }
 
 function buildArtistUrlsHtml (artist) {
-    const getDomain = (url) => new URL(url.normalized_url).host.match(/[^.]*\.[^.]*$/)[0];
+    const getDomain = (url) => safeMatch(new URL(url.normalized_url).host.match, /[^.]*\.[^.]*$/);
     const artistUrls = _(artist.urls)
         .chain()
         .uniq("normalized_url")
@@ -1749,7 +1758,7 @@ function initializeTwitter () {
 
     // Floating name of a channel https://twitter.com/mugosatomi
     const URLfromLocation = () => (
-        `https://twitter.com${(window.location.pathname.match(/\/\w+/) || [])[0]}`
+        `https://twitter.com${safeMatch(window.location.pathname, /\/\w+/)}`
     );
 
     findAndTranslate("artist", "div.css-1dbjc4n.r-xoduu5.r-18u37iz.r-dnmrzs", {
@@ -1957,7 +1966,7 @@ function initializePawoo () {
     // https://pawoo.net/@yamadorikodi
     // artist name in his card info
     findAndTranslate("artist", ".name small", {
-        toProfileUrl: () => `https://pawoo.net${window.location.pathname.match(/\/[^/]+/)[0]}`,
+        toProfileUrl: () => `https://pawoo.net${safeMatch(window.location.pathname, /\/[^/]+/)}`,
         tagPosition: TAG_POSITIONS.afterbegin,
     });
 
