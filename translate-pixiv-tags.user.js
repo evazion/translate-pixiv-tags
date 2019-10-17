@@ -1402,7 +1402,7 @@ function initializeDeviantArt() {
     });
 
     // https://www.deviantart.com/koyorin/art/Ruby-570526828
-    findAndTranslate("artist", "span._2ai2H", {
+    findAndTranslate("artist", "span._2Lxll", {
         toProfileUrl: (el) => $(el).find("a").prop("href"),
         predicate: ":has(a.user-link)",
         tagPosition: "beforeend",
