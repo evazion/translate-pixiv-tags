@@ -183,26 +183,28 @@ const MIN_PENDING_NETWORK_REQUESTS = 5;
 const MAX_NETWORK_ERRORS = 25;
 const MAX_NETWORK_RETRIES = 3;
 
+const TAG_SELECTOR = ".ex-translated-tags, .ex-artist-tag";
+
 const TAG_POSITIONS = {
     beforebegin: {
-        insertAt: "insertBefore",
-        searchAt: "prevAll",
-        targetAt: "next",
+        insertTag: ($container, $elem) => $container.before($elem),
+        findTag: ($container) => $container.prevAll(TAG_SELECTOR),
+        getTagContainer: ($elem) => $elem.next(),
     },
     afterbegin:  {
-        insertAt: "prependTo",
-        searchAt: "find",
-        targetAt: "parent",
+        insertTag: ($container, $elem) => $container.prepend($elem),
+        findTag: ($container) => $container.find(TAG_SELECTOR),
+        getTagContainer: ($elem) => $elem.parent(),
     },
     beforeend:   {
-        insertAt: "appendTo",
-        searchAt: "find",
-        targetAt: "parent",
+        insertTag: ($container, $elem) => $container.append($elem),
+        findTag: ($container) => $container.find(TAG_SELECTOR),
+        getTagContainer: ($elem) => $elem.parent(),
     },
     afterend:    {
-        insertAt: "insertAfter",
-        searchAt: "nextAll",
-        targetAt: "prev",
+        insertTag: ($container, $elem) => $container.after($elem),
+        findTag: ($container) => $container.nextAll(TAG_SELECTOR),
+        getTagContainer: ($elem) => $elem.prev(),
     },
 };
 
@@ -500,7 +502,7 @@ function addDanbooruTags ($target, tags, options = {}) {
         classes = "",
         onadded = null, // ($tag, options)=>{},
         tagPosition: {
-            insertAt = "insertAfter",
+            insertTag = ($container, $elem) => $container.after($elem),
         } = {},
     } = options;
 
@@ -516,7 +518,7 @@ function addDanbooruTags ($target, tags, options = {}) {
             ))
             .join(", ")}
         </span>`);
-    $tagsContainer[insertAt]($target);
+    insertTag($target, $tagsContainer);
 
     if (onadded) onadded($tagsContainer, options);
 }
@@ -580,8 +582,8 @@ function addDanbooruArtist ($target, artist, options = {}) {
     const {
         onadded = null, // ($tag, options)=>{},
         tagPosition: {
-            searchAt = "nextAll",
-            insertAt = "insertAfter",
+            insertTag = ($container, $elem) => $container.after($elem),
+            findTag = ($container) => $container.nextAll(TAG_SELECTOR),
         } = {},
     } = options;
     let { classes = "" } = options;
@@ -597,7 +599,7 @@ function addDanbooruArtist ($target, artist, options = {}) {
         content: { text: (ev, qtip) => buildArtistTooltip(artist, qtip) },
     });
 
-    const $duplicates = $target[searchAt](".ex-artist-tag")
+    const $duplicates = findTag($target)
         .filter((i, el) => el.textContent.trim() === artist.escapedName);
     if ($duplicates.length > 0) {
         // If qtip was removed then add it back
@@ -613,7 +615,7 @@ function addDanbooruArtist ($target, artist, options = {}) {
                 ${artist.escapedName}
             </a>
         </div>`);
-    $tag[insertAt]($target);
+    insertTag($target, $tag);
     $tag.find("a").qtip(qtipSettings);
 
     if (onadded) onadded($tag, options);
@@ -1019,7 +1021,7 @@ function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = [
 }
 
 function buildArtistUrlsHtml (artist) {
-    const getDomain = (url) => safeMatch(new URL(url.normalized_url).host.match, /[^.]*\.[^.]*$/);
+    const getDomain = (url) => safeMatch(new URL(url.normalized_url).host, /[^.]*\.[^.]*$/);
     const artistUrls = _(artist.urls)
         .chain()
         .uniq("normalized_url")
@@ -1350,15 +1352,15 @@ function findAndTranslate (mode, selector, options = {}) {
     });
 }
 
-function updateOnChange (targetSelector) {
+function deleteOnChange (targetSelector) {
     return ($tag, options) => {
-        const $container = $tag[options.tagPosition.targetAt]();
-        new MutationSummary({
+        const $container = options.tagPosition.getTagContainer($tag);
+        const watcher = new MutationSummary({
             rootNode: $container.find(targetSelector)[0],
             queries: [{ characterData: true }],
-            callback: () => {
-                $container[options.tagPosition.searchAt](".ex-artist-tag").remove();
-                findAndTranslate(options.mode, $container, options);
+            callback: ([summary]) => {
+                options.tagPosition.findTag($container).remove();
+                watcher.disconnect();
             },
         });
     };
@@ -1451,12 +1453,16 @@ function initializePixiv () {
     });
 
     // Illust author https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
-    findAndTranslate("artist", "h2", {
-        predicate: "main+aside>section>h2",
-        toProfileUrl: linkInChildren,
-        tagPosition: TAG_POSITIONS.beforeend,
+    findAndTranslate("artist", "a", {
+        predicate: "main+aside>section>h2>div>div>a",
+        requiredAttributes: "href",
+        tagPosition: {
+            insertTag: ($container, $elem) => $container.closest("h2").append($elem),
+            findTag: ($container) => $container.closest("h2").find(TAG_SELECTOR),
+            getTagContainer: ($elem) => $elem.prev().find("a:eq(1)"),
+        },
         asyncMode: true,
-        onadded: updateOnChange("div:not(:has(*))"),
+        onadded: deleteOnChange("div"),
     });
 
     // Related work's artists https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
@@ -1468,7 +1474,6 @@ function initializePixiv () {
 
     // Artist profile pages: https://www.pixiv.net/member.php?id=29310, https://www.pixiv.net/member_illust.php?id=104471&type=illust
     const normalizePageUrl = () => `https://www.pixiv.net/member.php?id=${new URL(window.location.href).searchParams.get("id")}`;
-
     findAndTranslate("artist", ".VyO6wL2", {
         toProfileUrl: normalizePageUrl,
         asyncMode: true,
@@ -1481,7 +1486,6 @@ function initializePixiv () {
             .replace(/member_illust/, "member")
             .replace(/&ref=.*$/, "")
     ));
-
     findAndTranslate("artist", ".ui-profile-popup", {
         predicate: "figcaption._3HwPt89 > ul > li > a.ui-profile-popup",
         toProfileUrl,
@@ -1645,28 +1649,36 @@ function initializeDeviantArt () {
     }
 
     // https://www.deviantart.com/koyorin
-    findAndTranslate("artist", "div.AEPha", {
-        toProfileUrl: (el) => $(el).find("a").prop("href"),
-        predicate: ":has(a.user-link)",
+    findAndTranslate("artist", "div", {
+        toProfileUrl: linkInChildren,
+        predicate: "#content-container>div>div>div>div>div:has(a.user-link)",
         asyncMode: true,
     });
 
     // https://www.deviantart.com/koyorin/art/Ruby-570526828
-    findAndTranslate("artist", "span._2Lxll", {
-        toProfileUrl: (el) => $(el).find("a").prop("href"),
-        predicate: ":has(a.user-link)",
-        tagPosition: "beforeend",
+    findAndTranslate("artist", "a.user-link", {
+        predicate: "div[data-hook='deviation_meta'] a.user-link:not(:has(img))",
+        requiredAttributes: "href",
+        tagPosition: {
+            insertTag: ($container, $elem) => $container.parent().after($elem),
+            findTag: ($container) => $container.parent().nextAll(TAG_SELECTOR),
+            getTagContainer: ($elem) => $elem.prev().find("a"),
+        },
         classes: "inline",
         asyncMode: true,
+        onadded: deleteOnChange("span"),
     });
 
     // Popup card
     findAndTranslate("artist", "a.user-link", {
-        predicate: "div._1e1_d > a.user-link",
+        predicate: "body > div:not(#root) a.user-link:not(:has(img))",
         asyncMode: true,
     });
 
-    findAndTranslate("tag", "._3uQxz", { asyncMode: true });
+    findAndTranslate("tag", "span", {
+        predicate: "a[href^='https://www.deviantart.com/tag/'] > span:first-child",
+        asyncMode: true,
+    });
 }
 
 function initializeHentaiFoundry () {
@@ -1760,13 +1772,42 @@ function initializeTwitter () {
     const URLfromLocation = () => (
         `https://twitter.com${safeMatch(window.location.pathname, /\/\w+/)}`
     );
-
-    findAndTranslate("artist", "div.css-1dbjc4n.r-xoduu5.r-18u37iz.r-dnmrzs", {
-        predicate: "h2>div>div>div",
-        toProfileUrl: URLfromLocation,
-        asyncMode: true,
-        classes: "inline",
-        onadded: updateOnChange("span>span"),
+    // Look for (re-)adding of the top bar
+    new MutationSummary({
+        queries: [{ element: "h2" }],
+        callback: ([summary]) => {
+            const $h2 = $(summary.added[0]);
+            // If it is the top bar
+            if (!$h2.is("div[data-testid='primaryColumn']>div>:first-child h2")) {
+                return;
+            }
+            // If now it is channel name
+            const $div = $h2.find(">div>div>div");
+            if ($div.length > 0) {
+                findAndTranslate("artist", $div, {
+                    toProfileUrl: URLfromLocation,
+                    classes: "inline",
+                    onadded: deleteOnChange("span>span"),
+                });
+            }
+            // Look for text changes of the top bar
+            new MutationSummary({
+                rootNode: $h2[0],
+                queries: [{ characterData: true }],
+                callback: () => {
+                    const $div2 = $h2.find(">div>div>div");
+                    // Return if it already translated, to avoid self-triggering
+                    if ($div2.next(TAG_SELECTOR).length > 0) {
+                        return;
+                    }
+                    findAndTranslate("artist", $div2, {
+                        toProfileUrl: URLfromLocation,
+                        classes: "inline",
+                        onadded: deleteOnChange("span>span"),
+                    });
+                },
+            });
+        },
     });
 
     // Tweet, expanded tweet and comment authors
