@@ -1480,22 +1480,35 @@ function initializePixiv () {
     });
 
     // Search pages: https://www.pixiv.net/bookmark_new_illust.php
-    const toProfileUrl = ((el) => (
-        $(el)
-            .prop("href")
-            .replace(/member_illust/, "member")
-            .replace(/&ref=.*$/, "")
-    ));
+    const normalizeArtistUrl = (el) => `https://www.pixiv.net/member.php?id=${new URL(el.href).searchParams.get("id")}`;
     findAndTranslate("artist", ".ui-profile-popup", {
         predicate: "figcaption._3HwPt89 > ul > li > a.ui-profile-popup",
-        toProfileUrl,
+        toProfileUrl: normalizeArtistUrl,
         asyncMode: true,
     });
 
     // Ranking pages: https://www.pixiv.net/ranking.php?mode=original
     findAndTranslate("artist", ".user-container.ui-profile-popup", {
-        toProfileUrl,
+        toProfileUrl: normalizeArtistUrl,
         asyncMode: true,
+    });
+
+    // Popup card
+    findAndTranslate("artist", "a.user-name", {
+        toProfileUrl: normalizeArtistUrl,
+        classes: "inline",
+        asyncMode: true,
+    });
+
+    // Index page https://www.pixiv.net/ https://www.pixiv.net/en/
+    findAndTranslate("artist", "a.user", {
+        predicate: [
+            ".gtm-illust-recommend-zone a",
+            ".following-new-illusts a",
+            ".everyone-new-illusts a",
+            ".booth-follow-items a",
+        ].join(","),
+        toProfileUrl: normalizeArtistUrl,
     });
 }
 
