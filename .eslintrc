@@ -1,0 +1,133 @@
+{
+    "parserOptions": {
+        // "ecmaVersion": 2019,
+        "sourceType": "script",
+    },
+    "env": {
+        // "es2017": true,
+        "browser": true,
+        "greasemonkey": true,
+        "jquery": true
+    },
+    "extends": [
+        "plugin:unicorn/recommended",
+        "plugin:sonarjs/recommended",
+        "airbnb-base",
+    ],
+    "plugins": [
+        "unicorn",
+        "sonarjs",
+    ],
+    "rules": {
+        /* override default rule settings */
+        "array-bracket-newline": [
+            "error",
+            "consistent"
+        ],
+        "array-element-newline": [
+            "error",
+            "consistent"
+        ],
+        "arrow-parens": [
+            "error",
+            "always",
+        ],
+        "curly": [
+            "error",
+            "multi-line",
+            "consistent"
+        ],
+        "func-style": [
+            "error",
+            "declaration",
+            { "allowArrowFunctions": true }
+        ],
+        "indent": [
+            "error",
+            4,
+            {
+                "SwitchCase": 1,
+                "flatTernaryExpressions": true,
+                "ignoredNodes": ["TemplateLiteral *"], // no correct support in string templates
+            }
+        ],
+        "id-blacklist": ["error", "e", "$e", "arguments"],
+        "key-spacing": [
+            "error",
+            {"mode": "minimum"} // to allow alignment
+        ],
+        "max-len": [
+            "warn",
+            {
+                "code": 100,
+                "ignoreUrls": true,
+            }
+        ],
+        "max-statements-per-line": [
+            "error",
+            { "max": 2 },
+        ],
+        "multiline-ternary": [
+            "error",
+            "always-multiline"
+        ],
+        "no-plusplus": [
+            "error",
+            { "allowForLoopAfterthoughts": true },
+        ],
+        "no-use-before-define": [
+            "error",
+            "nofunc", // funcs are hoisted
+        ],
+        "no-unused-vars": [
+            "error",
+            {"args": "none"}
+        ],
+        "quotes": [
+            "error",
+            "double",
+            { "allowTemplateLiterals": true }
+        ],
+        "one-var": [
+            "error",
+            { "initialized": "never" }
+        ],
+        "padding-line-between-statements": [
+            "error",
+            { "blankLine": "always", "prev": "function", "next": "*" },
+            { "blankLine": "always", "prev": "class", "next": "*" },
+            { "blankLine": "always", "prev": "directive", "next": "*" },
+        ],
+        "space-before-function-paren": [
+            "error",
+            "always",
+        ],
+        "strict": [
+            "error",
+            "global"
+        ],
+        "unicorn/no-unsafe-regex": "error",
+
+        /* canditates for disabling */
+        "capitalized-comments": [
+            "error",
+            "always",
+            {
+                "ignoreConsecutiveComments": true,
+                "ignoreInlineComments": true
+            }
+        ],
+
+        /* disable */
+        "no-console": "off",
+        "no-mixed-operators": "off",
+        "no-multi-spaces": "off", // due allign
+        "no-nested-ternary": "off",
+        "no-new": "off", // due MutationSummary
+        "unicorn/catch-error-name": "off",
+        "unicorn/consistent-function-scoping": "off",
+        "unicorn/prefer-query-selector": "off",
+        "unicorn/prevent-abbreviations": "off",
+
+    }
+}
