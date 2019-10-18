@@ -1493,10 +1493,16 @@ function initializePixiv () {
         asyncMode: true,
     });
 
-    // Popup card
+    // Index page popup card
     findAndTranslate("artist", "a.user-name", {
         toProfileUrl: normalizeArtistUrl,
         classes: "inline",
+        asyncMode: true,
+    });
+
+    // Illust page popup card
+    findAndTranslate("artist", "a", {
+        predicate: "div[role='none'] a:not([class]):eq(1)",
         asyncMode: true,
     });
 
