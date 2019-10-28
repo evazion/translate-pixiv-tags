@@ -296,6 +296,10 @@ const PROGRAM_CSS = `
 }
 `;
 
+function memoizeKey (...args) {
+    return JSON.stringify(args);
+}
+
 // Tag function for template literals to remove newlines and leading spaces
 function noIndents (strings, ...values) {
     // Remove all spaces before/after a tag and leave one in other cases
@@ -325,6 +329,8 @@ function safeMatch (string, regex, group = 0, defaultValue = "") {
     }
     return defaultValue;
 }
+
+const safeMatchMemoized = _.memoize(safeMatch, memoizeKey);
 
 function getImage (imageUrl) {
     return GM
@@ -426,10 +432,7 @@ async function getJSONRateLimited (url, params) {
     return [];
 }
 
-const getJSONMemoized = _.memoize(
-    (url, params) => getJSONRateLimited(url, params),
-    (url, params) => url + $.param(params),
-);
+const getJSONMemoized = _.memoize(getJSONRateLimited, memoizeKey);
 
 function get (url, params, cache = CACHE_LIFETIME, baseUrl = BOORU) {
     const finalParams = (cache > 0)
@@ -1021,7 +1024,7 @@ function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = [
 }
 
 function buildArtistUrlsHtml (artist) {
-    const getDomain = (url) => safeMatch(new URL(url.normalized_url).host, /[^.]*\.[^.]*$/);
+    const getDomain = (url) => safeMatchMemoized(new URL(url.normalized_url).host, /[^.]*\.[^.]*$/);
     const artistUrls = _(artist.urls)
         .chain()
         .uniq("normalized_url")
@@ -2090,6 +2093,10 @@ function initialize () {
     GM_addStyle(PROGRAM_CSS);
     GM_addStyle(GM_getResourceText("jquery_qtip_css"));
     GM_registerMenuCommand("Settings", showSettings, "S");
+    // So that JSON stringify can be used to generate memoize keys
+    /* eslint-disable no-extend-native */
+    RegExp.prototype.toJSON = RegExp.prototype.toString;
+    /* eslint-enable no-extend-native */
 
     switch (window.location.host) {
         case "www.pixiv.net":
