@@ -501,6 +501,7 @@ async function translateTag (target, tagName, options) {
 function addDanbooruTags ($target, tags, options = {}) {
     if (tags.length === 0) return;
 
+    const renderedTags = addDanbooruTags.cache || (addDanbooruTags.cache = {});
     const {
         classes = "",
         onadded = null, // ($tag, options)=>{},
@@ -509,18 +510,22 @@ function addDanbooruTags ($target, tags, options = {}) {
         } = {},
     } = options;
 
-    const $tagsContainer = $(noIndents`
-        <span class="ex-translated-tags ${classes}">
-            ${tags.map((tag) => (
-                noIndents`
-                <a class="ex-translated-tag-category-${tag.category}"
-                   href="${BOORU}/posts?tags=${encodeURIComponent(tag.name)}"
-                   target="_blank">
-                        ${_.escape(tag.prettyName)}
-                </a>`
-            ))
-            .join(", ")}
-        </span>`);
+    const key = tags.map((tag) => tag.name).join("");
+    if (!(key in renderedTags)) {
+        renderedTags[key] = $(noIndents`
+            <span class="ex-translated-tags ${classes}">
+                ${tags.map((tag) => (
+                    noIndents`
+                    <a class="ex-translated-tag-category-${tag.category}"
+                       href="${BOORU}/posts?tags=${encodeURIComponent(tag.name)}"
+                       target="_blank">
+                            ${_.escape(tag.prettyName)}
+                    </a>`
+                ))
+                .join(", ")}
+            </span>`);
+    }
+    const $tagsContainer = renderedTags[key].clone();
     insertTag($target, $tagsContainer);
 
     if (onadded) onadded($tagsContainer, options);
@@ -582,6 +587,7 @@ async function translateArtistByName (element, artistName, options) {
 }
 
 function addDanbooruArtist ($target, artist, options = {}) {
+    const renderedArtists = addDanbooruArtist.cache || (addDanbooruArtist.cache = {});
     const {
         onadded = null, // ($tag, options)=>{},
         tagPosition: {
@@ -612,12 +618,15 @@ function addDanbooruArtist ($target, artist, options = {}) {
         return;
     }
 
-    const $tag = $(noIndents`
-        <div class="${classes}">
-            <a href="${BOORU}/artists/${artist.id}" target="_blank">
-                ${artist.escapedName}
-            </a>
-        </div>`);
+    if (!(artist.id in renderedArtists)) {
+        renderedArtists[artist.id] = $(noIndents`
+            <div class="${classes}">
+                <a href="${BOORU}/artists/${artist.id}" target="_blank">
+                    ${artist.escapedName}
+                </a>
+            </div>`);
+    }
+    const $tag = renderedArtists[artist.id].clone();
     insertTag($target, $tag);
     $tag.find("a").qtip(qtipSettings);
 
