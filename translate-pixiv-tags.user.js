@@ -296,6 +296,10 @@ const PROGRAM_CSS = `
 }
 `;
 
+function memoizeKey (...args) {
+    return JSON.stringify(args);
+}
+
 // Tag function for template literals to remove newlines and leading spaces
 function noIndents (strings, ...values) {
     // Remove all spaces before/after a tag and leave one in other cases
@@ -325,6 +329,8 @@ function safeMatch (string, regex, group = 0, defaultValue = "") {
     }
     return defaultValue;
 }
+
+const safeMatchMemoized = _.memoize(safeMatch, memoizeKey);
 
 function getImage (imageUrl) {
     return GM
@@ -426,10 +432,7 @@ async function getJSONRateLimited (url, params) {
     return [];
 }
 
-const getJSONMemoized = _.memoize(
-    (url, params) => getJSONRateLimited(url, params),
-    (url, params) => url + $.param(params),
-);
+const getJSONMemoized = _.memoize(getJSONRateLimited, memoizeKey);
 
 function get (url, params, cache = CACHE_LIFETIME, baseUrl = BOORU) {
     const finalParams = (cache > 0)
@@ -498,6 +501,7 @@ async function translateTag (target, tagName, options) {
 function addDanbooruTags ($target, tags, options = {}) {
     if (tags.length === 0) return;
 
+    const renderedTags = addDanbooruTags.cache || (addDanbooruTags.cache = {});
     const {
         classes = "",
         onadded = null, // ($tag, options)=>{},
@@ -506,18 +510,22 @@ function addDanbooruTags ($target, tags, options = {}) {
         } = {},
     } = options;
 
-    const $tagsContainer = $(noIndents`
-        <span class="ex-translated-tags ${classes}">
-            ${tags.map((tag) => (
-                noIndents`
-                <a class="ex-translated-tag-category-${tag.category}"
-                   href="${BOORU}/posts?tags=${encodeURIComponent(tag.name)}"
-                   target="_blank">
-                        ${_.escape(tag.prettyName)}
-                </a>`
-            ))
-            .join(", ")}
-        </span>`);
+    const key = tags.map((tag) => tag.name).join("");
+    if (!(key in renderedTags)) {
+        renderedTags[key] = $(noIndents`
+            <span class="ex-translated-tags ${classes}">
+                ${tags.map((tag) => (
+                    noIndents`
+                    <a class="ex-translated-tag-category-${tag.category}"
+                       href="${BOORU}/posts?tags=${encodeURIComponent(tag.name)}"
+                       target="_blank">
+                            ${_.escape(tag.prettyName)}
+                    </a>`
+                ))
+                .join(", ")}
+            </span>`);
+    }
+    const $tagsContainer = renderedTags[key].clone().prop("className", classes);
     insertTag($target, $tagsContainer);
 
     if (onadded) onadded($tagsContainer, options);
@@ -579,6 +587,7 @@ async function translateArtistByName (element, artistName, options) {
 }
 
 function addDanbooruArtist ($target, artist, options = {}) {
+    const renderedArtists = addDanbooruArtist.cache || (addDanbooruArtist.cache = {});
     const {
         onadded = null, // ($tag, options)=>{},
         tagPosition: {
@@ -609,12 +618,15 @@ function addDanbooruArtist ($target, artist, options = {}) {
         return;
     }
 
-    const $tag = $(noIndents`
-        <div class="${classes}">
-            <a href="${BOORU}/artists/${artist.id}" target="_blank">
-                ${artist.escapedName}
-            </a>
-        </div>`);
+    if (!(artist.id in renderedArtists)) {
+        renderedArtists[artist.id] = $(noIndents`
+            <div class="${classes}">
+                <a href="${BOORU}/artists/${artist.id}" target="_blank">
+                    ${artist.escapedName}
+                </a>
+            </div>`);
+    }
+    const $tag = renderedArtists[artist.id].clone().prop("className", classes);
     insertTag($target, $tag);
     $tag.find("a").qtip(qtipSettings);
 
@@ -1021,7 +1033,7 @@ function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = [
 }
 
 function buildArtistUrlsHtml (artist) {
-    const getDomain = (url) => safeMatch(new URL(url.normalized_url).host, /[^.]*\.[^.]*$/);
+    const getDomain = (url) => safeMatchMemoized(new URL(url.normalized_url).host, /[^.]*\.[^.]*$/);
     const artistUrls = _(artist.urls)
         .chain()
         .uniq("normalized_url")
@@ -2090,6 +2102,10 @@ function initialize () {
     GM_addStyle(PROGRAM_CSS);
     GM_addStyle(GM_getResourceText("jquery_qtip_css"));
     GM_registerMenuCommand("Settings", showSettings, "S");
+    // So that JSON stringify can be used to generate memoize keys
+    /* eslint-disable no-extend-native */
+    RegExp.prototype.toJSON = RegExp.prototype.toString;
+    /* eslint-enable no-extend-native */
 
     switch (window.location.host) {
         case "www.pixiv.net":
