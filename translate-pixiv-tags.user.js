@@ -525,7 +525,7 @@ function addDanbooruTags ($target, tags, options = {}) {
                 .join(", ")}
             </span>`);
     }
-    const $tagsContainer = renderedTags[key].clone();
+    const $tagsContainer = renderedTags[key].clone().prop("className", classes);
     insertTag($target, $tagsContainer);
 
     if (onadded) onadded($tagsContainer, options);
@@ -626,7 +626,7 @@ function addDanbooruArtist ($target, artist, options = {}) {
                 </a>
             </div>`);
     }
-    const $tag = renderedArtists[artist.id].clone();
+    const $tag = renderedArtists[artist.id].clone().prop("className", classes);
     insertTag($target, $tag);
     $tag.find("a").qtip(qtipSettings);
 
