@@ -480,7 +480,7 @@ async function translateTag (target, tagName, options) {
             category: wikiPage.category_name,
         }));
     // `normalizedTag` consists of only ASCII characters except percent, asterics, and comma
-    } else if (normalizedTag.match(/^[\u20-\u24\u26-\u29\u2B\u2D-\u7F]+$/)) {
+    } else if (normalizedTag.match(/^[\u0020-\u0024\u0026-\u0029\u002B\u002D-\u007F]+$/)) {
         tags = await get(
             "/tags",
             {
