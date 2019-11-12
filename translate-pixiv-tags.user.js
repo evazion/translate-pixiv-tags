@@ -506,7 +506,7 @@ function addDanbooruTags ($target, tags, options = {}) {
         classes = "",
         onadded = null, // ($tag, options)=>{},
         tagPosition: {
-            insertTag = ($container, $elem) => $container.after($elem),
+            insertTag = TAG_POSITIONS.afterend.insertTag,
         } = {},
     } = options;
 
@@ -591,8 +591,8 @@ function addDanbooruArtist ($target, artist, options = {}) {
     const {
         onadded = null, // ($tag, options)=>{},
         tagPosition: {
-            insertTag = ($container, $elem) => $container.after($elem),
-            findTag = ($container) => $container.nextAll(TAG_SELECTOR),
+            insertTag = TAG_POSITIONS.afterend.insertTag,
+            findTag = TAG_POSITIONS.afterend.findTag,
         } = {},
     } = options;
     let { classes = "" } = options;
@@ -1406,7 +1406,7 @@ function initializePixiv () {
          * On the artist profile page, render the danbooru artist tag
          * between the artist's name and follower count.
          */
-        ._3_qyP5m {
+        div._3_qyP5m {
             display: grid;
             grid-auto-rows: 16px;
             grid-template-columns: auto 1fr;
@@ -1800,6 +1800,7 @@ function initializeTwitter () {
     const URLfromLocation = () => (
         `https://twitter.com${safeMatch(window.location.pathname, /\/\w+/)}`
     );
+    // TODO: implement case when h2 is already added to DOM
     // Look for (re-)adding of the top bar
     new MutationSummary({
         queries: [{ element: "h2" }],
