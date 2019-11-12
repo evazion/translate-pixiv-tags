@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20191019011546
+// @version      20191112235246
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -503,17 +503,18 @@ function addDanbooruTags ($target, tags, options = {}) {
 
     const renderedTags = addDanbooruTags.cache || (addDanbooruTags.cache = {});
     const {
-        classes = "",
         onadded = null, // ($tag, options)=>{},
         tagPosition: {
             insertTag = TAG_POSITIONS.afterend.insertTag,
         } = {},
     } = options;
+    let { classes = "" } = options;
+    classes = `ex-translated-tags ${classes}`;
 
     const key = tags.map((tag) => tag.name).join("");
     if (!(key in renderedTags)) {
         renderedTags[key] = $(noIndents`
-            <span class="ex-translated-tags ${classes}">
+            <span class="${classes}">
                 ${tags.map((tag) => (
                     noIndents`
                     <a class="ex-translated-tag-category-${tag.category}"
@@ -1392,6 +1393,7 @@ function initializePixiv () {
             content: none;
         }
         /* Hide Pixiv's translated tags  */
+        .ex-translated-tags + div,
         .ex-translated-tags + span .gtm-new-work-romaji-tag-event-click,
         .ex-translated-tags + span .gtm-new-work-translate-tag-event-click {
             display: none;
@@ -1401,6 +1403,11 @@ function initializePixiv () {
         span.ex-translated-tags a::before,
         figcaption li > span:first-child > a::before {
             content: "";
+        }
+        /* Fix styles for tags on search page */
+        div + .ex-translated-tags {
+            font-size: 20px;
+            font-weight: bold;
         }
         /**
          * On the artist profile page, render the danbooru artist tag
@@ -1431,11 +1438,11 @@ function initializePixiv () {
             left: 47px;
         }
         /* Illust page: fix artist tag overflowing in related works */
-        aside li>div>div:last-child {
+        li>div>div:last-child {
             flex-direction: column;
             align-items: flex-start;
         }
-        aside li .ex-artist-tag {
+        li .ex-artist-tag {
             margin-left: 2px;
             margin-top: -6px;
         }
@@ -1450,7 +1457,7 @@ function initializePixiv () {
         // https://www.pixiv.net/tags.php?tag=touhou
         ".tags-portal-header .title a",
         // https://www.pixiv.net/search.php?s_mode=s_tag&word=touhou
-        "#wrapper div.layout-body h1.column-title a",
+        "#wrapper div.layout-body h1.column-title a", // Old layout
     ].join(", "));
 
     // https://dic.pixiv.net/a/東方
@@ -1461,6 +1468,12 @@ function initializePixiv () {
     // Tags on work pages: https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
     findAndTranslate("tag", "span", {
         predicate: "figcaption li > span:first-child",
+        asyncMode: true,
+    });
+
+    // New search pages: https://www.pixiv.net/search.php?word=%E6%9D%B1%E6%96%B9project&s_mode=s_tag_full
+    findAndTranslate("tag", "div", {
+        predicate: "#root>div>div>div>div>div:has(span:last-child:not(.ex-translated-tags))",
         asyncMode: true,
     });
 
@@ -1478,8 +1491,9 @@ function initializePixiv () {
     });
 
     // Related work's artists https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
+    // New search pages: https://www.pixiv.net/search.php?word=%E6%9D%B1%E6%96%B9project&s_mode=s_tag_full
     findAndTranslate("artist", "div", {
-        predicate: "aside li>div>div:last-child>div:first-child",
+        predicate: "li>div>div:last-child>div:first-child",
         toProfileUrl: linkInChildren,
         asyncMode: true,
     });
@@ -1491,7 +1505,7 @@ function initializePixiv () {
         asyncMode: true,
     });
 
-    // Search pages: https://www.pixiv.net/bookmark_new_illust.php
+    // Old search pages: https://www.pixiv.net/bookmark_new_illust.php
     const normalizeArtistUrl = (el) => `https://www.pixiv.net/member.php?id=${new URL(el.href).searchParams.get("id")}`;
     findAndTranslate("artist", ".ui-profile-popup", {
         predicate: "figcaption._3HwPt89 > ul > li > a.ui-profile-popup",
