@@ -1496,7 +1496,7 @@ function initializePixiv () {
     // Related work's artists https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
     // New search pages: https://www.pixiv.net/search.php?word=%E6%9D%B1%E6%96%B9project&s_mode=s_tag_full
     findAndTranslate("artist", "div", {
-        predicate: "li>div>div:last-child>div:first-child",
+        predicate: "section>div>ul>li>div>div:last-child>div:first-child",
         toProfileUrl: linkInChildren,
         asyncMode: true,
     });
@@ -1508,7 +1508,7 @@ function initializePixiv () {
         asyncMode: true,
     });
 
-    // Old search pages: https://www.pixiv.net/bookmark_new_illust.php
+    // Posts of followed artists: https://www.pixiv.net/bookmark_new_illust.php
     const normalizeArtistUrl = (el) => `https://www.pixiv.net/member.php?id=${new URL(el.href).searchParams.get("id")}`;
     findAndTranslate("artist", ".ui-profile-popup", {
         predicate: "figcaption._3HwPt89 > ul > li > a.ui-profile-popup",
