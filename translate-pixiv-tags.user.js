@@ -1640,8 +1640,10 @@ function initializeNicoSeiga () {
 
 function initializeBCY () {
     // Prfile page https://bcy.net/u/3935930
-    findAndTranslate("artist", "div:has(>a.uname)", {
-        toProfileUrl: linkInChildren,
+    findAndTranslate("artist", "div.user-info-name", {
+        toProfileUrl: (el) => $(el).closest(".user-info").find("a.avatar-user").prop("href"),
+        tagPosition: TAG_POSITIONS.beforeend,
+        classes: "inline",
     });
 
     // Illust pages https://bcy.net/item/detail/6643704430988361988
@@ -1680,6 +1682,7 @@ function initializeDeviantArt () {
             font-weight: bold;
         }
     `);
+
     // Old design
     if ($("body > div#output").length > 0) {
         // https://www.deviantart.com/koyorin
@@ -1694,12 +1697,18 @@ function initializeDeviantArt () {
 
         return;
     }
+
+    // New design
+
+    // Profile page
+    // https://www.deviantart.com/adsouto
     findAndTranslate("artist", "div", {
         toProfileUrl: linkInChildren,
         predicate: "#content-container>div>div>div>div>div:has(a.user-link)",
         asyncMode: true,
     });
 
+    // Post page
     // https://www.deviantart.com/koyorin/art/Ruby-570526828
     findAndTranslate("artist", "a.user-link", {
         predicate: "div[data-hook='deviation_meta'] a.user-link:not(:has(img))",
