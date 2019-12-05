@@ -1817,7 +1817,11 @@ function initializeTwitter () {
     const URLfromLocation = () => (
         `https://twitter.com${safeMatch(window.location.pathname, /\/\w+/)}`
     );
-    // TODO: implement case when h2 is already added to DOM
+    findAndTranslate("artist", "div[data-testid='primaryColumn']>div>:first-child h2>div>div>div", {
+        toProfileUrl: URLfromLocation,
+        classes: "inline",
+        onadded: deleteOnChange("span>span"),
+    });
     // Look for (re-)adding of the top bar
     new MutationSummary({
         queries: [{ element: "h2" }],
