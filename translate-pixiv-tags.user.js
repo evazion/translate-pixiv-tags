@@ -2018,9 +2018,17 @@ function initializeSauceNAO () {
     ));
 
     // http://saucenao.com/search.php?db=999&url=https%3A%2F%2Fraikou4.donmai.us%2Fpreview%2F5e%2F8e%2F5e8e7a03c49906aaad157de8aeb188e4.jpg
+    // http://saucenao.com/search.php?db=999&url=https%3A%2F%2Fraikou4.donmai.us%2Fpreview%2Fad%2F90%2Fad90ad1cc3407f03955f22b427d21707.jpg
     findAndTranslate("artist", "strong:contains('Member: ')+a, strong:contains('Author: ')+a", {
+        toProfileUrl: (el) => {
+            const { href } = el;
+            if (!href.includes(".deviantart.com/")) {
+                return href;
+            }
+            // For DA change old scheme to new one
+            return `http://www.deviantart.com/${safeMatch(href, /\/(\w+)\./, 1)}`;
+        },
         classes: "inline",
-        // TODO fix DA links
     });
 
     findAndTranslate("artistByName", ".resulttitle .target", {
