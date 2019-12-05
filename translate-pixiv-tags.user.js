@@ -2051,9 +2051,9 @@ function initializePawoo () {
     `);
 
     // https://pawoo.net/@yamadorikodi
-    // artist name in his card info
+    // artist name in channel header
     findAndTranslate("artist", ".name small", {
-        toProfileUrl: () => `https://pawoo.net${safeMatch(window.location.pathname, /\/[^/]+/)}`,
+        toProfileUrl: (el) => `https://pawoo.net/@${safeMatch(el.textContent, /[^@]+/)}`,
         tagPosition: TAG_POSITIONS.afterbegin,
     });
 
@@ -2073,6 +2073,8 @@ function initializePawoo () {
 }
 
 function initializeTweetDeck () {
+    // https://tweetdeck.twitter.com/
+
     findAndTranslate("tag", "span.link-complex-target", {
         predicate: "a[rel='hashtag'] span.link-complex-target",
         asyncMode: true,
