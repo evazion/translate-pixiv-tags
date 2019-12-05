@@ -2093,8 +2093,9 @@ function initializeTweetDeck () {
 function initializePixivFanbox () {
     // https://www.pixiv.net/fanbox/creator/310631
     // channel header
-    findAndTranslate("artist", "a.sc-1upaq18-16", {
-        classes: "inline a.sc-1upaq18-16",
+    findAndTranslate("artist", "a", {
+        predicate: "h1 a[href^='/fanbox/creator/']",
+        classes: "inline",
         asyncMode: true,
     });
 
