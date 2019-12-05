@@ -1,3 +1,20 @@
+# Release 2019.12.05
+
+## Fixes
+
+* BCY: new profile page support.
+* DevianArt: added support of new layout.
+* Pixiv: new search page support.
+* Pixiv: added translating of artist in popups.
+* Pawoo, Pixiv, pixivFanbox, SauceNAO, twitter: minor fixes and updates due site changes.
+* English tags were not translated in some cases.
+* Fixed hiding of the script tooltip when cursor hovers a browser tooltip.
+
+## Changes
+
+* #37: Now all links open new tab.
+* Internal improvements.
+
 # Release 2019.09.19
 
 ## Fixes
