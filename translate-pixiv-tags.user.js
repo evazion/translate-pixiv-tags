@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20191205171746
+// @version      20191225234846
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -455,7 +455,8 @@ async function translateTag (target, tagName, options) {
         .trim()
         .normalize("NFKC")
         .replace(/\d+users入り$/, "")
-        .replace(/^#/, "");
+        .replace(/^#/, "")
+        .replace(/[*]/g, "\\*"); // Escape * (wildcard)
 
     /* Tags like "5000users入り$" become empty after normalization; don't search for empty tags. */
     if (normalizedTag.length === 0) {
