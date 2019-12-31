@@ -78,6 +78,11 @@ const SETTINGS = {
                 q: "Questionable",
                 e: "Explicit", // eslint-disable-line id-blacklist
             },
+        }, {
+            name: "show_deleted",
+            defValue: true,
+            descr: "Check to show deleted posts, uncheck to hide",
+            type: "boolean",
         },
     ],
     isValid (settingName, value) {
@@ -89,6 +94,7 @@ const SETTINGS = {
         switch (setting.type) {
             case "number": return Number.isInteger(value) && value > 0;
             case "list": return value in setting.values;
+            case "boolean": return typeof value === "boolean";
             default:
                 console.error(`Unsupported type ${setting.type}`);
                 return false;
@@ -130,6 +136,8 @@ const CACHE_LIFETIME = SETTINGS.get("cache_lifetime");
 const ARTIST_POST_PREVIEW_LIMIT = SETTINGS.get("preview_limit");
 // The upper level of rating to show preview. Higher ratings will be blurred.
 const SHOW_PREVIEW_RATING = SETTINGS.get("show_preview_rating");
+// Whether to show deleted images in the preview or from the posts link
+const SHOW_DELETED = SETTINGS.get("show_deleted");
 
 // Values needed from Danbooru API calls using the "only" parameter
 const POST_FIELDS = [
@@ -692,7 +700,7 @@ async function buildArtistTooltip (artist, qtip) {
         const waitPosts = get(
             "/posts",
             {
-                tags: `status:any ${artist.name}`,
+                tags: `${(SHOW_DELETED ? "status:any" : "-status:deleted")} ${artist.name}`,
                 limit: ARTIST_POST_PREVIEW_LIMIT,
                 only: POST_FIELDS,
             },
@@ -1024,7 +1032,7 @@ function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = [
             <section class="posts">
                 <h2>
                     Posts
-                    <a href="${BOORU}/posts?tags=${artist.encodedName}" target="_blank">»</a>
+                    <a href="${BOORU}/posts?tags=${artist.encodedName}+${(SHOW_DELETED ? "status%3Aany" : "-status%3Adeleted")}" target="_blank">»</a>
                 </h2>
                 <div class="post-list scrollable" part="post-list"></div>
             </section>
@@ -1193,6 +1201,11 @@ function showSettings () {
                         ${options}
                     </select>`;
             }
+            case "boolean":
+                return noIndents`
+                    <input type="checkbox"
+                           ${value ? "checked" : ""}
+                           name="${setting.name}" />`;
             default:
                 console.error(`Unsupported type ${setting.type}`);
                 return "";
@@ -1281,13 +1294,22 @@ function showSettings () {
     $settings.click((ev) => {
         if ($(ev.target).is("#ui-settings")) closeSettings();
     });
-    $settings.find("input[type='number'], select").change((ev) => (
+    $settings.find("input[type='number'], input[type='checkbox'], select").change((ev) => (
         $settings.find(".refresh-page").removeAttr("disabled")
     ));
     $settings.find(".refresh-page").click((ev) => {
-        $settings.find("input[type='number'], select").each((i, el) => {
+        $settings.find("input[type='number'], input[type='checkbox'], select").each((i, el) => {
             const $input = $(el);
-            const value = $input.is("input[type='number']") ? Number($input.val()) : $input.val();
+            let value = null;
+            if ($input.is("select")) {
+                value = $input.val();
+            } else if ($input.prop("type") === "number") {
+                value = Number($input.val());
+            } else if ($input.prop("type") === "checkbox") {
+                value = $input.prop("checked");
+            } else {
+                return;
+            }
             SETTINGS.set($input.prop("name"), value);
         });
         closeSettings();
