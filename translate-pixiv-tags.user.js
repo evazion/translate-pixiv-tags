@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20191225234846
+// @version      20200109103146
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -215,6 +215,11 @@ const TAG_POSITIONS = {
         insertTag: ($container, $elem) => $container.after($elem),
         findTag: ($container) => $container.nextAll(TAG_SELECTOR),
         getTagContainer: ($elem) => $elem.prev(),
+    },
+    afterParent: {
+        insertTag: ($container, $elem) => $container.parent().after($elem),
+        findTag: ($container) => $container.parent().nextAll(TAG_SELECTOR),
+        getTagContainer: ($elem) => $elem.prev().find("a"),
     },
 };
 
@@ -1516,9 +1521,10 @@ function initializePixiv () {
 
     // Related work's artists https://www.pixiv.net/en/artworks/66475847
     // New search pages: https://www.pixiv.net/en/tags/%E6%9D%B1%E6%96%B9project/artworks
-    findAndTranslate("artist", "div", {
-        predicate: "section>div>ul>li>div>div:last-child>div:first-child",
-        toProfileUrl: (el) => `https://www.pixiv.net/member.php?id=${safeMatch($(el).find("a").prop("href"), /\d+/)}`,
+    findAndTranslate("artist", "a", {
+        predicate: "section>div>ul>li>div>div:last-child>div:first-child>a",
+        tagPosition: TAG_POSITIONS.afterParent,
+        toProfileUrl: (el) => `https://www.pixiv.net/member.php?id=${safeMatch(el.href, /\d+/)}`,
         asyncMode: true,
     });
 
@@ -1735,11 +1741,7 @@ function initializeDeviantArt () {
     findAndTranslate("artist", "a.user-link", {
         predicate: "div[data-hook='deviation_meta'] a.user-link:not(:has(img))",
         requiredAttributes: "href",
-        tagPosition: {
-            insertTag: ($container, $elem) => $container.parent().after($elem),
-            findTag: ($container) => $container.parent().nextAll(TAG_SELECTOR),
-            getTagContainer: ($elem) => $elem.prev().find("a"),
-        },
+        tagPosition: TAG_POSITIONS.afterParent,
         classes: "inline",
         asyncMode: true,
         onadded: deleteOnChange("span"),
