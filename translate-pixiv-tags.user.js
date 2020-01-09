@@ -1481,10 +1481,6 @@ function initializePixiv () {
         // https://www.pixiv.net/tags.php
         // https://www.pixiv.net/novel/tags.php
         ".tag-list li .tag-value",
-        // https://www.pixiv.net/tags.php?tag=touhou
-        ".tags-portal-header .title a",
-        // https://www.pixiv.net/search.php?s_mode=s_tag&word=touhou
-        "#wrapper div.layout-body h1.column-title a", // Old layout
     ].join(", "));
 
     // https://dic.pixiv.net/a/東方
@@ -1492,19 +1488,19 @@ function initializePixiv () {
         tagPosition: TAG_POSITIONS.beforeend,
     });
 
-    // Tags on work pages: https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
+    // Tags on work pages: https://www.pixiv.net/en/artworks/66475847
     findAndTranslate("tag", "span", {
         predicate: "figcaption li > span:first-child",
         asyncMode: true,
     });
 
-    // New search pages: https://www.pixiv.net/search.php?word=%E6%9D%B1%E6%96%B9project&s_mode=s_tag_full
+    // New search pages: https://www.pixiv.net/en/tags/%E6%9D%B1%E6%96%B9project/artworks
     findAndTranslate("tag", "div", {
         predicate: "#root>div>div>div>div>div:has(span:last-child:not(.ex-translated-tags))",
         asyncMode: true,
     });
 
-    // Illust author https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
+    // Illust author https://www.pixiv.net/en/artworks/66475847
     findAndTranslate("artist", "a", {
         predicate: "main+aside>section>h2>div>div>a",
         requiredAttributes: "href",
@@ -1515,25 +1511,26 @@ function initializePixiv () {
         },
         asyncMode: true,
         onadded: deleteOnChange("div"),
+        toProfileUrl: (el) => `https://www.pixiv.net/member.php?id=${safeMatch(el.href, /\d+/)}`,
     });
 
-    // Related work's artists https://www.pixiv.net/member_illust.php?mode=medium&illust_id=66475847
-    // New search pages: https://www.pixiv.net/search.php?word=%E6%9D%B1%E6%96%B9project&s_mode=s_tag_full
+    // Related work's artists https://www.pixiv.net/en/artworks/66475847
+    // New search pages: https://www.pixiv.net/en/tags/%E6%9D%B1%E6%96%B9project/artworks
     findAndTranslate("artist", "div", {
         predicate: "section>div>ul>li>div>div:last-child>div:first-child",
-        toProfileUrl: linkInChildren,
+        toProfileUrl: (el) => `https://www.pixiv.net/member.php?id=${safeMatch($(el).find("a").prop("href"), /\d+/)}`,
         asyncMode: true,
     });
 
-    // Artist profile pages: https://www.pixiv.net/member.php?id=29310, https://www.pixiv.net/member_illust.php?id=104471&type=illust
-    const normalizePageUrl = () => `https://www.pixiv.net/member.php?id=${new URL(window.location.href).searchParams.get("id")}`;
+    // Artist profile pages: https://www.pixiv.net/en/users/29310, https://www.pixiv.net/en/users/104471/illustrations
+    const normalizePageUrl = () => `https://www.pixiv.net/member.php?id=${safeMatch(window.location.pathname, /\d+/)}`;
     findAndTranslate("artist", ".VyO6wL2", {
         toProfileUrl: normalizePageUrl,
         asyncMode: true,
     });
 
     // Posts of followed artists: https://www.pixiv.net/bookmark_new_illust.php
-    const normalizeArtistUrl = (el) => `https://www.pixiv.net/member.php?id=${new URL(el.href).searchParams.get("id")}`;
+    const normalizeArtistUrl = (el) => `https://www.pixiv.net/member.php?id=${safeMatch(el.href, /\d+/)}`;
     findAndTranslate("artist", ".ui-profile-popup", {
         predicate: "figcaption._3HwPt89 > ul > li > a.ui-profile-popup",
         toProfileUrl: normalizeArtistUrl,
@@ -1557,6 +1554,7 @@ function initializePixiv () {
     findAndTranslate("artist", "a", {
         predicate: "div[role='none'] a:not([class]):eq(1)",
         asyncMode: true,
+        toProfileUrl: (el) => `https://www.pixiv.net/member.php?id=${safeMatch(el.href, /\d+/)}`,
     });
 
     // Index page https://www.pixiv.net/ https://www.pixiv.net/en/
