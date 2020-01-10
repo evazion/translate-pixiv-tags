@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20200109103146
+// @version      20200110133746
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -56,7 +56,7 @@ const SETTINGS = {
                 "https://kagamihara.donmai.us": "Kagamihara",
                 "https://saitou.donmai.us":     "Saitou",
                 "https://shima.donmai.us":      "Shima",
-                "https://safebooru.donmai.us/": "Safebooru",
+                "https://safebooru.donmai.us": "Safebooru",
             },
         }, {
             name: "cache_lifetime",
