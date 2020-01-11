@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20200110133746
+// @version      20200111110546
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -1530,7 +1530,6 @@ function initializePixiv () {
         },
         asyncMode: true,
         onadded: deleteOnChange("div"),
-        toProfileUrl: (el) => `https://www.pixiv.net/member.php?id=${safeMatch(el.href, /\d+/)}`,
     });
 
     // Related work's artists https://www.pixiv.net/en/artworks/66475847
@@ -1538,43 +1537,37 @@ function initializePixiv () {
     findAndTranslate("artist", "a", {
         predicate: "section>div>ul>li>div>div:last-child>div:first-child>a",
         tagPosition: TAG_POSITIONS.afterParent,
-        toProfileUrl: (el) => `https://www.pixiv.net/member.php?id=${safeMatch(el.href, /\d+/)}`,
         asyncMode: true,
     });
 
     // Artist profile pages: https://www.pixiv.net/en/users/29310, https://www.pixiv.net/en/users/104471/illustrations
-    const normalizePageUrl = () => `https://www.pixiv.net/member.php?id=${safeMatch(window.location.pathname, /\d+/)}`;
+    const normalizePageUrl = () => `https://www.pixiv.net/en/users/${safeMatch(window.location.pathname, /\d+/)}`;
     findAndTranslate("artist", ".VyO6wL2", {
         toProfileUrl: normalizePageUrl,
         asyncMode: true,
     });
 
     // Posts of followed artists: https://www.pixiv.net/bookmark_new_illust.php
-    const normalizeArtistUrl = (el) => `https://www.pixiv.net/member.php?id=${safeMatch(el.href, /\d+/)}`;
     findAndTranslate("artist", ".ui-profile-popup", {
         predicate: "figcaption._3HwPt89 > ul > li > a.ui-profile-popup",
-        toProfileUrl: normalizeArtistUrl,
         asyncMode: true,
     });
 
     // Ranking pages: https://www.pixiv.net/ranking.php?mode=original
-    findAndTranslate("artist", ".user-container.ui-profile-popup", {
-        toProfileUrl: normalizeArtistUrl,
+    findAndTranslate("artist", "a.user-container.ui-profile-popup", {
         asyncMode: true,
     });
 
     // Index page popup card
     findAndTranslate("artist", "a.user-name", {
-        toProfileUrl: normalizeArtistUrl,
         classes: "inline",
         asyncMode: true,
     });
 
     // Illust page popup card
     findAndTranslate("artist", "a", {
-        predicate: "div[role='none'] a:not([class]):eq(1)",
+        predicate: "div[role='none'] a:not([class]):not([style])",
         asyncMode: true,
-        toProfileUrl: (el) => `https://www.pixiv.net/member.php?id=${safeMatch(el.href, /\d+/)}`,
     });
 
     // Index page https://www.pixiv.net/ https://www.pixiv.net/en/
@@ -1585,7 +1578,6 @@ function initializePixiv () {
             ".everyone-new-illusts a",
             ".booth-follow-items a",
         ].join(","),
-        toProfileUrl: normalizeArtistUrl,
     });
 }
 
