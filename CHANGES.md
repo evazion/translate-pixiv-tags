@@ -1,3 +1,17 @@
+# Release 2020.01.11
+
+## Fixes
+
+* #42: pixiv: was broken due new links to profile page.
+* pixiv: artists were not translated on search page.
+* fixed treating the asterisk in tags as wildcard.
+
+## Changes
+
+* #43: Twitter: now happy-birthday-somebody and someanime-one-hour-draw-challenge are translated.
+* Added Safebooru for sending requests and using it in links.
+* Settings: you can hide deleted posts.
+
 # Release 2019.12.05
 
 ## Fixes
