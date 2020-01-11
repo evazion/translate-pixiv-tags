@@ -1487,6 +1487,7 @@ function initializePixiv () {
         }
     `);
 
+    // To remove smth like `50000users入り`, e.g. here https://www.pixiv.net/en/artworks/68318104
     const getNormalizedTagName = (el) => el.textContent.replace(/\d+users入り$/, "");
 
     findAndTranslate("tag", [
@@ -1593,7 +1594,7 @@ function initializeNijie () {
         }
     `);
 
-    // http://nijie.info/view.php?id=233339
+    // http://nijie.info/view.php?id=208491
     findAndTranslate("artist", "#pro .user_icon .name, .popup_member > a");
 
     // http://nijie.info/view.php?id=208491
@@ -1766,7 +1767,7 @@ function initializeDeviantArt () {
 }
 
 function initializeHentaiFoundry () {
-    // Posts on https://www.hentai-foundry.com/user/Calm/profile
+    // Posts on https://www.hentai-foundry.com/user/DrGraevling/profile
     findAndTranslate("artist", ".galleryViewTable .thumb_square > a:nth-child(4)", {
         classes: "inline",
     });
