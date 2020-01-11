@@ -466,13 +466,12 @@ function get (url, params, cache = CACHE_LIFETIME, baseUrl = BOORU) {
 
 async function translateTag (target, tagName, options) {
     const normalizedTag = tagName
-        .trim()
+        // .trim()
         .normalize("NFKC")
-        .replace(/\d+users入り$/, "")
         .replace(/^#/, "")
         .replace(/[*]/g, "\\*"); // Escape * (wildcard)
 
-    /* Tags like "5000users入り$" become empty after normalization; don't search for empty tags. */
+    /* Don't search for empty tags. */
     if (normalizedTag.length === 0) {
         return;
     }
@@ -1413,6 +1412,36 @@ function linkInChildren (el) {
     return $(el).find("a").prop("href");
 }
 
+/* https://twitter.com/search?q=%23ガルパン版深夜のお絵描き60分一本勝負 */
+/* #艦これ版深夜のお絵描き60分一本勝負 search query for TweetDeck */
+const COMMON_HASHTAG_REGEXES = [
+    /生誕祭\d*$/,
+    /誕生祭\d*$/,
+    /* eslint-disable unicorn/no-unsafe-regex */
+    // it doesn't like the `(_\d+)?` part
+    /版もうひとつの深夜の真剣お絵描き60分一本勝負(_\d+)?$/,
+    /版深夜の真剣お絵描き60分一本勝負(_\d+)?$/,
+    /深夜の真剣お絵描き60分一本勝負(_\d+)?$/,
+    /版深夜のお絵描き60分一本勝負(_\d+)?$/,
+    /版真剣お絵描き60分一本勝(_\d+)?$/,
+    /版お絵描き60分一本勝負(_\d+)?$/,
+    /* eslint-enable unicorn/no-unsafe-regex */
+];
+const getNormalizedHashtagName = (el) => {
+    const tagName = el.textContent;
+    // eslint-disable-next-line no-restricted-syntax
+    for (const regexp of COMMON_HASHTAG_REGEXES) {
+        const normalizedTagName = tagName.replace(regexp, "");
+        if (normalizedTagName !== tagName) {
+            if (normalizedTagName !== "") {
+                return normalizedTagName;
+            }
+            break;
+        }
+    }
+    return tagName;
+};
+
 function initializePixiv () {
     GM_addStyle(`
         /* Fix https://www.pixiv.net/tags.php to display tags as vertical list. */
@@ -1480,28 +1509,35 @@ function initializePixiv () {
         }
     `);
 
+    const getNormalizedTagName = (el) => el.textContent.replace(/\d+users入り$/, "");
+
     findAndTranslate("tag", [
         // https://www.pixiv.net/bookmark_add.php?type=illust&illust_id=123456
         ".tag-cloud .tag",
         // https://www.pixiv.net/tags.php
         // https://www.pixiv.net/novel/tags.php
         ".tag-list li .tag-value",
-    ].join(", "));
+    ].join(", "), {
+        toTagName: getNormalizedTagName,
+    });
 
     // https://dic.pixiv.net/a/東方
     findAndTranslate("tag", "#content_title #article-name", {
         tagPosition: TAG_POSITIONS.beforeend,
+        toTagName: getNormalizedTagName,
     });
 
     // Tags on work pages: https://www.pixiv.net/en/artworks/66475847
     findAndTranslate("tag", "span", {
         predicate: "figcaption li > span:first-child",
+        toTagName: getNormalizedTagName,
         asyncMode: true,
     });
 
     // New search pages: https://www.pixiv.net/en/tags/%E6%9D%B1%E6%96%B9project/artworks
     findAndTranslate("tag", "div", {
         predicate: "#root>div>div>div>div>div:has(span:last-child:not(.ex-translated-tags))",
+        toTagName: getNormalizedTagName,
         asyncMode: true,
     });
 
@@ -1809,6 +1845,7 @@ function initializeTwitter () {
     if ($("body > div#doc").length > 0) {
         findAndTranslate("tag", ".twitter-hashtag", {
             asyncMode: true,
+            toTagName: getNormalizedHashtagName,
         });
 
         // Header card
@@ -1844,6 +1881,7 @@ function initializeTwitter () {
     findAndTranslate("tag", "a.r-1n1174f", {
         predicate: "a.r-1n1174f[href^='/hashtag/']",
         asyncMode: true,
+        toTagName: getNormalizedHashtagName,
     });
 
     // Floating name of a channel https://twitter.com/mugosatomi
@@ -2123,6 +2161,7 @@ function initializeTweetDeck () {
     findAndTranslate("tag", "span.link-complex-target", {
         predicate: "a[rel='hashtag'] span.link-complex-target",
         asyncMode: true,
+        toTagName: getNormalizedHashtagName,
     });
 
     // User card info
