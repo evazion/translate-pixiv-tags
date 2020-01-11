@@ -547,19 +547,6 @@ function addDanbooruTags ($target, tags, options = {}) {
     if (onadded) onadded($tagsContainer, options);
 }
 
-function normalizeURL (url) {
-    return url.replace(/\/$/, "").toLowerCase();
-}
-
-function areURLsEqual (ref1, ref2) {
-    const url1 = typeof ref1 === "string" ? new URL(normalizeURL(ref1)) : ref1;
-    const url2 = typeof ref2 === "string" ? new URL(normalizeURL(ref2)) : ref2;
-
-    return url1.host === url2.host
-        && url1.pathname === url2.pathname
-        && url1.search === url2.search;
-}
-
 async function translateArtistByURL (element, profileUrl, options) {
     if (!profileUrl) return;
 
@@ -573,16 +560,7 @@ async function translateArtistByURL (element, profileUrl, options) {
             only: ARTIST_FIELDS,
         },
     );
-    const pUrl = new URL(normalizeURL(profileUrl));
-
-    artists
-        // Fix of #18: for some unsupported domains, Danbooru returns false-positive results
-        .filter(({ urls }) => (
-            urls.some(({ url, normalized_url: url2 }) => (
-                areURLsEqual(pUrl, url) || areURLsEqual(pUrl, url2)
-            ))
-        ))
-        .map((artist) => addDanbooruArtist($(element), artist, options));
+    artists.forEach((artist) => addDanbooruArtist($(element), artist, options));
 }
 
 async function translateArtistByName (element, artistName, options) {
@@ -599,7 +577,7 @@ async function translateArtistByName (element, artistName, options) {
         },
     );
 
-    artists.map((artist) => addDanbooruArtist($(element), artist, options));
+    artists.forEach((artist) => addDanbooruArtist($(element), artist, options));
 }
 
 function addDanbooruArtist ($target, artist, options = {}) {
@@ -2097,11 +2075,14 @@ function initializeSauceNAO () {
     findAndTranslate("artist", "strong:contains('Member: ')+a, strong:contains('Author: ')+a", {
         toProfileUrl: (el) => {
             const { href } = el;
-            if (!href.includes(".deviantart.com/")) {
-                return href;
+            // New fix of #18
+            // Blacklisting of Medibang because search is wrong
+            // and returns all 10 artist with links to Medibang
+            // e.g. https://saucenao.com/search.php?db=999&url=http%3A%2F%2Fmedibangpaint.com%2Fwp-content%2Fuploads%2F2015%2F05%2Fgallerylist-04.jpg
+            if (href.startsWith("https://medibang.com/")) {
+                return "";
             }
-            // For DA change old scheme to new one
-            return `http://www.deviantart.com/${safeMatch(href, /\/(\w+)\./, 1)}`;
+            return href;
         },
         classes: "inline",
     });
