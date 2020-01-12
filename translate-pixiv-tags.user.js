@@ -2114,6 +2114,12 @@ function initializePawoo () {
     // Post author, commentor
     findAndTranslate("artist", "a.status__display-name span span", {
         classes: "inline",
+        toProfileUrl: (el) => {
+            const url = $(el).closest("a").prop("href");
+            // Pawoo can include reposted messages from other mastodon-based sites
+            if (url.startsWith("https://pawoo.net/@")) return url;
+            return "";
+        },
     });
 
     // Expanded post author
