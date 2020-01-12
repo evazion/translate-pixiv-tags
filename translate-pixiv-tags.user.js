@@ -2116,6 +2116,13 @@ function initializePawoo () {
         classes: "inline",
     });
 
+    // Expanded post author
+    // https://pawoo.net/@mayumani/102910946688187767
+    findAndTranslate("artist", "a.detailed-status__display-name span strong", {
+        classes: "inline",
+        tagPosition: TAG_POSITIONS.beforeend,
+    });
+
     // Users in sidebar
     findAndTranslate("artist", "a.account__display-name span span");
 
