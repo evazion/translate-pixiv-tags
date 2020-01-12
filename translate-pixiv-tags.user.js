@@ -1395,15 +1395,12 @@ function linkInChildren (el) {
 const COMMON_HASHTAG_REGEXES = [
     /生誕祭\d*$/,
     /誕生祭\d*$/,
-    /* eslint-disable unicorn/no-unsafe-regex */
-    // it doesn't like the `(_\d+)?` part
-    /版もうひとつの深夜の真剣お絵描き60分一本勝負(_\d+)?$/,
-    /版深夜の真剣お絵描き60分一本勝負(_\d+)?$/,
-    /深夜の真剣お絵描き60分一本勝負(_\d+)?$/,
-    /版深夜のお絵描き60分一本勝負(_\d+)?$/,
-    /版真剣お絵描き60分一本勝(_\d+)?$/,
-    /版お絵描き60分一本勝負(_\d+)?$/,
-    /* eslint-enable unicorn/no-unsafe-regex */
+    /版もうひとつの深夜の真剣お絵描き60分一本勝負(?:_\d+$|$)/,
+    /版深夜の真剣お絵描き60分一本勝負(?:_\d+$|$)/,
+    /深夜の真剣お絵描き60分一本勝負(?:_\d+$|$)/,
+    /版深夜のお絵描き60分一本勝負(?:_\d+$|$)/,
+    /版真剣お絵描き60分一本勝(?:_\d+$|$)/,
+    /版お絵描き60分一本勝負(?:_\d+$|$)/,
 ];
 const getNormalizedHashtagName = (el) => {
     const tagName = el.textContent;
