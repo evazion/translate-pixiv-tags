@@ -1,0 +1,34 @@
+{
+  "name": "translate-pixiv-tags",
+  "version": "0.0.0",
+  "description": "A userscript that translates tags and artist names on multiple image hosting sites to their corresponding Danbooru tags.",
+  "main": "translate-pixiv-tags.user.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "dependencies": {
+    "jquery": "^3.2.1",
+    "mutation-summary": "^0.0.0",
+    "qtip2": "^3.0.3",
+    "underscore": "^1.9.1",
+    "eslint": "^6.5.1",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-sonarjs": "^0.4.0",
+    "eslint-plugin-unicorn": "^12.1.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/evazion/translate-pixiv-tags.git"
+  },
+  "author": "evazion",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/evazion/translate-pixiv-tags/issues"
+  },
+  "homepage": "https://github.com/evazion/translate-pixiv-tags#readme"
+}
