@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20200112150146
+// @version      20200116110646
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -560,6 +560,11 @@ async function translateArtistByURL (element, profileUrl, options) {
             only: ARTIST_FIELDS,
         },
     );
+    // New fix of #18 v2
+    // Dabooru does unwanted reverse search
+    // which returns trashy results
+    // and there are exaclty 10 artists
+    if (artists.length === 10) return;
     artists.forEach((artist) => addDanbooruArtist($(element), artist, options));
 }
 
@@ -2062,18 +2067,8 @@ function initializeSauceNAO () {
 
     // http://saucenao.com/search.php?db=999&url=https%3A%2F%2Fraikou4.donmai.us%2Fpreview%2F5e%2F8e%2F5e8e7a03c49906aaad157de8aeb188e4.jpg
     // http://saucenao.com/search.php?db=999&url=https%3A%2F%2Fraikou4.donmai.us%2Fpreview%2Fad%2F90%2Fad90ad1cc3407f03955f22b427d21707.jpg
+    // https://saucenao.com/search.php?db=999&url=http%3A%2F%2Fmedibangpaint.com%2Fwp-content%2Fuploads%2F2015%2F05%2Fgallerylist-04.jpg
     findAndTranslate("artist", "strong:contains('Member: ')+a, strong:contains('Author: ')+a", {
-        toProfileUrl: (el) => {
-            const { href } = el;
-            // New fix of #18
-            // Blacklisting of Medibang because search is wrong
-            // and returns all 10 artist with links to Medibang
-            // e.g. https://saucenao.com/search.php?db=999&url=http%3A%2F%2Fmedibangpaint.com%2Fwp-content%2Fuploads%2F2015%2F05%2Fgallerylist-04.jpg
-            if (href.startsWith("https://medibang.com/")) {
-                return "";
-            }
-            return href;
-        },
         classes: "inline",
     });
 
