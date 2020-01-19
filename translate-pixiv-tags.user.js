@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20200116110646
+// @version      20200119161346
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -1438,6 +1438,7 @@ const COMMON_HASHTAG_REGEXES = [
     /版深夜の真剣お絵描き60分一本勝負(?:_\d+$|$)/,
     /深夜の真剣お絵描き60分一本勝負(?:_\d+$|$)/,
     /版深夜のお絵描き60分一本勝負(?:_\d+$|$)/,
+    /版真剣お絵描き60分一本勝負(?:_\d+$|$)/,
     /版真剣お絵描き60分一本勝(?:_\d+$|$)/,
     /版お絵描き60分一本勝負(?:_\d+$|$)/,
 ];
@@ -1554,7 +1555,7 @@ function initializePixiv () {
 
     // New search pages: https://www.pixiv.net/en/tags/%E6%9D%B1%E6%96%B9project/artworks
     findAndTranslate("tag", "div", {
-        predicate: "#root>div>div>div>div>div:has(span:last-child:not(.ex-translated-tags))",
+        predicate: "#root>div>div.crwull>div>div>div:has(span:last-child:not(.ex-translated-tags))",
         toTagName: getNormalizedTagName,
         asyncMode: true,
         ruleName: "search tag",
@@ -1576,11 +1577,12 @@ function initializePixiv () {
 
     // Related work's artists https://www.pixiv.net/en/artworks/66475847
     // New search pages: https://www.pixiv.net/en/tags/%E6%9D%B1%E6%96%B9project/artworks
+    // Bookmarks: https://www.pixiv.net/en/users/29310/bookmarks/artworks
     findAndTranslate("artist", "a", {
-        predicate: "section>div>ul>li>div>div:last-child>div:first-child>a",
+        predicate: "section ul>li>div>div:last-child>div:first-child>a",
         tagPosition: TAG_POSITIONS.afterParent,
         asyncMode: true,
-        ruleName: "artist on search",
+        ruleName: "artist below illust thumb",
     });
 
     // Artist profile pages: https://www.pixiv.net/en/users/29310, https://www.pixiv.net/en/users/104471/illustrations
@@ -1613,7 +1615,7 @@ function initializePixiv () {
 
     // Illust page popup card
     findAndTranslate("artist", "a", {
-        predicate: "div[role='none'] a:not([class]):not([style])",
+        predicate: "div[role='none'] div:not(.ex-artist-tag) > a:nth-child(2)",
         asyncMode: true,
         ruleName: "illust page popup",
     });
@@ -1626,6 +1628,7 @@ function initializePixiv () {
             ".everyone-new-illusts a",
             ".booth-follow-items a",
         ].join(","),
+        toProfileUrl: (el) => el.href.replace("/artworks", ""),
         ruleName: "index page artist",
     });
 }
@@ -1811,7 +1814,7 @@ function initializeDeviantArt () {
     // https://www.deviantart.com/adsouto
     findAndTranslate("artist", "div", {
         toProfileUrl: linkInChildren,
-        predicate: "#content-container>div>div>div>div>div:has(a.user-link)",
+        predicate: "#content-container>div>div>div>div>div:has(>a.user-link)",
         asyncMode: true,
         ruleName: "artist profile",
     });
@@ -2110,7 +2113,7 @@ function initializeArtStation () {
     // Hover card
     findAndTranslate("artist", "a", {
         requiredAttributes: "href",
-        predicate: (el) => el.matches(".hover-card-name > a") && hasValidHref(el),
+        predicate: (el) => el.matches(".hover-card-name > a:first-child") && hasValidHref(el),
         asyncMode: true,
         ruleName: "artist popup",
     });
@@ -2207,14 +2210,9 @@ function initializePawoo () {
     });
 
     // Post author, commentor
-    findAndTranslate("artist", "a.status__display-name span span", {
+    // Pawoo can include reposted messages from other mastodon-based sites
+    findAndTranslate("artist", "a[href^='https://pawoo.net/@'].status__display-name span span", {
         classes: "inline",
-        toProfileUrl: (el) => {
-            const url = $(el).closest("a").prop("href");
-            // Pawoo can include reposted messages from other mastodon-based sites
-            if (url.startsWith("https://pawoo.net/@")) return url;
-            return "";
-        },
         ruleName: "post/comment author",
     });
 
