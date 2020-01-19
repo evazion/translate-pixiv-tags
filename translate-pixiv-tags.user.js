@@ -2002,6 +2002,7 @@ function initializeTwitter () {
 
     // Quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
     findAndTranslate("artist", "div.r-1wbh5a2.r-1udh08x", {
+        predicate: "article div",
         toProfileUrl: (el) => `https://twitter.com/${
             $(el)
                 .find(".r-1f6r7vd")
