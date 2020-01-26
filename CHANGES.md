@@ -1,3 +1,17 @@
+# Release 2020.01.26
+
+## Fixes
+
+* #43: fixed artist translate spamming in some cases.
+* Pawoo: fixed translating of authors of non-pawoo posts.
+* Improved some translating rules.
+
+## Changes
+
+* Added translating of aliases.
+* Pawoo: added translating of the expanded post author.
+* Settings: option to print some debug info in the console.
+
 # Release 2020.01.11
 
 ## Fixes
