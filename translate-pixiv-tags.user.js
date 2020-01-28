@@ -415,6 +415,12 @@ const NETWORK_REQUEST_DICT = {
     },
 };
 
+function debuglog (...args) {
+    if (DEBUG) {
+        console.log(...args);
+    }
+}
+
 function memoizeKey (...args) {
     const paramHash = Object.assign(...args.map((param, i) => ({ [i]: param })));
     return $.param(paramHash);
@@ -711,9 +717,7 @@ async function translateTag (target, tagName, options) {
     }
 
     if (tags.length === 0) {
-        if (DEBUG) {
-            console.log(`No translation for "${normalizedTag}", rule "${options.ruleName}"`);
-        }
+        debuglog(`No translation for "${normalizedTag}", rule "${options.ruleName}"`);
         return;
     }
 
@@ -761,9 +765,7 @@ async function translateArtistByURL (element, profileUrl, options) {
     const artists = artistUrls.map((artistUrl) => artistUrl.artist);
 
     if (artists.length === 0) {
-        if (DEBUG) {
-            console.log(`No artist at "${profileUrl}", rule "${options.ruleName}"`);
-        }
+        debuglog(`No artist at "${profileUrl}", rule "${options.ruleName}"`);
         return;
     }
 
@@ -772,9 +774,7 @@ async function translateArtistByURL (element, profileUrl, options) {
     // which returns trashy results
     // and there are exaclty 10 artists
     if (artists.length === 10) {
-        if (DEBUG) {
-            console.log(`The results for "${profileUrl}" were rejected, rule "${options.ruleName}"`);
-        }
+        debuglog(`The results for "${profileUrl}" were rejected, rule "${options.ruleName}"`);
         return;
     }
     artists.forEach((artist) => addDanbooruArtist($(element), artist, options));
@@ -786,9 +786,7 @@ async function translateArtistByName (element, artistName, options) {
     const artists = await queueNetworkRequestMemoized("artist", artistName.replace(/ /g, "_"));
 
     if (artists.length === 0) {
-        if (DEBUG) {
-            console.log(`No artist "${artistName}", rule "${options.ruleName}"`);
-        }
+        debuglog(`No artist "${artistName}", rule "${options.ruleName}"`);
         return;
     }
 
