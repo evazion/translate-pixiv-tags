@@ -416,7 +416,8 @@ const NETWORK_REQUEST_DICT = {
 };
 
 function memoizeKey (...args) {
-    return JSON.stringify(args);
+    const paramHash = Object.assign(...args.map((param, i) => ({ [i]: param })));
+    return $.param(paramHash);
 }
 
 // Tag function for template literals to remove newlines and leading spaces
@@ -2472,10 +2473,6 @@ function initialize () {
     GM_addStyle(PROGRAM_CSS);
     GM_addStyle(GM_getResourceText("jquery_qtip_css"));
     GM_registerMenuCommand("Settings", showSettings, "S");
-    // So that JSON stringify can be used to generate memoize keys
-    /* eslint-disable no-extend-native */
-    RegExp.prototype.toJSON = RegExp.prototype.toString;
-    /* eslint-enable no-extend-native */
 
     switch (window.location.host) {
         case "www.pixiv.net":
