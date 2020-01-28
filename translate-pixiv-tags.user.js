@@ -166,9 +166,9 @@ const POST_FIELDS = [
 ].join(",");
 const POST_COUNT_FIELDS = "post_count";
 const TAG_FIELDS = "name,category";
-const WIKI_FIELDS = "title,category_name";
+const WIKI_FIELDS = "title,category_name,other_names";
 const ARTIST_FIELDS = "id,name,is_banned,other_names,urls";
-const TAG_ALIASES_FILEDS = "consequent_name";
+const TAG_ALIASES_FIELDS = "antecedent_name,consequent_name";
 
 // Settings for artist tooltips.
 const ARTIST_QTIP_SETTINGS = {
@@ -194,6 +194,11 @@ const ARTIST_QTIP_SETTINGS = {
 const CORS_IMAGE_DOMAINS = [
     "twitter.com",
 ];
+
+// The maximum size of a URL before using a POST request.
+// The actual limit is 8154, but setting it lower accounts for the rest of the URL as well.
+// It's preferable to use a GET request when able since GET supports caching and POST does not.
+const MAXIMUM_URI_LENGTH = 8000;
 
 // For network rate and error management
 const MAX_PENDING_NETWORK_REQUESTS = 40;
@@ -318,6 +323,97 @@ const PROGRAM_CSS = `
     width: 520px !important;
 }
 `;
+
+const CACHE_PARAM = (CACHE_LIFETIME ? { expires_in: CACHE_LIFETIME } : {});
+// Setting this to the maximum since batches could return more than the amount being queried
+const LIMIT_PARAM = { limit: 1000 };
+
+function WikiParams (otherNamesList) {
+    return {
+        search: {
+            other_names_include_any_lower_array: otherNamesList,
+            is_deleted: false,
+        },
+        only: WIKI_FIELDS,
+    };
+}
+
+function ArtistParams (nameList) {
+    return {
+        search: {
+            name_lower_comma: nameList.join(","),
+            is_active: true,
+        },
+        only: ARTIST_FIELDS,
+    };
+}
+
+function TagParams (nameList) {
+    return {
+        search: {
+            name_lower_comma: nameList.join(","),
+        },
+        only: TAG_FIELDS,
+    };
+}
+
+function AliasParams (nameList) {
+    return {
+        search: {
+            antecedent_name_lower_comma: nameList.join(","),
+        },
+        only: TAG_ALIASES_FIELDS,
+    };
+}
+
+function UrlParams (urlList) {
+    return {
+        search: {
+            normalized_url_lower_array: urlList,
+        },
+        // The only parameter does not work with artist urls... yet
+    };
+}
+
+function UrlFilter (artistUrls) {
+    return artistUrls.filter((artistUrl) => artistUrl.artist.is_active);
+}
+
+const QUEUED_NETWORK_REQUESTS = [];
+
+const NETWORK_REQUEST_DICT = {
+    wiki: {
+        url: "/wiki_pages",
+        params: WikiParams,
+        data_key: "other_names",
+        data_type: "array",
+    },
+    artist: {
+        url: "/artists",
+        params: ArtistParams,
+        data_key: "name",
+        data_type: "string",
+    },
+    tag: {
+        url: "/tags",
+        params: TagParams,
+        data_key: "name",
+        data_type: "string",
+    },
+    alias: {
+        url: "/tag_aliases",
+        params: AliasParams,
+        data_key: "antecedent_name",
+        data_type: "string",
+    },
+    url: {
+        url: "/artist_urls",
+        params: UrlParams,
+        filter: UrlFilter,
+        data_key: "normalized_url",
+        data_type: "string",
+    },
+};
 
 function memoizeKey (...args) {
     return JSON.stringify(args);
@@ -472,28 +568,121 @@ function get (url, params, cache = CACHE_LIFETIME, baseUrl = BOORU) {
         });
 }
 
+function queueNetworkRequest (type, item) {
+    const request = {
+        type,
+        item,
+        promise: $.Deferred(),
+    };
+    QUEUED_NETWORK_REQUESTS.push(request);
+    return request.promise;
+}
+
+const queueNetworkRequestMemoized = _.memoize(queueNetworkRequest, memoizeKey);
+
+function intervalNetworkHandler () {
+    Object.keys(NETWORK_REQUEST_DICT).forEach((type) => {
+        const requests = QUEUED_NETWORK_REQUESTS.filter((request) => (request.type === type));
+        if (requests.length > 0) {
+            const items = requests.map((request) => request.item);
+            const typeParam = NETWORK_REQUEST_DICT[type].params(items);
+            const params = Object.assign(typeParam, LIMIT_PARAM, CACHE_PARAM);
+            const url = `${BOORU}${NETWORK_REQUEST_DICT[type].url}.json`;
+            getLong(url, params, requests, type);
+        }
+    });
+    // Clear the queue once all network requests have been sent
+    QUEUED_NETWORK_REQUESTS.length = 0;
+}
+
+async function getLong (url, params, requests, type) {
+    const sleepHalfSecond = (resolve) => setTimeout(resolve, 500);
+    const domain = new URL(url).hostname;
+    if (!(checkNetworkErrors(domain, false))) {
+        requests.forEach((request) => request.promise.resolve([]));
+        return;
+    }
+
+    // Default to GET requests
+    let func = $.getJSON;
+    let finalParams = params;
+    if ($.param(params).length > MAXIMUM_URI_LENGTH) {
+        // Use POST requests only when needed
+        finalParams = Object.assign(finalParams, { _method: "get" });
+        func = $.post;
+    }
+
+    /* eslint-disable no-await-in-loop */
+    let resp = [];
+    for (let i = 0; i < MAX_NETWORK_RETRIES; i++) {
+        try {
+            resp = await func(url, finalParams);
+            break;
+        } catch (error) {
+            console.error(
+                "Failed try #",
+                i + 1,
+                "\nURL:",
+                url,
+                "\nParameters:",
+                finalParams,
+                "\nHTTP Error:",
+                error.status,
+            );
+            if (!checkNetworkErrors(domain, true)) {
+                requests.forEach((request) => request.promise.resolve([]));
+                return;
+            }
+            await new Promise(sleepHalfSecond);
+        }
+    }
+    /* eslint-enable no-await-in-loop */
+
+    let finalResp = resp;
+    if (NETWORK_REQUEST_DICT[type].filter) {
+        // Do any necessary filtering after the network request completes
+        finalResp = NETWORK_REQUEST_DICT[type].filter(resp);
+    }
+
+    // Get the data key which is used to find successful hits in the batch results
+    const dataKey = NETWORK_REQUEST_DICT[type].data_key;
+    requests.forEach((request) => {
+        let found = [];
+        if (NETWORK_REQUEST_DICT[type].data_type === "string") {
+            // Check for matching case-insensitive results
+            found = finalResp.filter((data) => data[dataKey].toLowerCase() === request.item.toLowerCase());
+        } else if (NETWORK_REQUEST_DICT[type].data_type === "array") {
+            // Check for inclusion of case-insensitive results
+            found = finalResp.filter((data) => {
+                const compareArray = data[dataKey].map((item) => item.toLowerCase());
+                return compareArray.includes(request.item.toLowerCase());
+            });
+        }
+        // Fulfill the promise which returns the results to the function that queued it
+        request.promise.resolve(found);
+    });
+}
+
+// Converts URLs to the same format used by the normalized URL column on Danbooru
+function normalizeProfileURL (profileUrl) {
+    const url = profileUrl.replace(/^https/, "http").replace(/\/$/, "");
+    return `${url}/`;
+}
+
 async function translateTag (target, tagName, options) {
     const normalizedTag = tagName
         // .trim()
         .normalize("NFKC")
         .replace(/^#/, "")
-        .replace(/[*]/g, "\\*"); // Escape * (wildcard)
+        .replace(/[*]/g, "\\*") // Escape * (wildcard)
+        .replace(/\s/g, "_"); // Wiki other names cannot contain spaces
 
     /* Don't search for empty tags. */
     if (normalizedTag.length === 0) {
         return;
     }
 
-    const wikiPages = await get(
-        "/wiki_pages",
-        {
-            search: {
-                other_names_match: normalizedTag,
-                is_deleted: false,
-            },
-            only: WIKI_FIELDS,
-        },
-    );
+    const wikiPages = await queueNetworkRequestMemoized("wiki", normalizedTag);
 
     let tags = [];
     if (wikiPages.length > 0) {
@@ -504,30 +693,13 @@ async function translateTag (target, tagName, options) {
         }));
     // `normalizedTag` consists of only ASCII characters except percent, asterics, and comma
     } else if (normalizedTag.match(/^[\u0020-\u0024\u0026-\u0029\u002B\u002D-\u007F]+$/)) {
-        const strictTagName = normalizedTag.replace(/\s/g, "_").toLowerCase();
-        tags = await get(
-            "/tags",
-            {
-                search: { name: strictTagName },
-                only: TAG_FIELDS,
-            },
-        );
+        // The server is already converting the values to
+        // lowercase on its end so no need to do it here
+        tags = await queueNetworkRequestMemoized("tag", normalizedTag);
         if (tags.length === 0) {
-            tags = await get(
-                "/tag_aliases",
-                {
-                    search: { antecedent_name: strictTagName },
-                    only: TAG_ALIASES_FILEDS,
-                },
-            );
+            tags = await queueNetworkRequestMemoized("alias", normalizedTag);
             if (tags.length > 0) {
-                tags = await get(
-                    "/tags",
-                    {
-                        search: { name: tags[0].consequent_name },
-                        only: TAG_FIELDS,
-                    },
-                );
+                tags = await queueNetworkRequestMemoized("tag", tags[0].consequent_name);
             }
         }
         tags = tags.map((tag) => ({
@@ -584,16 +756,8 @@ function addDanbooruTags ($target, tags, options = {}) {
 async function translateArtistByURL (element, profileUrl, options) {
     if (!profileUrl) return;
 
-    const artists = await get(
-        "/artists",
-        {
-            search: {
-                url_matches: profileUrl,
-                is_active: true,
-            },
-            only: ARTIST_FIELDS,
-        },
-    );
+    const artistUrls = await queueNetworkRequestMemoized("url", normalizeProfileURL(profileUrl));
+    const artists = artistUrls.map((artistUrl) => artistUrl.artist);
 
     if (artists.length === 0) {
         if (DEBUG) {
@@ -618,16 +782,7 @@ async function translateArtistByURL (element, profileUrl, options) {
 async function translateArtistByName (element, artistName, options) {
     if (!artistName) return;
 
-    const artists = await get(
-        "/artists",
-        {
-            search: {
-                name: artistName.replace(/ /g, "_"),
-                is_active: true,
-            },
-            only: ARTIST_FIELDS,
-        },
-    );
+    const artists = await queueNetworkRequestMemoized("artist", artistName.replace(/ /g, "_"));
 
     if (artists.length === 0) {
         if (DEBUG) {
@@ -2347,6 +2502,9 @@ function initialize () {
                 initializeArtStation();
             }
     }
+
+    // Check for new network requests every half-second
+    setInterval(intervalNetworkHandler, 500);
 }
 
 //------------------------
