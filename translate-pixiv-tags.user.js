@@ -1597,8 +1597,9 @@ function initializePixiv () {
     // Related work's artists https://www.pixiv.net/en/artworks/66475847
     // New search pages: https://www.pixiv.net/en/tags/%E6%9D%B1%E6%96%B9project/artworks
     // Bookmarks: https://www.pixiv.net/en/users/29310/bookmarks/artworks
+    // Shouldn't translate users in comments: https://www.pixiv.net/en/artworks/2893321
     findAndTranslate("artist", "a", {
-        predicate: "section ul>li>div>div:last-child>div:first-child>a",
+        predicate: "section ul>li>div>div:last-child>div:first-child>a:last-child",
         tagPosition: TAG_POSITIONS.afterParent,
         asyncMode: true,
         ruleName: "artist below illust thumb",
