@@ -809,8 +809,7 @@ async function translateArtistByURL (element, profileUrl, options) {
     if (translatedUrl !== profileUrl) {
         promiseArray.push(queueNetworkRequestMemoized("url", normalizeProfileURL(translatedUrl)));
     }
-    const data = await Promise.all(promiseArray);
-    const artistUrls = [].concat([], ...data);
+    const artistUrls = (await Promise.all(promiseArray)).flat();
     const artists = artistUrls.map((artistUrl) => artistUrl.artist);
 
     if (artists.length === 0) {
