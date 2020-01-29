@@ -448,6 +448,15 @@ const safeMatchMemoized = _.memoize(safeMatch, memoizeKey);
 const TRANSLATE_PROFILE_URL = [{
     regex: /https?:\/\/www\.pixiv\.net(?:\/en)?\/users\/(\d+)/,
     replace: "https://www.pixiv.net/member.php?id=%REPLACE%",
+}, {
+    regex: /https?:\/\/www\.deviantart\.com\/([\w-]+)/,
+    replace: "https://%REPLACE%.deviantart.com",
+}, {
+    regex: /https?:\/\/www\.artstation\.com\/([\w-]+)/,
+    replace: "https://%REPLACE%.artstation.com",
+}, {
+    regex: /https?:\/\/([\w-]+)\.artstation\.com/,
+    replace: "https://www.artstation.com/%REPLACE%",
 }];
 
 function translateProfileURL (profileUrl) {
