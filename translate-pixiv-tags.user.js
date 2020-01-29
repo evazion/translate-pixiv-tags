@@ -165,10 +165,6 @@ const POST_FIELDS = [
     "tag_string",
 ].join(",");
 const POST_COUNT_FIELDS = "post_count";
-const TAG_FIELDS = "name,category";
-const WIKI_FIELDS = "title,category_name,other_names";
-const ARTIST_FIELDS = "id,name,is_banned,other_names,urls";
-const TAG_ALIASES_FIELDS = "antecedent_name,consequent_name";
 
 // Settings for artist tooltips.
 const ARTIST_QTIP_SETTINGS = {
@@ -328,90 +324,81 @@ const CACHE_PARAM = (CACHE_LIFETIME ? { expires_in: CACHE_LIFETIME } : {});
 // Setting this to the maximum since batches could return more than the amount being queried
 const LIMIT_PARAM = { limit: 1000 };
 
-function WikiParams (otherNamesList) {
-    return {
-        search: {
-            other_names_include_any_lower_array: otherNamesList,
-            is_deleted: false,
-        },
-        only: WIKI_FIELDS,
-    };
-}
-
-function ArtistParams (nameList) {
-    return {
-        search: {
-            name_lower_comma: nameList.join(","),
-            is_active: true,
-        },
-        only: ARTIST_FIELDS,
-    };
-}
-
-function TagParams (nameList) {
-    return {
-        search: {
-            name_lower_comma: nameList.join(","),
-        },
-        only: TAG_FIELDS,
-    };
-}
-
-function AliasParams (nameList) {
-    return {
-        search: {
-            antecedent_name_lower_comma: nameList.join(","),
-        },
-        only: TAG_ALIASES_FIELDS,
-    };
-}
-
-function UrlParams (urlList) {
-    return {
-        search: {
-            normalized_url_lower_array: urlList,
-        },
-        // The only parameter does not work with artist urls... yet
-    };
-}
-
-function UrlFilter (artistUrls) {
-    return artistUrls.filter((artistUrl) => artistUrl.artist.is_active);
-}
 
 const QUEUED_NETWORK_REQUESTS = [];
 
 const NETWORK_REQUEST_DICT = {
     wiki: {
         url: "/wiki_pages",
-        params: WikiParams,
         data_key: "other_names",
         data_type: "array",
+        fields: "title,category_name,other_names",
+        params (otherNamesList) {
+            return {
+                search: {
+                    other_names_include_any_lower_array: otherNamesList,
+                    is_deleted: false,
+                },
+                only: this.fields,
+            };
+        },
     },
     artist: {
         url: "/artists",
-        params: ArtistParams,
         data_key: "name",
         data_type: "string",
+        fields: "id,name,is_banned,other_names,urls",
+        params (nameList) {
+            return {
+                search: {
+                    name_lower_comma: nameList.join(","),
+                    is_active: true,
+                },
+                only: this.fields,
+            };
+        },
     },
     tag: {
         url: "/tags",
-        params: TagParams,
         data_key: "name",
         data_type: "string",
+        fields: "name,category",
+        params (nameList) {
+            return {
+                search: {
+                    name_lower_comma: nameList.join(","),
+                },
+                only: this.fields,
+            };
+        },
     },
     alias: {
         url: "/tag_aliases",
-        params: AliasParams,
         data_key: "antecedent_name",
         data_type: "string",
+        fields: "antecedent_name,consequent_name",
+        params (nameList) {
+            return {
+                search: {
+                    antecedent_name_lower_comma: nameList.join(","),
+                },
+                only: this.fields,
+            };
+        },
     },
     url: {
         url: "/artist_urls",
-        params: UrlParams,
-        filter: UrlFilter,
         data_key: "normalized_url",
         data_type: "string",
+        params (urlList) {
+            return {
+                search: {
+                    normalized_url_lower_array: urlList,
+                },
+                // The only parameter does not work with artist urls... yet
+            };
+        },
+        filter: (artistUrls) => artistUrls.filter((artistUrl) => artistUrl.artist.is_active),
     },
 };
 
