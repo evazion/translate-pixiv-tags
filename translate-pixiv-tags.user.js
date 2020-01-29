@@ -147,29 +147,6 @@ const SHOW_DELETED = SETTINGS.get("show_deleted");
 // Whether to print an additional info into the console
 const DEBUG = SETTINGS.get("debug");
 
-// Values needed from Danbooru API calls using the "only" parameter
-const POST_FIELDS = [
-    "created_at",
-    "file_size",
-    "has_visible_children",
-    "id",
-    "image_height",
-    "image_width",
-    "is_flagged",
-    "is_pending",
-    "is_deleted",
-    "parent_id",
-    "preview_file_url",
-    "rating",
-    "source",
-    "tag_string",
-].join(",");
-const POST_COUNT_FIELDS = "post_count";
-const TAG_FIELDS = "name,category";
-const WIKI_FIELDS = "title,category_name";
-const ARTIST_FIELDS = "id,name,is_banned,other_names,urls";
-const TAG_ALIASES_FILEDS = "consequent_name";
-
 // Settings for artist tooltips.
 const ARTIST_QTIP_SETTINGS = {
     style: {
@@ -195,9 +172,12 @@ const CORS_IMAGE_DOMAINS = [
     "twitter.com",
 ];
 
-// For network rate and error management
-const MAX_PENDING_NETWORK_REQUESTS = 40;
-const MIN_PENDING_NETWORK_REQUESTS = 5;
+// The maximum size of a URL before using a POST request.
+// The actual limit is 8154, but setting it lower accounts for the rest of the URL as well.
+// It's preferable to use a GET request when able since GET supports caching and POST does not.
+const MAXIMUM_URI_LENGTH = 8000;
+
+// For network error management
 const MAX_NETWORK_ERRORS = 25;
 const MAX_NETWORK_RETRIES = 3;
 
@@ -319,8 +299,126 @@ const PROGRAM_CSS = `
 }
 `;
 
+const CACHE_PARAM = (CACHE_LIFETIME ? { expires_in: CACHE_LIFETIME } : {});
+// Setting this to the maximum since batches could return more than the amount being queried
+const API_LIMIT = 1000;
+
+const QUEUED_NETWORK_REQUESTS = [];
+
+const NETWORK_REQUEST_DICT = {
+    wiki: {
+        url: "/wiki_pages",
+        data_key: "other_names",
+        data_type: "array",
+        fields: "title,category_name,other_names",
+        params (otherNamesList) {
+            return {
+                search: {
+                    other_names_include_any_lower_array: otherNamesList,
+                    is_deleted: false,
+                },
+                only: this.fields,
+            };
+        },
+    },
+    artist: {
+        url: "/artists",
+        data_key: "name",
+        data_type: "string",
+        fields: "id,name,is_banned,other_names,urls",
+        params (nameList) {
+            return {
+                search: {
+                    name_lower_comma: nameList.join(","),
+                    is_active: true,
+                },
+                only: this.fields,
+            };
+        },
+    },
+    tag: {
+        url: "/tags",
+        data_key: "name",
+        data_type: "string",
+        fields: "name,category,post_count",
+        params (nameList) {
+            return {
+                search: {
+                    name_lower_comma: nameList.join(","),
+                },
+                only: this.fields,
+            };
+        },
+    },
+    alias: {
+        url: "/tag_aliases",
+        data_key: "antecedent_name",
+        data_type: "string",
+        fields: "antecedent_name,consequent_name",
+        params (nameList) {
+            return {
+                search: {
+                    antecedent_name_lower_comma: nameList.join(","),
+                },
+                only: this.fields,
+            };
+        },
+    },
+    url: {
+        url: "/artist_urls",
+        data_key: "normalized_url",
+        data_type: "string",
+        params (urlList) {
+            return {
+                search: {
+                    normalized_url_lower_array: urlList,
+                },
+                // The only parameter does not work with artist urls... yet
+            };
+        },
+        filter: (artistUrls) => artistUrls.filter((artistUrl) => artistUrl.artist.is_active),
+    },
+    // This can only be used as a single use and not as part a group
+    post: {
+        url: "/posts",
+        data_key: "tag_string",
+        data_type: "string_list",
+        fields: [
+            "created_at",
+            "file_size",
+            "has_visible_children",
+            "id",
+            "image_height",
+            "image_width",
+            "is_flagged",
+            "is_pending",
+            "is_deleted",
+            "parent_id",
+            "preview_file_url",
+            "rating",
+            "source",
+            "tag_string",
+        ].join(","),
+        params (tagList) {
+            return {
+                // As this is called immediately and as a single use, only pass the first tag
+                tags: `${(SHOW_DELETED ? "status:any" : "-status:deleted")} ${tagList[0]}`,
+                only: this.fields,
+            };
+        },
+        limit: ARTIST_POST_PREVIEW_LIMIT,
+    },
+};
+
+function debuglog (...args) {
+    if (DEBUG) {
+        console.log(...args);
+    }
+}
+
 function memoizeKey (...args) {
-    return JSON.stringify(args);
+    const paramHash = Object.assign(...args.map((param, i) => ({ [i]: param })));
+    return $.param(paramHash);
 }
 
 // Tag function for template literals to remove newlines and leading spaces
@@ -355,6 +453,33 @@ function safeMatch (string, regex, group = 0, defaultValue = "") {
 
 const safeMatchMemoized = _.memoize(safeMatch, memoizeKey);
 
+const TRANSLATE_PROFILE_URL = [{
+    regex: /https?:\/\/www\.pixiv\.net(?:\/en)?\/users\/(\d+)/,
+    replace: "https://www.pixiv.net/member.php?id=%REPLACE%",
+}, {
+    regex: /https?:\/\/www\.deviantart\.com\/([\w-]+)/,
+    replace: "https://%REPLACE%.deviantart.com",
+}, {
+    regex: /https?:\/\/www\.artstation\.com\/([\w-]+)/,
+    replace: "https://%REPLACE%.artstation.com",
+}, {
+    regex: /https?:\/\/([\w-]+)\.artstation\.com/,
+    replace: "https://www.artstation.com/%REPLACE%",
+}];
+
+function translateProfileURL (profileUrl) {
+    let translateUrl = profileUrl;
+    TRANSLATE_PROFILE_URL.some((value) => {
+        const match = profileUrl.match(value.regex);
+        if (match) {
+            translateUrl = value.replace.replace("%REPLACE%", match[1]);
+        }
+        // Returning true breaks the some loop
+        return translateUrl !== profileUrl;
+    });
+    return translateUrl;
+}
+
 function getImage (imageUrl) {
     return GM
         .xmlHttpRequest({
@@ -365,19 +490,6 @@ function getImage (imageUrl) {
         .then(({ response }) => response);
 }
 
-function rateLimitedLog (level, ...messageData) {
-    // Assumes that only simple arguments will be passed in
-    const key = messageData.join(",");
-    const options = rateLimitedLog[key] || (rateLimitedLog[key] = { log: true });
-
-    if (options.log) {
-        console[level](...messageData);
-        options.log = false;
-        // Have only one message with the same parameters per second
-        setTimeout(() => { options.log = true; }, 1000);
-    }
-}
-
 function checkNetworkErrors (domain, hasError) {
     const data = checkNetworkErrors[domain] || (checkNetworkErrors[domain] = { error: 0 });
 
@@ -386,8 +498,7 @@ function checkNetworkErrors (domain, hasError) {
         data.error += 1;
     }
     if (data.error >= MAX_NETWORK_ERRORS) {
-        rateLimitedLog(
-            "error",
+        console.error(
             "Maximun number of errors exceeded",
             MAX_NETWORK_ERRORS,
             "for",
@@ -398,78 +509,154 @@ function checkNetworkErrors (domain, hasError) {
     return true;
 }
 
-async function getJSONRateLimited (url, params) {
+function queueNetworkRequest (type, item) {
+    const request = {
+        type,
+        item,
+        promise: $.Deferred(),
+    };
+    QUEUED_NETWORK_REQUESTS.push(request);
+    return request.promise;
+}
+
+const queueNetworkRequestMemoized = _.memoize(queueNetworkRequest, memoizeKey);
+
+function intervalNetworkHandler () {
+    Object.keys(NETWORK_REQUEST_DICT).forEach((type) => {
+        const requests = QUEUED_NETWORK_REQUESTS.filter((request) => (request.type === type));
+        if (requests.length > 0) {
+            const items = requests.map((request) => request.item);
+            const typeParam = NETWORK_REQUEST_DICT[type].params(items);
+            const limitParam = { limit: API_LIMIT };
+            if (NETWORK_REQUEST_DICT[type].limit) {
+                limitParam.limit = NETWORK_REQUEST_DICT[type].limit;
+            }
+            const params = Object.assign(typeParam, limitParam, CACHE_PARAM);
+            const url = `${BOORU}${NETWORK_REQUEST_DICT[type].url}.json`;
+            getLong(url, params, requests, type);
+        }
+    });
+    // Clear the queue once all network requests have been sent
+    QUEUED_NETWORK_REQUESTS.length = 0;
+}
+
+async function getLong (url, params, requests, type) {
     const sleepHalfSecond = (resolve) => setTimeout(resolve, 500);
     const domain = new URL(url).hostname;
-    const queries = (
-        getJSONRateLimited[domain]
-        || (getJSONRateLimited[domain] = {
-            pending: 0,
-            currentMax: MAX_PENDING_NETWORK_REQUESTS,
-        })
-    );
-
-    // Wait until the number of pending network requests is below the max threshold
-    /* eslint-disable no-await-in-loop */
-    while (queries.pending >= queries.currentMax) {
-        // Bail if the maximum number of network errors has been exceeded
-        if (!(checkNetworkErrors(domain, false))) {
-            return [];
-        }
-        rateLimitedLog(
-            "warn",
-            "Exceeded maximum pending requests",
-            queries.currentMax,
-            "for",
-            domain,
-        );
-        await new Promise(sleepHalfSecond);
+    if (!(checkNetworkErrors(domain, false))) {
+        requests.forEach((request) => request.promise.resolve([]));
+        return;
     }
 
+    // Default to GET requests
+    let func = $.getJSON;
+    let finalParams = params;
+    if ($.param(params).length > MAXIMUM_URI_LENGTH) {
+        // Use POST requests only when needed
+        finalParams = Object.assign(finalParams, { _method: "get" });
+        func = $.post;
+    }
+
+    /* eslint-disable no-await-in-loop */
+    let resp = [];
     for (let i = 0; i < MAX_NETWORK_RETRIES; i++) {
-        queries.pending += 1;
         try {
-            return await $
-                .getJSON(url, params)
-                .always(() => { queries.pending -= 1; });
-        } catch (ex) {
-            // Backing off maximum to adjust to current network conditions
-            queries.currentMax = Math.max(queries.currentMax - 1, MIN_PENDING_NETWORK_REQUESTS);
+            resp = await func(url, finalParams);
+            break;
+        } catch (error) {
             console.error(
                 "Failed try #",
                 i + 1,
                 "\nURL:",
                 url,
                 "\nParameters:",
-                params,
+                finalParams,
                 "\nHTTP Error:",
-                ex.status,
+                error.status,
             );
             if (!checkNetworkErrors(domain, true)) {
-                return [];
+                requests.forEach((request) => request.promise.resolve([]));
+                return;
             }
             await new Promise(sleepHalfSecond);
         }
     }
     /* eslint-enable no-await-in-loop */
-    return [];
+
+    let finalResp = resp;
+    if (NETWORK_REQUEST_DICT[type].filter) {
+        // Do any necessary filtering after the network request completes
+        finalResp = NETWORK_REQUEST_DICT[type].filter(resp);
+    }
+
+    // Get the data key which is used to find successful hits in the batch results
+    const dataKey = NETWORK_REQUEST_DICT[type].data_key;
+    requests.forEach((request) => {
+        let found = [];
+        if (NETWORK_REQUEST_DICT[type].data_type === "string") {
+            // Check for matching case-insensitive results
+            found = filterStringData(finalResp, dataKey, request.item);
+        } else if (NETWORK_REQUEST_DICT[type].data_type === "array") {
+            // Check for inclusion of case-insensitive results
+            found = filterArrayData(finalResp, dataKey, request.item);
+        } else if (NETWORK_REQUEST_DICT[type].data_type === "string_list") {
+            // Check for inclusion of case-insensitive results
+            found = filterStringListData(finalResp, dataKey, request.item);
+        }
+        // Fulfill the promise which returns the results to the function that queued it
+        request.promise.resolve(found);
+    });
+    const unusedData = finalResp.filter((data) => !data.used);
+    if (unusedData.length > 0) {
+        debuglog("Unused results found:", unusedData);
+    }
 }
 
-const getJSONMemoized = _.memoize(getJSONRateLimited, memoizeKey);
-
-function get (url, params, cache = CACHE_LIFETIME, baseUrl = BOORU) {
-    const finalParams = (cache > 0)
-        ? {
-            ...params,
-            expires_in: cache,
+function filterStringData (resp, dataKey, requestItem) {
+    return resp.filter((data) => {
+        if (data[dataKey].toLowerCase() === requestItem.toLowerCase()) {
+            // Because the linter was complaining about assiging to the function parameter
+            const changeData = data;
+            // Used to find any results that don't match any requests
+            changeData.used = true;
+            return true;
         }
-        : params;
+        return false;
+    });
+}
 
-    return getJSONMemoized(`${baseUrl}${url}.json`, finalParams)
-        .catch((xhr) => {
-            console.error(xhr.status, xhr);
-            return [];
-        });
+function filterArrayData (resp, dataKey, requestItem) {
+    return resp.filter((data) => {
+        const compareArray = data[dataKey].map((item) => item.toLowerCase());
+        if (compareArray.includes(requestItem.toLowerCase())) {
+            // Because the linter was complaining about assiging to the function parameter
+            const changeData = data;
+            // Used to find any results that don't match any requests
+            changeData.used = true;
+            return true;
+        }
+        return false;
+    });
+}
+
+function filterStringListData (resp, dataKey, requestItem) {
+    return resp.filter((data) => {
+        const compareArray = data[dataKey].split(" ").map((item) => item.toLowerCase());
+        if (compareArray.includes(requestItem.toLowerCase())) {
+            // Because the linter was complaining about assiging to the function parameter
+            const changeData = data;
+            // Used to find any results that don't match any requests
+            changeData.used = true;
+            return true;
+        }
+        return false;
+    });
+}
+
+// Converts URLs to the same format used by the normalized URL column on Danbooru
+function normalizeProfileURL (profileUrl) {
+    const url = profileUrl.replace(/^https/, "http").replace(/\/$/, "");
+    return `${url}/`;
 }
 
 async function translateTag (target, tagName, options) {
@@ -477,23 +664,15 @@ async function translateTag (target, tagName, options) {
         // .trim()
         .normalize("NFKC")
         .replace(/^#/, "")
-        .replace(/[*]/g, "\\*"); // Escape * (wildcard)
+        .replace(/[*]/g, "\\*") // Escape * (wildcard)
+        .replace(/\s/g, "_"); // Wiki other names cannot contain spaces
 
     /* Don't search for empty tags. */
     if (normalizedTag.length === 0) {
         return;
     }
 
-    const wikiPages = await get(
-        "/wiki_pages",
-        {
-            search: {
-                other_names_match: normalizedTag,
-                is_deleted: false,
-            },
-            only: WIKI_FIELDS,
-        },
-    );
+    const wikiPages = await queueNetworkRequestMemoized("wiki", normalizedTag);
 
     let tags = [];
     if (wikiPages.length > 0) {
@@ -504,30 +683,13 @@ async function translateTag (target, tagName, options) {
         }));
     // `normalizedTag` consists of only ASCII characters except percent, asterics, and comma
     } else if (normalizedTag.match(/^[\u0020-\u0024\u0026-\u0029\u002B\u002D-\u007F]+$/)) {
-        const strictTagName = normalizedTag.replace(/\s/g, "_").toLowerCase();
-        tags = await get(
-            "/tags",
-            {
-                search: { name: strictTagName },
-                only: TAG_FIELDS,
-            },
-        );
+        // The server is already converting the values to
+        // lowercase on its end so no need to do it here
+        tags = await queueNetworkRequestMemoized("tag", normalizedTag);
         if (tags.length === 0) {
-            tags = await get(
-                "/tag_aliases",
-                {
-                    search: { antecedent_name: strictTagName },
-                    only: TAG_ALIASES_FILEDS,
-                },
-            );
+            tags = await queueNetworkRequestMemoized("alias", normalizedTag);
             if (tags.length > 0) {
-                tags = await get(
-                    "/tags",
-                    {
-                        search: { name: tags[0].consequent_name },
-                        only: TAG_FIELDS,
-                    },
-                );
+                tags = await queueNetworkRequestMemoized("tag", tags[0].consequent_name);
             }
         }
         tags = tags.map((tag) => ({
@@ -538,9 +700,7 @@ async function translateTag (target, tagName, options) {
     }
 
     if (tags.length === 0) {
-        if (DEBUG) {
-            console.log(`No translation for "${normalizedTag}", rule "${options.ruleName}"`);
-        }
+        debuglog(`No translation for "${normalizedTag}", rule "${options.ruleName}"`);
         return;
     }
 
@@ -584,55 +744,30 @@ function addDanbooruTags ($target, tags, options = {}) {
 async function translateArtistByURL (element, profileUrl, options) {
     if (!profileUrl) return;
 
-    const artists = await get(
-        "/artists",
-        {
-            search: {
-                url_matches: profileUrl,
-                is_active: true,
-            },
-            only: ARTIST_FIELDS,
-        },
-    );
+    const promiseArray = [];
+    promiseArray.push(queueNetworkRequestMemoized("url", normalizeProfileURL(profileUrl)));
+    const translatedUrl = translateProfileURL(profileUrl);
+    if (translatedUrl !== profileUrl) {
+        promiseArray.push(queueNetworkRequestMemoized("url", normalizeProfileURL(translatedUrl)));
+    }
+    const artistUrls = (await Promise.all(promiseArray)).flat();
+    const artists = artistUrls.map((artistUrl) => artistUrl.artist);
 
     if (artists.length === 0) {
-        if (DEBUG) {
-            console.log(`No artist at "${profileUrl}", rule "${options.ruleName}"`);
-        }
+        debuglog(`No artist at "${profileUrl}", rule "${options.ruleName}"`);
         return;
     }
 
-    // New fix of #18 v2
-    // Dabooru does unwanted reverse search
-    // which returns trashy results
-    // and there are exaclty 10 artists
-    if (artists.length === 10) {
-        if (DEBUG) {
-            console.log(`The results for "${profileUrl}" were rejected, rule "${options.ruleName}"`);
-        }
-        return;
-    }
     artists.forEach((artist) => addDanbooruArtist($(element), artist, options));
 }
 
 async function translateArtistByName (element, artistName, options) {
     if (!artistName) return;
 
-    const artists = await get(
-        "/artists",
-        {
-            search: {
-                name: artistName.replace(/ /g, "_"),
-                is_active: true,
-            },
-            only: ARTIST_FIELDS,
-        },
-    );
+    const artists = await queueNetworkRequestMemoized("artist", artistName.replace(/ /g, "_"));
 
     if (artists.length === 0) {
-        if (DEBUG) {
-            console.log(`No artist "${artistName}", rule "${options.ruleName}"`);
-        }
+        debuglog(`No artist "${artistName}", rule "${options.ruleName}"`);
         return;
     }
 
@@ -739,21 +874,10 @@ async function buildArtistTooltip (artist, qtip) {
     const renderedQtips = buildArtistTooltip.cache || (buildArtistTooltip.cache = {});
 
     if (!(artist.name in renderedQtips)) {
-        const waitPosts = get(
-            "/posts",
-            {
-                tags: `${(SHOW_DELETED ? "status:any" : "-status:deleted")} ${artist.name}`,
-                limit: ARTIST_POST_PREVIEW_LIMIT,
-                only: POST_FIELDS,
-            },
-        );
-        const waitTags = get(
-            "/tags",
-            {
-                search: { name: artist.name },
-                only: POST_COUNT_FIELDS,
-            },
-        );
+        const waitPosts = queueNetworkRequestMemoized("post", artist.name);
+        const waitTags = queueNetworkRequestMemoized("tag", artist.name);
+        // Process the queue immediately
+        intervalNetworkHandler();
 
         renderedQtips[artist.name] = Promise
             .all([waitTags, waitPosts])
@@ -1606,7 +1730,7 @@ function initializePixiv () {
     });
 
     // Artist profile pages: https://www.pixiv.net/en/users/29310, https://www.pixiv.net/en/users/104471/illustrations
-    const normalizePageUrl = () => `https://www.pixiv.net/en/users/${safeMatch(window.location.pathname, /\d+/)}`;
+    const normalizePageUrl = () => `https://www.pixiv.net/en/users/${safeMatchMemoized(window.location.pathname, /\d+/)}`;
     findAndTranslate("artist", ".VyO6wL2", {
         toProfileUrl: normalizePageUrl,
         asyncMode: true,
@@ -1965,7 +2089,7 @@ function initializeTwitter () {
 
     // Floating name of a channel https://twitter.com/mugosatomi
     const URLfromLocation = () => (
-        `https://twitter.com${safeMatch(window.location.pathname, /\/\w+/)}`
+        `https://twitter.com${safeMatchMemoized(window.location.pathname, /\/\w+/)}`
     );
     findAndTranslate("artist", "div[data-testid='primaryColumn']>div>:first-child h2>div>div>div", {
         toProfileUrl: URLfromLocation,
@@ -2224,7 +2348,7 @@ function initializePawoo () {
     // https://pawoo.net/@yamadorikodi
     // artist name in channel header
     findAndTranslate("artist", ".name small", {
-        toProfileUrl: (el) => `https://pawoo.net/@${safeMatch(el.textContent, /[^@]+/)}`,
+        toProfileUrl: (el) => `https://pawoo.net/@${safeMatchMemoized(el.textContent, /[^@]+/)}`,
         tagPosition: TAG_POSITIONS.afterbegin,
         ruleName: "artist profile",
     });
@@ -2317,10 +2441,6 @@ function initialize () {
     GM_addStyle(PROGRAM_CSS);
     GM_addStyle(GM_getResourceText("jquery_qtip_css"));
     GM_registerMenuCommand("Settings", showSettings, "S");
-    // So that JSON stringify can be used to generate memoize keys
-    /* eslint-disable no-extend-native */
-    RegExp.prototype.toJSON = RegExp.prototype.toString;
-    /* eslint-enable no-extend-native */
 
     switch (window.location.host) {
         case "www.pixiv.net":
@@ -2347,6 +2467,9 @@ function initialize () {
                 initializeArtStation();
             }
     }
+
+    // Check for new network requests every half-second
+    setInterval(intervalNetworkHandler, 500);
 }
 
 //------------------------
