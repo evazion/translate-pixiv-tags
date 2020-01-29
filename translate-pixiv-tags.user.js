@@ -758,14 +758,6 @@ async function translateArtistByURL (element, profileUrl, options) {
         return;
     }
 
-    // New fix of #18 v2
-    // Dabooru does unwanted reverse search
-    // which returns trashy results
-    // and there are exaclty 10 artists
-    if (artists.length === 10) {
-        debuglog(`The results for "${profileUrl}" were rejected, rule "${options.ruleName}"`);
-        return;
-    }
     artists.forEach((artist) => addDanbooruArtist($(element), artist, options));
 }
 
