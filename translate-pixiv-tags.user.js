@@ -147,25 +147,6 @@ const SHOW_DELETED = SETTINGS.get("show_deleted");
 // Whether to print an additional info into the console
 const DEBUG = SETTINGS.get("debug");
 
-// Values needed from Danbooru API calls using the "only" parameter
-const POST_FIELDS = [
-    "created_at",
-    "file_size",
-    "has_visible_children",
-    "id",
-    "image_height",
-    "image_width",
-    "is_flagged",
-    "is_pending",
-    "is_deleted",
-    "parent_id",
-    "preview_file_url",
-    "rating",
-    "source",
-    "tag_string",
-].join(",");
-const POST_COUNT_FIELDS = "post_count";
-
 // Settings for artist tooltips.
 const ARTIST_QTIP_SETTINGS = {
     style: {
@@ -322,8 +303,7 @@ const PROGRAM_CSS = `
 
 const CACHE_PARAM = (CACHE_LIFETIME ? { expires_in: CACHE_LIFETIME } : {});
 // Setting this to the maximum since batches could return more than the amount being queried
-const LIMIT_PARAM = { limit: 1000 };
-
+const API_LIMIT = 1000;
 
 const QUEUED_NETWORK_REQUESTS = [];
 
@@ -362,7 +342,7 @@ const NETWORK_REQUEST_DICT = {
         url: "/tags",
         data_key: "name",
         data_type: "string",
-        fields: "name,category",
+        fields: "name,category,post_count",
         params (nameList) {
             return {
                 search: {
@@ -399,6 +379,36 @@ const NETWORK_REQUEST_DICT = {
             };
         },
         filter: (artistUrls) => artistUrls.filter((artistUrl) => artistUrl.artist.is_active),
+    },
+    // This can only be used as a single use and not as part a group
+    post: {
+        url: "/posts",
+        data_key: "tag_string",
+        data_type: "string_list",
+        fields: [
+            "created_at",
+            "file_size",
+            "has_visible_children",
+            "id",
+            "image_height",
+            "image_width",
+            "is_flagged",
+            "is_pending",
+            "is_deleted",
+            "parent_id",
+            "preview_file_url",
+            "rating",
+            "source",
+            "tag_string",
+        ].join(","),
+        params (tagList) {
+            return {
+                // As this is called immediately and as a single use, only pass the first tag
+                tags: `${(SHOW_DELETED ? "status:any" : "-status:deleted")} ${tagList[0]}`,
+                only: this.fields,
+            };
+        },
+        limit: ARTIST_POST_PREVIEW_LIMIT,
     },
 };
 
@@ -607,7 +617,11 @@ function intervalNetworkHandler () {
         if (requests.length > 0) {
             const items = requests.map((request) => request.item);
             const typeParam = NETWORK_REQUEST_DICT[type].params(items);
-            const params = Object.assign(typeParam, LIMIT_PARAM, CACHE_PARAM);
+            const limitParam = { limit: API_LIMIT };
+            if (NETWORK_REQUEST_DICT[type].limit) {
+                limitParam.limit = NETWORK_REQUEST_DICT[type].limit;
+            }
+            const params = Object.assign(typeParam, limitParam, CACHE_PARAM);
             const url = `${BOORU}${NETWORK_REQUEST_DICT[type].url}.json`;
             getLong(url, params, requests, type);
         }
@@ -675,6 +689,9 @@ async function getLong (url, params, requests, type) {
         } else if (NETWORK_REQUEST_DICT[type].data_type === "array") {
             // Check for inclusion of case-insensitive results
             found = filterArrayData(finalResp, dataKey, request.item);
+        } else if (NETWORK_REQUEST_DICT[type].data_type === "string_list") {
+            // Check for inclusion of case-insensitive results
+            found = filterStringListData(finalResp, dataKey, request.item);
         }
         // Fulfill the promise which returns the results to the function that queued it
         request.promise.resolve(found);
@@ -701,6 +718,20 @@ function filterStringData (resp, dataKey, requestItem) {
 function filterArrayData (resp, dataKey, requestItem) {
     return resp.filter((data) => {
         const compareArray = data[dataKey].map((item) => item.toLowerCase());
+        if (compareArray.includes(requestItem.toLowerCase())) {
+            // Because the linter was complaining about assiging to the function parameter
+            const changeData = data;
+            // Used to find any results that don't match any requests
+            changeData.used = true;
+            return true;
+        }
+        return false;
+    });
+}
+
+function filterStringListData (resp, dataKey, requestItem) {
+    return resp.filter((data) => {
+        const compareArray = data[dataKey].split(" ").map((item) => item.toLowerCase());
         if (compareArray.includes(requestItem.toLowerCase())) {
             // Because the linter was complaining about assiging to the function parameter
             const changeData = data;
@@ -941,21 +972,10 @@ async function buildArtistTooltip (artist, qtip) {
     const renderedQtips = buildArtistTooltip.cache || (buildArtistTooltip.cache = {});
 
     if (!(artist.name in renderedQtips)) {
-        const waitPosts = get(
-            "/posts",
-            {
-                tags: `${(SHOW_DELETED ? "status:any" : "-status:deleted")} ${artist.name}`,
-                limit: ARTIST_POST_PREVIEW_LIMIT,
-                only: POST_FIELDS,
-            },
-        );
-        const waitTags = get(
-            "/tags",
-            {
-                search: { name: artist.name },
-                only: POST_COUNT_FIELDS,
-            },
-        );
+        const waitPosts = queueNetworkRequestMemoized("post", artist.name);
+        const waitTags = queueNetworkRequestMemoized("tag", artist.name);
+        // Process the queue immediately
+        intervalNetworkHandler();
 
         renderedQtips[artist.name] = Promise
             .all([waitTags, waitPosts])
