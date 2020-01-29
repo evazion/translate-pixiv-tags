@@ -177,9 +177,7 @@ const CORS_IMAGE_DOMAINS = [
 // It's preferable to use a GET request when able since GET supports caching and POST does not.
 const MAXIMUM_URI_LENGTH = 8000;
 
-// For network rate and error management
-const MAX_PENDING_NETWORK_REQUESTS = 40;
-const MIN_PENDING_NETWORK_REQUESTS = 5;
+// For network error management
 const MAX_NETWORK_ERRORS = 25;
 const MAX_NETWORK_RETRIES = 3;
 
@@ -492,19 +490,6 @@ function getImage (imageUrl) {
         .then(({ response }) => response);
 }
 
-function rateLimitedLog (level, ...messageData) {
-    // Assumes that only simple arguments will be passed in
-    const key = messageData.join(",");
-    const options = rateLimitedLog[key] || (rateLimitedLog[key] = { log: true });
-
-    if (options.log) {
-        console[level](...messageData);
-        options.log = false;
-        // Have only one message with the same parameters per second
-        setTimeout(() => { options.log = true; }, 1000);
-    }
-}
-
 function checkNetworkErrors (domain, hasError) {
     const data = checkNetworkErrors[domain] || (checkNetworkErrors[domain] = { error: 0 });
 
@@ -513,8 +498,7 @@ function checkNetworkErrors (domain, hasError) {
         data.error += 1;
     }
     if (data.error >= MAX_NETWORK_ERRORS) {
-        rateLimitedLog(
-            "error",
+        console.error(
             "Maximun number of errors exceeded",
             MAX_NETWORK_ERRORS,
             "for",
@@ -523,80 +507,6 @@ function checkNetworkErrors (domain, hasError) {
         return false;
     }
     return true;
-}
-
-async function getJSONRateLimited (url, params) {
-    const sleepHalfSecond = (resolve) => setTimeout(resolve, 500);
-    const domain = new URL(url).hostname;
-    const queries = (
-        getJSONRateLimited[domain]
-        || (getJSONRateLimited[domain] = {
-            pending: 0,
-            currentMax: MAX_PENDING_NETWORK_REQUESTS,
-        })
-    );
-
-    // Wait until the number of pending network requests is below the max threshold
-    /* eslint-disable no-await-in-loop */
-    while (queries.pending >= queries.currentMax) {
-        // Bail if the maximum number of network errors has been exceeded
-        if (!(checkNetworkErrors(domain, false))) {
-            return [];
-        }
-        rateLimitedLog(
-            "warn",
-            "Exceeded maximum pending requests",
-            queries.currentMax,
-            "for",
-            domain,
-        );
-        await new Promise(sleepHalfSecond);
-    }
-
-    for (let i = 0; i < MAX_NETWORK_RETRIES; i++) {
-        queries.pending += 1;
-        try {
-            return await $
-                .getJSON(url, params)
-                .always(() => { queries.pending -= 1; });
-        } catch (ex) {
-            // Backing off maximum to adjust to current network conditions
-            queries.currentMax = Math.max(queries.currentMax - 1, MIN_PENDING_NETWORK_REQUESTS);
-            console.error(
-                "Failed try #",
-                i + 1,
-                "\nURL:",
-                url,
-                "\nParameters:",
-                params,
-                "\nHTTP Error:",
-                ex.status,
-            );
-            if (!checkNetworkErrors(domain, true)) {
-                return [];
-            }
-            await new Promise(sleepHalfSecond);
-        }
-    }
-    /* eslint-enable no-await-in-loop */
-    return [];
-}
-
-const getJSONMemoized = _.memoize(getJSONRateLimited, memoizeKey);
-
-function get (url, params, cache = CACHE_LIFETIME, baseUrl = BOORU) {
-    const finalParams = (cache > 0)
-        ? {
-            ...params,
-            expires_in: cache,
-        }
-        : params;
-
-    return getJSONMemoized(`${baseUrl}${url}.json`, finalParams)
-        .catch((xhr) => {
-            console.error(xhr.status, xhr);
-            return [];
-        });
 }
 
 function queueNetworkRequest (type, item) {
