@@ -1730,7 +1730,7 @@ function initializePixiv () {
     });
 
     // Artist profile pages: https://www.pixiv.net/en/users/29310, https://www.pixiv.net/en/users/104471/illustrations
-    const normalizePageUrl = () => `https://www.pixiv.net/en/users/${safeMatch(window.location.pathname, /\d+/)}`;
+    const normalizePageUrl = () => `https://www.pixiv.net/en/users/${safeMatchMemoized(window.location.pathname, /\d+/)}`;
     findAndTranslate("artist", ".VyO6wL2", {
         toProfileUrl: normalizePageUrl,
         asyncMode: true,
@@ -2089,7 +2089,7 @@ function initializeTwitter () {
 
     // Floating name of a channel https://twitter.com/mugosatomi
     const URLfromLocation = () => (
-        `https://twitter.com${safeMatch(window.location.pathname, /\/\w+/)}`
+        `https://twitter.com${safeMatchMemoized(window.location.pathname, /\/\w+/)}`
     );
     findAndTranslate("artist", "div[data-testid='primaryColumn']>div>:first-child h2>div>div>div", {
         toProfileUrl: URLfromLocation,
@@ -2348,7 +2348,7 @@ function initializePawoo () {
     // https://pawoo.net/@yamadorikodi
     // artist name in channel header
     findAndTranslate("artist", ".name small", {
-        toProfileUrl: (el) => `https://pawoo.net/@${safeMatch(el.textContent, /[^@]+/)}`,
+        toProfileUrl: (el) => `https://pawoo.net/@${safeMatchMemoized(el.textContent, /[^@]+/)}`,
         tagPosition: TAG_POSITIONS.afterbegin,
         ruleName: "artist profile",
     });
