@@ -458,6 +458,24 @@ function safeMatch (string, regex, group = 0, defaultValue = "") {
 
 const safeMatchMemoized = _.memoize(safeMatch, memoizeKey);
 
+const TRANSLATE_PROFILE_URL = [{
+    regex: /https?:\/\/www\.pixiv\.net(?:\/en)?\/users\/(\d+)/,
+    replace: "https://www.pixiv.net/member.php?id=%REPLACE%",
+}];
+
+function translateProfileURL (profileUrl) {
+    let translateUrl = profileUrl;
+    TRANSLATE_PROFILE_URL.some((value) => {
+        const match = profileUrl.match(value.regex);
+        if (match) {
+            translateUrl = value.replace.replace("%REPLACE%", match[1]);
+        }
+        // Returning true breaks the some loop
+        return translateUrl !== profileUrl;
+    });
+    return translateUrl;
+}
+
 function getImage (imageUrl) {
     return GM
         .xmlHttpRequest({
@@ -761,7 +779,14 @@ function addDanbooruTags ($target, tags, options = {}) {
 async function translateArtistByURL (element, profileUrl, options) {
     if (!profileUrl) return;
 
-    const artistUrls = await queueNetworkRequestMemoized("url", normalizeProfileURL(profileUrl));
+    const promiseArray = [];
+    promiseArray.push(queueNetworkRequestMemoized("url", normalizeProfileURL(profileUrl)));
+    const translatedUrl = translateProfileURL(profileUrl);
+    if (translatedUrl !== profileUrl) {
+        promiseArray.push(queueNetworkRequestMemoized("url", normalizeProfileURL(translatedUrl)));
+    }
+    const data = await Promise.all(promiseArray);
+    const artistUrls = [].concat([], ...data);
     const artists = artistUrls.map((artistUrl) => artistUrl.artist);
 
     if (artists.length === 0) {
