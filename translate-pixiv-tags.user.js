@@ -671,16 +671,44 @@ async function getLong (url, params, requests, type) {
         let found = [];
         if (NETWORK_REQUEST_DICT[type].data_type === "string") {
             // Check for matching case-insensitive results
-            found = finalResp.filter((data) => data[dataKey].toLowerCase() === request.item.toLowerCase());
+            found = filterStringData(finalResp, dataKey, request.item);
         } else if (NETWORK_REQUEST_DICT[type].data_type === "array") {
             // Check for inclusion of case-insensitive results
-            found = finalResp.filter((data) => {
-                const compareArray = data[dataKey].map((item) => item.toLowerCase());
-                return compareArray.includes(request.item.toLowerCase());
-            });
+            found = filterArrayData(finalResp, dataKey, request.item);
         }
         // Fulfill the promise which returns the results to the function that queued it
         request.promise.resolve(found);
+    });
+    const unusedData = finalResp.filter((data) => !data.used);
+    if (unusedData.length > 0) {
+        debuglog("Unused results found:", unusedData);
+    }
+}
+
+function filterStringData (resp, dataKey, requestItem) {
+    return resp.filter((data) => {
+        if (data[dataKey].toLowerCase() === requestItem.toLowerCase()) {
+            // Because the linter was complaining about assiging to the function parameter
+            const changeData = data;
+            // Used to find any results that don't match any requests
+            changeData.used = true;
+            return true;
+        }
+        return false;
+    });
+}
+
+function filterArrayData (resp, dataKey, requestItem) {
+    return resp.filter((data) => {
+        const compareArray = data[dataKey].map((item) => item.toLowerCase());
+        if (compareArray.includes(requestItem.toLowerCase())) {
+            // Because the linter was complaining about assiging to the function parameter
+            const changeData = data;
+            // Used to find any results that don't match any requests
+            changeData.used = true;
+            return true;
+        }
+        return false;
     });
 }
 
