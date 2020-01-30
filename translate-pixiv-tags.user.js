@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20200128113446
+// @version      20200130120746
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -591,18 +591,37 @@ async function getLong (url, params, requests, type) {
 
     // Get the data key which is used to find successful hits in the batch results
     const dataKey = NETWORK_REQUEST_DICT[type].data_key;
-    requests.forEach((request) => {
-        let found = [];
-        if (NETWORK_REQUEST_DICT[type].data_type === "string") {
+    let includes;
+    switch (NETWORK_REQUEST_DICT[type].data_type) {
+        case "string":
             // Check for matching case-insensitive results
-            found = filterStringData(finalResp, dataKey, request.item);
-        } else if (NETWORK_REQUEST_DICT[type].data_type === "array") {
+            includes = (data, item) => data.toLowerCase() === item.toLowerCase();
+            break;
+        case "array":
             // Check for inclusion of case-insensitive results
-            found = filterArrayData(finalResp, dataKey, request.item);
-        } else if (NETWORK_REQUEST_DICT[type].data_type === "string_list") {
+            includes = (data, item) => data
+                .map((it) => it.toLowerCase())
+                .includes(item.toLowerCase());
+            break;
+        case "string_list":
             // Check for inclusion of case-insensitive results
-            found = filterStringListData(finalResp, dataKey, request.item);
-        }
+            includes = (data, item) => data
+                .toLowerCase()
+                .split(" ")
+                .includes(item.toLowerCase());
+            break;
+        default:
+            console.error("Unsupported type of response data");
+            return;
+    }
+    requests.forEach((request) => {
+        const found = finalResp.filter((data) => {
+            if (includes(data[dataKey], request.item)) {
+                data.used = true; // eslint-disable-line no-param-reassign
+                return true;
+            }
+            return false;
+        });
         // Fulfill the promise which returns the results to the function that queued it
         request.promise.resolve(found);
     });
@@ -610,47 +629,6 @@ async function getLong (url, params, requests, type) {
     if (unusedData.length > 0) {
         debuglog("Unused results found:", unusedData);
     }
-}
-
-function filterStringData (resp, dataKey, requestItem) {
-    return resp.filter((data) => {
-        if (data[dataKey].toLowerCase() === requestItem.toLowerCase()) {
-            // Because the linter was complaining about assiging to the function parameter
-            const changeData = data;
-            // Used to find any results that don't match any requests
-            changeData.used = true;
-            return true;
-        }
-        return false;
-    });
-}
-
-function filterArrayData (resp, dataKey, requestItem) {
-    return resp.filter((data) => {
-        const compareArray = data[dataKey].map((item) => item.toLowerCase());
-        if (compareArray.includes(requestItem.toLowerCase())) {
-            // Because the linter was complaining about assiging to the function parameter
-            const changeData = data;
-            // Used to find any results that don't match any requests
-            changeData.used = true;
-            return true;
-        }
-        return false;
-    });
-}
-
-function filterStringListData (resp, dataKey, requestItem) {
-    return resp.filter((data) => {
-        const compareArray = data[dataKey].split(" ").map((item) => item.toLowerCase());
-        if (compareArray.includes(requestItem.toLowerCase())) {
-            // Because the linter was complaining about assiging to the function parameter
-            const changeData = data;
-            // Used to find any results that don't match any requests
-            changeData.used = true;
-            return true;
-        }
-        return false;
-    });
 }
 
 // Converts URLs to the same format used by the normalized URL column on Danbooru
