@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20200130120746
+// @version      20200201130346
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -2006,11 +2006,11 @@ function initializeTwitter () {
             margin-left: 0;
         }
         /* Fix position of artist tag in an expanded tweet */
-        .r-18u37iz.r-thb0q2.r-wgs6xk .r-zl2h9q {
+        .r-18u37iz.r-thb0q2.r-wgs6xk .r-1wtj0ep {
             display: grid;
             grid-template-columns: auto 32px;
         }
-        .r-18u37iz.r-thb0q2.r-wgs6xk .r-zl2h9q .ex-artist-tag {
+        .r-18u37iz.r-thb0q2.r-wgs6xk .r-1wtj0ep .ex-artist-tag {
             grid-area: 2/1;
             margin: 0;
         }
@@ -2118,7 +2118,7 @@ function initializeTwitter () {
     // Tweet, expanded tweet and comment authors
     // https://twitter.com/mugosatomi/status/1173231575959363584
     findAndTranslate("artist", "div.r-1wbh5a2.r-dnmrzs", {
-        predicate: "div[data-testid='primaryColumn'] article div:has(>a.r-1wbh5a2)",
+        predicate: "div[data-testid='primaryColumn'] article div:last-child>div:has(>a.r-1wbh5a2)",
         toProfileUrl: linkInChildren,
         classes: "inline",
         asyncMode: true,
