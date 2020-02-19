@@ -368,12 +368,13 @@ const NETWORK_REQUEST_DICT = {
         url: "/artist_urls",
         data_key: "normalized_url",
         data_type: "string",
+        fields: "normalized_url,artist[id,name,other_names,is_active,urls[normalized_url,is_active]]",
         params (urlList) {
             return {
                 search: {
                     normalized_url_lower_array: urlList,
                 },
-                // The only parameter does not work with artist urls... yet
+                only: this.fields,
             };
         },
         filter: (artistUrls) => artistUrls.filter((artistUrl) => artistUrl.artist.is_active),
