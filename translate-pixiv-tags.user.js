@@ -354,7 +354,7 @@ const NETWORK_REQUEST_DICT = {
         url: "/tag_aliases",
         data_key: "antecedent_name",
         data_type: "string",
-        fields: "antecedent_name,consequent_name",
+        fields: "antecedent_name,consequent_tag[name,category,post_count]",
         params (nameList) {
             return {
                 search: {
@@ -666,10 +666,8 @@ async function translateTag (target, tagName, options) {
         // lowercase on its end so no need to do it here
         tags = await queueNetworkRequestMemoized("tag", normalizedTag);
         if (tags.length === 0) {
-            tags = await queueNetworkRequestMemoized("alias", normalizedTag);
-            if (tags.length > 0) {
-                tags = await queueNetworkRequestMemoized("tag", tags[0].consequent_name);
-            }
+            const aliases = await queueNetworkRequestMemoized("alias", normalizedTag);
+            tags = aliases.map((alias) => alias.consequent_tag);
         }
         tags = tags.map((tag) => ({
             name: tag.name,
