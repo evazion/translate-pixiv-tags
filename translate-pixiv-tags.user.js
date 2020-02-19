@@ -368,7 +368,7 @@ const NETWORK_REQUEST_DICT = {
         url: "/artist_urls",
         data_key: "normalized_url",
         data_type: "string",
-        fields: "normalized_url,artist[id,name,other_names,is_active,urls[normalized_url,is_active]]",
+        fields: "normalized_url,artist[id,name,is_active,is_banned,other_names,urls[normalized_url,is_active]]",
         params (urlList) {
             return {
                 search: {
