@@ -2005,11 +2005,11 @@ function initializeTwitter () {
             margin-left: 0;
         }
         /* Fix position of artist tag in an expanded tweet */
-        .r-18u37iz.r-thb0q2.r-wgs6xk .r-1wtj0ep {
+        .r-18u37iz.r-1mi0q7o .r-1wtj0ep {
             display: grid;
             grid-template-columns: auto 32px;
         }
-        .r-18u37iz.r-thb0q2.r-wgs6xk .r-1wtj0ep .ex-artist-tag {
+        .r-18u37iz.r-1mi0q7o .r-1wtj0ep .ex-artist-tag {
             grid-area: 2/1;
             margin: 0;
         }
