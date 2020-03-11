@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20200221200846
+// @version      20200311123846
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -368,7 +368,7 @@ const NETWORK_REQUEST_DICT = {
         url: "/artist_urls",
         data_key: "normalized_url",
         data_type: "string",
-        fields: "normalized_url,artist[id,name,is_active,is_banned,other_names,urls[normalized_url,is_active]]",
+        fields: "normalized_url,artist[id,name,is_deleted,is_banned,other_names,urls[normalized_url,is_active]]",
         params (urlList) {
             return {
                 search: {
@@ -377,7 +377,7 @@ const NETWORK_REQUEST_DICT = {
                 only: this.fields,
             };
         },
-        filter: (artistUrls) => artistUrls.filter((artistUrl) => artistUrl.artist.is_active),
+        filter: (artistUrls) => artistUrls.filter((artistUrl) => !artistUrl.artist.is_deleted),
     },
     // This can only be used as a single use and not as part a group
     post: {
