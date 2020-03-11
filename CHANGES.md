@@ -1,3 +1,15 @@
+# Release 2020.03.12
+
+## Fixes
+
+* Artist translating broken by API changes.
+* pixiv, Twitter: breakages caused by updates.
+
+## Changes
+
+* Network and speed improvments (credit to BrokenEagle).
+* Now aliase tags are translated as well.
+
 # Release 2020.01.26
 
 ## Fixes
