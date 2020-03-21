@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20200311123846
+// @version      20200321143246
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -458,8 +458,8 @@ const TRANSLATE_PROFILE_URL = [{
     regex: /https?:\/\/www\.pixiv\.net(?:\/en)?\/users\/(\d+)/,
     replace: "https://www.pixiv.net/member.php?id=%REPLACE%",
 }, {
-    regex: /https?:\/\/www\.deviantart\.com\/([\w-]+)/,
-    replace: "https://%REPLACE%.deviantart.com",
+    regex: /https?:\/\/([\w-]+)\.deviantart\.com/,
+    replace: "https://www.deviantart.com/%REPLACE%",
 }, {
     regex: /https?:\/\/www\.artstation\.com\/([\w-]+)/,
     replace: "https://%REPLACE%.artstation.com",
@@ -472,7 +472,7 @@ function translateProfileURL (profileUrl) {
     let translateUrl = profileUrl;
     TRANSLATE_PROFILE_URL.some((value) => {
         const match = profileUrl.match(value.regex);
-        if (match) {
+        if (match && match[1] !== "www") {
             translateUrl = value.replace.replace("%REPLACE%", match[1]);
         }
         // Returning true breaks the some loop
