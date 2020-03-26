@@ -1708,7 +1708,7 @@ function initializePixiv () {
 
     // Artist profile pages: https://www.pixiv.net/en/users/29310, https://www.pixiv.net/en/users/104471/illustrations
     const normalizePageUrl = () => `https://www.pixiv.net/en/users/${safeMatchMemoized(window.location.pathname, /\d+/)}`;
-    findAndTranslate("artist", ".VyO6wL2", {
+    findAndTranslate("artist", ".jfXuYp", {
         toProfileUrl: normalizePageUrl,
         asyncMode: true,
         ruleName: "artist profile",
@@ -1764,10 +1764,14 @@ function initializeNijie () {
             white-space: nowrap;
             border: 0;
         }
+        #login_illust_detail .ex-artist-tag {
+            display: inline-block;
+            margin-left: 0.5em;
+        }
     `);
 
     // http://nijie.info/view.php?id=208491
-    findAndTranslate("artist", "#pro .user_icon .name, .popup_member > a", {
+    findAndTranslate("artist", "#pro .user_icon .name, .popup_member > a, #login_illust_detail a", {
         ruleName: "artist",
     });
 
