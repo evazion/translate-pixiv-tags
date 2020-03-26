@@ -2072,50 +2072,36 @@ function initializeTwitter () {
     const URLfromLocation = () => (
         `https://twitter.com${safeMatchMemoized(window.location.pathname, /\/\w+/)}`
     );
-    findAndTranslate("artist", "div[data-testid='primaryColumn']>div>:first-child h2>div>div>div", {
-        toProfileUrl: URLfromLocation,
-        classes: "inline",
-        onadded: deleteOnChange("span>span"),
-        ruleName: "channel header 1",
-    });
-    // Look for (re-)adding of the top bar
-    new MutationSummary({
-        queries: [{ element: "h2" }],
-        callback: ([summary]) => {
-            const $h2 = $(summary.added[0]);
-            // If it is the top bar
-            if (!$h2.is("div[data-testid='primaryColumn']>div>:first-child h2")) {
-                return;
-            }
-            // If now it is channel name
-            const $div = $h2.find(">div>div>div");
-            if ($div.length > 0) {
-                findAndTranslate("artist", $div, {
+    const channelNameSelector = "div[data-testid='primaryColumn']>div>:first-child h2>div>div>div";
+    // On switching to a channel from another channel, Twitter updates only text nodes
+    // so, for correct work, it's required to watch for
+    // the channel name regardless whether it was translated
+    const watchForChanges = (elem) => {
+        if (!elem.matches(channelNameSelector) || elem.matches(TAG_SELECTOR)) {
+            return;
+        }
+        findAndTranslate("artist", elem, {
+            toProfileUrl: URLfromLocation,
+            classes: "inline",
+            ruleName: "channel header 1",
+        });
+        new MutationSummary({
+            rootNode: elem,
+            queries: [{ characterData: true }],
+            callback: () => {
+                TAG_POSITIONS.afterend.findTag($(elem)).remove();
+                findAndTranslate("artist", elem, {
                     toProfileUrl: URLfromLocation,
                     classes: "inline",
-                    onadded: deleteOnChange("span>span"),
                     ruleName: "channel header 2",
                 });
-            }
-            // Look for text changes of the top bar
-            new MutationSummary({
-                rootNode: $h2[0],
-                queries: [{ characterData: true }],
-                callback: () => {
-                    const $div2 = $h2.find(">div>div>div");
-                    // Return if it already translated, to avoid self-triggering
-                    if ($div2.next(TAG_SELECTOR).length > 0) {
-                        return;
-                    }
-                    findAndTranslate("artist", $div2, {
-                        toProfileUrl: URLfromLocation,
-                        classes: "inline",
-                        onadded: deleteOnChange("span>span"),
-                        ruleName: "channel header 3",
-                    });
-                },
-            });
-        },
+            },
+        });
+    };
+    $(channelNameSelector).each((i, elem) => watchForChanges(elem));
+    new MutationSummary({
+        queries: [{ element: "div" }],
+        callback: ([summary]) => summary.added.forEach((elem) => watchForChanges(elem)),
     });
 
     // Tweet, expanded tweet and comment authors
