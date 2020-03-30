@@ -1603,22 +1603,6 @@ function initializePixiv () {
             font-size: 20px;
             font-weight: bold;
         }
-        /**
-         * On the artist profile page, render the danbooru artist tag
-         * between the artist's name and follower count.
-         */
-        div._3_qyP5m {
-            display: grid;
-            grid-auto-rows: 16px;
-            grid-template-columns: auto 1fr;
-            justify-items: start;
-        }
-        ._3_qyP5m a[href^="/premium"] {
-            grid-area: 1 / 2;
-        }
-        ._3_qyP5m .ex-artist-tag {
-            grid-area: span 1 / span 2;
-        }
         /* Illust page: fix locate artist tag to not trigger native tooltip */
         main+aside>section>h2 {
             position: relative;
@@ -1708,7 +1692,8 @@ function initializePixiv () {
 
     // Artist profile pages: https://www.pixiv.net/en/users/29310, https://www.pixiv.net/en/users/104471/illustrations
     const normalizePageUrl = () => `https://www.pixiv.net/en/users/${safeMatchMemoized(window.location.pathname, /\d+/)}`;
-    findAndTranslate("artist", ".jfXuYp", {
+    findAndTranslate("artist", "h1", {
+        predicate: "div._3_qyP5m > h1",
         toProfileUrl: normalizePageUrl,
         asyncMode: true,
         ruleName: "artist profile",
