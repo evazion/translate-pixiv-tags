@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20200331214246
+// @version      20200404213846
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -1535,10 +1535,10 @@ function deleteOnChange (targetSelector) {
     return ($tag, options) => {
         const $container = options.tagPosition.getTagContainer($tag);
         const watcher = new MutationSummary({
-            rootNode: $container.find(targetSelector)[0],
+            rootNode: targetSelector ? $container.find(targetSelector)[0] : $container[0],
             queries: [{ characterData: true }],
             callback: ([summary]) => {
-                options.tagPosition.findTag($container).remove();
+                $tag.remove();
                 watcher.disconnect();
             },
         });
@@ -1621,16 +1621,20 @@ function initializePixiv () {
             grid-area: span 1 / span 2;
         }
         /* Illust page: fix locate artist tag to not trigger native tooltip */
-        main+aside>section>h2 {
-            position: relative;
+        main+aside>section>h2:not(#id) {
+            flex-direction: column-reverse;
+            align-items: flex-start;
         }
-        h2>div>div {
-            margin-bottom: 16px;
+        h2 > .ex-artist-tag + div>div {
+            margin-bottom: 12px;
         }
         main+aside>section>h2 .ex-artist-tag {
-            position: absolute;
-            bottom: 0;
+            position: relative;
             left: 47px;
+            top: -16px;
+        }
+        main+aside>section>h2 .ex-artist-tag:first-child {
+            height: 0;
         }
         /* Illust page: fix artist tag overflowing in related works and on search page */
         section li>div>div:nth-child(3),
@@ -1687,12 +1691,12 @@ function initializePixiv () {
         predicate: "main+aside>section>h2>div>div>a",
         requiredAttributes: "href",
         tagPosition: {
-            insertTag: ($container, $elem) => $container.closest("h2").append($elem),
+            insertTag: ($container, $elem) => $container.closest("h2").prepend($elem),
             findTag: ($container) => $container.closest("h2").find(TAG_SELECTOR),
-            getTagContainer: ($elem) => $elem.prev().find("a:eq(1)"),
+            getTagContainer: ($elem) => $elem.nextAll(":has(div)").find("a:eq(1)"),
         },
         asyncMode: true,
-        onadded: deleteOnChange("div"),
+        onadded: deleteOnChange(),
         ruleName: "illust artist",
     });
 
