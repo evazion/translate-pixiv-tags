@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20200404213846
+// @version      20200408115746
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -296,6 +296,7 @@ const PROGRAM_CSS = `
 }
 .ex-artist-tooltip .qtip-content {
     width: 520px !important;
+    box-sizing: initial;
 }
 `;
 
@@ -1877,9 +1878,10 @@ function initializeBCY () {
     });
 
     // Illust pages https://bcy.net/item/detail/6643704430988361988
-    findAndTranslate("artist", ".js-userTpl .user-name a", {
+    findAndTranslate("artist", ".col-small .user-name a", {
         toProfileUrl: (el) => el.href.replace(/\?.*$/, ""),
         ruleName: "illust artist",
+        onadded: ($tag, options) => $tag.parent().css("top", "15px"),
     });
 
     // Search pages https://bcy.net/tags/name/看板娘
