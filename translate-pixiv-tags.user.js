@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20200415011146
+// @version      20200508004046
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -1721,6 +1721,16 @@ function initializePixiv () {
         ruleName: "artist profile",
     });
 
+    // Deleted artist profile: https://www.pixiv.net/en/users/1843825
+    findAndTranslate("artist", ".error-title", {
+        // Trigger only on profile page
+        toProfileUrl: () => (safeMatchMemoized(window.location.pathname, /^\/(en\/)?users/)
+            ? normalizePageUrl()
+            : ""),
+        tagPosition: TAG_POSITIONS.afterbegin,
+        ruleName: "deleted artist profile",
+    });
+
     // Posts of followed artists: https://www.pixiv.net/bookmark_new_illust.php
     findAndTranslate("artist", ".ui-profile-popup", {
         predicate: "figcaption._3HwPt89 > ul > li > a.ui-profile-popup",
@@ -2110,6 +2120,15 @@ function initializeTwitter () {
     new MutationSummary({
         queries: [{ element: "div" }],
         callback: ([summary]) => summary.added.forEach((elem) => watchForChanges(elem)),
+    });
+
+    // Deleted channel https://twitter.com/6o2_iii
+    findAndTranslate("artist", "span.r-qvutc0", {
+        predicate: ".r-1b6yd1w.r-3s2u2q span .r-qvutc0",
+        toProfileUrl: URLfromLocation,
+        classes: "inline",
+        asyncMode: true,
+        ruleName: "delete artist profile",
     });
 
     // Tweet, expanded tweet and comment authors
