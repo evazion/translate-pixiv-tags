@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20200508004046
+// @version      20200508154946
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -20,6 +20,7 @@
 // @match        *://*.artstation.com/*
 // @match        *://saucenao.com/*
 // @match        *://pawoo.net/*
+// @match        *://*.fanbox.cc/*
 // @grant        GM_getResourceText
 // @grant        GM_getResourceURL
 // @grant        GM_xmlhttpRequest
@@ -730,7 +731,6 @@ async function translateArtistByURL (element, profileUrl, options) {
     }
     const artistUrls = (await Promise.all(promiseArray)).flat();
     const artists = artistUrls.map((artistUrl) => artistUrl.artist);
-
     if (artists.length === 0) {
         debuglog(`No artist at "${profileUrl}", rule "${options.ruleName}"`);
         return;
@@ -2403,22 +2403,47 @@ function initializeTweetDeck () {
 }
 
 function initializePixivFanbox () {
-    // https://www.pixiv.net/fanbox/creator/310631
+    const getPixivLink = async (userNick) => {
+        // Use direct query
+        const resp = await (
+            await fetch(`https://api.fanbox.cc/creator.get?creatorId=${userNick}`)
+        ).json();
+        return `https://www.pixiv.net/member.php?id=${resp.body.user.userId}`;
+    };
+    const getPixivLinkMemoized = _.memoize(getPixivLink);
+
+    const addTranslation = (options, el) => {
+        const url = new URL(el.closest("a").href);
+        const userNick = url.host === "www.fanbox.cc"
+            ? url.pathname.match(/[\d\w_-]+/)[0]
+            : url.host.match(/[\d\w_-]+/)[0];
+        getPixivLinkMemoized(userNick)
+            .then((pixivLink) => findAndTranslate("artist", el, {
+                ...options,
+                toProfileUrl: () => pixivLink,
+            }));
+    };
+
+    // https://agahari.fanbox.cc/
     // channel header
     findAndTranslate("artist", "a", {
-        predicate: "h1 a[href^='/fanbox/creator/']",
-        classes: "inline",
+        predicate: "h1 > a",
         asyncMode: true,
-        ruleName: "channel header",
+        toProfileUrl: addTranslation.bind(null, {
+            classes: "inline",
+            ruleName: "channel header",
+        }),
     });
 
     // Post author
     findAndTranslate("artist", "div.sc-7161tb-4", {
-        toProfileUrl: (el) => ($(el).closest("a").prop("href") || "").replace(/\/post\/\d+/, ""),
-        tagPosition: TAG_POSITIONS.beforeend,
-        classes: "inline",
+        predicate: "a[href] div",
         asyncMode: true,
-        ruleName: "post author",
+        toProfileUrl: addTranslation.bind(null, {
+            tagPosition: TAG_POSITIONS.beforeend,
+            classes: "inline",
+            ruleName: "post author",
+        }),
     });
 }
 
@@ -2437,13 +2462,7 @@ function initialize () {
     GM_registerMenuCommand("Settings", showSettings, "S");
 
     switch (window.location.host) {
-        case "www.pixiv.net":
-            if (window.location.pathname.startsWith("/fanbox")) {
-                initializePixivFanbox();
-            } else {
-                initializePixiv();
-            }
-            break;
+        case "www.pixiv.net":          initializePixiv();         break;
         case "dic.pixiv.net":          initializePixiv();         break;
         case "nijie.info":             initializeNijie();         break;
         case "seiga.nicovideo.jp":     initializeNicoSeiga();     break;
@@ -2457,8 +2476,10 @@ function initialize () {
         case "www.deviantart.com":     initializeDeviantArt();    break;
         case "www.artstation.com":     initializeArtStation();    break;
         default:
-            if (window.location.host.match(/artstation\.com/)) {
+            if (window.location.host.endsWith("artstation.com")) {
                 initializeArtStation();
+            } else if (window.location.host.endsWith("fanbox.cc")) {
+                initializePixivFanbox();
             }
     }
 
