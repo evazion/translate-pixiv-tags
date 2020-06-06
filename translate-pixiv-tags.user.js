@@ -1638,15 +1638,22 @@ function initializePixiv () {
             height: 0;
         }
         /* Illust page: fix artist tag overflowing in related works and on search page */
-        section li>div>div:nth-child(3),
+        section div[type="illust"] ~ div:last-child,
         aside li>div>div:nth-child(3) {
             flex-direction: column;
             align-items: flex-start;
         }
-        section li .ex-artist-tag,
-        aside li .ex-artist-tag {
-            margin-left: 2px;
-            margin-top: -6px;
+        section ul .ex-artist-tag,
+        aside ul .ex-artist-tag {
+            margin-left: 6px;
+        }
+        /* Tags in a box */
+        a[color] > .ex-translated-tags{
+            font-weight: bold;
+        }
+        .ex-translated-tags.no-brackets::before,
+        .ex-translated-tags.no-brackets::after {
+            content: none;
         }
     `);
 
@@ -1679,12 +1686,47 @@ function initializePixiv () {
         ruleName: "artwork tags",
     });
 
-    // New search pages: https://www.pixiv.net/en/tags/%E6%9D%B1%E6%96%B9project/artworks
+    // Main tag on search pages: https://www.pixiv.net/en/tags/%E6%9D%B1%E6%96%B9project/artworks
     findAndTranslate("tag", "div", {
-        predicate: "#root>div>div>div>div>div:has(>span:last-child)",
-        toTagName: getNormalizedTagName,
+        predicate: "#root>div>div>div>div>div>div:has(>span:first-child)",
         asyncMode: true,
         ruleName: "search tag",
+    });
+
+    // Tags in box:
+    // Search page: https://www.pixiv.net/en/tags/%E6%9D%B1%E6%96%B9project/artworks
+    // The index page: https://www.pixiv.net/ https://www.pixiv.net/en/
+    // Artist profile: https://www.pixiv.net/en/users/104471/illustrations
+    findAndTranslate("tag", "div", {
+        predicate: "a[color]>div:last-child",
+        tagPosition: {
+            insertTag: ($container, $elem) => $container.parent().prepend($elem),
+            findTag: ($container) => $container.parent().find(TAG_SELECTOR),
+            getTagContainer: ($elem) => $elem.nextUntil(":last-child"),
+        },
+        classes: "no-brackets",
+        asyncMode: true,
+        ruleName: "related tag",
+    });
+
+    // Popular tags on the index page: https://www.pixiv.net/ https://www.pixiv.net/en/
+    findAndTranslate("tag", "div", {
+        predicate: "a.gtm-toppage-tag-popular-tag-illustration>div>div:first-child>div:only-child",
+        tagPosition: TAG_POSITIONS.beforebegin,
+        classes: "no-brackets",
+        asyncMode: true,
+        ruleName: "popular tag",
+    });
+
+    // Tag of recommended illusts on index page: https://www.pixiv.net/ https://www.pixiv.net/en/
+    findAndTranslate("tag", "h3", {
+        predicate: "section > div > div > h3",
+        toTagName: (el) => (el.textContent.includes("#")
+            ? el.textContent.slice(el.textContent.indexOf("#") + 1)
+            : null),
+        tagPosition: TAG_POSITIONS.beforeend,
+        asyncMode: true,
+        ruleName: "tag of recommended illusts",
     });
 
     // Illust author https://www.pixiv.net/en/artworks/66475847
@@ -1704,9 +1746,10 @@ function initializePixiv () {
     // Related work's artists https://www.pixiv.net/en/artworks/66475847
     // New search pages: https://www.pixiv.net/en/tags/%E6%9D%B1%E6%96%B9project/artworks
     // Bookmarks: https://www.pixiv.net/en/users/29310/bookmarks/artworks
+    // Thumbs on the index page: https://www.pixiv.net/ https://www.pixiv.net/en/
     // Shouldn't translate users in comments: https://www.pixiv.net/en/artworks/2893321
     findAndTranslate("artist", "a", {
-        predicate: "section ul>li>div>div:last-child>div:first-child>a:last-child",
+        predicate: "section ul div>div:last-child:not([type='illust'])>div:last-child:not(.ex-artist-tag)>a:last-child",
         tagPosition: TAG_POSITIONS.afterParent,
         asyncMode: true,
         ruleName: "artist below illust thumb",
@@ -1744,30 +1787,28 @@ function initializePixiv () {
         ruleName: "ranking artist",
     });
 
-    // Index page popup card
-    findAndTranslate("artist", "a.user-name", {
-        classes: "inline",
-        asyncMode: true,
-        ruleName: "index page popup",
-    });
-
-    // Illust page popup card
+    // Artist info modern popup
     findAndTranslate("artist", "a", {
         predicate: "div[role='none'] div:not(.ex-artist-tag) > a:nth-child(2)",
         asyncMode: true,
-        ruleName: "illust page popup",
+        ruleName: "artist info modern popup",
     });
 
-    // Index page https://www.pixiv.net/ https://www.pixiv.net/en/
-    findAndTranslate("artist", "a.user", {
-        predicate: [
-            ".gtm-illust-recommend-zone a",
-            ".following-new-illusts a",
-            ".everyone-new-illusts a",
-            ".booth-follow-items a",
-        ].join(","),
-        toProfileUrl: (el) => el.href.replace("/artworks", ""),
-        ruleName: "index page artist",
+    // Artist info old popup
+    findAndTranslate("artist", "a.user-name", {
+        classes: "inline",
+        asyncMode: true,
+        ruleName: "artist info old popup",
+    });
+
+    // Section of recommended artists on the index page:
+    // https://www.pixiv.net/ https://www.pixiv.net/en/
+    findAndTranslate("artist", "a", {
+        predicate: "section ul>div>div>div:last-child>a+div>a:only-child",
+        tagPosition: TAG_POSITIONS.afterend,
+        classes: "inline",
+        asyncMode: true,
+        ruleName: "recommended artist",
     });
 }
 
