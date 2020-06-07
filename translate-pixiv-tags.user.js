@@ -21,14 +21,13 @@
 // @match        *://saucenao.com/*
 // @match        *://pawoo.net/*
 // @match        *://*.fanbox.cc/*
-// @grant        GM_getResourceText
-// @grant        GM_getResourceURL
-// @grant        GM_xmlhttpRequest
+// @grant        GM.getResourceText
+// @grant            GM.getResourceUrl
 // @grant        GM.xmlHttpRequest
-// @grant        GM_getValue
-// @grant        GM_setValue
-// @grant        GM_addStyle
-// @grant        GM_registerMenuCommand
+// @grant        GM.getValue
+// @grant        GM.setValue
+// @grant        GM.addStyle
+// @grant        GM.registerMenuCommand
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js
 // @require      https://raw.githubusercontent.com/rafaelw/mutation-summary/421110f84178aa9e4098b38df83f727e5aea3d97/src/mutation-summary.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/qtip2/3.0.3/jquery.qtip.js
@@ -43,7 +42,10 @@
 
 /* globals MutationSummary _ GM_jQuery_setup */
 
+(async function() {
 "use strict";
+
+console.log("begining");
 
 const SETTINGS = {
     list: [
@@ -107,15 +109,15 @@ const SETTINGS = {
                 return false;
         }
     },
-    get (settingName) {
+    async get (settingName) {
         const setting = this.list.find((s) => s.name === settingName);
         if (!setting) {
             console.error(`No setting ${settingName}`);
             return null;
         }
-        const value = GM_getValue(settingName);
+        const value = await GM.getValue(settingName);
         if (typeof value === "undefined" || !this.isValid(settingName, value)) {
-            GM_setValue(settingName, setting.defValue);
+            GM.setValue(settingName, setting.defValue);
             return setting.defValue;
         }
         return value;
@@ -127,7 +129,7 @@ const SETTINGS = {
             return null;
         }
         if (this.isValid(settingName, value)) {
-            GM_setValue(settingName, value);
+            GM.setValue(settingName, value);
             return true;
         }
         console.warn(`Invalid value ${value} for ${settingName}`);
@@ -136,17 +138,17 @@ const SETTINGS = {
 };
 
 // Which domain to send requests to
-const BOORU = SETTINGS.get("booru");
+const BOORU = await SETTINGS.get("booru");
 // How long (in seconds) to cache translated tag lookups.
-const CACHE_LIFETIME = SETTINGS.get("cache_lifetime");
+const CACHE_LIFETIME = await SETTINGS.get("cache_lifetime");
 // Number of recent posts to show in artist tooltips.
-const ARTIST_POST_PREVIEW_LIMIT = SETTINGS.get("preview_limit");
+const ARTIST_POST_PREVIEW_LIMIT = await SETTINGS.get("preview_limit");
 // The upper level of rating to show preview. Higher ratings will be blurred.
-const SHOW_PREVIEW_RATING = SETTINGS.get("show_preview_rating");
+const SHOW_PREVIEW_RATING = await SETTINGS.get("show_preview_rating");
 // Whether to show deleted images in the preview or from the posts link
-const SHOW_DELETED = SETTINGS.get("show_deleted");
+const SHOW_DELETED = await SETTINGS.get("show_deleted");
 // Whether to print an additional info into the console
-const DEBUG = SETTINGS.get("debug");
+const DEBUG = await SETTINGS.get("debug");
 
 // Settings for artist tooltips.
 const ARTIST_QTIP_SETTINGS = {
@@ -265,7 +267,7 @@ const PROGRAM_CSS = `
 .ex-artist-tag::before {
     content: "";
     display: inline-block;
-    background-image: url(${GM_getResourceURL("danbooru_icon")});
+    background-image: url(${await blobToBase64(await GM.getResourceUrl("danbooru_icon"))});
     background-repeat: no-repeat;
     background-size: 0.8em;
     width: 0.8em;
@@ -483,14 +485,30 @@ function translateProfileURL (profileUrl) {
     return translateUrl;
 }
 
+function blobToBase64 (blobUrl) {
+    let blob;
+    if (typeof blobUrl === "string") {
+        if (blobUrl.startsWith("data:")) return blobUrl
+        blob = fetch(blobUrl).then((resp) => resp.blob());
+    } else {
+        blob = Promise.resolve(blobUrl);
+    }
+    return blob.then((blob) => new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+    }));
+}
+
 function getImage (imageUrl) {
-    return GM
-        .xmlHttpRequest({
+    return new Promise((resolve) => {
+        GM.xmlHttpRequest({
             method: "GET",
             url: imageUrl,
             responseType: "blob",
+            onload: ({ response }) => resolve(blobToBase64(response)),
         })
-        .then(({ response }) => response);
+    });
 }
 
 function checkNetworkErrors (domain, hasError) {
@@ -849,6 +867,7 @@ function chooseBackgroundColorScheme ($element) {
 }
 
 async function buildArtistTooltip (artist, qtip) {
+  try{
     const renderedQtips = buildArtistTooltip.cache || (buildArtistTooltip.cache = {});
 
     if (!(artist.name in renderedQtips)) {
@@ -877,9 +896,12 @@ async function buildArtistTooltip (artist, qtip) {
     if ($qtipContent.parent().length > 0) $qtipContent = $qtipContent.clone(true, true);
     attachShadow(qtip.elements.content, $qtipContent);
     qtip.reposition(null, false);
+  } catch (ex) {
+    console.error(ex);
+  }
 }
 
-function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = []) {
+async function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = []) {
     const otherNames = artist.other_names
         .filter(String)
         .sort()
@@ -1151,7 +1173,7 @@ function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = [
         </style>
 
         <article class="container" part="container">
-            ${GM_getResourceText("settings_icon")}
+            ${await getResource("settings_icon")}
             <section class="header">
                 <a class="artist-name tag-category-artist"
                    href="${BOORU}/artists/${artist.id}"
@@ -1303,10 +1325,10 @@ function buildPostPreview (post) {
     if (CORS_IMAGE_DOMAINS.includes(window.location.host)) {
         // Temporaly set transparent 1x1 image
         $preview.find("img").prop("src", "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
-        getImage(post.preview_file_url || previewFileUrl).then((blob) => {
-            const imageBlob = blob.slice(0, blob.size, "image/jpeg");
-            const blobUrl = window.URL.createObjectURL(imageBlob);
-            $preview.find("img").prop("src", blobUrl);
+        getImage(post.preview_file_url || previewFileUrl).then((base64Url) => {
+            //const imageBlob = blob.slice(0, blob.size, "image/jpeg");
+            //const blobUrl = window.URL.createObjectURL(imageBlob);
+            $preview.find("img").prop("src", base64Url);
         });
     } else {
         $preview.find("img").prop("src", post.preview_file_url);
@@ -1320,9 +1342,9 @@ function buildPostPreview (post) {
     return $preview;
 }
 
-function showSettings () {
-    function settingToInput (setting) {
-        const value = SETTINGS.get(setting.name);
+async function showSettings () {
+    async function settingToInput (setting) {
+        const value = await SETTINGS.get(setting.name);
         switch (setting.type) {
             case "number":
                 return noIndents`
@@ -1415,12 +1437,12 @@ function showSettings () {
         <div id="ui-settings">
             <div class="container">
                 <h2>Translate Pixiv Tags settings</h2>
-                ${SETTINGS.list
-                    .map((setting) => (
+                ${(await Promise.all(SETTINGS.list
+                    .map(async (setting) => (
                         noIndents`
                         <div>${setting.descr}:</div>
-                        <div>${settingToInput(setting)}</div>`
-                    ))
+                        <div>${await settingToInput(setting)}</div>`
+                    ))))
                     .join("")
                 }
                 <h2>
@@ -1579,7 +1601,7 @@ const getNormalizedHashtagName = (el) => {
 };
 
 function initializePixiv () {
-    GM_addStyle(`
+    addStyle(`
         /* Fix https://www.pixiv.net/tags.php to display tags as vertical list. */
         .tag-list.slash-separated li {
             display: block;
@@ -1813,7 +1835,7 @@ function initializePixiv () {
 }
 
 function initializeNijie () {
-    GM_addStyle(`
+    addStyle(`
         .ex-translated-tags {
             font-family: Verdana, Helvetica, sans-serif;
         }
@@ -1847,7 +1869,7 @@ function initializeNijie () {
 }
 
 function initializeTinami () {
-    GM_addStyle(`
+    addStyle(`
         .ex-translated-tags {
             font-family: Verdana, Helvetica, sans-serif;
             float: none !important;
@@ -1876,7 +1898,7 @@ function initializeTinami () {
 }
 
 function initializeNicoSeiga () {
-    GM_addStyle(`
+    addStyle(`
         /* Fix tags in http://seiga.nicovideo.jp/seiga/im7626097 */
         .illust_tag .tag {
             background: #ebebeb;
@@ -1959,7 +1981,7 @@ function initializeBCY () {
 }
 
 function initializeDeviantArt () {
-    GM_addStyle(`
+    addStyle(`
         .AEPha + .ex-artist-tag {
             margin-bottom: 0.3em;
             font-weight: bold;
@@ -2052,7 +2074,7 @@ function initializeHentaiFoundry () {
 }
 
 function initializeTwitter () {
-    GM_addStyle(`
+    addStyle(`
         .ex-artist-tag {
             font-family: system-ui, -apple-system, BlinkMacSystemFont,
                 "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
@@ -2206,7 +2228,7 @@ function initializeTwitter () {
 }
 
 function initializeArtStation () {
-    GM_addStyle(`
+    addStyle(`
         .qtip-content {
             box-sizing: initial;
         }
@@ -2320,7 +2342,7 @@ function initializeArtStation () {
 }
 
 function initializeSauceNAO () {
-    GM_addStyle(`
+    addStyle(`
         .ex-translated-tags {
             margin: 0;
         }
@@ -2364,7 +2386,7 @@ function initializeSauceNAO () {
 }
 
 function initializePawoo () {
-    GM_addStyle(`
+    addStyle(`
         .ex-artist-tag {
             line-height: 100%;
         }
@@ -2495,12 +2517,26 @@ function initializeQtipContainer () {
     ARTIST_QTIP_SETTINGS.position.container = $div;
 }
 
-function initialize () {
+function addStyle (css) {
+  var style = document.createElement('style');
+  style.textContent = css;
+  document.documentElement.appendChild(style);
+};
+
+function getResource (name) {
+    return GM.getResourceUrl(name).then(blob => (blob.startsWith("data:")
+        ? atob(blob.slice(blob.indexOf(",") + 1))
+        : fetch(blob).then(resp => resp.text()))
+    );
+}
+
+async function initialize () {
+  console.log("start init")
     initializeQtipContainer();
     GM_jQuery_setup();
-    GM_addStyle(PROGRAM_CSS);
-    GM_addStyle(GM_getResourceText("jquery_qtip_css"));
-    GM_registerMenuCommand("Settings", showSettings, "S");
+    addStyle(PROGRAM_CSS);
+    addStyle(await getResource("jquery_qtip_css"));
+    GM.registerMenuCommand?.("Settings", showSettings, "S");
 
     switch (window.location.host) {
         case "www.pixiv.net":          initializePixiv();         break;
@@ -2526,6 +2562,7 @@ function initialize () {
 
     // Check for new network requests every half-second
     setInterval(intervalNetworkHandler, 500);
+  console.log("end init");
 }
 
 //------------------------
@@ -2533,3 +2570,5 @@ function initialize () {
 //------------------------
 
 initialize();
+
+})();
