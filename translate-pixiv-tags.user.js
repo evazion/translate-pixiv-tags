@@ -1273,17 +1273,17 @@ function buildPostPreview (post) {
         </article>
     `);
 
-    // if (CORS_IMAGE_DOMAINS.includes(window.location.host)) {
-    // Temporaly set transparent 1x1 image
-    $preview.find("img").prop("src", "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
-    getImage(post.preview_file_url || previewFileUrl).then((blob) => {
-        const imageBlob = blob.slice(0, blob.size, "image/jpeg");
-        const blobUrl = window.URL.createObjectURL(imageBlob);
-        $preview.find("img").prop("src", blobUrl);
-    });
-    // } else {
-    //     $preview.find("img").prop("src", post.preview_file_url);
-    // }
+    if (CORS_IMAGE_DOMAINS.includes(window.location.host)) {
+        // Temporaly set transparent 1x1 image
+        $preview.find("img").prop("src", "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
+        getImage(post.preview_file_url || previewFileUrl).then((blob) => {
+            const imageBlob = blob.slice(0, blob.size, "image/jpeg");
+            const blobUrl = window.URL.createObjectURL(imageBlob);
+            $preview.find("img").prop("src", blobUrl);
+        });
+    } else {
+        $preview.find("img").prop("src", post.preview_file_url);
+    }
     if (!post.preview_file_url || post.preview_file_url.endsWith("/images/download-preview.png")) {
         $preview.find("img").prop({
             width: 150, height: 150,
