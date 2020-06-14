@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20200614163146
+// @version      20200614194646
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -458,33 +458,6 @@ function safeMatch (string, regex, group = 0, defaultValue = "") {
 
 const safeMatchMemoized = _.memoize(safeMatch, memoizeKey);
 
-const TRANSLATE_PROFILE_URL = [{
-    regex: /https?:\/\/www\.pixiv\.net(?:\/en)?\/users\/(\d+)/,
-    replace: "https://www.pixiv.net/member.php?id=%REPLACE%",
-}, {
-    regex: /https?:\/\/([\w-]+)\.deviantart\.com/,
-    replace: "https://www.deviantart.com/%REPLACE%",
-}, {
-    regex: /https?:\/\/www\.artstation\.com\/([\w-]+)/,
-    replace: "https://%REPLACE%.artstation.com",
-}, {
-    regex: /https?:\/\/([\w-]+)\.artstation\.com/,
-    replace: "https://www.artstation.com/%REPLACE%",
-}];
-
-function translateProfileURL (profileUrl) {
-    let translateUrl = profileUrl;
-    TRANSLATE_PROFILE_URL.some((value) => {
-        const match = profileUrl.match(value.regex);
-        if (match && match[1] !== "www") {
-            translateUrl = value.replace.replace("%REPLACE%", match[1]);
-        }
-        // Returning true breaks the some loop
-        return translateUrl !== profileUrl;
-    });
-    return translateUrl;
-}
-
 function getImage (imageUrl) {
     return GM
         .xmlHttpRequest({
@@ -725,13 +698,7 @@ function addDanbooruTags ($target, tags, options = {}) {
 async function translateArtistByURL (element, profileUrl, options) {
     if (!profileUrl) return;
 
-    const promiseArray = [];
-    promiseArray.push(queueNetworkRequestMemoized("url", normalizeProfileURL(profileUrl)));
-    const translatedUrl = translateProfileURL(profileUrl);
-    if (translatedUrl !== profileUrl) {
-        promiseArray.push(queueNetworkRequestMemoized("url", normalizeProfileURL(translatedUrl)));
-    }
-    const artistUrls = (await Promise.all(promiseArray)).flat();
+    const artistUrls = await queueNetworkRequestMemoized("url", normalizeProfileURL(profileUrl));
     const artists = artistUrls.map((artistUrl) => artistUrl.artist);
     if (artists.length === 0) {
         debuglog(`No artist at "${profileUrl}", rule "${options.ruleName}"`);
@@ -1514,9 +1481,15 @@ function findAndTranslate (mode, selector, options = {}) {
         }
     }());
 
-    const tryToTranslate = (elem) => {
+    const tryToTranslate = async (elem) => {
         if (!fullOptions.predicate || fullOptions.predicate(elem)) {
-            translate(elem, getData(elem), fullOptions);
+            const data = await getData(elem);
+            if (!data) return;
+            if (Array.isArray(data)) {
+                data.forEach((dat) => translate(elem, dat, fullOptions));
+            } else {
+                translate(elem, data, fullOptions);
+            }
         }
     };
 
@@ -1991,6 +1964,13 @@ function initializeDeviantArt () {
             {
                 classes: "inline",
                 ruleName: "artist",
+                toProfileUrl: (elem) => {
+                    const url = elem.closest("a").href;
+                    if (!url) return null;
+                    const userName = safeMatchMemoized(url, /:\/\/([\w-]+)\.deviantart\.com/, 1);
+                    if (!userName) return url;
+                    return `https://www.deviantart.com/${userName}`;
+                },
             },
         );
 
@@ -2255,7 +2235,7 @@ function initializeArtStation () {
         return "";
     };
 
-    function toFullURL (url) {
+    function toFullUrls (url) {
         if (url && typeof url !== "string") {
             // eslint-disable-next-line no-param-reassign
             url = (url[0] || url).getAttribute("href");
@@ -2267,7 +2247,10 @@ function initializeArtStation () {
             return "";
         }
 
-        return `https://www.artstation.com/${artistName}`;
+        return [
+            `https://www.artstation.com/${artistName}`,
+            `https://${artistName}.artstation.com/`,
+        ];
     }
 
     function hasValidHref (el) {
@@ -2278,7 +2261,7 @@ function initializeArtStation () {
     // https://www.artstation.com/jubi
     // https://www.artstation.com/jubi/*
     findAndTranslate("artist", "h1.artist-name", {
-        toProfileUrl: toFullURL,
+        toProfileUrl: toFullUrls,
         asyncMode: true,
         ruleName: "arist profile",
     });
@@ -2287,7 +2270,7 @@ function initializeArtStation () {
     findAndTranslate("artist", "a[hover-card]", {
         requiredAttributes: "href",
         predicate: (el) => el.matches(".name > a") && hasValidHref(el),
-        toProfileUrl: toFullURL,
+        toProfileUrl: toFullUrls,
         asyncMode: true,
         ruleName: "illust artist",
     });
@@ -2302,6 +2285,7 @@ function initializeArtStation () {
     findAndTranslate("artist", "a", {
         requiredAttributes: "href",
         predicate: (el) => el.matches(".hover-card-name > a:first-child") && hasValidHref(el),
+        toProfileUrl: toFullUrls,
         asyncMode: true,
         ruleName: "artist popup",
     });
@@ -2309,7 +2293,7 @@ function initializeArtStation () {
     // https://www.artstation.com/jubi/following
     // https://www.artstation.com/jubi/followers
     findAndTranslate("artist", ".users-grid-name", {
-        toProfileUrl: (el) => toFullURL($(el).find("a")),
+        toProfileUrl: (el) => toFullUrls($(el).find("a")),
         asyncMode: true,
         ruleName: "artist followers",
     });
@@ -2323,7 +2307,7 @@ function initializeArtStation () {
     // https://tinadraw.artstation.com/
     // https://dylan-kowalski.artstation.com/
     findAndTranslate("artist", ".site-title a", {
-        toProfileUrl: toFullURL,
+        toProfileUrl: toFullUrls,
         ruleName: "perosnal sites",
     });
 }
@@ -2341,6 +2325,14 @@ function initializeSauceNAO () {
         }
     `);
 
+    const fixDALink = (elem) => {
+        const url = elem.closest("a").href;
+        if (!url) return null;
+        const userName = safeMatchMemoized(url, /https?:\/\/([\w-]+)\.deviantart\.com/, 1);
+        if (!userName) return url;
+        return `https://www.deviantart.com/${userName}`;
+    };
+
     $(".resulttitle, .resultcontentcolumn")
         .contents()
         .filter((i, el) => el.nodeType === 3) // Get text nodes
@@ -2357,6 +2349,7 @@ function initializeSauceNAO () {
     // https://saucenao.com/search.php?db=999&url=http%3A%2F%2Fmedibangpaint.com%2Fwp-content%2Fuploads%2F2015%2F05%2Fgallerylist-04.jpg
     findAndTranslate("artist", "strong:contains('Member: ')+a, strong:contains('Author: ')+a", {
         classes: "inline",
+        toProfileUrl: fixDALink,
         ruleName: "artist by link",
     });
 
@@ -2462,16 +2455,15 @@ function initializePixivFanbox () {
     };
     const getPixivLinkMemoized = _.memoize(getPixivLink);
 
-    const addTranslation = (options, el) => {
+    const getLinks = async (el) => {
         const url = new URL(el.closest("a").href);
         const userNick = url.host === "www.fanbox.cc"
             ? url.pathname.match(/[\d\w_-]+/)[0]
             : url.host.match(/[\d\w_-]+/)[0];
-        getPixivLinkMemoized(userNick)
-            .then((pixivLink) => findAndTranslate("artist", el, {
-                ...options,
-                toProfileUrl: () => pixivLink,
-            }));
+        return [
+            await getPixivLinkMemoized(userNick),
+            `https://${userNick}.fanbox.cc/`,
+        ];
     };
 
     // https://agahari.fanbox.cc/
@@ -2479,21 +2471,19 @@ function initializePixivFanbox () {
     findAndTranslate("artist", "a", {
         predicate: "h1 > a",
         asyncMode: true,
-        toProfileUrl: addTranslation.bind(null, {
-            classes: "inline",
-            ruleName: "channel header",
-        }),
+        toProfileUrl: getLinks,
+        classes: "inline",
+        ruleName: "channel header",
     });
 
     // Post author
     findAndTranslate("artist", "div.sc-7161tb-4", {
         predicate: "a[href] div",
         asyncMode: true,
-        toProfileUrl: addTranslation.bind(null, {
-            tagPosition: TAG_POSITIONS.beforeend,
-            classes: "inline",
-            ruleName: "post author",
-        }),
+        toProfileUrl: getLinks,
+        tagPosition: TAG_POSITIONS.beforeend,
+        classes: "inline",
+        ruleName: "post author",
     });
 }
 
