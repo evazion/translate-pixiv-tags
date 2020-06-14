@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20200614160546
+// @version      20200614161846
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -1909,7 +1909,7 @@ function initializeNicoSeiga () {
 
     // http://seiga.nicovideo.jp/seiga/im7741859
     findAndTranslate("tag", "a", {
-        predicate: ".tag > a",
+        predicate: ".tag > a, a.tag",
         tagPosition: TAG_POSITIONS.beforeend,
         asyncMode: true,
         ruleName: "illust tags",
