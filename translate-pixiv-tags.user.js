@@ -1641,6 +1641,13 @@ function initializePixiv () {
 
     // To remove smth like `50000users入り`, e.g. here https://www.pixiv.net/en/artworks/68318104
     const getNormalizedTagName = (el) => el.textContent.replace(/\d+users入り$/, "");
+    const toOldAndNewLinks = (el) => {
+        const id = safeMatchMemoized(el.closest("a").href, /\d+/);
+        return [
+            `https://www.pixiv.net/en/users/${id}`,
+            `https://www.pixiv.net/member.php?id=${id}`,
+        ];
+    };
 
     findAndTranslate("tag", [
         // https://www.pixiv.net/bookmark_add.php?type=illust&illust_id=123456
@@ -1720,6 +1727,7 @@ function initializePixiv () {
             findTag: ($container) => $container.closest("h2").find(TAG_SELECTOR),
             getTagContainer: ($elem) => $elem.nextAll(":has(div)").find("a:eq(1)"),
         },
+        toProfileUrl: toOldAndNewLinks,
         asyncMode: true,
         onadded: deleteOnChange(),
         ruleName: "illust artist",
@@ -1733,12 +1741,20 @@ function initializePixiv () {
     findAndTranslate("artist", "a", {
         predicate: "section ul div>div:last-child:not([type='illust'])>div:last-child:not(.ex-artist-tag)>a:last-child",
         tagPosition: TAG_POSITIONS.afterParent,
+        toProfileUrl: toOldAndNewLinks,
         asyncMode: true,
         ruleName: "artist below illust thumb",
     });
 
     // Artist profile pages: https://www.pixiv.net/en/users/29310, https://www.pixiv.net/en/users/104471/illustrations
-    const normalizePageUrl = () => `https://www.pixiv.net/en/users/${safeMatchMemoized(window.location.pathname, /\d+/)}`;
+    const normalizePageUrl = () => {
+        const id = safeMatchMemoized(window.location.pathname, /\d+/);
+        return [
+            `https://www.pixiv.net/en/users/${id}`,
+            `https://www.pixiv.net/member.php?id=${id}`,
+        ];
+    };
+
     findAndTranslate("artist", "h1", {
         predicate: "div._3_qyP5m > h1",
         toProfileUrl: normalizePageUrl,
@@ -1751,7 +1767,7 @@ function initializePixiv () {
         // Trigger only on profile page
         toProfileUrl: () => (safeMatchMemoized(window.location.pathname, /^\/(en\/)?users/)
             ? normalizePageUrl()
-            : ""),
+            : null),
         tagPosition: TAG_POSITIONS.afterbegin,
         ruleName: "deleted artist profile",
     });
@@ -1759,12 +1775,14 @@ function initializePixiv () {
     // Posts of followed artists: https://www.pixiv.net/bookmark_new_illust.php
     findAndTranslate("artist", ".ui-profile-popup", {
         predicate: "figcaption._3HwPt89 > ul > li > a.ui-profile-popup",
+        toProfileUrl: toOldAndNewLinks,
         asyncMode: true,
         ruleName: "followed artists",
     });
 
     // Ranking pages: https://www.pixiv.net/ranking.php?mode=original
     findAndTranslate("artist", "a.user-container.ui-profile-popup", {
+        toProfileUrl: toOldAndNewLinks,
         asyncMode: true,
         ruleName: "ranking artist",
     });
@@ -1772,6 +1790,7 @@ function initializePixiv () {
     // Artist info modern popup
     findAndTranslate("artist", "a", {
         predicate: "div[role='none'] div:not(.ex-artist-tag) > a:nth-child(2)",
+        toProfileUrl: toOldAndNewLinks,
         asyncMode: true,
         ruleName: "artist info modern popup",
     });
@@ -1779,6 +1798,7 @@ function initializePixiv () {
     // Artist info old popup
     findAndTranslate("artist", "a.user-name", {
         classes: "inline",
+        toProfileUrl: toOldAndNewLinks,
         asyncMode: true,
         ruleName: "artist info old popup",
     });
@@ -1789,6 +1809,7 @@ function initializePixiv () {
         predicate: "section ul>div>div>div:last-child>a+div>a:only-child",
         tagPosition: TAG_POSITIONS.afterend,
         classes: "inline",
+        toProfileUrl: toOldAndNewLinks,
         asyncMode: true,
         ruleName: "recommended artist",
     });
