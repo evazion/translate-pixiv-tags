@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20200607151546
+// @version      20200614155046
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -21,18 +21,18 @@
 // @match        *://saucenao.com/*
 // @match        *://pawoo.net/*
 // @match        *://*.fanbox.cc/*
-// @grant        GM_getResourceText
-// @grant        GM_getResourceURL
-// @grant        GM_xmlhttpRequest
+// @grant        GM.getResourceText
+// @grant        GM.getResourceUrl
 // @grant        GM.xmlHttpRequest
-// @grant        GM_getValue
-// @grant        GM_setValue
-// @grant        GM_addStyle
-// @grant        GM_registerMenuCommand
+// @grant        GM.getValue
+// @grant        GM.setValue
+// @grant        GM.addStyle
+// @grant        GM.registerMenuCommand
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js
 // @require      https://raw.githubusercontent.com/rafaelw/mutation-summary/421110f84178aa9e4098b38df83f727e5aea3d97/src/mutation-summary.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/qtip2/3.0.3/jquery.qtip.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore.js
+// @require      https://github.com/evazion/translate-pixiv-tags/raw/lib-20200613/lib/GM.funcs-to-TM-behavior.js
 // @require      https://github.com/evazion/translate-pixiv-tags/raw/lib-20190830/lib/jquery-gm-shim.js
 // @resource     jquery_qtip_css https://cdnjs.cloudflare.com/ajax/libs/qtip2/3.0.3/jquery.qtip.min.css
 // @resource     danbooru_icon https://github.com/evazion/translate-pixiv-tags/raw/resource-20190903/resource/danbooru-icon.ico
@@ -44,6 +44,8 @@
 /* globals MutationSummary _ GM_jQuery_setup */
 
 "use strict";
+
+(async () => { // eslint-disable-line padded-blocks, sonarjs/cognitive-complexity
 
 const SETTINGS = {
     list: [
@@ -107,15 +109,15 @@ const SETTINGS = {
                 return false;
         }
     },
-    get (settingName) {
+    async get (settingName) {
         const setting = this.list.find((s) => s.name === settingName);
         if (!setting) {
             console.error(`No setting ${settingName}`);
             return null;
         }
-        const value = GM_getValue(settingName);
+        const value = await GM.getValue(settingName);
         if (typeof value === "undefined" || !this.isValid(settingName, value)) {
-            GM_setValue(settingName, setting.defValue);
+            GM.setValue(settingName, setting.defValue);
             return setting.defValue;
         }
         return value;
@@ -127,7 +129,7 @@ const SETTINGS = {
             return null;
         }
         if (this.isValid(settingName, value)) {
-            GM_setValue(settingName, value);
+            GM.setValue(settingName, value);
             return true;
         }
         console.warn(`Invalid value ${value} for ${settingName}`);
@@ -136,17 +138,17 @@ const SETTINGS = {
 };
 
 // Which domain to send requests to
-const BOORU = SETTINGS.get("booru");
+const BOORU = await SETTINGS.get("booru");
 // How long (in seconds) to cache translated tag lookups.
-const CACHE_LIFETIME = SETTINGS.get("cache_lifetime");
+const CACHE_LIFETIME = await SETTINGS.get("cache_lifetime");
 // Number of recent posts to show in artist tooltips.
-const ARTIST_POST_PREVIEW_LIMIT = SETTINGS.get("preview_limit");
+const ARTIST_POST_PREVIEW_LIMIT = await SETTINGS.get("preview_limit");
 // The upper level of rating to show preview. Higher ratings will be blurred.
-const SHOW_PREVIEW_RATING = SETTINGS.get("show_preview_rating");
+const SHOW_PREVIEW_RATING = await SETTINGS.get("show_preview_rating");
 // Whether to show deleted images in the preview or from the posts link
-const SHOW_DELETED = SETTINGS.get("show_deleted");
+const SHOW_DELETED = await SETTINGS.get("show_deleted");
 // Whether to print an additional info into the console
-const DEBUG = SETTINGS.get("debug");
+const DEBUG = await SETTINGS.get("debug");
 
 // Settings for artist tooltips.
 const ARTIST_QTIP_SETTINGS = {
@@ -265,7 +267,7 @@ const PROGRAM_CSS = `
 .ex-artist-tag::before {
     content: "";
     display: inline-block;
-    background-image: url(${GM_getResourceURL("danbooru_icon")});
+    background-image: url(${await GM.getResourceUrl("danbooru_icon")});
     background-repeat: no-repeat;
     background-size: 0.8em;
     width: 0.8em;
@@ -879,7 +881,7 @@ async function buildArtistTooltip (artist, qtip) {
     qtip.reposition(null, false);
 }
 
-function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = []) {
+async function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = []) {
     const otherNames = artist.other_names
         .filter(String)
         .sort()
@@ -1155,7 +1157,7 @@ function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = [
         </style>
 
         <article class="container" part="container">
-            ${GM_getResourceText("settings_icon")}
+            ${await GM.getResourceText("settings_icon")}
             <section class="header">
                 <a class="artist-name tag-category-artist"
                    href="${BOORU}/artists/${artist.id}"
@@ -1583,7 +1585,7 @@ const getNormalizedHashtagName = (el) => {
 };
 
 function initializePixiv () {
-    GM_addStyle(`
+    GM.addStyle(`
         /* Fix https://www.pixiv.net/tags.php to display tags as vertical list. */
         .tag-list.slash-separated li {
             display: block;
@@ -1817,7 +1819,7 @@ function initializePixiv () {
 }
 
 function initializeNijie () {
-    GM_addStyle(`
+    GM.addStyle(`
         .ex-translated-tags {
             font-family: Verdana, Helvetica, sans-serif;
         }
@@ -1851,7 +1853,7 @@ function initializeNijie () {
 }
 
 function initializeTinami () {
-    GM_addStyle(`
+    GM.addStyle(`
         .ex-translated-tags {
             font-family: Verdana, Helvetica, sans-serif;
             float: none !important;
@@ -1880,7 +1882,7 @@ function initializeTinami () {
 }
 
 function initializeNicoSeiga () {
-    GM_addStyle(`
+    GM.addStyle(`
         /* Fix tags in http://seiga.nicovideo.jp/seiga/im7626097 */
         .illust_tag .tag {
             background: #ebebeb;
@@ -1963,7 +1965,7 @@ function initializeBCY () {
 }
 
 function initializeDeviantArt () {
-    GM_addStyle(`
+    GM.addStyle(`
         .AEPha + .ex-artist-tag {
             margin-bottom: 0.3em;
             font-weight: bold;
@@ -2056,7 +2058,7 @@ function initializeHentaiFoundry () {
 }
 
 function initializeTwitter () {
-    GM_addStyle(`
+    GM.addStyle(`
         .ex-artist-tag {
             font-family: system-ui, -apple-system, BlinkMacSystemFont,
                 "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
@@ -2210,7 +2212,7 @@ function initializeTwitter () {
 }
 
 function initializeArtStation () {
-    GM_addStyle(`
+    GM.addStyle(`
         .qtip-content {
             box-sizing: initial;
         }
@@ -2324,7 +2326,7 @@ function initializeArtStation () {
 }
 
 function initializeSauceNAO () {
-    GM_addStyle(`
+    GM.addStyle(`
         .ex-translated-tags {
             margin: 0;
         }
@@ -2368,7 +2370,7 @@ function initializeSauceNAO () {
 }
 
 function initializePawoo () {
-    GM_addStyle(`
+    GM.addStyle(`
         .ex-artist-tag {
             line-height: 100%;
         }
@@ -2499,12 +2501,12 @@ function initializeQtipContainer () {
     ARTIST_QTIP_SETTINGS.position.container = $div;
 }
 
-function initialize () {
+async function initialize () {
     initializeQtipContainer();
     GM_jQuery_setup();
-    GM_addStyle(PROGRAM_CSS);
-    GM_addStyle(GM_getResourceText("jquery_qtip_css"));
-    GM_registerMenuCommand("Settings", showSettings, "S");
+    GM.addStyle(PROGRAM_CSS);
+    GM.addStyle(await GM.getResourceText("jquery_qtip_css"));
+    GM.registerMenuCommand("Settings", showSettings, "S");
 
     switch (window.location.host) {
         case "www.pixiv.net":          initializePixiv();         break;
@@ -2537,3 +2539,5 @@ function initialize () {
 //------------------------
 
 initialize();
+
+})(); // eslint-disable-line padded-blocks
