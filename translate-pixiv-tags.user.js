@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20200614155146
+// @version      20200614160446
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -1326,9 +1326,9 @@ function buildPostPreview (post) {
     return $preview;
 }
 
-function showSettings () {
-    function settingToInput (setting) {
-        const value = SETTINGS.get(setting.name);
+async function showSettings () {
+    async function settingToInput (setting) {
+        const value = await SETTINGS.get(setting.name);
         switch (setting.type) {
             case "number":
                 return noIndents`
@@ -1421,12 +1421,12 @@ function showSettings () {
         <div id="ui-settings">
             <div class="container">
                 <h2>Translate Pixiv Tags settings</h2>
-                ${SETTINGS.list
-                    .map((setting) => (
+                ${(await Promise.all(SETTINGS.list
+                    .map(async (setting) => (
                         noIndents`
                         <div>${setting.descr}:</div>
-                        <div>${settingToInput(setting)}</div>`
-                    ))
+                        <div>${await settingToInput(setting)}</div>`
+                    ))))
                     .join("")
                 }
                 <h2>
