@@ -2082,47 +2082,6 @@ function initializeTwitter () {
         }
     `);
 
-    // Old dedsign
-    if ($("body > div#doc").length > 0) {
-        findAndTranslate("tag", ".twitter-hashtag", {
-            asyncMode: true,
-            toTagName: getNormalizedHashtagName,
-            ruleName: "tags",
-        });
-
-        // Header card
-        findAndTranslate("artist", ".ProfileHeaderCard-screennameLink", {
-            asyncMode: true,
-            ruleName: "channel header",
-        });
-
-        // Popuping user card info
-        findAndTranslate("artist", ".ProfileCard-screennameLink", {
-            asyncMode: true,
-            ruleName: "artist popup",
-        });
-
-        // Tweet authors and comments
-        findAndTranslate("artist", "a.js-user-profile-link", {
-            predicate: ":not(.js-retweet-text) > a",
-            classes: "inline",
-            asyncMode: true,
-            ruleName: "tweet/comment author",
-        });
-
-        // Quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
-        findAndTranslate("artist", ".username", {
-            predicate: "div.js-user-profile-link .username",
-            toProfileUrl: (el) => `https://twitter.com/${$(el).find("b").text()}`,
-            asyncMode: true,
-            classes: "inline",
-            ruleName: "quoted tweet author",
-        });
-
-        return;
-    }
-
-    // New design
     // Tags https://twitter.com/mugosatomi/status/1173231575959363584
     findAndTranslate("tag", "a.r-1n1174f", {
         predicate: "a.r-1n1174f[href^='/hashtag/']",
