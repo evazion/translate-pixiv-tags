@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20200627153746
+// @version      20200719151046
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -1613,17 +1613,18 @@ function initializePixiv () {
          * between the artist name and follower count
          * because there can be premium label to the right of the artist name
          */
-        div._3_qyP5m {
+        div.cSpfix {
             display: grid;
+            grid-gap: 4px;
             grid-auto-rows: 16px;
             grid-template-columns: auto 1fr;
             justify-items: start;
         }
-        ._3_qyP5m a[href^="/premium"] {
+        .cSpfix a[href^="/premium"] {
             grid-area: 1 / 2;
         }
-        ._3_qyP5m .ex-artist-tag {
-            grid-area: span 1 / span 2;
+        .cSpfix .ex-artist-tag {
+            grid-area: 2 / 1;
         }
         /* Illust page: fix locate artist tag to not trigger native tooltip */
         main+aside>section>h2:not(#id) {
@@ -1762,7 +1763,7 @@ function initializePixiv () {
     // Artist profile pages: https://www.pixiv.net/en/users/29310, https://www.pixiv.net/en/users/104471/illustrations
     const normalizePageUrl = () => `https://www.pixiv.net/en/users/${safeMatchMemoized(window.location.pathname, /\d+/)}`;
     findAndTranslate("artist", "h1", {
-        predicate: "div._3_qyP5m > h1",
+        predicate: "div.cSpfix > h1",
         toProfileUrl: normalizePageUrl,
         asyncMode: true,
         ruleName: "artist profile",
