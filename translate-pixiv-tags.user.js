@@ -2341,23 +2341,14 @@ function initializePawoo () {
         .ex-artist-tag {
             line-height: 100%;
         }
-        /* Active Users sidebar */
-        .account__avatar-wrapper {
-            display: flex;
-            height: 100%;
-            align-items: center;
-        }
-        /* fix newline in arist tag in cards of following users and followers */
-        .ex-artist-tag a {
-            display: inline !important;
-        }
     `);
 
     // https://pawoo.net/@yamadorikodi
     // artist name in channel header
-    findAndTranslate("artist", ".name small", {
-        toProfileUrl: (el) => `https://pawoo.net/@${safeMatchMemoized(el.textContent, /[^@]+/)}`,
-        tagPosition: TAG_POSITIONS.afterbegin,
+    findAndTranslate("artist", ".public-account-header__tabs__name small", {
+        toProfileUrl: (el) => `https://pawoo.net/@${safeMatchMemoized(el.textContent.trim(), /[^@]+/)}`,
+        tagPosition: TAG_POSITIONS.beforebegin,
+        classes: "inline",
         ruleName: "artist profile",
     });
 
@@ -2376,13 +2367,9 @@ function initializePawoo () {
         ruleName: "expanded post author",
     });
 
-    // Users in sidebar
-    findAndTranslate("artist", "a.account__display-name span span", {
-        ruleName: "sidebar artist",
-    });
-
     // Cards of following users and followers
-    findAndTranslate("artist", ".account-grid-card .name a", {
+    findAndTranslate("artist", ".card__bar .display-name span:not([id])", {
+        tagPosition: TAG_POSITIONS.beforebegin,
         ruleName: "artist followers",
     });
 
