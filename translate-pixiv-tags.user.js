@@ -1611,21 +1611,18 @@ function initializePixiv () {
         }
         /**
          * On the artist profile page, locate the danbooru artist tag
-         * between the artist name and follower count
-         * because there can be premium label to the right of the artist name
+         * between the artist name and follower count because there can be
+         * "premium" and "accepting requests" labels to the right of the artist name
          */
         div.cSpfix {
             display: grid;
             grid-gap: 4px;
             grid-auto-rows: 16px;
-            grid-template-columns: auto 1fr;
+            grid-template-columns: auto auto 1fr;
             justify-items: start;
         }
-        .cSpfix a[href^="/premium"] {
-            grid-area: 1 / 2;
-        }
         .cSpfix .ex-artist-tag {
-            grid-area: 2 / 1;
+            grid-area: 2/1 / 3/3;
         }
         /* Illust page: fix locate artist tag to not trigger native tooltip */
         main+aside>section>h2:not(#id) {
