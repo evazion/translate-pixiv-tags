@@ -1,3 +1,16 @@
+# Release 2020.11.21
+
+## Fixes
+
+* DeviantArt, pixiv, nijie, twitter, BCY, pawoo: breakages caused by updates.
+* #52: Sometimes Mutation Summary crashes.
+
+## Changes
+
+* pixivFANBOX: added support of new domain and url schema.
+* pixivFANBOX: translates by both fanbox and pixiv links.
+* Twitter: dropped support of old layout.
+
 # Release 2020.03.12
 
 ## Fixes
