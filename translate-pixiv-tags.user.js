@@ -1971,15 +1971,18 @@ function initializeBCY () {
 
 function initializeDeviantArt () {
     GM_addStyle(`
-        .AEPha + .ex-artist-tag {
-            margin-bottom: 0.3em;
-            font-weight: bold;
-        }
-        .ex-artist-tag + div._2Xb_O {
-            margin-top: 0;
-        }
         .ex-artist-tag {
             font-weight: bold;
+        }
+        span._2Lxll, span.kznbz {
+            margin-right: 0;
+        }
+        .ex-artist-tag + button {
+            margin-left: 1em;
+        }
+        /* fix cropped long tags */
+        a[href^='https://www.deviantart.com/tag/'] {
+            max-width: initial;
         }
     `);
 
