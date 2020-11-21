@@ -1903,7 +1903,7 @@ function initializeNicoSeiga () {
 
     // http://seiga.nicovideo.jp/seiga/im7741859
     findAndTranslate("tag", "a", {
-        predicate: ".tag > a",
+        predicate: ".tag > a, a.tag",
         tagPosition: TAG_POSITIONS.beforeend,
         asyncMode: true,
         ruleName: "illust tags",
@@ -1913,6 +1913,14 @@ function initializeNicoSeiga () {
     findAndTranslate("artist", ".user_info h1 a", {
         classes: "inline",
         ruleName: "illust artist",
+    });
+
+    // http://seiga.nicovideo.jp/user/illust/14767435
+    findAndTranslate("artist", "div.lg_txt_illust:has(strong)", {
+        classes: "inline",
+        tagPosition: TAG_POSITIONS.beforeend,
+        toProfileUrl: (el) => $("a:has(.pankuzu_suffix)").prop("href"),
+        ruleName: "illust artist anon",
     });
 
     // http://seiga.nicovideo.jp/seiga/im7741859
