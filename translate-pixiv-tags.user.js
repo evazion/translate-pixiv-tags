@@ -2413,7 +2413,7 @@ function initializePixivFanbox () {
     };
     const getPixivLinkMemoized = _.memoize(getPixivLink);
 
-    const addTranslation = (options, el) => {
+    const addPixivTranslation = (options, el) => {
         const url = new URL(el.closest("a").href);
         const userNick = url.host === "www.fanbox.cc"
             ? url.pathname.match(/[\d\w_-]+/)[0]
@@ -2423,6 +2423,8 @@ function initializePixivFanbox () {
                 ...options,
                 toProfileUrl: () => pixivLink,
             }));
+        // Allow to translate artist by fanbox link
+        return url.origin;
     };
 
     // https://agahari.fanbox.cc/
@@ -2430,21 +2432,26 @@ function initializePixivFanbox () {
     findAndTranslate("artist", "a", {
         predicate: "h1 > a",
         asyncMode: true,
-        toProfileUrl: addTranslation.bind(null, {
+        toProfileUrl: addPixivTranslation.bind(null, {
             classes: "inline",
-            ruleName: "channel header",
+            ruleName: "channel header pixiv",
         }),
+        classes: "inline",
+        ruleName: "channel header fanbox",
     });
 
     // Post author
     findAndTranslate("artist", "div.sc-7161tb-4", {
         predicate: "a[href] div",
         asyncMode: true,
-        toProfileUrl: addTranslation.bind(null, {
+        toProfileUrl: addPixivTranslation.bind(null, {
             tagPosition: TAG_POSITIONS.beforeend,
             classes: "inline",
-            ruleName: "post author",
+            ruleName: "post author pixiv",
         }),
+        tagPosition: TAG_POSITIONS.beforeend,
+        classes: "inline",
+        ruleName: "post author fanbox",
     });
 }
 
