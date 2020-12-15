@@ -173,6 +173,11 @@ const CORS_IMAGE_DOMAINS = [
     "twitter.com",
 ];
 
+// Regexes of URLS which should never be queried
+const INVALID_ARTIST_URLS = [
+    /twitter\.com\/search\?/,
+];
+
 // The maximum size of a URL before using a POST request.
 // The actual limit is 8154, but setting it lower accounts for the rest of the URL as well.
 // It's preferable to use a GET request when able since GET supports caching and POST does not.
@@ -721,7 +726,7 @@ function addDanbooruTags ($target, tags, options = {}) {
 }
 
 async function translateArtistByURL (element, profileUrl, options) {
-    if (!profileUrl) return;
+    if (!profileUrl || INVALID_ARTIST_URLS.some((regex) => profileUrl.match(regex))) return;
 
     const promiseArray = [];
     promiseArray.push(queueNetworkRequestMemoized("url", normalizeProfileURL(profileUrl)));
