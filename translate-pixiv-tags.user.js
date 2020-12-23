@@ -2175,7 +2175,7 @@ function initializeTwitter () {
 
     // User card info
     findAndTranslate("artist", "a", {
-        predicate: "div.r-1g94qm0 > a",
+        predicate: "div.r-1oqcu8e > div.r-1g94qm0 > a",
         tagPosition: TAG_POSITIONS.beforeend,
         asyncMode: true,
         ruleName: "artist popup",
