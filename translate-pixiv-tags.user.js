@@ -2075,24 +2075,17 @@ function initializeTwitter () {
             font-family: system-ui, -apple-system, BlinkMacSystemFont,
                 "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
         }
-        /* Old design: on post page locate the artist tag below author's @name. */
-        .permalink-header {
-            display: grid;
-            grid-template-columns: 1fr auto auto;
-            height: auto;
-        }
-        .permalink-header .ex-artist-tag {
-            grid-row: 2;
-            margin-left: 0;
-        }
         /* In the expanded tweet locate the artist tag under the @username */
         .r-d0pm55 .r-1wtj0ep {
             display: grid;
             grid-template-columns: auto 32px;
         }
         .r-d0pm55 .r-1wtj0ep .ex-artist-tag {
-            grid-area: 2/1;
+            grid-column: 1;
             margin: 0;
+        }
+        .r-d0pm55 .r-1wtj0ep div:last-child {
+            grid-area: 1/2;
         }
     `);
 
