@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20201223202246
+// @version      20201226182046
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -2076,15 +2076,15 @@ function initializeTwitter () {
                 "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
         }
         /* In the expanded tweet locate the artist tag under the @username */
-        .r-d0pm55 .r-1wtj0ep {
+        .r-d0pm55 .r-1wtj0ep, .r-1w50u8q.r-6416eg .r-1wtj0ep {
             display: grid;
-            grid-template-columns: auto 32px;
+            grid-template-columns: 1fr auto;
         }
-        .r-d0pm55 .r-1wtj0ep .ex-artist-tag {
+        .r-d0pm55 .r-1wtj0ep .ex-artist-tag, .r-1w50u8q.r-6416eg .ex-artist-tag {
             grid-column: 1;
             margin: 0;
         }
-        .r-d0pm55 .r-1wtj0ep div:last-child {
+        .r-d0pm55 .r-1wtj0ep div:last-child, .r-1w50u8q.r-6416eg .r-1wtj0ep > div:last-child {
             grid-area: 1/2;
         }
     `);
@@ -2142,10 +2142,13 @@ function initializeTwitter () {
         ruleName: "delete artist profile",
     });
 
-    // Tweet, expanded tweet and comment authors
+    // Tweet, expanded tweet, comment authors, "in this photo", people in sidebar
     // https://twitter.com/mugosatomi/status/1173231575959363584
+    // https://twitter.com/Merryweatherey/status/1029008151411023872/media_tags
     findAndTranslate("artist", "div.r-1wbh5a2.r-dnmrzs", {
-        predicate: "div[data-testid='primaryColumn'] article div>div:has(>a.r-1wbh5a2)",
+        predicate: `div[data-testid='primaryColumn'] div>div:has(>a.r-1wbh5a2),
+                    div[role='dialog'] div>div:has(>a.r-1wbh5a2),
+                    aside div>div:has(>a.r-1wbh5a2)`,
         toProfileUrl: linkInChildren,
         classes: "inline",
         asyncMode: true,
