@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20201229123046
+// @version      20201229184146
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -1629,20 +1629,27 @@ function initializePixiv () {
             grid-area: 2/1 / 3/3;
         }
         /* Illust page: fix locate artist tag to not trigger native tooltip */
+        main>section h2:not(#id),
         main+aside>section>h2:not(#id) {
-            flex-direction: column-reverse;
+            max-height: 40px;
+            display: grid;
+            grid-template-rows: repeat(auto-fit, minmax(0, 1fr));
+        }
+        main>section h2>.ex-artist-tag+:not(.ex-artist-tag),
+        main+aside>section>h2>.ex-artist-tag+:not(.ex-artist-tag) {
             align-items: flex-start;
+            grid-row-start: 1;
         }
-        h2 > .ex-artist-tag + div>div {
-            margin-bottom: 12px;
-        }
-        main+aside>section>h2 .ex-artist-tag {
-            position: relative;
-            left: 47px;
-            top: -16px;
-        }
-        main+aside>section>h2 .ex-artist-tag:first-child {
+        main>section h2>.ex-artist-tag+div>:first-child,
+        main+aside>section>h2>.ex-artist-tag+div>:first-child {
             height: 0;
+        }
+        main>section h2 .ex-artist-tag,
+        main+aside>section>h2 .ex-artist-tag {
+            margin-left: 47px;
+        }
+        main section h2+button {
+            margin-left: 8px;
         }
         /* Illust page: fix artist tag overflowing in related works and on search page */
         section div[type="illust"] ~ div:last-child,
@@ -1736,7 +1743,7 @@ function initializePixiv () {
         ruleName: "tag of recommended illusts",
     });
 
-    // Illust author https://www.pixiv.net/en/artworks/66475847
+    // Illust author aside https://www.pixiv.net/en/artworks/66475847
     findAndTranslate("artist", "a", {
         predicate: "main+aside>section>h2>div>div>a",
         requiredAttributes: "href",
@@ -1747,7 +1754,19 @@ function initializePixiv () {
         },
         asyncMode: true,
         onadded: deleteOnChange(),
-        ruleName: "illust artist",
+        ruleName: "illust artist aside",
+    });
+
+    // Illust author below https://www.pixiv.net/en/artworks/66475847
+    findAndTranslate("artist", "a", {
+        predicate: "main section h2>div>a:nth-child(2)",
+        tagPosition: {
+            insertTag: ($container, $elem) => $container.closest("h2").prepend($elem),
+            findTag: ($container) => $container.closest("h2").find(TAG_SELECTOR),
+            getTagContainer: ($elem) => $elem.nextAll(":has(div)").find("a:eq(1)"),
+        },
+        asyncMode: true,
+        ruleName: "illust artist below",
     });
 
     // Related work's artists https://www.pixiv.net/en/artworks/66475847
