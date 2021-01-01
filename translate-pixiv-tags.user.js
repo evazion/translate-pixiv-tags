@@ -641,6 +641,8 @@ function normalizeProfileURL (profileUrl) {
 }
 
 async function translateTag (target, tagName, options) {
+    if (!tagName) return;
+
     const normalizedTag = tagName
         // .trim()
         .normalize("NFKC")
@@ -1733,8 +1735,8 @@ function initializePixiv () {
     });
 
     // Tag of recommended illusts on index page: https://www.pixiv.net/ https://www.pixiv.net/en/
-    findAndTranslate("tag", "h3", {
-        predicate: "section > div > div > h3",
+    findAndTranslate("tag", "h2", {
+        predicate: "section > div > div > h2",
         toTagName: (el) => (el.textContent.includes("#")
             ? el.textContent.slice(el.textContent.indexOf("#") + 1)
             : null),
