@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20210101165946
+// @version      20210122142946
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -1699,7 +1699,7 @@ function initializePixiv () {
 
     // Tags on work pages: https://www.pixiv.net/en/artworks/66475847
     findAndTranslate("tag", "span", {
-        predicate: "figcaption li > span:first-child",
+        predicate: "figcaption li > span > span:first-child",
         toTagName: getNormalizedTagName,
         asyncMode: true,
         ruleName: "artwork tags",
