@@ -1707,7 +1707,7 @@ function initializePixiv () {
 
     // Main tag on search pages: https://www.pixiv.net/en/tags/%E6%9D%B1%E6%96%B9project/artworks
     findAndTranslate("tag", "div", {
-        predicate: "#root>div>div>div>div>div>div:has(>span:first-child)",
+        predicate: "#root>div>div>div>div>div>div>div:has(>span:first-child)",
         asyncMode: true,
         ruleName: "search tag",
     });
