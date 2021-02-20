@@ -468,6 +468,9 @@ const TRANSLATE_PROFILE_URL = [{
 }, {
     regex: /https?:\/\/([\w-]+)\.artstation\.com/,
     replace: "https://www.artstation.com/%REPLACE%",
+}, {
+    regex: /https?:\/\/www\.hentai-foundry\.com\/user\/([\w-]+)\/profile/,
+    replace: "https://www.hentai-foundry.com/user/%REPLACE%",
 }];
 
 function translateProfileURL (profileUrl) {
