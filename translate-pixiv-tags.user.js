@@ -1717,7 +1717,7 @@ function initializePixiv () {
     // The index page: https://www.pixiv.net/ https://www.pixiv.net/en/
     // Artist profile: https://www.pixiv.net/en/users/104471/illustrations
     findAndTranslate("tag", "div", {
-        predicate: "a[color]>div:last-child",
+        predicate: "a[color]>div>div:last-child",
         tagPosition: {
             insertTag: ($container, $elem) => $container.parent().prepend($elem),
             findTag: ($container) => $container.parent().find(TAG_SELECTOR),
