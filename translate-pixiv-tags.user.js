@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20210228131246
+// @version      20210228194546
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -2108,15 +2108,18 @@ function initializeTwitter () {
                 "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
         }
         /* In the expanded tweet locate the artist tag under the @username */
-        .r-d0pm55 .r-1wtj0ep, .r-1w50u8q.r-6416eg .r-1wtj0ep {
+        .r-15zivkp>div>div>div>.r-1wtj0ep,
+        .r-16y2uox>.r-1awozwy.r-1wtj0ep {
             display: grid;
             grid-template-columns: 1fr auto;
         }
-        .r-d0pm55 .r-1wtj0ep .ex-artist-tag, .r-1w50u8q.r-6416eg .ex-artist-tag {
+        .r-15zivkp>div>div>div>.r-1wtj0ep .ex-artist-tag,
+        .r-16y2uox>.r-1awozwy.r-1wtj0ep .ex-artist-tag {
             grid-column: 1;
             margin: 0;
         }
-        .r-d0pm55 .r-1wtj0ep div:last-child, .r-1w50u8q.r-6416eg .r-1wtj0ep > div:last-child {
+        .r-15zivkp>div>div>div>.r-1wtj0ep > div:last-child,
+        .r-16y2uox>.r-1awozwy.r-1wtj0ep > div:last-child {
             grid-area: 1/2;
         }
     `);
