@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20210228194546
+// @version      20210228201246
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -1682,6 +1682,10 @@ function initializePixiv () {
         .ex-translated-tags.no-brackets::after {
             content: none;
         }
+        /* On contest page */
+        span.user-name {
+            text-align: left;
+        }
     `);
 
     // To remove smth like `50000users入り`, e.g. here https://www.pixiv.net/en/artworks/68318104
@@ -1848,6 +1852,23 @@ function initializePixiv () {
         classes: "inline",
         asyncMode: true,
         ruleName: "recommended artist",
+    });
+
+    // Winners of a contest
+    // https://www.pixiv.net/contest/touhoulostword
+    findAndTranslate("artist", ".user-info>a>span.user-name", {
+        tagPosition: TAG_POSITIONS.beforeend,
+        ruleName: "contest winner",
+    });
+
+    // Participants of a contest
+    // https://www.pixiv.net/contest/touhoulostword
+    findAndTranslate("artist", "a", {
+        predicate: "._user-icon-container>a",
+        tagPosition: TAG_POSITIONS.afterend,
+        classes: "inline",
+        asyncMode: true,
+        ruleName: "contest participant",
     });
 }
 
