@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20210220155546
+// @version      20210228131246
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -84,6 +84,11 @@ const SETTINGS = {
             name: "show_deleted",
             defValue: true,
             descr: "Check to show deleted posts, uncheck to hide",
+            type: "boolean",
+        }, {
+            name: "show_settings",
+            defValue: true,
+            descr: "Show the settings button in the script manager menu",
             type: "boolean",
         }, {
             name: "debug",
@@ -2494,7 +2499,9 @@ function initialize () {
     GM_jQuery_setup();
     GM_addStyle(PROGRAM_CSS);
     GM_addStyle(GM_getResourceText("jquery_qtip_css"));
-    GM_registerMenuCommand("Settings", showSettings, "S");
+    if (SETTINGS.get("show_settings")) {
+        GM_registerMenuCommand("Settings", showSettings, "S");
+    }
 
     switch (window.location.host) {
         case "www.pixiv.net":          initializePixiv();         break;
