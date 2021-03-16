@@ -667,11 +667,14 @@ async function translateTag (target, tagName, options) {
 
     let tags = [];
     if (wikiPages.length > 0) {
-        tags = wikiPages.map((wikiPage) => ({
-            name: wikiPage.title,
-            prettyName: wikiPage.title.replace(/_/g, " "),
-            category: wikiPage.tag.category,
-        }));
+        tags = wikiPages
+            // Ignore wiki pages of non-tags
+            .filter(({ tag }) => tag)
+            .map(({ title, tag }) => ({
+                name: title,
+                prettyName: title.replace(/_/g, " "),
+                category: tag.category,
+            }));
     // `normalizedTag` consists of only ASCII characters except percent, asterics, and comma
     } else if (normalizedTag.match(/^[\u0020-\u0024\u0026-\u0029\u002B\u002D-\u007F]+$/)) {
         // The server is already converting the values to
