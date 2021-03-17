@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20210317150446
+// @version      20210317152346
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -2044,28 +2044,6 @@ function initializeDeviantArt () {
             max-width: initial;
         }
     `);
-
-    // Old design
-    if ($("body > div#output").length > 0) {
-        // https://www.deviantart.com/koyorin
-        // https://www.deviantart.com/koyorin/art/Ruby-570526828
-        findAndTranslate(
-            "artist",
-            ".gruserbadge .username, .dev-title-container .author .username",
-            {
-                classes: "inline",
-                ruleName: "artist",
-            },
-        );
-
-        findAndTranslate("tag", ".dev-about-tags-cc .discoverytag", {
-            ruleName: "tags",
-        });
-
-        return;
-    }
-
-    // New design
 
     // Profile page
     // https://www.deviantart.com/adsouto
