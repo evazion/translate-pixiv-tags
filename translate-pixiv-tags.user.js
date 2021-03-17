@@ -1645,24 +1645,36 @@ function initializePixiv () {
             grid-area: 3/1 / 4/3;
         }
         /* Illust page: fix locate artist tag to not trigger native tooltip */
-        main>section h2:not(#id),
+       main>section h2:not(#id),
         main+aside>section>h2:not(#id) {
-            max-height: 40px;
-            display: grid;
-            grid-template-rows: repeat(auto-fit, minmax(0, 1fr));
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: flex-start;
         }
         main>section h2>.ex-artist-tag+:not(.ex-artist-tag),
         main+aside>section>h2>.ex-artist-tag+:not(.ex-artist-tag) {
-            align-items: flex-start;
-            grid-row-start: 1;
+            pointer-events: none;
+            width: 100%;
         }
-        main>section h2>.ex-artist-tag+div>:first-child,
-        main+aside>section>h2>.ex-artist-tag+div>:first-child {
-            height: 0;
+        main>section h2>.ex-artist-tag+div>a,
+        main>section h2>.ex-artist-tag+div>div>*,
+        main+aside>section>h2>.ex-artist-tag+div>div>*,
+        main+aside>section>h2>.ex-artist-tag+div>a {
+            pointer-events: all;
+        }
+        main>section h2>.ex-artist-tag+div>div,
+        main+aside>section>h2>.ex-artist-tag+div>div {
+            width: 100%;
+        }
+        main>section h2>.ex-artist-tag+div>::after,
+        main+aside>section>h2>.ex-artist-tag+div>::after {
+            content: "";
+            height: 18px;
         }
         main>section h2 .ex-artist-tag,
         main+aside>section>h2 .ex-artist-tag {
-            margin-left: 47px;
+            margin-left: 50px;
+            margin-top: -18px;
         }
         main section h2+button {
             margin-left: 8px;
