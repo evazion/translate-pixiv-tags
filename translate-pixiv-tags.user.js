@@ -1554,18 +1554,16 @@ function findAndTranslate (mode, selector, options = {}) {
     });
 }
 
-function deleteOnChange (targetSelector) {
-    return ($tag, options) => {
-        const $container = options.tagPosition.getTagContainer($tag);
-        const watcher = new MutationSummary({
-            rootNode: targetSelector ? $container.find(targetSelector)[0] : $container[0],
-            queries: [{ characterData: true }],
-            callback: ([summary]) => {
-                $tag.remove();
-                watcher.disconnect();
-            },
-        });
-    };
+function deleteOnUrlChange ($tag, options) {
+    const $container = options.tagPosition.getTagContainer($tag);
+    const watcher = new MutationSummary({
+        rootNode: $container[0],
+        queries: [{ attribute: "href" }],
+        callback: ([summary]) => {
+            $tag.remove();
+            watcher.disconnect();
+        },
+    });
 }
 
 function linkInChildren (el) {
@@ -1776,29 +1774,18 @@ function initializePixiv () {
     });
 
     // Illust author aside https://www.pixiv.net/en/artworks/66475847
+    // Illust author below https://www.pixiv.net/en/artworks/66475847
     findAndTranslate("artist", "a", {
-        predicate: "main+aside>section>h2>div>div>a",
+        predicate: "main+aside>section>h2>div>div>a, main>section h2>div>div>a",
         requiredAttributes: "href",
         tagPosition: {
             insertTag: ($container, $elem) => $container.closest("h2").prepend($elem),
             findTag: ($container) => $container.closest("h2").find(TAG_SELECTOR),
-            getTagContainer: ($elem) => $elem.nextAll(":has(div)").find("a:eq(1)"),
+            getTagContainer: ($elem) => $elem.parent().find("div>div>a"),
         },
         asyncMode: true,
-        onadded: deleteOnChange(),
-        ruleName: "illust artist aside",
-    });
-
-    // Illust author below https://www.pixiv.net/en/artworks/66475847
-    findAndTranslate("artist", "a", {
-        predicate: "main section h2>div>a:nth-child(2)",
-        tagPosition: {
-            insertTag: ($container, $elem) => $container.closest("h2").prepend($elem),
-            findTag: ($container) => $container.closest("h2").find(TAG_SELECTOR),
-            getTagContainer: ($elem) => $elem.nextAll(":has(div)").find("a:eq(1)"),
-        },
-        asyncMode: true,
-        ruleName: "illust artist below",
+        onadded: deleteOnUrlChange,
+        ruleName: "illust artist",
     });
 
     // Related work's artists https://www.pixiv.net/en/artworks/66475847
@@ -2097,7 +2084,7 @@ function initializeDeviantArt () {
         tagPosition: TAG_POSITIONS.afterParent,
         classes: "inline",
         asyncMode: true,
-        onadded: deleteOnChange("span"),
+        onadded: deleteOnUrlChange,
         ruleName: "illust artist",
     });
 
