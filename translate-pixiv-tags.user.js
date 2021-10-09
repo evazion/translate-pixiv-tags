@@ -2114,20 +2114,17 @@ function initializeTwitter () {
                 "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
         }
         /* In the expanded tweet and sidebar locate the artist tag under the @username */
-        .r-15zivkp>div>div>div>.r-1wtj0ep,
-        .r-16y2uox.r-1777fci>.r-1awozwy.r-1wtj0ep,
+        .r-15zivkp>div>div>div>.r-1wtj0ep>.r-1wbh5a2,
         .r-16y2uox > .r-1awozwy.r-1wtj0ep {
             display: grid;
             grid-template-columns: 1fr auto;
         }
         .r-15zivkp>div>div>div>.r-1wtj0ep .ex-artist-tag,
-        .r-16y2uox.r-1777fci>.r-1awozwy.r-1wtj0ep .ex-artist-tag,
         .r-16y2uox > .r-1awozwy.r-1wtj0ep .ex-artist-tag {
             grid-column: 1/3;
             margin: 0;
         }
         .r-15zivkp>div>div>div>.r-1wtj0ep .ex-artist-tag ~ div:last-child,
-        .r-16y2uox.r-1777fci>.r-1awozwy.r-1wtj0ep .ex-artist-tag ~ div:last-child,
         .r-16y2uox > .r-1awozwy.r-1wtj0ep .ex-artist-tag ~ div:last-child {
             grid-area: 1/2;
         }
@@ -2179,7 +2176,7 @@ function initializeTwitter () {
 
     // Deleted channel https://twitter.com/6o2_iii
     findAndTranslate("artist", "span.r-qvutc0", {
-        predicate: ".r-1b6yd1w.r-3s2u2q span .r-qvutc0",
+        predicate: ".r-135wba7.r-3s2u2q span .r-qvutc0",
         toProfileUrl: URLfromLocation,
         classes: "inline",
         asyncMode: true,
@@ -2200,14 +2197,9 @@ function initializeTwitter () {
     });
 
     // Quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
-    findAndTranslate("artist", "div.r-1wbh5a2.r-1udh08x", {
-        predicate: "article div.r-156q2ks div",
-        toProfileUrl: (el) => `https://twitter.com/${
-            $(el)
-                .find(".r-1f6r7vd")
-                .text()
-                .slice(1)
-        }`,
+    findAndTranslate("artist", "div.r-13hce6t", {
+        predicate: "div.r-1867qdf div",
+        toProfileUrl: (el) => `https://twitter.com/${el.textContent.slice(1)}`,
         classes: "inline",
         asyncMode: true,
         ruleName: "quoted tweet author",
