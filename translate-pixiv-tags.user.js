@@ -1562,14 +1562,13 @@ function findAndTranslate (mode, selector, options = {}) {
 
 function deleteOnUrlChange ($tag, options) {
     const $container = options.tagPosition.getTagContainer($tag);
-    const watcher = new MutationSummary({
-        rootNode: $container[0],
-        queries: [{ attribute: "href" }],
-        callback: ([summary]) => {
+    const watcher = new MutationObserver((mutations) => {
+        if (mutations.some((mutation) => mutation.attributeName === "href")) {
             $tag.remove();
             watcher.disconnect();
-        },
+        }
     });
+    watcher.observe($container[0], { attributes: true });
 }
 
 function linkInChildren (el) {
