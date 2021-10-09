@@ -733,19 +733,24 @@ function addDanbooruTags ($target, tags, options = {}) {
     if (onadded) onadded($tagsContainer, options);
 }
 
-async function translateArtistByURL (element, profileUrl, options) {
-    if (!profileUrl) return;
+async function translateArtistByURL (element, profileUrls, options) {
+    if (!profileUrls || profileUrls.length === 0) return;
 
-    const promiseArray = [];
-    promiseArray.push(queueNetworkRequestMemoized("url", normalizeProfileURL(profileUrl)));
-    const translatedUrl = translateProfileURL(profileUrl);
-    if (translatedUrl !== profileUrl) {
-        promiseArray.push(queueNetworkRequestMemoized("url", normalizeProfileURL(translatedUrl)));
-    }
+    const promiseArray = (Array.isArray(profileUrls) ? profileUrls : [profileUrls])
+        .flatMap((profileUrl) => {
+            const req1 = queueNetworkRequestMemoized("url", normalizeProfileURL(profileUrl));
+            const translatedUrl = translateProfileURL(profileUrl);
+            if (translatedUrl !== profileUrl) {
+                const req2 = queueNetworkRequestMemoized("url", normalizeProfileURL(translatedUrl));
+                return [req1, req2];
+            }
+            return req1;
+        });
+
     const artistUrls = (await Promise.all(promiseArray)).flat();
     const artists = artistUrls.map((artistUrl) => artistUrl.artist);
     if (artists.length === 0) {
-        debuglog(`No artist at "${profileUrl}", rule "${options.ruleName}"`);
+        debuglog(`No artist at "${profileUrls}", rule "${options.ruleName}"`);
         return;
     }
 
@@ -2369,7 +2374,10 @@ function initializeSauceNAO () {
         toProfileUrl: (el) => {
             const { href } = el;
             if (!href.startsWith("https://twitter.com/")) return href;
-            return `https://twitter.com/${el.textContent.slice(1)}`;
+            return [
+                `https://twitter.com/${el.textContent.slice(1)}`,
+                `https://twitter.com/intent/user?user_id=${href.match(/\d+/)[0]}`,
+            ];
         },
     });
 
