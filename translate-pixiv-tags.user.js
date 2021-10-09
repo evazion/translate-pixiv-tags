@@ -2038,8 +2038,8 @@ function initializeDeviantArt () {
         .ex-artist-tag {
             font-weight: bold;
         }
-        span._2Lxll, span.kznbz {
-            margin-right: 0;
+        div.W9O1j + .ex-artist-tag {
+            margin-left: -0.5em;
         }
         .ex-artist-tag + button {
             margin-left: 1em;
