@@ -2496,20 +2496,6 @@ function initializePixivFanbox () {
         classes: "inline",
         ruleName: "channel header fanbox",
     });
-
-    // Post author
-    findAndTranslate("artist", "div.sc-7161tb-4", {
-        predicate: "a[href] div",
-        asyncMode: true,
-        toProfileUrl: addPixivTranslation.bind(null, {
-            tagPosition: TAG_POSITIONS.beforeend,
-            classes: "inline",
-            ruleName: "post author pixiv",
-        }),
-        tagPosition: TAG_POSITIONS.beforeend,
-        classes: "inline",
-        ruleName: "post author fanbox",
-    });
 }
 
 function initializeQtipContainer () {
