@@ -176,6 +176,7 @@ const ARTIST_QTIP_SETTINGS = {
 // Domains where images outside of whitelist are blocked
 const CORS_IMAGE_DOMAINS = [
     "twitter.com",
+    "bcy.net",
 ];
 
 // The maximum size of a URL before using a POST request.
@@ -2003,7 +2004,7 @@ function initializeBCY () {
         ruleName: "artist profile",
     });
 
-    // Illust pages https://bcy.net/item/detail/6643704430988361988
+    // Illust pages https://bcy.net/item/detail/6561698116674781447
     findAndTranslate("artist", ".col-small .user-name a", {
         toProfileUrl: (el) => el.href.replace(/\?.*$/, ""),
         ruleName: "illust artist",
@@ -2013,8 +2014,8 @@ function initializeBCY () {
     // Search pages https://bcy.net/tags/name/看板娘
     findAndTranslate("artist", "a.title-txt", {
         toProfileUrl: (el) => el.href.replace(/\?.*$/, ""),
-        tagPosition: TAG_POSITIONS.beforeend,
-        classes: "inline",
+        tagPosition: TAG_POSITIONS.afterend,
+        classes: "inline title-txt",
         asyncMode: true,
         ruleName: "artist on search",
     });
