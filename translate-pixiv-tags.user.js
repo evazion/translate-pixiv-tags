@@ -1678,7 +1678,7 @@ function initializePixiv () {
         main>section h2 .ex-artist-tag,
         main+aside>section>h2 .ex-artist-tag {
             margin-left: 50px;
-            margin-top: -18px;
+            margin-top: -22px;
         }
         main section h2+button {
             margin-left: 8px;
@@ -1738,7 +1738,7 @@ function initializePixiv () {
 
     // Main tag on search pages: https://www.pixiv.net/en/tags/%E6%9D%B1%E6%96%B9project/artworks
     findAndTranslate("tag", "div", {
-        predicate: "#root>div>div>div>div>div>div>div:has(>span:first-child)",
+        predicate: "#root>div>div>div>div:nth-child(2)>div>div>div:has(>span:first-child)",
         asyncMode: true,
         ruleName: "search tag",
     });
@@ -1839,8 +1839,8 @@ function initializePixiv () {
     });
 
     // Artist info modern popup
-    findAndTranslate("artist", "a", {
-        predicate: "div[role='none'] div:not(.ex-artist-tag) > a:nth-child(2)",
+    findAndTranslate("artist", "a[class][data-gtm-value]", {
+        predicate: "div[open] a",
         asyncMode: true,
         ruleName: "artist info modern popup",
     });
