@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20210429102446
+// @version      20211009142946
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -2358,9 +2358,19 @@ function initializeSauceNAO () {
     // http://saucenao.com/search.php?db=999&url=https%3A%2F%2Fraikou4.donmai.us%2Fpreview%2F5e%2F8e%2F5e8e7a03c49906aaad157de8aeb188e4.jpg
     // http://saucenao.com/search.php?db=999&url=https%3A%2F%2Fraikou4.donmai.us%2Fpreview%2Fad%2F90%2Fad90ad1cc3407f03955f22b427d21707.jpg
     // https://saucenao.com/search.php?db=999&url=http%3A%2F%2Fmedibangpaint.com%2Fwp-content%2Fuploads%2F2015%2F05%2Fgallerylist-04.jpg
-    findAndTranslate("artist", "strong:contains('Member: ')+a, strong:contains('Author: ')+a", {
+    // https://saucenao.com/search.php?db=999&url=http%3A%2F%2Fpastyle.net%2FPLFG-0001_MelangelicTone%2Fimage%2Fartwork_MelangelicTone.jpg
+    findAndTranslate("artist", [
+        "strong:contains('Member:')+a",
+        "strong:contains('Author:')+a",
+        "strong:contains('Twitter:')+a",
+    ].join(), {
         classes: "inline",
         ruleName: "artist by link",
+        toProfileUrl: (el) => {
+            const { href } = el;
+            if (!href.startsWith("https://twitter.com/")) return href;
+            return `https://twitter.com/${el.textContent.slice(1)}`;
+        },
     });
 
     findAndTranslate("artistByName", ".resulttitle .target", {
