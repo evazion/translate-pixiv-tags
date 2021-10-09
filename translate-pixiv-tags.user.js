@@ -2437,6 +2437,11 @@ function initializePawoo () {
 }
 
 function initializeTweetDeck () {
+    GM_addStyle(`
+        .tweet .ex-artist-tag {
+            flex-grow: 100;
+        }
+    `);
     // https://tweetdeck.twitter.com/
 
     findAndTranslate("tag", "span.link-complex-target", {
@@ -2456,6 +2461,7 @@ function initializeTweetDeck () {
     findAndTranslate("artist", "a.account-link", {
         predicate: "a:has(.username)",
         asyncMode: true,
+        classes: "inline",
         ruleName: "tweet/comment author",
     });
 }
