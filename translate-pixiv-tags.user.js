@@ -1634,18 +1634,18 @@ function initializePixiv () {
          * between the artist name and follower count because there can be
          * "premium" and "accepting requests" labels to the right of the artist name
          */
-        div.hgYhRu {
+        div.dqLunY {
             display: grid;
             grid-gap: 4px;
             grid-auto-rows: 16px;
             grid-template-columns: auto auto 1fr;
             justify-items: start;
         }
-        .hgYhRu .ex-artist-tag {
-            grid-area: 2/1 / 3/3;
+        .dqLunY .ex-artist-tag {
+            grid-area: 2/1 / 3/4;
         }
-        .hgYhRu .ex-artist-tag + .ex-artist-tag {
-            grid-area: 3/1 / 4/3;
+        .dqLunY .ex-artist-tag + .ex-artist-tag {
+            grid-area: 3/1 / 4/4;
         }
         /* Illust page: fix locate artist tag to not trigger native tooltip */
        main>section h2:not(#id),
@@ -1808,7 +1808,7 @@ function initializePixiv () {
     // Artist profile pages: https://www.pixiv.net/en/users/29310, https://www.pixiv.net/en/users/104471/illustrations
     const normalizePageUrl = () => `https://www.pixiv.net/en/users/${safeMatchMemoized(window.location.pathname, /\d+/)}`;
     findAndTranslate("artist", "h1", {
-        predicate: "div.hgYhRu > h1",
+        predicate: "div.dqLunY > h1",
         toProfileUrl: normalizePageUrl,
         asyncMode: true,
         ruleName: "artist profile",
