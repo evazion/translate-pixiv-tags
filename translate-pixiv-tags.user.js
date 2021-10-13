@@ -1648,7 +1648,7 @@ function initializePixiv () {
             grid-area: 3/1 / 4/4;
         }
         /* Illust page: fix locate artist tag to not trigger native tooltip */
-       main>section h2:not(#id),
+        main>section h2:not(#id),
         main+aside>section>h2:not(#id) {
             display: flex;
             flex-direction: column-reverse;
@@ -1857,9 +1857,8 @@ function initializePixiv () {
     // Section of recommended artists on the index page:
     // https://www.pixiv.net/ https://www.pixiv.net/en/
     findAndTranslate("artist", "a", {
-        predicate: "section ul>div>div>div:last-child>a+div>a:only-child",
+        predicate: "section ul>div>div>div:last-child>a+div>a:first-child",
         tagPosition: TAG_POSITIONS.afterend,
-        classes: "inline",
         asyncMode: true,
         ruleName: "recommended artist",
     });
