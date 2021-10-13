@@ -1693,7 +1693,10 @@ function initializePixiv () {
             margin-left: 6px;
         }
         /* Tags in a box */
-        a[color] > .ex-translated-tags{
+        a[color] > div:not(#id) {
+            max-width: initial;
+        }
+        a[color] > div > .ex-translated-tags{
             font-weight: bold;
         }
         .ex-translated-tags.no-brackets::before,
