@@ -1799,7 +1799,7 @@ function initializePixiv () {
     // Thumbs on the index page: https://www.pixiv.net/ https://www.pixiv.net/en/
     // Shouldn't translate users in comments: https://www.pixiv.net/en/artworks/2893321
     findAndTranslate("artist", "a", {
-        predicate: "section ul div>div:last-child:not([type='illust'])>div:last-child:not(.ex-artist-tag)>a:last-child",
+        predicate: "section ul div>div:last-child:not([type='illust'])>div[aria-haspopup]:not(.ex-artist-tag)>a:last-child",
         tagPosition: TAG_POSITIONS.afterParent,
         asyncMode: true,
         ruleName: "artist below illust thumb",
