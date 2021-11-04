@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20211013215946
+// @version      20211104160846
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -143,7 +143,7 @@ const SETTINGS = {
 // Which domain to send requests to
 const BOORU = SETTINGS.get("booru");
 // How long (in seconds) to cache translated tag lookups.
-const CACHE_LIFETIME = SETTINGS.get("cache_lifetime");
+const CACHE_LIFETIME = `${SETTINGS.get("cache_lifetime")}s`;
 // Number of recent posts to show in artist tooltips.
 const ARTIST_POST_PREVIEW_LIMIT = SETTINGS.get("preview_limit");
 // The upper level of rating to show preview. Higher ratings will be blurred.
