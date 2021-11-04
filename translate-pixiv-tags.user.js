@@ -54,10 +54,7 @@ const SETTINGS = {
             type: "list",
             values: {
                 "https://danbooru.donmai.us":   "Danbooru",
-                "https://kagamihara.donmai.us": "Kagamihara",
-                "https://saitou.donmai.us":     "Saitou",
-                "https://shima.donmai.us":      "Shima",
-                "https://safebooru.donmai.us": "Safebooru",
+                "https://safebooru.donmai.us":  "Safebooru",
             },
         }, {
             name: "cache_lifetime",
