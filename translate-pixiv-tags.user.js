@@ -2345,6 +2345,7 @@ function initializeSauceNAO () {
         "strong:contains('Member:')+a",
         "strong:contains('Author:')+a",
         "strong:contains('Twitter:')+a",
+        "strong:contains('User ID:')+a",
     ].join(), {
         classes: "inline",
         ruleName: "artist by link",
