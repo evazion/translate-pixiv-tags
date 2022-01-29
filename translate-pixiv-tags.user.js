@@ -2263,11 +2263,6 @@ function initializeArtStation () {
         return `https://www.artstation.com/${artistName}`;
     }
 
-    function hasValidHref (el) {
-        const href = el.getAttribute("href");
-        return href && (href.startsWith("http") || href.startsWith("/") && href.length > 1);
-    }
-
     // https://www.artstation.com/jubi
     // https://www.artstation.com/jubi/*
     findAndTranslate("artist", "h1.artist-name", {
@@ -2277,10 +2272,8 @@ function initializeArtStation () {
     });
 
     // https://www.artstation.com/artwork/0X40zG
-    findAndTranslate("artist", "a[hover-card]", {
-        requiredAttributes: "href",
-        predicate: (el) => el.matches(".name > a") && hasValidHref(el),
-        toProfileUrl: toFullURL,
+    findAndTranslate("artist", "div.project-author-name", {
+        toProfileUrl: (el) => el.querySelector("a").href,
         asyncMode: true,
         ruleName: "illust artist",
     });
@@ -2293,8 +2286,7 @@ function initializeArtStation () {
 
     // Hover card
     findAndTranslate("artist", "a", {
-        requiredAttributes: "href",
-        predicate: (el) => el.matches(".hover-card-name > a:first-child") && hasValidHref(el),
+        predicate: ".hover-card-name > a:first-child",
         asyncMode: true,
         ruleName: "artist popup",
     });
