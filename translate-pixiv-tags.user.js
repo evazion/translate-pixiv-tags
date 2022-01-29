@@ -1798,6 +1798,7 @@ function initializePixiv () {
     // Bookmarks: https://www.pixiv.net/en/users/29310/bookmarks/artworks
     // Thumbs on the index page: https://www.pixiv.net/ https://www.pixiv.net/en/
     // Shouldn't translate users in comments: https://www.pixiv.net/en/artworks/2893321
+    // Posts of followed artists: https://www.pixiv.net/bookmark_new_illust.php
     findAndTranslate("artist", "a", {
         predicate: "section ul div>div:last-child:not([type='illust'])>div[aria-haspopup]:not(.ex-artist-tag)>a:last-child",
         tagPosition: TAG_POSITIONS.afterParent,
@@ -1822,13 +1823,6 @@ function initializePixiv () {
             : ""),
         tagPosition: TAG_POSITIONS.afterbegin,
         ruleName: "deleted artist profile",
-    });
-
-    // Posts of followed artists: https://www.pixiv.net/bookmark_new_illust.php
-    findAndTranslate("artist", ".ui-profile-popup", {
-        predicate: "figcaption._3HwPt89 > ul > li > a.ui-profile-popup",
-        asyncMode: true,
-        ruleName: "followed artists",
     });
 
     // Ranking pages: https://www.pixiv.net/ranking.php?mode=original
