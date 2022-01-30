@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20220130162646
+// @version      20220130215646
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -238,19 +238,34 @@ const PROGRAM_CSS = `
 }
 /* dirt hack for DevianArt: add :not(#id) to rapidly increase rule specificity */
 .ex-translated-tag-category-5:not(#id) {
-    color: #F80 !important;
+    color: #fd9200 !important;
 }
 .ex-translated-tag-category-4:not(#id) {
-    color: #0A0 !important;
+    color: #00ab2c !important;
 }
 .ex-translated-tag-category-3:not(#id) {
-    color: #A0A !important;
+    color: #a800aa !important;
 }
 .ex-translated-tag-category-1:not(#id) {
-    color: #A00 !important;
+    color: #c00004 !important;
 }
 .ex-translated-tag-category-0:not(#id) {
-    color: #0073ff !important;
+    color: #0075f8 !important;
+}
+.tpt-dark .ex-translated-tag-category-5:not(#id) {
+    color: #ead084 !important;
+}
+.tpt-dark .ex-translated-tag-category-4:not(#id) {
+    color: #35c64a !important;
+}
+.tpt-dark .ex-translated-tag-category-3:not(#id) {
+    color: #c797ff !important;
+}
+.tpt-dark .ex-translated-tag-category-1:not(#id) {
+    color: #ff8a8b !important;
+}
+.tpt-dark .ex-translated-tag-category-0:not(#id) {
+    color: #009be6 !important;
 }
 
 .ex-artist-tag {
@@ -261,9 +276,12 @@ const PROGRAM_CSS = `
     margin-left: 0.5em;
 }
 .ex-artist-tag a:not(#id) {
-    color: #A00 !important;
+    color: #c00004 !important;
     margin-left: 0.3ch;
     text-decoration: none;
+}
+.tpt-dark .ex-artist-tag a:not(#id) {
+    color: #ff8a8b !important;
 }
 .ex-artist-tag::before {
     content: "";
@@ -850,10 +868,11 @@ function chooseBackgroundColorScheme ($element) {
     const MIDDLE_LUMINOSITY = 128;
 
     // Get background colors of all parent elements with a nontransparent background color
-    const backgroundColors = $element.parents()
+    const backgroundColors = $element.parents().addBack()
         .map((i, el) => $(el).css("background-color"))
         .get()
         .filter((color) => color !== TRANSPARENT_COLOR);
+    if (backgroundColors.length === 0) backgroundColors.push("rgb(255,255,255)");
     // Calculate summary color and get RGB channels
     const colorChannels = backgroundColors
         .map((color) => color.match(/\d+/g))
@@ -874,9 +893,9 @@ function chooseBackgroundColorScheme ($element) {
         );
     });
     const adjustedColor = `rgb(${adjustedChannels.join(", ")})`;
-    const qtipClass = (medianLuminosity < MIDDLE_LUMINOSITY ? "qtip-dark" : "qtip-light");
+    const theme = (medianLuminosity < MIDDLE_LUMINOSITY ? "dark" : "light");
     return {
-        qtipClass,
+        theme,
         adjustedColor,
     };
 }
@@ -893,8 +912,9 @@ async function buildArtistTooltip (artist, qtip) {
         && !qtip.elements.tooltip.hasClass("qtip-light")
     ) {
         // Select theme and background color based upon the background of surrounding elements
-        const { qtipClass, adjustedColor } = chooseBackgroundColorScheme(qtip.elements.target);
-        qtip.elements.tooltip.addClass(qtipClass);
+        const { theme, adjustedColor } = chooseBackgroundColorScheme(qtip.elements.target);
+        qtip.elements.content.addClass(`qtip-content-${theme}`);
+        qtip.elements.tooltip.addClass(`qtip-${theme}`);
         qtip.elements.tooltip.css("background-color", adjustedColor);
     }
 
@@ -910,11 +930,18 @@ function getArtistTooltipCSS () {
     const css = new CSSStyleSheet();
     css.replace(`
         :host {
-            --preview_has_children_color: #0F0;
-            --preview_has_parent_color: #CC0;
-            --preview_deleted_color: #000;
-            --preview_pending_color: #00F;
-            --preview_flagged_color: #F00;
+            --preview_has_children_color: #35c64a;
+            --preview_has_parent_color: #ccaa00;
+            --preview_deleted_color: #1e1e2c;
+            --preview_pending_color: #0075f8;
+            --preview_flagged_color: #ed2426;
+        }
+        :host(.qtip-content-dark) {
+            --preview_has_children_color: #35c64a;
+            --preview_has_parent_color: #fd9200
+            --preview_deleted_color: #ababbc;
+            --preview_pending_color: #009be6;
+            --preview_flagged_color: #ed2426;
         }
 
         article.container {
@@ -980,22 +1007,30 @@ function getArtistTooltipCSS () {
 
         /* Basic styles taken from Danbooru */
         a:link, a:visited {
-            color: #0073FF;
+            color: #0075f8;
             text-decoration: none;
         }
-
         a:hover {
-            color: #80B9FF;
+            color: #8caaff;
         }
-
         a.tag-category-artist {
-            color: #A00;
+            color: #c00004;
         }
-
         a.tag-category-artist:hover {
-            color: #B66;
+            color: #ed2426;
         }
-
+        :host(.qtip-content-dark) a:link, :host(.qtip-content-dark) a:visited {
+            color: #009be6;
+        }
+        :host(.qtip-content-dark) a:hover {
+            color: #4bb4ff;
+        }
+        :host(.qtip-content-dark) a.tag-category-artist {
+            color: #ff8a8b;
+        }
+        :host(.qtip-content-dark) a.tag-category-artist:hover {
+            color: #ffc3c3;
+        }
 
 
         /* Thumbnail styles taken from Danbooru */
@@ -2231,8 +2266,8 @@ function initializeTwitter () {
     `);
 
     // Tags https://twitter.com/mugosatomi/status/1173231575959363584
-    findAndTranslate("tag", "a.r-1n1174f", {
-        predicate: "a.r-1n1174f[href^='/hashtag/']",
+    findAndTranslate("tag", "a[role='link']", {
+        predicate: "a[href^='/hashtag/']",
         asyncMode: true,
         toTagName: getNormalizedHashtagName,
         ruleName: "tags",
@@ -2626,6 +2661,16 @@ function initialize () {
                 initializePixivFanbox();
             }
     }
+
+    let theme;
+    // Pixiv keeps theme in localStorage and applies it quiet lately
+    if ("theme" in localStorage) {
+        theme = localStorage.theme === "dark" ? "dark" : "light";
+    } else {
+        theme = chooseBackgroundColorScheme($(document.body)).theme;
+    }
+    $(document.body).addClass(`tpt-${theme}`);
+    debuglog(`st ${theme} theme mode`);
 
     // Check for new network requests every half-second
     setInterval(intervalNetworkHandler, 500);
