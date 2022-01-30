@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20220130023846
+// @version      20220130162646
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -292,14 +292,14 @@ const PROGRAM_CSS = `
 }
 
 .ex-artist-tooltip.qtip {
-    max-width: 538px !important;
+    max-width: 558px !important;
     background-color: white;
 }
 .ex-artist-tooltip.qtip-dark {
     background-color: black;
 }
 .ex-artist-tooltip .qtip-content {
-    width: 520px !important;
+    width: 540px !important;
     box-sizing: initial;
 }
 `;
@@ -408,7 +408,8 @@ const NETWORK_REQUEST_DICT = {
         params (tagList) {
             return {
                 // As this is called immediately and as a single use, only pass the first tag
-                tags: `${(SHOW_DELETED ? "status:any" : "-status:deleted")} ${tagList[0]}`,
+                tags: `${(SHOW_DELETED ? "status:any" : "-status:deleted")} ${tagList[0].tag}`,
+                page: tagList[0].page,
                 only: this.fields,
             };
         },
@@ -617,7 +618,7 @@ async function getLong (url, params, requests, type) {
             includes = (data, item) => data
                 .toLowerCase()
                 .split(" ")
-                .includes(item.toLowerCase());
+                .includes(item.tag.toLowerCase());
             break;
         default:
             console.error("Unsupported type of response data");
@@ -884,14 +885,7 @@ async function buildArtistTooltip (artist, qtip) {
     const renderedQtips = buildArtistTooltip.cache || (buildArtistTooltip.cache = {});
 
     if (!(artist.name in renderedQtips)) {
-        const waitPosts = queueNetworkRequestMemoized("post", artist.name);
-        const waitTags = queueNetworkRequestMemoized("tag", artist.name);
-        // Process the queue immediately
-        intervalNetworkHandler();
-
-        renderedQtips[artist.name] = Promise
-            .all([waitTags, waitPosts])
-            .then(([tags, posts]) => buildArtistTooltipContent(artist, tags, posts));
+        renderedQtips[artist.name] = buildArtistTooltipContent(artist);
     }
 
     if (
@@ -904,7 +898,7 @@ async function buildArtistTooltip (artist, qtip) {
         qtip.elements.tooltip.css("background-color", adjustedColor);
     }
 
-    let $qtipContent = (await renderedQtips[artist.name]);
+    let $qtipContent = await renderedQtips[artist.name];
     // For correct work of CORS images must not be cloned at first displaying
     if ($qtipContent.parent().length > 0) $qtipContent = $qtipContent.clone(true, true);
     attachShadow(qtip.elements.content, $qtipContent, getArtistTooltipCSS());
@@ -1014,6 +1008,10 @@ function getArtistTooltipCSS () {
             text-align: center;
             position: relative;
         }
+        article.post-preview:nth-child(3n),
+        article.post-preview:last-child {
+            margin: 0 2px 10px 0;
+        }
 
         article.post-preview a {
             margin: auto;
@@ -1090,7 +1088,7 @@ function getArtistTooltipCSS () {
                           var(--preview_has_parent_color);
         }
 
-        article.post-preview[data-tags~=animated]:before {
+        article.post-preview[data-tags~=animated]::before {
             content: "►";
             position: absolute;
             width: 20px;
@@ -1099,9 +1097,11 @@ function getArtistTooltipCSS () {
             background-color: rgba(0,0,0,0.5);
             margin: 2px;
             text-align: center;
+            line-height: 18px;
+            z-index: 1;
         }
 
-        article.post-preview[data-has-sound=true]:before {
+        article.post-preview[data-has-sound=true]::before {
             content: "♪";
             position: absolute;
             width: 20px;
@@ -1110,14 +1110,51 @@ function getArtistTooltipCSS () {
             background-color: rgba(0,0,0,0.5);
             margin: 2px;
             text-align: center;
+            line-height: 18px;
+            z-index: 1;
+        }
+
+        div.post-pager {
+            display: flex;
+            align-items: stretch;
+            gap: 3px;
+        }
+        div.post-pager.loading {
+            opacity: 0.5;
+            cursor: wait;
+        }
+        div.post-pager.loading a {
+            cursor: progress;
+        }
+        div.post-pager .btn {
+            width: 12px;
+            flex-shrink: 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+        div.post-pager .btn.disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
+        div.post-pager.loading .btn {
+            cursor: inherit;
+        }
+        div.post-pager .btn:last-child {
+            justify-content: flex-end;
+        }
+        div.post-pager .btn:hover {
+            background: #8884;
+            border-radius: 3px;
         }
 
 
         div.post-list {
-            display: flex;
-            flex-wrap: wrap;
-            max-height: 420px;
-            align-items: flex-end;
+            display: grid;
+            grid-template-columns: repeat(3, auto);
+            grid-auto-rows: max-content;
+            max-height: 422px;
+            margin-right: auto;
         }
 
         article.post-preview a {
@@ -1146,7 +1183,8 @@ function getArtistTooltipCSS () {
         }
 
         .scrollable {
-            overflow: auto;
+            overflow-y: auto;
+            overflow-x: hidden;
             /* Firefox */
             scrollbar-color: rgba(128,128,128,0.4) rgba(128,128,128,0.2);
             scrollbar-width: thin;
@@ -1181,7 +1219,15 @@ function getArtistTooltipCSS () {
     return css;
 }
 
-function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = []) {
+async function buildArtistTooltipContent (artist) {
+    const waitPosts = queueNetworkRequestMemoized("post", { tag: artist.name, page: 1 });
+    const waitTags = queueNetworkRequestMemoized("tag", artist.name);
+    // Process the queue immediately
+    intervalNetworkHandler();
+
+    const [[tag = { post_count: 0 }], posts = []] = await Promise.all([waitTags, waitPosts]);
+
+
     const otherNames = artist.other_names
         .filter(String)
         .sort()
@@ -1196,6 +1242,8 @@ function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = [
         ))
         .join("");
 
+    const status = SHOW_DELETED ? "status%3Aany" : "-status%3Adeleted";
+    const nextBtnClass = tag.post_count <= ARTIST_POST_PREVIEW_LIMIT ? "disabled" : "";
     const $content = $(noIndents`
         <article class="container" part="container">
             ${GM_getResourceText("settings_icon")}
@@ -1223,14 +1271,25 @@ function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = [
             <section class="posts">
                 <h2>
                     Posts
-                    <a href="${BOORU}/posts?tags=${artist.encodedName}+${(SHOW_DELETED ? "status%3Aany" : "-status%3Adeleted")}" target="_blank">»</a>
+                    <a href="${BOORU}/posts?tags=${artist.encodedName}+${status}" target="_blank">
+                        »
+                    </a>
                 </h2>
-                <div class="post-list scrollable" part="post-list"></div>
+                <div class="post-pager"
+                    data-tag="${artist.encodedName}"
+                    data-page="1"
+                    data-last-page="${Math.ceil(tag.post_count / ARTIST_POST_PREVIEW_LIMIT)}"
+                >
+                    <div class="btn disabled">&lt;</div>
+                    <div class="post-list scrollable" part="post-list"></div>
+                    <div class="btn ${nextBtnClass}">&gt;</div>
+                </div>
             </section>
         </article>
     `);
     $content.find(".post-list").append(posts.map(buildPostPreview));
     $content.find(".settings-icon").click(showSettings);
+    $content.find(".btn").click(loadNextPage);
     return $content;
 }
 
@@ -1365,6 +1424,31 @@ function buildPostPreview (post) {
     }
 
     return $preview;
+}
+
+async function loadNextPage (ev) {
+    const $btn = $(ev.target);
+    const $container = $btn.parent();
+    if ($container.is(".loading")) return;
+
+    const tag = $container.data("tag");
+    let page = +$container.data("page");
+    const lastPage = +$container.data("lastPage");
+    const dir = $btn.is(":first-child") ? -1 : +1;
+    page += dir;
+    if (page < 1 || page > lastPage) return;
+
+    $container.find(".btn.disabled").removeClass("disabled");
+    if (page === 1) $container.find(".btn:first-child").addClass("disabled");
+    if (page === lastPage) $container.find(".btn:last-child").addClass("disabled");
+
+    $container.data("page", page).addClass("loading");
+    const waitPosts = queueNetworkRequestMemoized("post", { tag, page });
+    // Process the queue immediately
+    intervalNetworkHandler();
+    const posts = await waitPosts;
+    $container.removeClass("loading");
+    $container.find(".post-list").empty().append(posts.map(buildPostPreview));
 }
 
 function showSettings () {
