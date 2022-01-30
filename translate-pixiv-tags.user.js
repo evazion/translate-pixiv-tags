@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20220131001346
+// @version      20220131005146
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -842,23 +842,14 @@ function attachShadow ($target, $content, css) {
         const shadowRoot = $target.get(0).attachShadow({ mode: "open" });
         $(shadowRoot).append($content);
         if ("adoptedStyleSheets" in shadowRoot) {
-            let sheet = css;
-            if (typeof sheet === "string") {
-                sheet = new CSSStyleSheet();
-                sheet.replace(css);
-            }
+            const sheet = new CSSStyleSheet();
+            sheet.replace(css);
             shadowRoot.adoptedStyleSheets = [sheet];
         } else {
-            const styles = (typeof css === "string")
-                ? css
-                : [...css.cssRules].map((rule) => rule.cssText).join("");
-            $(shadowRoot).append(`<style>${styles}</style>`);
+            $(shadowRoot).append(`<style>${css}</style>`);
         }
     } else {
-        const styles = (typeof css === "string")
-            ? css
-            : [...css.cssRules].map((rule) => rule.cssText).join("");
-        $target.empty().append($content, `<style>${styles}</style>`);
+        $target.empty().append($content, `<style>${css}</style>`);
     }
 }
 
@@ -921,338 +912,333 @@ async function buildArtistTooltip (artist, qtip) {
     let $qtipContent = await renderedQtips[artist.name];
     // For correct work of CORS images must not be cloned at first displaying
     if ($qtipContent.parent().length > 0) $qtipContent = $qtipContent.clone(true, true);
-    attachShadow(qtip.elements.content, $qtipContent, getArtistTooltipCSS());
+    // eslint-disable-next-line no-use-before-define
+    attachShadow(qtip.elements.content, $qtipContent, ARTIST_TOOLTIP_CSS);
     qtip.reposition(null, false);
 }
 
-function getArtistTooltipCSS () {
-    if (getArtistTooltipCSS.css) return getArtistTooltipCSS.css;
-    const css = new CSSStyleSheet();
-    css.replace(`
-        :host {
-            --preview_has_children_color: #35c64a;
-            --preview_has_parent_color: #ccaa00;
-            --preview_deleted_color: #1e1e2c;
-            --preview_pending_color: #0075f8;
-            --preview_flagged_color: #ed2426;
-        }
-        :host(.qtip-content-dark) {
-            --preview_has_children_color: #35c64a;
-            --preview_has_parent_color: #fd9200
-            --preview_deleted_color: #ababbc;
-            --preview_pending_color: #009be6;
-            --preview_flagged_color: #ed2426;
-        }
+const ARTIST_TOOLTIP_CSS = `
+    :host {
+        --preview_has_children_color: #35c64a;
+        --preview_has_parent_color: #ccaa00;
+        --preview_deleted_color: #1e1e2c;
+        --preview_pending_color: #0075f8;
+        --preview_flagged_color: #ed2426;
+    }
+    :host(.qtip-content-dark) {
+        --preview_has_children_color: #35c64a;
+        --preview_has_parent_color: #fd9200
+        --preview_deleted_color: #ababbc;
+        --preview_pending_color: #009be6;
+        --preview_flagged_color: #ed2426;
+    }
 
-        article.container {
-            font-family: Verdana, Helvetica, sans-serif;
-            padding: 10px;
-        }
+    article.container {
+        font-family: Verdana, Helvetica, sans-serif;
+        padding: 10px;
+    }
 
-        section {
-            margin-bottom: 15px;
-            line-height: 12.5px;
-        }
+    section {
+        margin-bottom: 15px;
+        line-height: 12.5px;
+    }
 
-        h2 {
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
+    h2 {
+        font-size: 14px;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
 
-        a.artist-name {
-            font-size: 20px;
-        }
+    a.artist-name {
+        font-size: 20px;
+    }
 
-        .post-count {
-            color: #888;
-            margin-left: 3px;
-        }
+    .post-count {
+        color: #888;
+        margin-left: 3px;
+    }
 
-        ul.other-names {
-            margin-top: 5px;
-            line-height: 24px;
-            padding: 0px;
-            max-height: 48px;
-        }
+    ul.other-names {
+        margin-top: 5px;
+        line-height: 24px;
+        padding: 0px;
+        max-height: 48px;
+    }
 
-        ul.other-names li {
-            display: inline-block;
-        }
+    ul.other-names li {
+        display: inline-block;
+    }
 
-        ul.other-names li a {
-            background-color: rgba(128,128,128,0.2);
-            padding: 3px 5px;
-            margin: 0 2px;
-            border-radius: 3px;
-            white-space: nowrap;
-        }
+    ul.other-names li a {
+        background-color: rgba(128,128,128,0.2);
+        padding: 3px 5px;
+        margin: 0 2px;
+        border-radius: 3px;
+        white-space: nowrap;
+    }
 
-        section.urls ul {
-            list-style: disc inside;
-            padding: 0px;
-            max-height: 145px;
-        }
+    section.urls ul {
+        list-style: disc inside;
+        padding: 0px;
+        max-height: 145px;
+    }
 
-        section.urls ul ::marker {
-            font-size: 10px;
-        }
+    section.urls ul ::marker {
+        font-size: 10px;
+    }
 
-        section.urls ul li.artist-url-inactive a {
-            color: red;
-            text-decoration: underline;
-            text-decoration-style: dotted;
-        }
+    section.urls ul li.artist-url-inactive a {
+        color: red;
+        text-decoration: underline;
+        text-decoration-style: dotted;
+    }
 
 
-        /* Basic styles taken from Danbooru */
-        a:link, a:visited {
-            color: #0075f8;
-            text-decoration: none;
-        }
-        a:hover {
-            color: #8caaff;
-        }
-        a.tag-category-artist {
-            color: #c00004;
-        }
-        a.tag-category-artist:hover {
-            color: #ed2426;
-        }
-        :host(.qtip-content-dark) a:link, :host(.qtip-content-dark) a:visited {
-            color: #009be6;
-        }
-        :host(.qtip-content-dark) a:hover {
-            color: #4bb4ff;
-        }
-        :host(.qtip-content-dark) a.tag-category-artist {
-            color: #ff8a8b;
-        }
-        :host(.qtip-content-dark) a.tag-category-artist:hover {
-            color: #ffc3c3;
-        }
+    /* Basic styles taken from Danbooru */
+    a:link, a:visited {
+        color: #0075f8;
+        text-decoration: none;
+    }
+    a:hover {
+        color: #8caaff;
+    }
+    a.tag-category-artist {
+        color: #c00004;
+    }
+    a.tag-category-artist:hover {
+        color: #ed2426;
+    }
+    :host(.qtip-content-dark) a:link, :host(.qtip-content-dark) a:visited {
+        color: #009be6;
+    }
+    :host(.qtip-content-dark) a:hover {
+        color: #4bb4ff;
+    }
+    :host(.qtip-content-dark) a.tag-category-artist {
+        color: #ff8a8b;
+    }
+    :host(.qtip-content-dark) a.tag-category-artist:hover {
+        color: #ffc3c3;
+    }
 
 
-        /* Thumbnail styles taken from Danbooru */
-        article.post-preview {
-            /*height: 154px;*/
-            width: 154px;
-            margin: 0 10px 10px 0;
-            float: left;
-            overflow: hidden;
-            text-align: center;
-            position: relative;
-        }
-        article.post-preview:nth-child(3n),
-        article.post-preview:last-child {
-            margin: 0 2px 10px 0;
-        }
+    /* Thumbnail styles taken from Danbooru */
+    article.post-preview {
+        /*height: 154px;*/
+        width: 154px;
+        margin: 0 10px 10px 0;
+        float: left;
+        overflow: hidden;
+        text-align: center;
+        position: relative;
+    }
+    article.post-preview:nth-child(3n),
+    article.post-preview:last-child {
+        margin: 0 2px 10px 0;
+    }
 
-        article.post-preview a {
-            margin: auto;
-            border: 2px solid transparent;
-            display: inline-block;
-        }
+    article.post-preview a {
+        margin: auto;
+        border: 2px solid transparent;
+        display: inline-block;
+    }
 
-        article.post-preview.post-status-has-children a {
-            border-color: var(--preview_has_children_color);
-        }
+    article.post-preview.post-status-has-children a {
+        border-color: var(--preview_has_children_color);
+    }
 
-        article.post-preview.post-status-has-parent a {
-            border-color: var(--preview_has_parent_color);
-        }
+    article.post-preview.post-status-has-parent a {
+        border-color: var(--preview_has_parent_color);
+    }
 
-        article.post-preview.post-status-has-children.post-status-has-parent a {
-            border-color: var(--preview_has_children_color)
-                          var(--preview_has_parent_color)
-                          var(--preview_has_parent_color)
-                          var(--preview_has_children_color);
-        }
+    article.post-preview.post-status-has-children.post-status-has-parent a {
+        border-color: var(--preview_has_children_color)
+                      var(--preview_has_parent_color)
+                      var(--preview_has_parent_color)
+                      var(--preview_has_children_color);
+    }
 
-        article.post-preview.post-status-deleted a {
-            border-color: var(--preview_deleted_color);
-        }
+    article.post-preview.post-status-deleted a {
+        border-color: var(--preview_deleted_color);
+    }
 
-        article.post-preview.post-status-has-children.post-status-deleted a {
-            border-color: var(--preview_has_children_color)
-                          var(--preview_deleted_color)
-                          var(--preview_deleted_color)
-                          var(--preview_has_children_color);
-        }
+    article.post-preview.post-status-has-children.post-status-deleted a {
+        border-color: var(--preview_has_children_color)
+                      var(--preview_deleted_color)
+                      var(--preview_deleted_color)
+                      var(--preview_has_children_color);
+    }
 
-        article.post-preview.post-status-has-parent.post-status-deleted a {
-            border-color: var(--preview_has_parent_color)
-                          var(--preview_deleted_color)
-                          var(--preview_deleted_color)
-                          var(--preview_has_parent_color);
-        }
+    article.post-preview.post-status-has-parent.post-status-deleted a {
+        border-color: var(--preview_has_parent_color)
+                      var(--preview_deleted_color)
+                      var(--preview_deleted_color)
+                      var(--preview_has_parent_color);
+    }
 
-        article.post-preview.post-status-has-children.post-status-has-parent.post-status-deleted a {
-            border-color: var(--preview_has_children_color)
-                          var(--preview_deleted_color)
-                          var(--preview_deleted_color)
-                          var(--preview_has_parent_color);
-        }
+    article.post-preview.post-status-has-children.post-status-has-parent.post-status-deleted a {
+        border-color: var(--preview_has_children_color)
+                      var(--preview_deleted_color)
+                      var(--preview_deleted_color)
+                      var(--preview_has_parent_color);
+    }
 
-        article.post-preview.post-status-pending a,
-        article.post-preview.post-status-flagged a {
-            border-color: var(--preview_pending_color);
-        }
+    article.post-preview.post-status-pending a,
+    article.post-preview.post-status-flagged a {
+        border-color: var(--preview_pending_color);
+    }
 
-        article.post-preview.post-status-has-children.post-status-pending a,
-        article.post-preview.post-status-has-children.post-status-flagged a {
-            border-color: var(--preview_has_children_color)
-                          var(--preview_pending_color)
-                          var(--preview_pending_color)
-                          var(--preview_has_children_color);
-        }
+    article.post-preview.post-status-has-children.post-status-pending a,
+    article.post-preview.post-status-has-children.post-status-flagged a {
+        border-color: var(--preview_has_children_color)
+                      var(--preview_pending_color)
+                      var(--preview_pending_color)
+                      var(--preview_has_children_color);
+    }
 
-        article.post-preview.post-status-has-parent.post-status-pending a,
-        article.post-preview.post-status-has-parent.post-status-flagged a {
-            border-color: var(--preview_has_parent_color)
-                          var(--preview_pending_color)
-                          var(--preview_pending_color)
-                          var(--preview_has_parent_color);
-        }
+    article.post-preview.post-status-has-parent.post-status-pending a,
+    article.post-preview.post-status-has-parent.post-status-flagged a {
+        border-color: var(--preview_has_parent_color)
+                      var(--preview_pending_color)
+                      var(--preview_pending_color)
+                      var(--preview_has_parent_color);
+    }
 
-        article.post-preview.post-status-has-children.post-status-has-parent.post-status-pending a,
-        article.post-preview.post-status-has-children.post-status-has-parent.post-status-flagged a {
-            border-color: var(--preview_has_children_color)
-                          var(--preview_pending_color)
-                          var(--preview_pending_color)
-                          var(--preview_has_parent_color);
-        }
+    article.post-preview.post-status-has-children.post-status-has-parent.post-status-pending a,
+    article.post-preview.post-status-has-children.post-status-has-parent.post-status-flagged a {
+        border-color: var(--preview_has_children_color)
+                      var(--preview_pending_color)
+                      var(--preview_pending_color)
+                      var(--preview_has_parent_color);
+    }
 
-        article.post-preview[data-tags~=animated]::before {
-            content: "►";
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            color: white;
-            background-color: rgba(0,0,0,0.5);
-            margin: 2px;
-            text-align: center;
-            line-height: 18px;
-            z-index: 1;
-        }
+    article.post-preview[data-tags~=animated]::before {
+        content: "►";
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        color: white;
+        background-color: rgba(0,0,0,0.5);
+        margin: 2px;
+        text-align: center;
+        line-height: 18px;
+        z-index: 1;
+    }
 
-        article.post-preview[data-has-sound=true]::before {
-            content: "♪";
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            color: white;
-            background-color: rgba(0,0,0,0.5);
-            margin: 2px;
-            text-align: center;
-            line-height: 18px;
-            z-index: 1;
-        }
+    article.post-preview[data-has-sound=true]::before {
+        content: "♪";
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        color: white;
+        background-color: rgba(0,0,0,0.5);
+        margin: 2px;
+        text-align: center;
+        line-height: 18px;
+        z-index: 1;
+    }
 
-        div.post-pager {
-            display: flex;
-            align-items: stretch;
-            gap: 3px;
-        }
-        div.post-pager.loading {
-            opacity: 0.5;
-            cursor: wait;
-        }
-        div.post-pager.loading a {
-            cursor: progress;
-        }
-        div.post-pager .btn {
-            width: 12px;
-            flex-shrink: 0;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-        }
-        div.post-pager .btn.disabled {
-            opacity: 0.5;
-            cursor: default;
-        }
-        div.post-pager.loading .btn {
-            cursor: inherit;
-        }
-        div.post-pager .btn:last-child {
-            justify-content: flex-end;
-        }
-        div.post-pager .btn:hover {
-            background: #8884;
-            border-radius: 3px;
-        }
+    div.post-pager {
+        display: flex;
+        align-items: stretch;
+        gap: 3px;
+    }
+    div.post-pager.loading {
+        opacity: 0.5;
+        cursor: wait;
+    }
+    div.post-pager.loading a {
+        cursor: progress;
+    }
+    div.post-pager .btn {
+        width: 12px;
+        flex-shrink: 0;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+    }
+    div.post-pager .btn.disabled {
+        opacity: 0.5;
+        cursor: default;
+    }
+    div.post-pager.loading .btn {
+        cursor: inherit;
+    }
+    div.post-pager .btn:last-child {
+        justify-content: flex-end;
+    }
+    div.post-pager .btn:hover {
+        background: #8884;
+        border-radius: 3px;
+    }
 
 
-        div.post-list {
-            display: grid;
-            grid-template-columns: repeat(3, auto);
-            grid-auto-rows: max-content;
-            max-height: 422px;
-            margin-right: auto;
-        }
+    div.post-list {
+        display: grid;
+        grid-template-columns: repeat(3, auto);
+        grid-auto-rows: max-content;
+        max-height: 422px;
+        margin-right: auto;
+    }
 
-        article.post-preview a {
-            display: inline-block;
-            /*height: 154px;*/
-            overflow: hidden;
-        }
+    article.post-preview a {
+        display: inline-block;
+        /*height: 154px;*/
+        overflow: hidden;
+    }
 
-        article.post-preview img {
-            margin-bottom: -2px;
-        }
+    article.post-preview img {
+        margin-bottom: -2px;
+    }
 
-        article.post-preview p {
-            text-align: center;
-            margin: 0 0 2px 0;
-            letter-spacing: -0.1px;
-        }
+    article.post-preview p {
+        text-align: center;
+        margin: 0 0 2px 0;
+        letter-spacing: -0.1px;
+    }
 
-        article.post-preview.blur-post img {
-            filter: blur(10px);
-        }
+    article.post-preview.blur-post img {
+        filter: blur(10px);
+    }
 
-        article.post-preview.blur-post:hover img {
-            filter: blur(0px);
-            transition: filter 1s 0.5s;
-        }
+    article.post-preview.blur-post:hover img {
+        filter: blur(0px);
+        transition: filter 1s 0.5s;
+    }
 
-        .scrollable {
-            overflow-y: auto;
-            overflow-x: hidden;
-            /* Firefox */
-            scrollbar-color: rgba(128,128,128,0.4) rgba(128,128,128,0.2);
-            scrollbar-width: thin;
-        }
-        .scrollable::-webkit-scrollbar {
-            width: 6px;
-        }
+    .scrollable {
+        overflow-y: auto;
+        overflow-x: hidden;
+        /* Firefox */
+        scrollbar-color: rgba(128,128,128,0.4) rgba(128,128,128,0.2);
+        scrollbar-width: thin;
+    }
+    .scrollable::-webkit-scrollbar {
+        width: 6px;
+    }
 
-        .scrollable::-webkit-scrollbar-track {
-            background-color: rgba(128,128,128,0.2);
-            border-radius: 6px;
-        }
+    .scrollable::-webkit-scrollbar-track {
+        background-color: rgba(128,128,128,0.2);
+        border-radius: 6px;
+    }
 
-        .scrollable::-webkit-scrollbar-thumb {
-            background-color: rgba(128,128,128,0.4);
-            border-radius: 6px;
-        }
+    .scrollable::-webkit-scrollbar-thumb {
+        background-color: rgba(128,128,128,0.4);
+        border-radius: 6px;
+    }
 
-        .settings-icon {
-            position:absolute;
-            top: 10px;
-            right: 10px;
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-        }
-        .settings-icon path {
-            fill: #888;
-        }
-    `);
-    getArtistTooltipCSS.css = css;
-    return css;
-}
+    .settings-icon {
+        position:absolute;
+        top: 10px;
+        right: 10px;
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+    }
+    .settings-icon path {
+        fill: #888;
+    }
+`;
 
 async function buildArtistTooltipContent (artist) {
     const waitPosts = queueNetworkRequestMemoized("post", { tag: artist.name, page: 1 });
