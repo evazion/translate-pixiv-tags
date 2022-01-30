@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20220129230146
+// @version      20220130023846
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -815,15 +815,31 @@ function addDanbooruArtist ($target, artist, options = {}) {
     if (onadded) onadded($tag, options);
 }
 
-function attachShadow ($target, $content) {
+function attachShadow ($target, $content, css) {
     // Return if the target already have shadow
     if ($target.prop("shadowRoot")) return;
 
     if (_.isFunction(document.body.attachShadow)) {
         const shadowRoot = $target.get(0).attachShadow({ mode: "open" });
         $(shadowRoot).append($content);
+        if ("adoptedStyleSheets" in shadowRoot) {
+            let sheet = css;
+            if (typeof sheet === "string") {
+                sheet = new CSSStyleSheet();
+                sheet.replace(css);
+            }
+            shadowRoot.adoptedStyleSheets = [sheet];
+        } else {
+            const styles = (typeof css === "string")
+                ? css
+                : [...css.cssRules].map((rule) => rule.cssText).join("");
+            $(shadowRoot).append(`<style>${styles}</style>`);
+        }
     } else {
-        $target.empty().append($content);
+        const styles = (typeof css === "string")
+            ? css
+            : [...css.cssRules].map((rule) => rule.cssText).join("");
+        $target.empty().append($content, `<style>${styles}</style>`);
     }
 }
 
@@ -891,8 +907,278 @@ async function buildArtistTooltip (artist, qtip) {
     let $qtipContent = (await renderedQtips[artist.name]);
     // For correct work of CORS images must not be cloned at first displaying
     if ($qtipContent.parent().length > 0) $qtipContent = $qtipContent.clone(true, true);
-    attachShadow(qtip.elements.content, $qtipContent);
+    attachShadow(qtip.elements.content, $qtipContent, getArtistTooltipCSS());
     qtip.reposition(null, false);
+}
+
+function getArtistTooltipCSS () {
+    if (getArtistTooltipCSS.css) return getArtistTooltipCSS.css;
+    const css = new CSSStyleSheet();
+    css.replace(`
+        :host {
+            --preview_has_children_color: #0F0;
+            --preview_has_parent_color: #CC0;
+            --preview_deleted_color: #000;
+            --preview_pending_color: #00F;
+            --preview_flagged_color: #F00;
+        }
+
+        article.container {
+            font-family: Verdana, Helvetica, sans-serif;
+            padding: 10px;
+        }
+
+        section {
+            margin-bottom: 15px;
+            line-height: 12.5px;
+        }
+
+        h2 {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        a.artist-name {
+            font-size: 20px;
+        }
+
+        .post-count {
+            color: #888;
+            margin-left: 3px;
+        }
+
+        ul.other-names {
+            margin-top: 5px;
+            line-height: 24px;
+            padding: 0px;
+            max-height: 48px;
+        }
+
+        ul.other-names li {
+            display: inline-block;
+        }
+
+        ul.other-names li a {
+            background-color: rgba(128,128,128,0.2);
+            padding: 3px 5px;
+            margin: 0 2px;
+            border-radius: 3px;
+            white-space: nowrap;
+        }
+
+        section.urls ul {
+            list-style: disc inside;
+            padding: 0px;
+            max-height: 145px;
+        }
+
+        section.urls ul ::marker {
+            font-size: 10px;
+        }
+
+        section.urls ul li.artist-url-inactive a {
+            color: red;
+            text-decoration: underline;
+            text-decoration-style: dotted;
+        }
+
+
+        /* Basic styles taken from Danbooru */
+        a:link, a:visited {
+            color: #0073FF;
+            text-decoration: none;
+        }
+
+        a:hover {
+            color: #80B9FF;
+        }
+
+        a.tag-category-artist {
+            color: #A00;
+        }
+
+        a.tag-category-artist:hover {
+            color: #B66;
+        }
+
+
+
+        /* Thumbnail styles taken from Danbooru */
+        article.post-preview {
+            /*height: 154px;*/
+            width: 154px;
+            margin: 0 10px 10px 0;
+            float: left;
+            overflow: hidden;
+            text-align: center;
+            position: relative;
+        }
+
+        article.post-preview a {
+            margin: auto;
+            border: 2px solid transparent;
+            display: inline-block;
+        }
+
+        article.post-preview.post-status-has-children a {
+            border-color: var(--preview_has_children_color);
+        }
+
+        article.post-preview.post-status-has-parent a {
+            border-color: var(--preview_has_parent_color);
+        }
+
+        article.post-preview.post-status-has-children.post-status-has-parent a {
+            border-color: var(--preview_has_children_color)
+                          var(--preview_has_parent_color)
+                          var(--preview_has_parent_color)
+                          var(--preview_has_children_color);
+        }
+
+        article.post-preview.post-status-deleted a {
+            border-color: var(--preview_deleted_color);
+        }
+
+        article.post-preview.post-status-has-children.post-status-deleted a {
+            border-color: var(--preview_has_children_color)
+                          var(--preview_deleted_color)
+                          var(--preview_deleted_color)
+                          var(--preview_has_children_color);
+        }
+
+        article.post-preview.post-status-has-parent.post-status-deleted a {
+            border-color: var(--preview_has_parent_color)
+                          var(--preview_deleted_color)
+                          var(--preview_deleted_color)
+                          var(--preview_has_parent_color);
+        }
+
+        article.post-preview.post-status-has-children.post-status-has-parent.post-status-deleted a {
+            border-color: var(--preview_has_children_color)
+                          var(--preview_deleted_color)
+                          var(--preview_deleted_color)
+                          var(--preview_has_parent_color);
+        }
+
+        article.post-preview.post-status-pending a,
+        article.post-preview.post-status-flagged a {
+            border-color: var(--preview_pending_color);
+        }
+
+        article.post-preview.post-status-has-children.post-status-pending a,
+        article.post-preview.post-status-has-children.post-status-flagged a {
+            border-color: var(--preview_has_children_color)
+                          var(--preview_pending_color)
+                          var(--preview_pending_color)
+                          var(--preview_has_children_color);
+        }
+
+        article.post-preview.post-status-has-parent.post-status-pending a,
+        article.post-preview.post-status-has-parent.post-status-flagged a {
+            border-color: var(--preview_has_parent_color)
+                          var(--preview_pending_color)
+                          var(--preview_pending_color)
+                          var(--preview_has_parent_color);
+        }
+
+        article.post-preview.post-status-has-children.post-status-has-parent.post-status-pending a,
+        article.post-preview.post-status-has-children.post-status-has-parent.post-status-flagged a {
+            border-color: var(--preview_has_children_color)
+                          var(--preview_pending_color)
+                          var(--preview_pending_color)
+                          var(--preview_has_parent_color);
+        }
+
+        article.post-preview[data-tags~=animated]:before {
+            content: "►";
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            color: white;
+            background-color: rgba(0,0,0,0.5);
+            margin: 2px;
+            text-align: center;
+        }
+
+        article.post-preview[data-has-sound=true]:before {
+            content: "♪";
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            color: white;
+            background-color: rgba(0,0,0,0.5);
+            margin: 2px;
+            text-align: center;
+        }
+
+
+        div.post-list {
+            display: flex;
+            flex-wrap: wrap;
+            max-height: 420px;
+            align-items: flex-end;
+        }
+
+        article.post-preview a {
+            display: inline-block;
+            /*height: 154px;*/
+            overflow: hidden;
+        }
+
+        article.post-preview img {
+            margin-bottom: -2px;
+        }
+
+        article.post-preview p {
+            text-align: center;
+            margin: 0 0 2px 0;
+            letter-spacing: -0.1px;
+        }
+
+        article.post-preview.blur-post img {
+            filter: blur(10px);
+        }
+
+        article.post-preview.blur-post:hover img {
+            filter: blur(0px);
+            transition: filter 1s 0.5s;
+        }
+
+        .scrollable {
+            overflow: auto;
+            /* Firefox */
+            scrollbar-color: rgba(128,128,128,0.4) rgba(128,128,128,0.2);
+            scrollbar-width: thin;
+        }
+        .scrollable::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scrollable::-webkit-scrollbar-track {
+            background-color: rgba(128,128,128,0.2);
+            border-radius: 6px;
+        }
+
+        .scrollable::-webkit-scrollbar-thumb {
+            background-color: rgba(128,128,128,0.4);
+            border-radius: 6px;
+        }
+
+        .settings-icon {
+            position:absolute;
+            top: 10px;
+            right: 10px;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        .settings-icon path {
+            fill: #888;
+        }
+    `);
+    getArtistTooltipCSS.css = css;
+    return css;
 }
 
 function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = []) {
@@ -911,269 +1197,6 @@ function buildArtistTooltipContent (artist, [tag = { post_count: 0 }], posts = [
         .join("");
 
     const $content = $(noIndents`
-        <style>
-            :host {
-                --preview_has_children_color: #0F0;
-                --preview_has_parent_color: #CC0;
-                --preview_deleted_color: #000;
-                --preview_pending_color: #00F;
-                --preview_flagged_color: #F00;
-            }
-
-            article.container {
-                font-family: Verdana, Helvetica, sans-serif;
-                padding: 10px;
-            }
-
-            section {
-                margin-bottom: 15px;
-                line-height: 12.5px;
-            }
-
-            h2 {
-                font-size: 14px;
-                font-weight: bold;
-                margin-bottom: 5px;
-            }
-
-            a.artist-name {
-                font-size: 20px;
-            }
-
-            .post-count {
-                color: #888;
-                margin-left: 3px;
-            }
-
-            ul.other-names {
-                margin-top: 5px;
-                line-height: 24px;
-                padding: 0px;
-                max-height: 48px;
-            }
-
-            ul.other-names li {
-                display: inline-block;
-            }
-
-            ul.other-names li a {
-                background-color: rgba(128,128,128,0.2);
-                padding: 3px 5px;
-                margin: 0 2px;
-                border-radius: 3px;
-                white-space: nowrap;
-            }
-
-            section.urls ul {
-                list-style: disc inside;
-                padding: 0px;
-                max-height: 145px;
-            }
-
-            section.urls ul ::marker {
-                font-size: 10px;
-            }
-
-            section.urls ul li.artist-url-inactive a {
-                color: red;
-                text-decoration: underline;
-                text-decoration-style: dotted;
-            }
-
-
-            /* Basic styles taken from Danbooru */
-            a:link, a:visited {
-                color: #0073FF;
-                text-decoration: none;
-            }
-
-            a:hover {
-                color: #80B9FF;
-            }
-
-            a.tag-category-artist {
-                color: #A00;
-            }
-
-            a.tag-category-artist:hover {
-                color: #B66;
-            }
-
-
-
-            /* Thumbnail styles taken from Danbooru */
-            article.post-preview {
-                /*height: 154px;*/
-                width: 154px;
-                margin: 0 10px 10px 0;
-                float: left;
-                overflow: hidden;
-                text-align: center;
-                position: relative;
-            }
-
-            article.post-preview a {
-                margin: auto;
-                border: 2px solid transparent;
-                display: inline-block;
-            }
-
-            article.post-preview.post-status-has-children a {
-                border-color: var(--preview_has_children_color);
-            }
-
-            article.post-preview.post-status-has-parent a {
-                border-color: var(--preview_has_parent_color);
-            }
-
-            article.post-preview.post-status-has-children.post-status-has-parent a {
-                border-color: var(--preview_has_children_color)
-                              var(--preview_has_parent_color)
-                              var(--preview_has_parent_color)
-                              var(--preview_has_children_color);
-            }
-
-            article.post-preview.post-status-deleted a {
-                border-color: var(--preview_deleted_color);
-            }
-
-            article.post-preview.post-status-has-children.post-status-deleted a {
-                border-color: var(--preview_has_children_color)
-                              var(--preview_deleted_color)
-                              var(--preview_deleted_color)
-                              var(--preview_has_children_color);
-            }
-
-            article.post-preview.post-status-has-parent.post-status-deleted a {
-                border-color: var(--preview_has_parent_color)
-                              var(--preview_deleted_color)
-                              var(--preview_deleted_color)
-                              var(--preview_has_parent_color);
-            }
-
-            article.post-preview.post-status-has-children.post-status-has-parent.post-status-deleted a {
-                border-color: var(--preview_has_children_color)
-                              var(--preview_deleted_color)
-                              var(--preview_deleted_color)
-                              var(--preview_has_parent_color);
-            }
-
-            article.post-preview.post-status-pending a,
-            article.post-preview.post-status-flagged a {
-                border-color: var(--preview_pending_color);
-            }
-
-            article.post-preview.post-status-has-children.post-status-pending a,
-            article.post-preview.post-status-has-children.post-status-flagged a {
-                border-color: var(--preview_has_children_color)
-                              var(--preview_pending_color)
-                              var(--preview_pending_color)
-                              var(--preview_has_children_color);
-            }
-
-            article.post-preview.post-status-has-parent.post-status-pending a,
-            article.post-preview.post-status-has-parent.post-status-flagged a {
-                border-color: var(--preview_has_parent_color)
-                              var(--preview_pending_color)
-                              var(--preview_pending_color)
-                              var(--preview_has_parent_color);
-            }
-
-            article.post-preview.post-status-has-children.post-status-has-parent.post-status-pending a,
-            article.post-preview.post-status-has-children.post-status-has-parent.post-status-flagged a {
-                border-color: var(--preview_has_children_color)
-                              var(--preview_pending_color)
-                              var(--preview_pending_color)
-                              var(--preview_has_parent_color);
-            }
-
-            article.post-preview[data-tags~=animated]:before {
-                content: "►";
-                position: absolute;
-                width: 20px;
-                height: 20px;
-                color: white;
-                background-color: rgba(0,0,0,0.5);
-                margin: 2px;
-                text-align: center;
-            }
-
-            article.post-preview[data-has-sound=true]:before {
-                content: "♪";
-                position: absolute;
-                width: 20px;
-                height: 20px;
-                color: white;
-                background-color: rgba(0,0,0,0.5);
-                margin: 2px;
-                text-align: center;
-            }
-
-
-            div.post-list {
-                display: flex;
-                flex-wrap: wrap;
-                max-height: 420px;
-                align-items: flex-end;
-            }
-
-            article.post-preview a {
-                display: inline-block;
-                /*height: 154px;*/
-                overflow: hidden;
-            }
-
-            article.post-preview img {
-                margin-bottom: -2px;
-            }
-
-            article.post-preview p {
-                text-align: center;
-                margin: 0 0 2px 0;
-            }
-
-            article.post-preview.blur-post img {
-                filter: blur(10px);
-            }
-
-            article.post-preview.blur-post:hover img {
-                filter: blur(0px);
-                transition: filter 1s 0.5s;
-            }
-
-            .scrollable {
-                overflow: auto;
-                /* Firefox */
-                scrollbar-color: rgba(128,128,128,0.4) rgba(128,128,128,0.2);
-                scrollbar-width: thin;
-            }
-            .scrollable::-webkit-scrollbar {
-                width: 6px;
-            }
-
-            .scrollable::-webkit-scrollbar-track {
-                background-color: rgba(128,128,128,0.2);
-                border-radius: 6px;
-            }
-
-            .scrollable::-webkit-scrollbar-thumb {
-                background-color: rgba(128,128,128,0.4);
-                border-radius: 6px;
-            }
-
-            .settings-icon {
-                position:absolute;
-                top: 10px;
-                right: 10px;
-                width: 16px;
-                height: 16px;
-                cursor: pointer;
-            }
-            .settings-icon path {
-                fill: #888;
-            }
-        </style>
-
         <article class="container" part="container">
             ${GM_getResourceText("settings_icon")}
             <section class="header">
@@ -1319,7 +1342,7 @@ function buildPostPreview (post) {
                      part="post-preview rating-${post.rating}">
             </a>
             <p>${imgSize}</p>
-            <p style="letter-spacing: -0.1px;">${domain}, rating:${post.rating.toUpperCase()}</p>
+            <p>${domain}, rating:${post.rating.toUpperCase()}</p>
             <p>${timeToAgo(post.created_at)}</p>
         </article>
     `);
@@ -1394,48 +1417,48 @@ function showSettings () {
         return true;
     }
 
+    const styles = `
+        #ui-settings {
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 16000;
+        }
+        #ui-settings.qtip-dark {
+            background: rgba(0,0,0,0.75);
+        }
+        .container {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            grid-gap: 10px;
+            font-size: 12px;
+        }
+        .qtip-light .container {
+            background-color: #fff;
+            color: #222;
+        }
+        .qtip-dark .container {
+            background-color: #222;
+            color: #fff;
+        }
+        .container div:nth-of-type(even) {
+            display: flex;
+            flex-direction: column-reverse;
+        }
+        .container h2 {
+            grid-column: span 2;
+            margin: auto;
+        }
+        input[type="button"] {
+            margin: 0 5px;
+        }
+    `;
     const $settings = $(noIndents`
-        <style>
-            #ui-settings {
-                width: 100vw;
-                height: 100vh;
-                background: rgba(0,0,0,0.25);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                position: relative;
-                z-index: 16000;
-            }
-            #ui-settings.qtip-dark {
-                background: rgba(0,0,0,0.75);
-            }
-            .container {
-                padding: 20px;
-                display: grid;
-                grid-template-columns: 300px 1fr;
-                grid-gap: 10px;
-                font-size: 12px;
-            }
-            .qtip-light .container {
-                background-color: #fff;
-                color: #222;
-            }
-            .qtip-dark .container {
-                background-color: #222;
-                color: #fff;
-            }
-            .container div:nth-of-type(even) {
-                display: flex;
-                flex-direction: column-reverse;
-            }
-            .container h2 {
-                grid-column: span 2;
-                margin: auto;
-            }
-            input[type="button"] {
-                margin: 0 5px;
-            }
-        </style>
         <div id="ui-settings">
             <div class="container">
                 <h2>Translate Pixiv Tags settings</h2>
@@ -1488,7 +1511,7 @@ function showSettings () {
     const { qtipClass } = chooseBackgroundColorScheme($("#ex-qtips"));
     $settings.addClass(qtipClass);
 
-    attachShadow($shadowContainer, $settings);
+    attachShadow($shadowContainer, $settings, styles);
 }
 
 function findAndTranslate (mode, selector, options = {}) {
