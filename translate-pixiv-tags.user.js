@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20220228014346
+// @version      20220228020846
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -178,8 +178,9 @@ const CORS_IMAGE_DOMAINS = [
 
 // The maximum size of a URL before using a POST request.
 // The actual limit is 8154, but setting it lower accounts for the rest of the URL as well.
+// Seems like Danbooru's limit is 6577 of unencoded data, so, with space for encoding, let it be 4k.
 // It's preferable to use a GET request when able since GET supports caching and POST does not.
-const MAXIMUM_URI_LENGTH = 8000;
+const MAXIMUM_URI_LENGTH = 4000;
 
 // For network error management
 const MAX_NETWORK_ERRORS = 25;
