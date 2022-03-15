@@ -1831,10 +1831,12 @@ function initializePixiv () {
         }
         a[color] > div > .ex-translated-tags a {
             font-weight: bold;
-            text-shadow: 0 0 1px white;
         }
-        .tpt-dark a[color] > div > .ex-translated-tags a {
-            text-shadow: 0 0 1px black;
+        .shadow.ex-translated-tags a {
+            text-shadow: 0 0 3px #fff8;
+        }
+        .tpt-dark .shadow.ex-translated-tags a, dark-shadow.ex-translated-tags a {
+            text-shadow: 0 0 3px #000B;
         }
         .ex-translated-tags.no-brackets::before,
         .ex-translated-tags.no-brackets::after {
@@ -1893,7 +1895,7 @@ function initializePixiv () {
             findTag: ($container) => $container.parent().find(TAG_SELECTOR),
             getTagContainer: ($elem) => $elem.nextUntil(":last-child"),
         },
-        classes: "no-brackets",
+        classes: "no-brackets shadow",
         asyncMode: true,
         // Fix bad contrast of tag color over colored bg
         onadded: ($tag) => $tag
@@ -1911,7 +1913,7 @@ function initializePixiv () {
     findAndTranslate("tag", "div", {
         predicate: "a.gtm-toppage-tag-popular-tag-illustration>div>div:first-child>div:only-child",
         tagPosition: TAG_POSITIONS.beforebegin,
-        classes: "no-brackets",
+        classes: "no-brackets dark-shadow",
         asyncMode: true,
         ruleName: "popular tag",
     });
