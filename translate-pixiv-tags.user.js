@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20220315232346
+// @version      20220316000246
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -2323,7 +2323,7 @@ function initializeTwitter () {
     // Tweet, expanded tweet, comment authors, "in this photo", people in sidebar
     // https://twitter.com/mugosatomi/status/1173231575959363584
     // https://twitter.com/Merryweatherey/status/1029008151411023872/media_tags
-    findAndTranslate("artist", "div.r-1wbh5a2.r-dnmrzs", {
+    findAndTranslate("artist", "div.r-1wbh5a2.r-18u37iz", {
         predicate: `div:has(>div>a.r-1wbh5a2[tabindex])`,
         toProfileUrl: linkInChildren,
         asyncMode: true,
