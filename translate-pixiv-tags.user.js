@@ -438,7 +438,7 @@ const NETWORK_REQUEST_DICT = {
 
 function debuglog (...args) {
     if (DEBUG) {
-        console.log(...args);
+        console.log("[TPT]:", ...args);
     }
 }
 
@@ -746,6 +746,7 @@ function addDanbooruTags ($target, tags, options = {}) {
             </span>`);
     }
     const $tagsContainer = renderedTags[key].clone().prop("className", classes);
+    if (DEBUG) $tagsContainer.attr("rulename", options.ruleName || "");
     insertTag($target, $tagsContainer);
 
     if (onadded) onadded($tagsContainer, options);
@@ -829,6 +830,7 @@ function addDanbooruArtist ($target, artist, options = {}) {
             </div>`);
     }
     const $tag = renderedArtists[artist.id].clone().prop("className", classes);
+    if (DEBUG) $tag.attr("rulename", options.ruleName || "");
     insertTag($target, $tag);
     $tag.find("a").qtip(qtipSettings);
 
