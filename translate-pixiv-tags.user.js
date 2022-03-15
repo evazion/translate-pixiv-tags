@@ -2257,20 +2257,13 @@ function initializeTwitter () {
             font-family: system-ui, -apple-system, BlinkMacSystemFont,
                 "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
         }
-        /* In the expanded tweet and sidebar locate the artist tag under the @username */
-        .r-15zivkp>div>div>div>.r-1wtj0ep>.r-1wbh5a2,
-        .r-16y2uox > .r-1awozwy.r-1wtj0ep {
-            display: grid;
-            grid-template-columns: 1fr auto;
+        /* Fix position of the artist tag in the channel header */
+        h2 .r-1ny4l3l>.r-1ny4l3l {
+            flex-direction: row;
         }
-        .r-15zivkp>div>div>div>.r-1wtj0ep .ex-artist-tag,
-        .r-16y2uox > .r-1awozwy.r-1wtj0ep .ex-artist-tag {
-            grid-column: 1/3;
-            margin: 0;
-        }
-        .r-15zivkp>div>div>div>.r-1wtj0ep .ex-artist-tag ~ div:last-child,
-        .r-16y2uox > .r-1awozwy.r-1wtj0ep .ex-artist-tag ~ div:last-child {
-            grid-area: 1/2;
+        /* In the non-expanded tweets add spacing before the artist tag */
+        .r-18u37iz>.ex-artist-tag {
+            margin-left: 0.5em;
         }
     `);
 
@@ -2331,11 +2324,8 @@ function initializeTwitter () {
     // https://twitter.com/mugosatomi/status/1173231575959363584
     // https://twitter.com/Merryweatherey/status/1029008151411023872/media_tags
     findAndTranslate("artist", "div.r-1wbh5a2.r-dnmrzs", {
-        predicate: `div[data-testid='primaryColumn'] div>div:has(>a.r-1wbh5a2),
-                    div[role='dialog'] div>div:has(>a.r-1wbh5a2),
-                    aside div>div:has(>a.r-1wbh5a2)`,
+        predicate: `div:has(>div>a.r-1wbh5a2[tabindex])`,
         toProfileUrl: linkInChildren,
-        classes: "inline",
         asyncMode: true,
         ruleName: "tweet/comment author",
     });
@@ -2351,7 +2341,7 @@ function initializeTwitter () {
 
     // User card info
     findAndTranslate("artist", "a", {
-        predicate: "div.r-nsbfu8 > div.r-14gqq1x > a",
+        predicate: "div.r-nsbfu8 > div.r-14gqq1x > div > div > a",
         tagPosition: TAG_POSITIONS.beforeend,
         asyncMode: true,
         ruleName: "artist popup",
