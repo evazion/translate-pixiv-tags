@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20220401190746
+// @version      20220404034346
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -55,6 +55,7 @@ const SETTINGS = {
             values: {
                 "https://danbooru.donmai.us":   "Danbooru",
                 "https://safebooru.donmai.us":  "Safebooru",
+                "https://betabooru.donmai.us":  "Betabooru",
             },
         }, {
             name: "cache_lifetime",
@@ -97,7 +98,7 @@ const SETTINGS = {
     isValid (settingName, value) {
         const setting = this.list.find((s) => s.name === settingName);
         if (!setting) {
-            console.error(`No setting ${settingName}`);
+            console.error(`[TPT]: No setting ${settingName}`);
             return false;
         }
         switch (setting.type) {
@@ -105,14 +106,14 @@ const SETTINGS = {
             case "list": return value in setting.values;
             case "boolean": return typeof value === "boolean";
             default:
-                console.error(`Unsupported type ${setting.type}`);
+                console.error(`[TPT]: Unsupported type ${setting.type}`);
                 return false;
         }
     },
     get (settingName) {
         const setting = this.list.find((s) => s.name === settingName);
         if (!setting) {
-            console.error(`No setting ${settingName}`);
+            console.error(`[TPT]: No setting ${settingName}`);
             return null;
         }
         const value = GM_getValue(settingName);
@@ -125,14 +126,14 @@ const SETTINGS = {
     set (settingName, value) {
         const setting = this.list.find((s) => s.name === settingName);
         if (!setting) {
-            console.error(`No setting ${settingName}`);
+            console.error(`[TPT]: No setting ${settingName}`);
             return null;
         }
         if (this.isValid(settingName, value)) {
             GM_setValue(settingName, value);
             return true;
         }
-        console.warn(`Invalid value ${value} for ${settingName}`);
+        console.warn(`[TPT]: Invalid value ${value} for ${settingName}`);
         return false;
     },
 };
@@ -349,7 +350,7 @@ const NETWORK_REQUEST_DICT = {
         url: "/artists",
         data_key: "name",
         data_type: "string",
-        fields: "id,name,is_banned,other_names,urls[normalized_url,is_active]",
+        fields: "id,name,is_banned,other_names,urls[url,is_active]",
         params (nameList) {
             return {
                 search: {
@@ -390,13 +391,13 @@ const NETWORK_REQUEST_DICT = {
     },
     url: {
         url: "/artist_urls",
-        data_key: "normalized_url",
+        data_key: "url",
         data_type: "string",
-        fields: "normalized_url,artist[id,name,is_deleted,is_banned,other_names,urls[normalized_url,is_active]]",
+        fields: "url,artist[id,name,is_deleted,is_banned,other_names,urls[url,is_active]]",
         params (urlList) {
             return {
                 search: {
-                    normalized_url_lower_array: urlList,
+                    url_lower_array: urlList,
                 },
                 only: this.fields,
             };
@@ -479,36 +480,6 @@ function safeMatch (string, regex, group = 0, defaultValue = "") {
 
 const safeMatchMemoized = _.memoize(safeMatch, memoizeKey);
 
-const TRANSLATE_PROFILE_URL = [{
-    regex: /https?:\/\/www\.pixiv\.net(?:\/en)?\/users\/(\d+)/,
-    replace: "https://www.pixiv.net/member.php?id=%REPLACE%",
-}, {
-    regex: /https?:\/\/([\w-]+)\.deviantart\.com/,
-    replace: "https://www.deviantart.com/%REPLACE%",
-}, {
-    regex: /https?:\/\/www\.artstation\.com\/([\w-]+)/,
-    replace: "https://%REPLACE%.artstation.com",
-}, {
-    regex: /https?:\/\/([\w-]+)\.artstation\.com/,
-    replace: "https://www.artstation.com/%REPLACE%",
-}, {
-    regex: /https?:\/\/www\.hentai-foundry\.com\/user\/([\w-]+)\/profile/,
-    replace: "https://www.hentai-foundry.com/user/%REPLACE%",
-}];
-
-function translateProfileURL (profileUrl) {
-    let translateUrl = profileUrl;
-    TRANSLATE_PROFILE_URL.some((value) => {
-        const match = profileUrl.match(value.regex);
-        if (match && match[1] !== "www") {
-            translateUrl = value.replace.replace("%REPLACE%", match[1]);
-        }
-        // Returning true breaks the some loop
-        return translateUrl !== profileUrl;
-    });
-    return translateUrl;
-}
-
 function getImage (imageUrl) {
     return GM
         .xmlHttpRequest({
@@ -523,12 +494,12 @@ function checkNetworkErrors (domain, hasError) {
     const data = checkNetworkErrors[domain] || (checkNetworkErrors[domain] = { error: 0 });
 
     if (hasError) {
-        console.log("Total errors:", data.error);
+        console.log("[TPT]: Total errors:", data.error);
         data.error += 1;
     }
     if (data.error >= MAX_NETWORK_ERRORS) {
         console.error(
-            "Maximun number of errors exceeded",
+            "[TPT]: Maximun number of errors exceeded",
             MAX_NETWORK_ERRORS,
             "for",
             domain,
@@ -594,7 +565,7 @@ async function getLong (url, params, requests, type) {
             break;
         } catch (error) {
             console.error(
-                "Failed try #",
+                "[TPT]: Failed try #",
                 i + 1,
                 "\nURL:",
                 url,
@@ -640,7 +611,7 @@ async function getLong (url, params, requests, type) {
                 .includes(item.tag.toLowerCase());
             break;
         default:
-            console.error("Unsupported type of response data");
+            console.error("[TPT]: Unsupported type of response data");
             return;
     }
     requests.forEach((request) => {
@@ -660,10 +631,92 @@ async function getLong (url, params, requests, type) {
     }
 }
 
-// Converts URLs to the same format used by the normalized URL column on Danbooru
+const NORMALIZE_PROFILE_URL = {
+    ".artstation.com": {
+        path: /^\/[\w-]+$/,
+        normalize (url) {
+            const username = safeMatchMemoized(url.hostname, /([\w_-]+)\.artstation\.com/, 1);
+            return `https://www.artstation.com/${username}`;
+        },
+    },
+    "bcy.net": {
+        path: /^\/u\/\d+$/,
+    },
+    ".deviantart.com": {
+        path: /^\/[\w-]+$/,
+        normalize (url) {
+            const username = safeMatchMemoized(url.hostname, /([\w-]+)\.deviantart\.com/, 1);
+            return `https://www.deviantart.com/${username}`;
+        },
+    },
+    ".fanbox.cc": {},
+    "www.hentai-foundry.com": {
+        path: /^\/user\/[\w_-]+$/,
+        normalize (url) {
+            const username = safeMatchMemoized(url.pathname, /\/user\/([\w_-]+)(\/profile)?/, 1);
+            return `https://www.hentai-foundry.com/user/${username}`;
+        },
+    },
+    "medibang.com": {},
+    "seiga.nicovideo.jp": {
+        path: /^\/user\/illust\/\d+$/,
+    },
+    "www.nicovideo.jp": {
+        path: /^\/user\/\d+$/,
+    },
+    "nijie.info": {
+        path: /^\/members\.php$/,
+        params: /id=\d+/,
+    },
+    "pawoo.net": {
+        path: /^\/@[\w_-]+$/,
+    },
+    "www.pixiv.net": {
+        path: /^\/users\/\d+$/,
+        normalize (url) {
+            const userId = url.pathname === "/member.php"
+                ? safeMatchMemoized(url.search, /id=(\d+)/, 1)
+                : safeMatchMemoized(url.pathname, /(?:\/en)?\/users\/(\d+)/, 1);
+            return `https://www.pixiv.net/users/${userId}`;
+        },
+    },
+    "www.tinami.com": {
+        path: /^\/creator\/profile\/\d+$/,
+    },
+    "twitter.com": {
+        path: /^\/[\w_-]+|\/intent\/user$/,
+    },
+};
+
+// Converts URLs to the same format used by the URL column on Danbooru
 function normalizeProfileURL (profileUrl) {
-    const url = profileUrl.replace(/^https/, "http").replace(/\/$/, "");
-    return `${url}/`;
+    let url = new URL(profileUrl.toLowerCase());
+    if (url.protocol !== "https:") url.protocol = "https:";
+    let host = url.hostname;
+    if (!(host in NORMALIZE_PROFILE_URL)) {
+        host = ".".concat(host.split(".").slice(-2).join("."));
+    }
+    if (!(host in NORMALIZE_PROFILE_URL)) {
+        console.warn("[TPT]: Unsupported domain:", host);
+        return profileUrl;
+    }
+
+    const { path, params, normalize } = NORMALIZE_PROFILE_URL[host];
+    if (path && !path.test(url.pathname) || params && !params.test(url.search)) {
+        if (!normalize) {
+            console.error("[TPT]: Normalization isn't implemented:", profileUrl);
+            return null;
+        }
+        url = new URL(normalize(url));
+        // Ensure that URL was normalized to the correct form
+        if (path && !path.test(url.pathname) || params && params.test(url.search)) {
+            console.error("[TPT]: Failed to normalize URL:", profileUrl, url.toString());
+            return null;
+        }
+    }
+    let link = url.toString();
+    if (link.endsWith("/")) link = link.slice(0, -1);
+    return link;
 }
 
 async function translateTag (target, tagName, options) {
@@ -756,20 +809,15 @@ async function translateArtistByURL (element, profileUrls, options) {
     if (!profileUrls || profileUrls.length === 0) return;
 
     const promiseArray = (Array.isArray(profileUrls) ? profileUrls : [profileUrls])
-        .flatMap((profileUrl) => {
-            const req1 = queueNetworkRequestMemoized("url", normalizeProfileURL(profileUrl));
-            const translatedUrl = translateProfileURL(profileUrl);
-            if (translatedUrl !== profileUrl) {
-                const req2 = queueNetworkRequestMemoized("url", normalizeProfileURL(translatedUrl));
-                return [req1, req2];
-            }
-            return req1;
-        });
+        .map(normalizeProfileURL)
+        .filter((url) => url)
+        .map((url) => queueNetworkRequestMemoized("url", url));
 
     const artistUrls = (await Promise.all(promiseArray)).flat();
     const artists = artistUrls.map((artistUrl) => artistUrl.artist);
     if (artists.length === 0) {
-        debuglog(`No artist at "${profileUrls}", rule "${options.ruleName}"`);
+        const urls = Array.isArray(profileUrls) ? profileUrls.join(", ") : profileUrls;
+        debuglog(`No artist at "${urls}", rule "${options.ruleName}"`);
         return;
     }
 
@@ -1323,17 +1371,17 @@ async function buildArtistTooltipContent (artist) {
 }
 
 function buildArtistUrlsHtml (artist) {
-    const getDomain = (url) => safeMatchMemoized(new URL(url.normalized_url).host, /[^.]*\.[^.]*$/);
+    const getDomain = (url) => safeMatchMemoized(new URL(url.url).host, /[^.]*\.[^.]*$/);
     const artistUrls = _(artist.urls)
         .chain()
-        .uniq("normalized_url")
-        .sortBy("normalized_url")
+        .uniq("url")
+        .sortBy("url")
         .sortBy(getDomain)
         .sortBy((artistUrl) => !artistUrl.is_active);
 
     return artistUrls
         .map((artistUrl) => {
-            const normalizedUrl = artistUrl.normalized_url.replace(/\/$/, "");
+            const normalizedUrl = artistUrl.url.replace(/\/$/, "");
             const urlClass = artistUrl.is_active ? "artist-url-active" : "artist-url-inactive";
 
             return noIndents`
@@ -1510,7 +1558,7 @@ function showSettings () {
                            ${value ? "checked" : ""}
                            name="${setting.name}" />`;
             default:
-                console.error(`Unsupported type ${setting.type}`);
+                console.error(`[TPT]: Unsupported type ${setting.type}`);
                 return "";
         }
     }
@@ -1819,7 +1867,7 @@ function initializePixiv () {
         main section h2+button {
             margin-left: 8px;
         }
-        main+aside [aria-haspopup]>div>a[data-gtm-value]>div {
+        [aria-haspopup]>div>a[data-gtm-value]>div {
             display: inline;
             margin-right: 4px;
         }
@@ -1956,7 +2004,6 @@ function initializePixiv () {
     // New search pages: https://www.pixiv.net/en/tags/%E6%9D%B1%E6%96%B9project/artworks
     // Bookmarks: https://www.pixiv.net/en/users/29310/bookmarks/artworks
     // Thumbs on the index page: https://www.pixiv.net/ https://www.pixiv.net/en/
-    // Shouldn't translate users in comments: https://www.pixiv.net/en/artworks/2893321
     // Posts of followed artists: https://www.pixiv.net/bookmark_new_illust.php
     findAndTranslate("artist", "a", {
         predicate: "section ul div>div:last-child:not([type='illust'])>div[aria-haspopup]:not(.ex-artist-tag)>a:last-child",
@@ -2426,8 +2473,8 @@ function initializeArtStation () {
     });
 
     // https://www.artstation.com/artwork/0X40zG
-    findAndTranslate("artist", "a[hover-card]", {
-        predicate: (el) => el.matches(".name > a, .project-author-name > a") && hasValidHref(el),
+    findAndTranslate("artist", "a", {
+        predicate: (el) => el.matches(".name > a[hover-card], .project-author-name > a") && hasValidHref(el),
         requiredAttributes: "href",
         toProfileUrl: (el) => el.href,
         asyncMode: true,
@@ -2607,7 +2654,7 @@ function initializePixivFanbox () {
         const resp = await (
             await fetch(`https://api.fanbox.cc/creator.get?creatorId=${userNick}`)
         ).json();
-        return `https://www.pixiv.net/member.php?id=${resp.body.user.userId}`;
+        return `https://www.pixiv.net/users/${resp.body.user.userId}`;
     };
     const getPixivLinkMemoized = _.memoize(getPixivLink);
 
@@ -2685,7 +2732,7 @@ function initialize () {
         theme = chooseBackgroundColorScheme($(document.body)).theme;
     }
     $("html").addClass(`tpt-${theme}`);
-    debuglog(`st ${theme} theme mode`);
+    debuglog(`set ${theme} theme mode`);
 
     // Check for new network requests every half-second
     setInterval(intervalNetworkHandler, 500);
