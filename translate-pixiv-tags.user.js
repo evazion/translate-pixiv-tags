@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20220406233046
+// @version      20220406235446
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -650,7 +650,13 @@ const NORMALIZE_PROFILE_URL = {
             return `https://www.deviantart.com/${username}`;
         },
     },
-    ".fanbox.cc": {},
+    ".fanbox.cc": { path: /^\/$/ },
+    "mobile.twitter.com": {
+        path: /^x$/, // Just invalidate any path
+        normalize (url) {
+            return normalizeProfileURL(`https://twitter.com${url.pathname}`);
+        },
+    },
     "www.hentai-foundry.com": {
         path: /^\/user\/[\w_-]+$/,
         normalize (url) {
@@ -690,8 +696,8 @@ const NORMALIZE_PROFILE_URL = {
 };
 
 // Converts URLs to the same format used by the URL column on Danbooru
-function normalizeProfileURL (profileUrl) {
-    let url = new URL(profileUrl.toLowerCase());
+function normalizeProfileURL (profileUrl, depth = 0) {
+    const url = new URL(profileUrl.toLowerCase());
     if (url.protocol !== "https:") url.protocol = "https:";
     let host = url.hostname;
     if (!(host in NORMALIZE_PROFILE_URL)) {
@@ -708,12 +714,12 @@ function normalizeProfileURL (profileUrl) {
             console.error("[TPT]: Normalization isn't implemented:", profileUrl);
             return null;
         }
-        url = new URL(normalize(url));
-        // Ensure that URL was normalized to the correct form
-        if (path && !path.test(url.pathname) || params && params.test(url.search)) {
-            console.error("[TPT]: Failed to normalize URL:", profileUrl, url.toString());
-            return null;
+        // Normalize and validate the url without infinite loop
+        const res = depth < 10  ? normalizeProfileURL(normalize(url), depth + 1) : null;
+        if (!res || res === profileUrl) {
+            console.error("[TPT]: Failed to normalize URL:", profileUrl);
         }
+        return res;
     }
     let link = url.toString();
     if (link.endsWith("/")) link = link.slice(0, -1);
