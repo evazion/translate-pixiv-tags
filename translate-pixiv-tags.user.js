@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20220404034346
+// @version      20220406233046
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -16,6 +16,7 @@
 // @match        *://*.deviantart.com/*
 // @match        *://*.hentai-foundry.com/*
 // @match        *://twitter.com/*
+// @match        *://mobile.twitter.com/*
 // @match        *://tweetdeck.twitter.com/*
 // @match        *://*.artstation.com/*
 // @match        *://saucenao.com/*
@@ -2711,6 +2712,7 @@ function initialize () {
         case "bcy.net":                initializeBCY();           break;
         case "www.hentai-foundry.com": initializeHentaiFoundry(); break;
         case "twitter.com":            initializeTwitter();       break;
+        case "mobile.twitter.com":     initializeTwitter();       break;
         case "tweetdeck.twitter.com":  initializeTweetDeck();     break;
         case "saucenao.com":           initializeSauceNAO();      break;
         case "pawoo.net":              initializePawoo();         break;
