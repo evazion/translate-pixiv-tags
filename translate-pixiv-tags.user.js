@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20220406235446
+// @version      20220423150446
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -1841,15 +1841,10 @@ function initializePixiv () {
             display: flex;
             flex-direction: column-reverse;
             align-items: flex-start;
-            height: 40px;
-            justify-content: flex-end;
         }
         main>section h2>.ex-artist-tag+:not(.ex-artist-tag),
         main+aside>section>h2>.ex-artist-tag+:not(.ex-artist-tag) {
             pointer-events: none;
-            width: 100%;
-            height: 20px;
-            align-items: flex-start;
         }
         main>section h2>.ex-artist-tag+div>a,
         main>section h2>.ex-artist-tag+div>div>*,
@@ -1857,26 +1852,28 @@ function initializePixiv () {
         main+aside>section>h2>.ex-artist-tag+div>a {
             pointer-events: all;
         }
-        main>section h2>.ex-artist-tag+div>div,
-        main+aside>section>h2>.ex-artist-tag+div>div {
-            width: 100%;
-        }
         main>section h2>.ex-artist-tag+div>::after,
         main+aside>section>h2>.ex-artist-tag+div>::after {
             content: "";
             height: 18px;
         }
+        main>section h2>.ex-artist-tag+.ex-artist-tag+div>::after,
+        main+aside>section>h2>.ex-artist-tag+.ex-artist-tag+div>::after {
+            height: 30px;
+        }
         main>section h2 .ex-artist-tag,
         main+aside>section>h2 .ex-artist-tag {
             margin-left: 50px;
-            line-height: 1em;
+            height: 0;
+            position: relative;
+            top: -24px;
+        }
+        main>section h2 .ex-artist-tag + .ex-artist-tag,
+        main+aside>section>h2 .ex-artist-tag + .ex-artist-tag {
+            top: -38px;
         }
         main section h2+button {
             margin-left: 8px;
-        }
-        [aria-haspopup]>div>a[data-gtm-value]>div {
-            display: inline;
-            margin-right: 4px;
         }
         /* Illust page: fix artist tag overflowing in related works and on search page */
         section div[type="illust"] ~ div:last-child,
