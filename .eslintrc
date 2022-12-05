@@ -124,10 +124,10 @@
         "no-multi-spaces": "off", // due allign
         "no-nested-ternary": "off",
         "no-new": "off", // due MutationSummary
+        "sonarjs/no-duplicate-string": "off",
         "unicorn/catch-error-name": "off",
         "unicorn/consistent-function-scoping": "off",
         "unicorn/prefer-query-selector": "off",
         "unicorn/prevent-abbreviations": "off",
-
     }
 }
