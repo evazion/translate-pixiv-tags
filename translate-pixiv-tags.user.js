@@ -39,6 +39,7 @@
 // @resource     danbooru_icon https://github.com/evazion/translate-pixiv-tags/raw/resource-20190903/resource/danbooru-icon.ico
 // @resource     settings_icon https://github.com/evazion/translate-pixiv-tags/raw/resource-20190903/resource/settings-icon.svg
 // @connect      donmai.us
+// @connect      donmai.moe
 // @noframes
 // ==/UserScript==
 
