@@ -1940,7 +1940,7 @@ function initializePixiv () {
 
     // Main tag on search pages: https://www.pixiv.net/en/tags/%E6%9D%B1%E6%96%B9project/artworks
     findAndTranslate("tag", "div", {
-        predicate: "#root>div>div>div>div:nth-child(2)>div>div>div:has(>span:first-child)",
+        predicate: "#root>div>div>div>div>div>div:nth-of-type(2)>div>div:has(>span:first-child)",
         asyncMode: true,
         ruleName: "search tag",
     });
@@ -2391,8 +2391,8 @@ function initializeTwitter () {
     });
 
     // Quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
-    findAndTranslate("artist", "div.r-13hce6t", {
-        predicate: "div.r-1867qdf div",
+    findAndTranslate("artist", "div.r-dnmrzs.r-1ny4l3l", {
+        predicate: "[id]>[tabindex] [tabindex]:not([role])",
         toProfileUrl: (el) => `https://twitter.com/${el.textContent.slice(1)}`,
         classes: "inline",
         asyncMode: true,
@@ -2401,8 +2401,8 @@ function initializeTwitter () {
 
     // User card info
     findAndTranslate("artist", "a", {
-        predicate: "div.r-nsbfu8 > div.r-14gqq1x > div > div > a",
-        tagPosition: TAG_POSITIONS.beforeend,
+        predicate: "div.r-nsbfu8 a + div a",
+        tagPosition: TAG_POSITIONS.afterParent,
         asyncMode: true,
         ruleName: "artist popup",
     });
