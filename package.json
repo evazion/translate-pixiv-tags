@@ -10,7 +10,7 @@
     "jquery": "^3.2.1",
     "mutation-summary": "^0.0.0",
     "qtip2": "^3.0.3",
-    "underscore": "^1.9.1",
+    "underscore": "^1.12.1",
     "eslint": "^6.5.1",
     "eslint-config-airbnb-base": "^14.0.0",
     "eslint-plugin-import": "^2.18.2",
