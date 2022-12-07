@@ -32,10 +32,11 @@
 // @grant        GM_registerMenuCommand
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js
 // @require      https://raw.githubusercontent.com/rafaelw/mutation-summary/421110f84178aa9e4098b38df83f727e5aea3d97/src/mutation-summary.js
-// @require      https://cdnjs.cloudflare.com/ajax/libs/qtip2/3.0.3/jquery.qtip.js
+// @require      https://cdn.jsdelivr.net/npm/@floating-ui/core@1.0.3/dist/floating-ui.core.umd.min.js
+// @require      https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.0.8/dist/floating-ui.dom.umd.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore.js
+// @require      https://github.com/evazion/translate-pixiv-tags/raw/lib-20221207/lib/tooltip.js
 // @require      https://github.com/evazion/translate-pixiv-tags/raw/lib-20190830/lib/jquery-gm-shim.js
-// @resource     jquery_qtip_css https://cdnjs.cloudflare.com/ajax/libs/qtip2/3.0.3/jquery.qtip.min.css
 // @resource     danbooru_icon https://github.com/evazion/translate-pixiv-tags/raw/resource-20190903/resource/danbooru-icon.ico
 // @resource     settings_icon https://github.com/evazion/translate-pixiv-tags/raw/resource-20190903/resource/settings-icon.svg
 // @connect      donmai.us
@@ -43,7 +44,7 @@
 // @noframes
 // ==/UserScript==
 
-/* globals MutationSummary _ GM_jQuery_setup */
+/* globals MutationSummary _ GM_jQuery_setup tooltipGenerator */
 
 "use strict";
 
@@ -301,31 +302,50 @@ const PROGRAM_CSS = `
 .ex-banned-artist-tag a::after {
     content: " (banned)";
 }
+`;
 
-#ex-qtips {
-    position: fixed;
-    width: 100vw;
-    height: 100vh;
-    top: 0;
-    pointer-events: none;
+const POPPER_CSS = `
+.ex-tip {
+    position: absolute;
     z-index: 15000;
-}
-#ex-qtips > * {
-    pointer-events: all;
-}
-
-.ex-artist-tooltip.qtip {
-    max-width: 558px !important;
-    background-color: white;
-}
-.ex-artist-tooltip.qtip-dark {
-    background-color: black;
-}
-.ex-artist-tooltip .qtip-content {
-    width: 540px !important;
+    --bc: #E2E2E2;
+    background: var(--bg, white);
+    padding: 5px 9px;
+    max-width: 558px;
+    font-size: 10.5px;
+    line-height: 12px;
     box-sizing: initial;
+    border: 1px solid var(--bc);
+    text-align: left;
+    color: #454545;
+}
+.ex-tip.qtip-dark {
+    --bc: #303030;
+    color: #f3f3f3;
+}
+.ex-tip .arrow {
+    position: absolute;
+    bottom: -8px;
+    border-left: 3px solid transparent;
+    border-right: 3px solid transparent;
+    border-top: 8px solid var(--bg);
+    filter: drop-shadow(1px 1px var(--bc)) drop-shadow(-1px 1px var(--bc));
+}
+.ex-tip[data-placement=bottom] .arrow {
+    bottom: auto;
+    top: -8px;
+    border-top: none;
+    border-bottom: 8px solid var(--bg);
+    filter: drop-shadow(1px -1px var(--bc)) drop-shadow(-1px -1px var(--bc));
 }
 `;
+
+const addTooltip = tooltipGenerator({
+    showDelay: 500,
+    hideDelay: 250,
+    interactive: true,
+    className: "ex-tip",
+});
 
 const CACHE_PARAM = (CACHE_LIFETIME ? { expires_in: CACHE_LIFETIME } : {});
 // Setting this to the maximum since batches could return more than the amount being queried
@@ -864,17 +884,9 @@ function addDanbooruArtist ($target, artist, options = {}) {
     artist.encodedName = encodeURIComponent(artist.name);
     /* eslint-enable no-param-reassign */
 
-    const qtipSettings = Object.assign(ARTIST_QTIP_SETTINGS, {
-        content: { text: (ev, qtip) => buildArtistTooltip(artist, qtip) },
-    });
-
     const $duplicates = findTag($target)
         .filter((i, el) => el.textContent.trim() === artist.escapedName);
     if ($duplicates.length > 0) {
-        // If qtip was removed then add it back
-        if (!$.data($duplicates.find("a")[0]).qtip) {
-            $duplicates.find("a").qtip(qtipSettings);
-        }
         return;
     }
 
@@ -889,7 +901,7 @@ function addDanbooruArtist ($target, artist, options = {}) {
     const $tag = renderedArtists[artist.id].clone().prop("className", classes);
     if (DEBUG) $tag.attr("rulename", options.ruleName || "");
     insertTag($target, $tag);
-    $tag.find("a").qtip(qtipSettings);
+    addTooltip($tag.find("a")[0], (tip) => buildArtistTooltip(artist, tip));
 
     if (onadded) onadded($tag, options);
 }
@@ -951,7 +963,7 @@ function chooseBackgroundColorScheme ($element) {
     };
 }
 
-async function buildArtistTooltip (artist, qtip) {
+async function buildArtistTooltip (artist, { tooltip, content, target }) {
     const renderedQtips = buildArtistTooltip.cache || (buildArtistTooltip.cache = {});
 
     if (!(artist.name in renderedQtips)) {
@@ -959,22 +971,21 @@ async function buildArtistTooltip (artist, qtip) {
     }
 
     if (
-        !qtip.elements.tooltip.hasClass("qtip-dark")
-        && !qtip.elements.tooltip.hasClass("qtip-light")
+        !tooltip.classList.contains("qtip-dark")
+        && !tooltip.classList.contains("qtip-light")
     ) {
         // Select theme and background color based upon the background of surrounding elements
-        const { theme, adjustedColor } = chooseBackgroundColorScheme(qtip.elements.target);
-        qtip.elements.content.addClass(`qtip-content-${theme}`);
-        qtip.elements.tooltip.addClass(`qtip-${theme}`);
-        qtip.elements.tooltip.css("background-color", adjustedColor);
+        const { theme, adjustedColor } = chooseBackgroundColorScheme($(target));
+        content.classList.add(`qtip-content-${theme}`);
+        tooltip.classList.add(`qtip-${theme}`);
+        tooltip.style.setProperty("--bg", adjustedColor);
     }
 
     let $qtipContent = await renderedQtips[artist.name];
     // For correct work of CORS images must not be cloned at first displaying
     if ($qtipContent.parent().length > 0) $qtipContent = $qtipContent.clone(true, true);
     // eslint-disable-next-line no-use-before-define
-    attachShadow(qtip.elements.content, $qtipContent, ARTIST_TOOLTIP_CSS);
-    qtip.reposition(null, false);
+    attachShadow($(content), $qtipContent, ARTIST_TOOLTIP_CSS);
 }
 
 const ARTIST_TOOLTIP_CSS = `
@@ -1493,7 +1504,8 @@ function buildPostPreview (post) {
     `);
 
     if (CORS_IMAGE_DOMAINS.includes(window.location.host)) {
-        // Temporaly set transparent 1x1 image
+        // Temporally set transparent 1x1 image
+        // eslint-disable-next-line max-len
         $preview.find("img").prop("src", "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
         getImage(post.preview_file_url || previewFileUrl).then((blob) => {
             const imageBlob = blob.slice(0, blob.size, "image/jpeg");
@@ -2012,6 +2024,7 @@ function initializePixiv () {
     // Thumbs on the index page: https://www.pixiv.net/ https://www.pixiv.net/en/
     // Posts of followed artists: https://www.pixiv.net/bookmark_new_illust.php
     findAndTranslate("artist", "a", {
+        // eslint-disable-next-line max-len
         predicate: "section ul div>div:last-child:not([type='illust'])>div[aria-haspopup]:not(.ex-artist-tag)>a:last-child",
         tagPosition: TAG_POSITIONS.afterParent,
         asyncMode: true,
@@ -2480,7 +2493,10 @@ function initializeArtStation () {
 
     // https://www.artstation.com/artwork/0X40zG
     findAndTranslate("artist", "a", {
-        predicate: (el) => el.matches(".name > a[hover-card], .project-author-name > a") && hasValidHref(el),
+        predicate: (el) => (
+            el.matches(".name > a[hover-card], .project-author-name > a")
+            && hasValidHref(el)
+        ),
         requiredAttributes: "href",
         toProfileUrl: (el) => el.href,
         asyncMode: true,
@@ -2703,7 +2719,7 @@ function initialize () {
     initializeQtipContainer();
     GM_jQuery_setup();
     GM_addStyle(PROGRAM_CSS);
-    GM_addStyle(GM_getResourceText("jquery_qtip_css"));
+    GM_addStyle(POPPER_CSS);
     if (SETTINGS.get("show_settings")) {
         GM_registerMenuCommand("Settings", showSettings, "S");
     }
