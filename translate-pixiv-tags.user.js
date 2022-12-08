@@ -74,11 +74,12 @@ const SETTINGS = {
             type: "number",
         }, {
             name: "show_preview_rating",
-            defValue: "s",
+            defValue: "g",
             descr: "The upper level of rating for preview (higher ratings will be blurred)",
             type: "list",
             values: {
-                s: "Safe",
+                g: "General",
+                s: "Sensitive",
                 q: "Questionable",
                 e: "Explicit", // eslint-disable-line id-blacklist
             },
@@ -1434,9 +1435,10 @@ function formatBytes (bytes) {
 
 function buildPostPreview (post) {
     const RATINGS = {
-        s: 0,
-        q: 1,
-        e: 2, // eslint-disable-line id-blacklist
+        g: 0,
+        s: 1,
+        q: 2,
+        e: 3, // eslint-disable-line id-blacklist
     };
     const previewFileUrl = `${BOORU}/images/download-preview.png`;
 
