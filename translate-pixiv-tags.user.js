@@ -906,6 +906,12 @@ function addDanbooruArtist ($target, artist, options = {}) {
     if (onadded) onadded($tag, options);
 }
 
+const makeStyleSheetMemoized = _.memoize((css) => {
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(css);
+    return sheet;
+});
+
 function attachShadow ($target, $content, css) {
     // Return if the target already have shadow
     if ($target.prop("shadowRoot")) return;
@@ -914,9 +920,7 @@ function attachShadow ($target, $content, css) {
         const shadowRoot = $target.get(0).attachShadow({ mode: "open" });
         $(shadowRoot).append($content);
         if ("adoptedStyleSheets" in shadowRoot) {
-            const sheet = new CSSStyleSheet();
-            sheet.replace(css);
-            shadowRoot.adoptedStyleSheets = [sheet];
+            shadowRoot.adoptedStyleSheets = [makeStyleSheetMemoized(css)];
         } else {
             $(shadowRoot).append(`<style>${css}</style>`);
         }
