@@ -155,26 +155,6 @@ const SHOW_DELETED = SETTINGS.get("show_deleted");
 // Whether to print an additional info into the console
 const DEBUG = SETTINGS.get("debug");
 
-// Settings for artist tooltips.
-const ARTIST_QTIP_SETTINGS = {
-    style: {
-        classes: "ex-artist-tooltip",
-    },
-    position: {
-        my: "top center",
-        at: "bottom center",
-    },
-    show: {
-        delay: 500,
-        solo: true,
-    },
-    hide: {
-        delay: 250,
-        fixed: true,
-        leave: false, // Prevent hiding when cursor hovers a browser tooltip
-    },
-};
-
 // Domains where images outside of whitelist are blocked
 const CORS_IMAGE_DOMAINS = [
     "twitter.com",
@@ -304,7 +284,7 @@ const PROGRAM_CSS = `
 }
 `;
 
-const POPPER_CSS = `
+const TOOLTIP_CSS = `
 .ex-tip {
     position: absolute;
     z-index: 15000;
@@ -319,7 +299,7 @@ const POPPER_CSS = `
     text-align: left;
     color: #454545;
 }
-.ex-tip.qtip-dark {
+.ex-tip.tip-dark {
     --bc: #303030;
     color: #f3f3f3;
 }
@@ -345,6 +325,7 @@ const addTooltip = tooltipGenerator({
     hideDelay: 250,
     interactive: true,
     className: "ex-tip",
+    containerName: "ex-tips",
 });
 
 const CACHE_PARAM = (CACHE_LIFETIME ? { expires_in: CACHE_LIFETIME } : {});
@@ -968,28 +949,28 @@ function chooseBackgroundColorScheme ($element) {
 }
 
 async function buildArtistTooltip (artist, { tooltip, content, target }) {
-    const renderedQtips = buildArtistTooltip.cache || (buildArtistTooltip.cache = {});
+    const renderedTips = buildArtistTooltip.cache || (buildArtistTooltip.cache = {});
 
-    if (!(artist.name in renderedQtips)) {
-        renderedQtips[artist.name] = buildArtistTooltipContent(artist);
+    if (!(artist.name in renderedTips)) {
+        renderedTips[artist.name] = buildArtistTooltipContent(artist);
     }
 
     if (
-        !tooltip.classList.contains("qtip-dark")
-        && !tooltip.classList.contains("qtip-light")
+        !tooltip.classList.contains("tip-dark")
+        && !tooltip.classList.contains("tip-light")
     ) {
         // Select theme and background color based upon the background of surrounding elements
         const { theme, adjustedColor } = chooseBackgroundColorScheme($(target));
-        content.classList.add(`qtip-content-${theme}`);
-        tooltip.classList.add(`qtip-${theme}`);
+        content.classList.add(`tip-content-${theme}`);
+        tooltip.classList.add(`tip-${theme}`);
         tooltip.style.setProperty("--bg", adjustedColor);
     }
 
-    let $qtipContent = await renderedQtips[artist.name];
+    let $tipContent = await renderedTips[artist.name];
     // For correct work of CORS images must not be cloned at first displaying
-    if ($qtipContent.parent().length > 0) $qtipContent = $qtipContent.clone(true, true);
+    if ($tipContent.parent().length > 0) $tipContent = $tipContent.clone(true, true);
     // eslint-disable-next-line no-use-before-define
-    attachShadow($(content), $qtipContent, ARTIST_TOOLTIP_CSS);
+    attachShadow($(content), $tipContent, ARTIST_TOOLTIP_CSS);
 }
 
 const ARTIST_TOOLTIP_CSS = `
@@ -1000,7 +981,7 @@ const ARTIST_TOOLTIP_CSS = `
         --preview_pending_color: #0075f8;
         --preview_flagged_color: #ed2426;
     }
-    :host(.qtip-content-dark) {
+    :host(.tip-content-dark) {
         --preview_has_children_color: #35c64a;
         --preview_has_parent_color: #fd9200;
         --preview_deleted_color: #ababbc;
@@ -1067,7 +1048,7 @@ const ARTIST_TOOLTIP_CSS = `
         text-decoration: underline;
         text-decoration-style: dotted;
     }
-    :host(.qtip-content-dark) section.urls ul li.artist-url-inactive a {
+    :host(.tip-content-dark) section.urls ul li.artist-url-inactive a {
         color: red;
         text-decoration: underline;
         text-decoration-style: dotted;
@@ -1088,16 +1069,16 @@ const ARTIST_TOOLTIP_CSS = `
     a.tag-category-artist:hover {
         color: #ed2426;
     }
-    :host(.qtip-content-dark) a:link, :host(.qtip-content-dark) a:visited {
+    :host(.tip-content-dark) a:link, :host(.tip-content-dark) a:visited {
         color: #009be6;
     }
-    :host(.qtip-content-dark) a:hover {
+    :host(.tip-content-dark) a:hover {
         color: #4bb4ff;
     }
-    :host(.qtip-content-dark) a.tag-category-artist {
+    :host(.tip-content-dark) a.tag-category-artist {
         color: #ff8a8b;
     }
-    :host(.qtip-content-dark) a.tag-category-artist:hover {
+    :host(.tip-content-dark) a.tag-category-artist:hover {
         color: #ffc3c3;
     }
 
@@ -1588,7 +1569,7 @@ function showSettings () {
         }
     }
 
-    const $shadowContainer = $("<div>").appendTo("#ex-qtips");
+    const $shadowContainer = $("<div>").appendTo("#ex-tips");
 
     function closeSettings () {
         $shadowContainer.remove();
@@ -1614,7 +1595,7 @@ function showSettings () {
             position: relative;
             z-index: 16000;
         }
-        #ui-settings.qtip-dark {
+        #ui-settings.tip-dark {
             background: rgba(0,0,0,0.75);
         }
         .container {
@@ -1624,11 +1605,11 @@ function showSettings () {
             grid-gap: 10px;
             font-size: 12px;
         }
-        .qtip-light .container {
+        .tip-light .container {
             background-color: #fff;
             color: #222;
         }
-        .qtip-dark .container {
+        .tip-dark .container {
             background-color: #222;
             color: #fff;
         }
@@ -1694,8 +1675,8 @@ function showSettings () {
     $settings.find(".cancel").click(closeSettings);
     $(document).keydown(closeSettingsOnEscape);
 
-    const { theme } = chooseBackgroundColorScheme($("#ex-qtips"));
-    $settings.addClass(`qtip-${theme}`);
+    const { theme } = chooseBackgroundColorScheme($("#ex-tips"));
+    $settings.addClass(`tip-${theme}`);
 
     attachShadow($shadowContainer, $settings, styles);
 }
@@ -2428,9 +2409,6 @@ function initializeTwitter () {
 
 function initializeArtStation () {
     GM_addStyle(`
-        .qtip-content {
-            box-sizing: initial;
-        }
         .artist-name-and-headline .ex-artist-tag {
             font-size: 12pt;
             line-height: 150%;
@@ -2712,18 +2690,10 @@ function initializePixivFanbox () {
     });
 }
 
-function initializeQtipContainer () {
-    // Container and viewport for qTips
-    const $div = $(`<div id="ex-qtips"></div>`).appendTo("body");
-    ARTIST_QTIP_SETTINGS.position.viewport = $div;
-    ARTIST_QTIP_SETTINGS.position.container = $div;
-}
-
 function initialize () {
-    initializeQtipContainer();
     GM_jQuery_setup();
     GM_addStyle(PROGRAM_CSS);
-    GM_addStyle(POPPER_CSS);
+    GM_addStyle(TOOLTIP_CSS);
     if (SETTINGS.get("show_settings")) {
         GM_registerMenuCommand("Settings", showSettings, "S");
     }
