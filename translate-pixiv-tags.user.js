@@ -286,6 +286,9 @@ const PROGRAM_CSS = `
 `;
 
 const TOOLTIP_CSS = `
+.loading-data, .loading-data a {
+    cursor: wait;
+}
 .ex-tip {
     position: absolute;
     z-index: 15000;
@@ -967,11 +970,13 @@ async function buildArtistTooltip (artist, { tooltip, content, target }) {
         tooltip.style.setProperty("--bg", adjustedColor);
     }
 
+    target.classList.add("loading-data");
     let $tipContent = await renderedTips[artist.name];
     // For correct work of CORS images must not be cloned at first displaying
     if ($tipContent.parent().length > 0) $tipContent = $tipContent.clone(true, true);
     // eslint-disable-next-line no-use-before-define
     attachShadow($(content), $tipContent, ARTIST_TOOLTIP_CSS);
+    target.classList.remove("loading-data");
 }
 
 const ARTIST_TOOLTIP_CSS = `
