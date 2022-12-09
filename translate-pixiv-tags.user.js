@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20221207164846
+// @version      20221209170046
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -74,7 +74,7 @@ const SETTINGS = {
             type: "number",
         }, {
             name: "show_preview_rating",
-            defValue: "g",
+            defValue: "s",
             descr: "The upper level of rating for preview (higher ratings will be blurred)",
             type: "list",
             values: {
@@ -289,9 +289,18 @@ const TOOLTIP_CSS = `
 .loading-data, .loading-data a {
     cursor: wait;
 }
+#ex-tips {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 15000;
+    pointer-events: none;
+}
+#ex-tips > * {
+    pointer-events: all;
+}
 .ex-tip {
     position: absolute;
-    z-index: 15000;
     --bc: #E2E2E2;
     background: var(--bg, white);
     padding: 5px 9px;
@@ -1246,6 +1255,12 @@ const ARTIST_TOOLTIP_CSS = `
         grid-auto-rows: max-content;
         max-height: 422px;
         margin-right: auto;
+        flex-grow: 1;
+    }
+    div.post-list:empty::after {
+        content: "No posts here";
+        text-align: center;
+        grid-column: 1/4;
     }
 
     article.post-preview a {
@@ -1308,13 +1323,34 @@ const ARTIST_TOOLTIP_CSS = `
 `;
 
 async function buildArtistTooltipContent (artist) {
-    const waitPosts = queueNetworkRequestMemoized("post", { tag: artist.name, page: 1 });
-    const waitTags = queueNetworkRequestMemoized("tag", artist.name);
+    const status = SHOW_DELETED ? "status:any" : "-status:deleted";
+    const rating = ["https://safebooru.donmai.us", "https://donmai.moe/"].includes(BOORU)
+        ? "rating:g"
+        : "";
+
+    const waitPosts = queueNetworkRequestMemoized(
+        "post",
+        { tag: artist.name, page: 1 },
+    );
     // Process the queue immediately
     intervalNetworkHandler();
+    // This function is cached so it's OK to do direct calls
+    const waitVisiblePostCount = artist.is_banned
+        ? Promise.resolve({ counts: { posts: 0 } })
+        : $.getJSON(
+            `${BOORU}/counts/posts.json`,
+            { tags: `${artist.name} ${status} ${rating}`, ...CACHE_PARAM },
+        );
+    const waitTotalPostCount = $.getJSON(
+        `${BOORU}/counts/posts.json`,
+        { tags: `${artist.name} status:any`, ...CACHE_PARAM },
+    );
 
-    const [[tag = { post_count: 0 }], posts = []] = await Promise.all([waitTags, waitPosts]);
-
+    const [
+        { counts: { posts: visiblePostsCount } } = { counts: { posts: 0 } },
+        { counts: { posts: totalPostsCount } } = { counts: { posts: 0 } },
+        posts = [],
+    ] = await Promise.all([waitVisiblePostCount, waitTotalPostCount, waitPosts]);
 
     const otherNames = artist.other_names
         .filter(String)
@@ -1330,8 +1366,8 @@ async function buildArtistTooltipContent (artist) {
         ))
         .join("");
 
-    const status = SHOW_DELETED ? "status%3Aany" : "-status%3Adeleted";
-    const nextBtnClass = tag.post_count <= ARTIST_POST_PREVIEW_LIMIT ? "disabled" : "";
+    const nextBtnClass = visiblePostsCount <= ARTIST_POST_PREVIEW_LIMIT ? "disabled" : "";
+    const lastPage = Math.ceil(visiblePostsCount / ARTIST_POST_PREVIEW_LIMIT);
     const $content = $(noIndents`
         <article class="container" part="container">
             ${GM_getResourceText("settings_icon")}
@@ -1341,7 +1377,10 @@ async function buildArtistTooltipContent (artist) {
                    target="_blank">
                     ${_.escape(artist.prettyName)}
                 </a>
-                <span class="post-count">${tag.post_count}</span>
+                <span class="post-count">
+                    ${visiblePostsCount}
+                    ${totalPostsCount === visiblePostsCount ? "" : `(${totalPostsCount})`}
+                </span>
 
                 <ul class="other-names scrollable" part="other-names">
                     ${otherNames}
@@ -1366,7 +1405,7 @@ async function buildArtistTooltipContent (artist) {
                 <div class="post-pager"
                     data-tag="${artist.encodedName}"
                     data-page="1"
-                    data-last-page="${Math.ceil(tag.post_count / ARTIST_POST_PREVIEW_LIMIT)}"
+                    data-last-page="${lastPage}"
                 >
                     <div class="btn disabled">&lt;</div>
                     <div class="post-list scrollable" part="post-list"></div>
@@ -1445,7 +1484,7 @@ function buildPostPreview (post) {
         q: 2,
         e: 3, // eslint-disable-line id-blacklist
     };
-    const previewFileUrl = `${BOORU}/images/download-preview.png`;
+    const previewFileUrl = `https://cdn.donmai.us/images/download-preview.png`;
 
     let previewClass = "post-preview";
     if (post.is_pending)           previewClass += " post-status-pending";
