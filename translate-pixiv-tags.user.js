@@ -59,7 +59,7 @@ const SETTINGS = {
                 "https://danbooru.donmai.us":   "Danbooru",
                 "https://safebooru.donmai.us":  "Safebooru",
                 "https://betabooru.donmai.us":  "Betabooru",
-                "https://donmai.moe/":          "Donmai.moe",
+                "https://donmai.moe":           "Donmai.moe",
             },
         }, {
             name: "cache_lifetime",
