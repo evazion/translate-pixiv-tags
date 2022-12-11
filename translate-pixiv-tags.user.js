@@ -290,11 +290,11 @@ const TOOLTIP_CSS = `
     cursor: wait;
 }
 #ex-tips {
-    z-index: 15000;
     pointer-events: none;
 }
 #ex-tips > * {
     pointer-events: all;
+    z-index: 15000;
 }
 #ex-tips > .settings {
     position: fixed;
