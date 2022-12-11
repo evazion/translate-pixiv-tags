@@ -935,18 +935,25 @@ function chooseBackgroundColorScheme ($element) {
     const backgroundColors = $element.parents().addBack()
         .map((i, el) => $(el).css("background-color"))
         .get()
-        .filter((color) => color !== TRANSPARENT_COLOR);
-    if (backgroundColors.length === 0) backgroundColors.push("rgb(255,255,255)");
-    // Calculate summary color and get RGB channels
-    const colorChannels = backgroundColors
-        .map((color) => color.match(/\d+/g))
+        .filter((color) => color !== TRANSPARENT_COLOR)
         .reverse()
-        .reduce(([r1, g1, b1], [r2, g2, b2, al = 1]) => [
-            r1 * (1 - al) + r2 * al,
-            g1 * (1 - al) + g2 * al,
-            b1 * (1 - al) + b2 * al,
-        ])
-        .slice(0, 3); // Ignore alpha
+        .map((color) => color.match(/\d+/g));
+    // Calculate summary color and get RGB channels
+    let colorChannels = [255, 255, 255];
+    // eslint-disable-next-line no-restricted-syntax
+    for (const [r2, g2, b2, al2 = 1] of backgroundColors) {
+        const [r1, g1, b1, al1 = 1] = colorChannels;
+        colorChannels = [
+            r1 * al1 * (1 - al2) + r2 * al2,
+            g1 * al1 * (1 - al2) + g2 * al2,
+            b1 * al1 * (1 - al2) + b2 * al2,
+            al1 * (1 - al2) + al2,
+        ];
+        // If there is no transparency
+        if (colorChannels[3] === 1) break;
+    }
+    // Drop alpha channel
+    colorChannels.length = 3;
     const medianLuminosity = (Math.max(...colorChannels) + Math.min(...colorChannels)) / 2;
     const adjustedChannels = colorChannels.map((color) => {
         const colorScale = (color - MIDDLE_LUMINOSITY) / MIDDLE_LUMINOSITY; // To range [-1..+1]
