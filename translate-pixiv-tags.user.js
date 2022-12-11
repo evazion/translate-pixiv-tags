@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20221209171746
+// @version      20221211225646
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -1737,6 +1737,38 @@ function showSettings () {
     attachShadow($shadowContainer, $settings, styles);
 }
 
+/**
+ * Light/dark theme switching:
+ * artstation - dark only
+ * bcy - light only?
+ * deviantart - body.theme-dark/theme-light
+ * hentai-foundry - dark only?
+ * nico seiga - light only
+ * nijie - css file, full reload
+ * pawoo - body.theme-default/?
+ * pixiv - html[data-theme=default/dark]
+ * tinami - light only?
+ * twitter, tweetdeck - body[data-nightmode=true/false]
+ * saucenao - dark only
+ */
+function watchSiteTheme (elem, attr, themeExtractor) {
+    let theme;
+    function updateTheme () {
+        const newTheme = themeExtractor(elem);
+        if (newTheme === theme) return;
+        theme = newTheme;
+        $("html").removeClass("tpt-dark tpt-light")
+            .addClass(`tpt-${theme}`);
+        debuglog(`theme changed to ${theme}`);
+    }
+
+    new MutationObserver((mutations) => mutations.forEach(updateTheme))
+        .observe(elem, {
+            attributeFilter: [attr],
+        });
+    updateTheme();
+}
+
 function findAndTranslate (mode, selector, options = {}) {
     const fullOptions = {
         asyncMode: false,
@@ -1847,6 +1879,10 @@ const getNormalizedHashtagName = (el) => {
 };
 
 function initializePixiv () {
+    watchSiteTheme(document.documentElement, "data-theme", (html) => (
+        html.dataset.theme === "default" ? "light" : "dark"
+    ));
+
     GM_addStyle(`
         /* Fix https://www.pixiv.net/tags.php to display tags as vertical list. */
         .tag-list.slash-separated li {
@@ -2293,6 +2329,10 @@ function initializeBCY () {
 }
 
 function initializeDeviantArt () {
+    watchSiteTheme(document.body, "class", (body) => (
+        body.classList.contains("theme-dark") ? "dark" : "light"
+    ));
+
     GM_addStyle(`
         .ex-artist-tag {
             font-weight: bold;
@@ -2367,6 +2407,10 @@ function initializeHentaiFoundry () {
 }
 
 function initializeTwitter () {
+    watchSiteTheme(document.body, "data-nightmode", (body) => (
+        body.dataset.nightmode === "true" ? "dark" : "light"
+    ));
+
     GM_addStyle(`
         .ex-artist-tag {
             font-family: system-ui, -apple-system, BlinkMacSystemFont,
@@ -2636,6 +2680,10 @@ function initializeSauceNAO () {
 }
 
 function initializePawoo () {
+    watchSiteTheme(document.body, "class", (body) => (
+        body.classList.contains("theme-default") ? "dark" : "light"
+    ));
+
     GM_addStyle(`
         .ex-artist-tag {
             line-height: 100%;
@@ -2679,6 +2727,10 @@ function initializePawoo () {
 }
 
 function initializeTweetDeck () {
+    watchSiteTheme(document.body, "data-nightmode", (body) => (
+        body.dataset.nightmode === "true" ? "dark" : "light"
+    ));
+
     GM_addStyle(`
         .tweet .ex-artist-tag {
             flex-grow: 100;
@@ -2754,6 +2806,10 @@ function initialize () {
         GM_registerMenuCommand("Settings", showSettings, "S");
     }
 
+    const { theme } = chooseBackgroundColorScheme($(document.body));
+    $("html").addClass(`tpt-${theme}`);
+    debuglog(`set ${theme} theme mode`);
+
     switch (window.location.host) {
         case "www.pixiv.net":          initializePixiv();         break;
         case "dic.pixiv.net":          initializePixiv();         break;
@@ -2776,16 +2832,6 @@ function initialize () {
                 initializePixivFanbox();
             }
     }
-
-    let theme;
-    // Pixiv keeps theme in localStorage and applies it quiet lately
-    if ("theme" in localStorage) {
-        theme = localStorage.theme === "dark" ? "dark" : "light";
-    } else {
-        theme = chooseBackgroundColorScheme($(document.body)).theme;
-    }
-    $("html").addClass(`tpt-${theme}`);
-    debuglog(`set ${theme} theme mode`);
 
     // Check for new network requests every half-second
     setInterval(intervalNetworkHandler, 500);
