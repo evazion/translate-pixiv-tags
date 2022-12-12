@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion
-// @version      20221211225646
+// @version      20221212154246
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -1748,7 +1748,7 @@ function showSettings () {
  * pawoo - body.theme-default/?
  * pixiv - html[data-theme=default/dark]
  * tinami - light only?
- * twitter, tweetdeck - body[data-nightmode=true/false]
+ * twitter, tweetdeck - body[style] + body[data-nightmode=true/false]
  * saucenao - dark only
  */
 function watchSiteTheme (elem, attr, themeExtractor) {
@@ -2407,8 +2407,8 @@ function initializeHentaiFoundry () {
 }
 
 function initializeTwitter () {
-    watchSiteTheme(document.body, "data-nightmode", (body) => (
-        body.dataset.nightmode === "true" ? "dark" : "light"
+    watchSiteTheme(document.body, "style", (body) => (
+        chooseBackgroundColorScheme($(body)).theme
     ));
 
     GM_addStyle(`
