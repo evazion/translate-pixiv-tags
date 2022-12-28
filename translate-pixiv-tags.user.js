@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
-// @author       evazion
-// @version      20221212154246
+// @author       evazion, 7nik, BrokenEagle
+// @version      20221229001246
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
