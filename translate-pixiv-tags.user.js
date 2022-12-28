@@ -410,19 +410,27 @@ const NETWORK_REQUEST_DICT = {
         },
     },
     url: {
-        url: "/artist_urls",
-        data_key: "url",
-        data_type: "string",
-        fields: "url,artist[id,name,is_deleted,is_banned,other_names,urls[url,is_active]]",
+        url: "/artists",
+        data_key: "url_arr",
+        data_type: "array",
+        fields: "id,name,is_deleted,is_banned,other_names,urls[url,is_active]",
         params (urlList) {
             return {
                 search: {
-                    url_lower_array: urlList,
+                    url_matches: urlList,
                 },
                 only: this.fields,
             };
         },
-        filter: (artistUrls) => artistUrls.filter((artistUrl) => !artistUrl.artist.is_deleted),
+        filter: (artists) => (
+            artists
+                .filter((artist) => !artist.is_deleted)
+                // Add a field to be able to retrieve the artist from the array
+                .map((artist) => ({
+                    ...artist,
+                    url_arr: artist.urls.map((url) => url.url),
+                }))
+        ),
     },
     // This can only be used as a single use and not as part a group
     post: {
@@ -845,8 +853,7 @@ async function translateArtistByURL (element, profileUrls, options) {
         .filter((url) => url)
         .map((url) => queueNetworkRequestMemoized("url", url));
 
-    const artistUrls = (await Promise.all(promiseArray)).flat();
-    const artists = artistUrls.map((artistUrl) => artistUrl.artist);
+    const artists = (await Promise.all(promiseArray)).flat();
     if (artists.length === 0) {
         const urls = Array.isArray(profileUrls) ? profileUrls.join(", ") : profileUrls;
         debuglog(`No artist at "${urls}", rule "${options.ruleName}"`);
