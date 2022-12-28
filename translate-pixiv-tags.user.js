@@ -569,19 +569,25 @@ async function getLong (url, params, requests, type) {
     }
 
     // Default to GET requests
-    let func = $.getJSON;
+    let method = "get";
     let finalParams = params;
     if ($.param(params).length > MAXIMUM_URI_LENGTH) {
         // Use POST requests only when needed
         finalParams = Object.assign(finalParams, { _method: "get" });
-        func = $.post;
+        method = "post";
     }
 
     /* eslint-disable no-await-in-loop */
     let resp = [];
     for (let i = 0; i < MAX_NETWORK_RETRIES; i++) {
         try {
-            resp = await func(url, finalParams);
+            resp = await $.ajax(url, {
+                dataType: "json",
+                data: finalParams,
+                method,
+                // Do not use the failed and cached first try
+                cache: i === 0,
+            });
             break;
         } catch (error) {
             console.error(
