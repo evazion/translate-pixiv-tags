@@ -283,6 +283,12 @@ const PROGRAM_CSS = `
 .ex-banned-artist-tag a::after {
     content: " (banned)";
 }
+
+#ex-settings {
+    position: fixed;
+    top: 0;
+    left: 0;
+}
 `;
 
 const TOOLTIP_CSS = `
@@ -295,11 +301,6 @@ const TOOLTIP_CSS = `
 #ex-tips > * {
     pointer-events: all;
     z-index: 15000;
-}
-#ex-tips > .settings {
-    position: fixed;
-    top: 0;
-    left: 0;
 }
 
 .ex-tip {
@@ -1638,7 +1639,7 @@ function showSettings () {
         }
     }
 
-    const $shadowContainer = $("<div>").appendTo("#ex-tips").addClass("settings");
+    const $shadowContainer = $("<div id=ex-settings>").appendTo("body");
 
     function closeSettings () {
         $shadowContainer.remove();
@@ -1744,7 +1745,7 @@ function showSettings () {
     $settings.find(".cancel").click(closeSettings);
     $(document).keydown(closeSettingsOnEscape);
 
-    const { theme } = chooseBackgroundColorScheme($("#ex-tips"));
+    const { theme } = chooseBackgroundColorScheme($("body"));
     $settings.addClass(`tip-${theme}`);
 
     attachShadow($shadowContainer, $settings, styles);
