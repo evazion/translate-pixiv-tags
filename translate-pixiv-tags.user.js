@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion, 7nik, BrokenEagle
-// @version      20230312225346
+// @version      20230523185046
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -291,6 +291,7 @@ const PROGRAM_CSS = `
     position: fixed;
     top: 0;
     left: 0;
+    z-index: 3000001;
 }
 `;
 
@@ -2840,6 +2841,7 @@ function initializePixivFanbox () {
 
 function initializeMisskey () {
     GM_addStyle(`
+        /* artist name in the floating header */
         .xfdH7 .ex-artist-tag {
             font-size: .8em;
             font-weight: 400;
@@ -2850,8 +2852,8 @@ function initializeMisskey () {
     // https://misskey.io/tags/ブルアカ
     // https://misskey.art/tags/ブルアカ
     // https://misskey.design/tags/ブルアカ
-    findAndTranslate("tag", "a", {
-        predicate: "a[href^='/tags/']",
+    findAndTranslate("tag", "a, div", {
+        predicate: "a[href^='/tags/'], main>:first-child>:first-child i+div",
         asyncMode: true,
         toTagName: getNormalizedHashtagName,
         ruleName: "tags",
@@ -2870,6 +2872,7 @@ function initializeMisskey () {
     // https://misskey.io/@ixy194
     // https://misskey.art/@Igiroitsu
     // https://misskey.design/@milcho1129
+    // https://misskey.art/@ixy194@misskey.io
     // But not on note's page:
     // https://misskey.io/notes/9bxaf592x6
     // https://misskey.art/notes/9em92xdrid
