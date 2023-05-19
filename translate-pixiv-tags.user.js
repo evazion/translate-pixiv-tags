@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion, 7nik, BrokenEagle
-// @version      20230523185046
+// @version      20230523192846
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -2853,7 +2853,7 @@ function initializeMisskey () {
     // https://misskey.art/tags/ブルアカ
     // https://misskey.design/tags/ブルアカ
     findAndTranslate("tag", "a, div", {
-        predicate: "a[href^='/tags/'], main>:first-child>:first-child i+div",
+        predicate: "a[href^='/tags/'], main>:first-child>:first-child :not(button)>div>i+div",
         asyncMode: true,
         toTagName: getNormalizedHashtagName,
         ruleName: "tags",
