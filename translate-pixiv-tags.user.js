@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion, 7nik, BrokenEagle
-// @version      20230312225346
+// @version      20230523185046
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -22,6 +22,9 @@
 // @match        *://saucenao.com/*
 // @match        *://pawoo.net/*
 // @match        *://*.fanbox.cc/*
+// @match        *://misskey.io/*
+// @match        *://misskey.art/*
+// @match        *://misskey.design/*
 // @grant        GM_getResourceText
 // @grant        GM_getResourceURL
 // @grant        GM_xmlhttpRequest
@@ -288,6 +291,7 @@ const PROGRAM_CSS = `
     position: fixed;
     top: 0;
     left: 0;
+    z-index: 3000001;
 }
 `;
 
@@ -300,7 +304,7 @@ const TOOLTIP_CSS = `
 }
 #ex-tips > * {
     pointer-events: all;
-    z-index: 15000;
+    z-index: 3000000;
 }
 
 .ex-tip {
@@ -498,16 +502,16 @@ function noIndents (strings, ...values) {
     return res.join("");
 }
 
+const matchMemoized = _.memoize((string, regex) => string.match(regex), memoizeKey);
+
 // For safe ways to use regexes in a single line of code
-function safeMatch (string, regex, group = 0, defaultValue = "") {
-    const match = string.match(regex);
+function safeMatchMemoized (string, regex, group = 0, defaultValue = "") {
+    const match = matchMemoized(string, regex);
     if (match) {
         return match[group];
     }
     return defaultValue;
 }
-
-const safeMatchMemoized = _.memoize(safeMatch, memoizeKey);
 
 function getImage (imageUrl) {
     return GM
@@ -727,6 +731,15 @@ const NORMALIZE_PROFILE_URL = {
     "twitter.com": {
         path: /^\/[\w_-]+|\/intent\/user$/,
     },
+    "misskey.io": {
+        path: /^\/@[\w_]+$/,
+    },
+    "misskey.art": {
+        path: /^\/@[\w_]+$/,
+    },
+    "misskey.design": {
+        path: /^\/@[\w_]+$/,
+    },
 };
 
 // Converts URLs to the same format used by the URL column on Danbooru
@@ -819,6 +832,7 @@ function addDanbooruTags ($target, tags, options = {}) {
         onadded = null, // ($tag, options)=>{},
         tagPosition: {
             insertTag = TAG_POSITIONS.afterend.insertTag,
+            findTag = TAG_POSITIONS.afterend.findTag,
         } = {},
     } = options;
     let { classes = "" } = options;
@@ -840,6 +854,13 @@ function addDanbooruTags ($target, tags, options = {}) {
             </span>`);
     }
     const $tagsContainer = renderedTags[key].clone().prop("className", classes);
+
+    const $duplicates = findTag($target)
+        .filter((i, el) => el.textContent.trim() === $tagsContainer.text().trim());
+    if ($duplicates.length > 0) {
+        return;
+    }
+
     if (DEBUG) $tagsContainer.attr("rulename", options.ruleName || "");
     insertTag($target, $tagsContainer);
 
@@ -1663,7 +1684,7 @@ function showSettings () {
             align-items: center;
             justify-content: center;
             position: relative;
-            z-index: 16000;
+            z-index: 3100000;
         }
         #ui-settings.tip-dark {
             background: rgba(0,0,0,0.75);
@@ -2818,6 +2839,77 @@ function initializePixivFanbox () {
     });
 }
 
+function initializeMisskey () {
+    GM_addStyle(`
+        /* artist name in the floating header */
+        .xfdH7 .ex-artist-tag {
+            font-size: .8em;
+            font-weight: 400;
+        }
+    `);
+
+    // Hashtags
+    // https://misskey.io/tags/ブルアカ
+    // https://misskey.art/tags/ブルアカ
+    // https://misskey.design/tags/ブルアカ
+    findAndTranslate("tag", "a, div", {
+        predicate: "a[href^='/tags/'], main>:first-child>:first-child i+div",
+        asyncMode: true,
+        toTagName: getNormalizedHashtagName,
+        ruleName: "tags",
+    });
+
+    const getUrlFromElement = (el) => {
+        let fullName = el.textContent.trim();
+
+        let [, name, host] = matchMemoized(fullName, /^@([\w_]+)(?:@([\w.-]+))?$/) || [];
+        host ||= window.location.host;
+
+        return name ? `https://${host}/@${name}` : null;
+    }
+
+    // Artist name in floating header
+    // https://misskey.io/@ixy194
+    // https://misskey.art/@Igiroitsu
+    // https://misskey.design/@milcho1129
+    // https://misskey.art/@ixy194@misskey.io
+    // But not on note's page:
+    // https://misskey.io/notes/9bxaf592x6
+    // https://misskey.art/notes/9em92xdrid
+    // https://misskey.design/notes/9eh5y6d2rz
+    findAndTranslate("artist", ".xpJo5", {
+        toProfileUrl: getUrlFromElement,
+        asyncMode: true,
+        ruleName: "artist profile",
+    });
+
+    // Artist name in header
+    findAndTranslate("artist", "span", {
+        predicate: ".username > span:first-child",
+        toProfileUrl: getUrlFromElement,
+        asyncMode: true,
+        ruleName: "artist header",
+    });
+
+    // Artist name in note
+    findAndTranslate("artist", "span", {
+        predicate: ".xBLVI > span:first-child",
+        toProfileUrl: getUrlFromElement,
+        asyncMode: true,
+        classes: "inline",
+        ruleName: "artist note",
+    });
+
+    // Artist name in popup
+    // (hover profile picture)
+    findAndTranslate("artist", "span", {
+        predicate: ".x8X77 > span:first-child",
+        toProfileUrl: getUrlFromElement,
+        asyncMode: true,
+        ruleName: "artist popup",
+    });
+}
+
 function initialize () {
     GM_jQuery_setup();
     GM_addStyle(PROGRAM_CSS);
@@ -2845,6 +2937,9 @@ function initialize () {
         case "pawoo.net":              initializePawoo();         break;
         case "www.deviantart.com":     initializeDeviantArt();    break;
         case "www.artstation.com":     initializeArtStation();    break;
+        case "misskey.io":             initializeMisskey();       break;
+        case "misskey.art":            initializeMisskey();       break;
+        case "misskey.design":         initializeMisskey();       break;
         default:
             if (window.location.host.endsWith("artstation.com")) {
                 initializeArtStation();
