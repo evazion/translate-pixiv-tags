@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion, 7nik, BrokenEagle
-// @version      20230523192846
+// @version      20230628174146
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -34,6 +34,7 @@
 // @grant        GM_addStyle
 // @grant        GM_registerMenuCommand
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/psl/1.9.0/psl.min.js
 // @require      https://raw.githubusercontent.com/rafaelw/mutation-summary/421110f84178aa9e4098b38df83f727e5aea3d97/src/mutation-summary.js
 // @require      https://cdn.jsdelivr.net/npm/@floating-ui/core@1.0.3/dist/floating-ui.core.umd.min.js
 // @require      https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.0.8/dist/floating-ui.dom.umd.min.js
@@ -511,6 +512,282 @@ function safeMatchMemoized (string, regex, group = 0, defaultValue = "") {
         return match[group];
     }
     return defaultValue;
+}
+
+function capitalize (string) {
+    return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
+}
+
+// https://github.com/danbooru/danbooru/blob/f955718672a31e9c19afc5381eceeb0c2e7653d6/app/models/artist_url.rb#L95
+const SITE_ORDER = [
+    'Pixiv',
+    'Twitter',
+    'Anifty',
+    'ArtStation',
+    'Baraag',
+    'Bilibili',
+    'BCY',
+    'Booth',
+    'Deviant Art',
+    'Fantia',
+    'Foundation',
+    'Furaffinity',
+    'Hentai Foundry',
+    'Lofter',
+    'Newgrounds',
+    'Nico Seiga',
+    'Nijie',
+    'Pawoo',
+    'Fanbox',
+    'Pixiv Sketch',
+    'Plurk',
+    'Reddit',
+    'Skeb',
+    'Tinami',
+    'Tumblr',
+    'Weibo',
+    'Misskey.io',
+    'Misskey.art',
+    'Misskey.design',
+    'Ask.fm',
+    'Facebook',
+    'FC2',
+    'Gumroad',
+    'Instagram',
+    'Ko-fi',
+    'Livedoor',
+    'Mihuashi',
+    'Mixi.jp',
+    'Patreon',
+    'Piapro.jp',
+    'Picarto',
+    'Privatter',
+    'Sakura.ne.jp',
+    'Stickam',
+    'Twitch',
+    'Youtube',
+    'Amazon',
+    'Circle.ms',
+    'DLSite',
+    'Doujinshi.org',
+    'Erogamescape',
+    'Mangaupdates',
+    'Melonbooks',
+    'Toranoana',
+    'Wikipedia',
+];
+
+
+const SITE_RULES = [
+    { name: "Fanbox", domain: "fanbox.cc" },
+    { name: "Fanbox", domain: "pixiv.net", pathname: "/fanbox/" },
+    { name: "Pixiv Sketch", host: "sketch.pixiv.net" },
+    { name: "Booth", domain: "booth.pm" },
+    { name: "Pixiv", domain: "pixiv.net" },
+    { name: "Pixiv", domain: "pixiv.me" },
+    { name: "Pixiv", domain: "pixiv.cc" },
+    { name: "TwitPic", host: "twitpic.com" },
+    { name: "Twitter", domain: "twitter.com" },
+    { name: "Twitter", domain: "t.co" },
+    { name: "About Me", domain: "about.me" },
+    { name: "Anifty", domain: "anifty.jp" },
+    { name: "Arca.live", domain: "arca.live" },
+    { name: "ArtStation", domain: "artstation.com" },
+    { name: "ArtStreet", domain: "medibang.com" },
+    { name: "Bilibili", domain: "bilibili.com" },
+    { name: "Deviant Art", domain: "deviantart.com" },
+    { name: "Deviant Art", domain: "fav.me" },
+    { name: "Deviant Art", domain: "sta.sh" },
+    { name: "Enty", domain: "enty.jp" },
+    { name: "Fandom", domain: "fandom.com" },
+    { name: "Fandom", domain: "wikia.com" },
+    { name: "Fantia", domain: "fantia.jp" },
+    { name: "FC2", domain: "fc2.com" },
+    { name: "FC2", domain: "fc2blog.net" },
+    { name: "FC2", domain: "fc2blog.us" },
+    { name: "Foundation", host: "foundation.app" },
+    { name: "Furaffinity", domain: "furaffinity.net" },
+    { name: "Rule34.xxx", domain: "rule34.xxx" },
+    { name: "Gelbooru", domain: "gelbooru.com" },
+    { name: "Gumroad", domain: "gumroad.com" },
+    { name: "Gumroad", domain: "gum.co" },
+    { name: "Hentai Foundry", domain: "hentai-foundry.com" },
+    { name: "Imgur", domain: "imgur.com" },
+    { name: "Instagram", domain: "instagram.com" },
+    { name: "Lofter", domain: "lofter.com" },
+    { name: "Lofter", domain: "127.net" },
+    { name: "Pawoo", domain: "pawoo.net" },
+    { name: "Baraag", domain: "baraag.net" },
+    { name: "Misskey.io", domain: "misskey.io" },
+    { name: "Misskey.art", domain: "misskey.art" },
+    { name: "Misskey.design", domain: "misskey.design" },
+    { name: "Yande.re", domain: "yande.re" },
+    { name: "Newgrounds", domain: "newgrounds.com" },
+    { name: "Nico Seiga", domain: "nicovideo.jp" },
+    { name: "Nico Seiga", domain: "nico.ms" },
+    { name: "Nijie", domain: "nijie.info" },
+    { name: "Picdig", domain: "picdig.net" },
+    { name: "Plurk", domain: "plurk.com" },
+    { name: "Poipiku", domain: "poipiku.com" },
+    { name: "Reddit", domain: "reddit.com" },
+    { name: "Reddit", domain: "redd.it" },
+    { name: "Skeb", host: "skeb.jp" },
+    { name: "Tinami", domain: "tinami.com" },
+    { name: "Tinami", domain: "tinami.jp" },
+    { name: "Tumblr", domain: "tumblr.com" },
+    { name: "Weibo", domain: "weibo.com" },
+    { name: "Weibo", domain: "sinaimg.cn" },
+    { name: "Zerochan", domain: "zerochan.net" },
+    { name: "Adobe Portfolio", domain: "myportfolio.com" },
+    { name: "AllMyLinks", domain: "allmylinks.com" },
+    { name: "Anime News Network", domain: "animenewsnetwork.com" },
+    { name: "Amino", domain: "aminoapps.com" },
+    { name: "AniList", domain: "anilist.co" },
+    { name: "Apple Music", host: "music.apple.com" },
+    { name: "Archive of Our Own", domain: "archiveofourown.org" },
+    { name: "Art Fight", domain: "artfight.net" },
+    { name: "Artists&Clients", domain: "artistsnclients.com" },
+    { name: "Ask.fm", domain: "ask.fm" },
+    { name: "Bandcamp", domain: "bandcamp.com" },
+    { name: "BCY", domain: "bcy.net" },
+    { name: "Big Cartel", domain: "bigcartel.com" },
+    { name: "Blogger", domain: "blogger.com" },
+    { name: "Blogger", tld: "blogspot.com" },
+    { name: "Blogger", tld: "blogspot.ca" },
+    { name: "Blogger", tld: "blogspot.de" },
+    { name: "Blogger", tld: "blogspot.jp" },
+    { name: "Blogger", tld: "blogspot.kr" },
+    { name: "Blogger", tld: "blogspot.tw" },
+    { name: "Buy Me a Coffee", domain: "buymeacoffee.com" },
+    { name: "Carrd", domain: "carrd.co" },
+    { name: "Circle.ms", domain: "circle.ms" },
+    { name: "Class101", domain: "class101.co" },
+    { name: "Class101", domain: "class101.net" },
+    { name: "Colors Live", domain: "colorslive.com" },
+    { name: "Curious Cat", domain: "curiouscat.live" },
+    { name: "Curious Cat", domain: "curiouscat.me" },
+    { name: "Curious Cat", domain: "curiouscat.qa" },
+    { name: "DLSite", domain: "dlsite.com" },
+    { name: "DLSite", domain: "dlsite.net" },
+    { name: "DLSite", domain: "dlsite.jp" },
+    { name: "Danbooru", domain: "donmai.us" },
+    { name: "Discord", domain: "discordapp.com" },
+    { name: "Doujinshi.org", domain: "doujinshi.org" },
+    { name: "Doujinshi.org", host: "doujinshi.mugimugi.org" },
+    { name: "E-Hentai", domain: "e-hentai.org" },
+    { name: "Excite Blog", domain: "exblog.jp" },
+    { name: "Facebook", domain: "facebook.com" },
+    { name: "Facebook", domain: "fbcdn.net" },
+    { name: "FanFiction.Net", domain: "fanfiction.net" },
+    { name: "Flickr", domain: "flickr.com" },
+    { name: "GitHub", domain: "github.com" },
+    { name: "Gunsta", domain: "gumpla.jp" },
+    { name: "Hatena", domain: "hatena.ne.jp" },
+    { name: "Hatena Blog", domain: "hatenablog.com" },
+    { name: "Hatena Blog", domain: "hatenablog.jp" },
+    { name: "Hatena Blog", domain: "hateblo.jp" },
+    { name: "Hatena Blog", domain: "st-hatena.com" },
+    { name: "HoYoLAB", domain: "hoyolab.com" },
+    { name: "html.co.jp", domain: "html.co.jp" },
+    { name: "Itch.io", domain: "itch.io" },
+    { name: "Line", domain: "line.me" },
+    { name: "LinkedIn", domain: "linkedin.com" },
+    { name: "Linktree", domain: "linktr.ee" },
+    { name: "Livedoor", domain: "livedoor.jp" },
+    { name: "Livedoor", host: "livedoor.blogimg.jp" },
+    { name: "Livedoor", domain: "blog.jp" },
+    { name: "Livedoor", domain: "diary.to" },
+    { name: "Livedoor", domain: "doorblog.jp" },
+    { name: "Livedoor", domain: "dreamlog.jp" },
+    { name: "Livedoor", domain: "gger.jp" },
+    { name: "Livedoor", domain: "ldblog.jp" },
+    { name: "Livedoor", domain: "livedoor.biz" },
+    { name: "Livedoor", domain: "officialblog.jp" },
+    { name: "Livedoor", domain: "publog.jp" },
+    { name: "Livedoor", domain: "weblog.to" },
+    { name: "Livedoor", domain: "xxxblog.jp" },
+    { name: "Lit.link", domain: "lit.link" },
+    { name: "Kirby's Comic Art", domain: "kirbyscomicart.com" },
+    { name: "Kiru Made", domain: "kirumade.com" },
+    { name: "Kemono Party", domain: "kemono.party" },
+    { name: "Ko-fi", domain: "ko-fi.com" },
+    { name: "Last.fm", domain: "last.fm" },
+    { name: "Mastodon", domain: "mastodon.cloud" },
+    { name: "Mastodon", domain: "mstdn.jp" },
+    { name: "MyAnimeList", domain: "myanimelist.net" },
+    { name: "MyFigureCollection", domain: "myfigurecollection.net" },
+    { name: "Mixi.jp", domain: "mixi.jp" },
+    { name: "Note", domain: "note.com" },
+    { name: "OCN", domain: "ocn.ne.jp" },
+    { name: "OnlyFans", domain: "onlyfans.com" },
+    { name: "OpenSea", domain: "opensea.io" },
+    { name: "Patreon", domain: "patreon.com" },
+    { name: "Piapro.jp", domain: "piapro.jp" },
+    { name: "PayPal", domain: "paypal.com" },
+    { name: "PayPal", domain: "paypal.me" },
+    { name: "Pinterest", domain: "pinterest.com" },
+    { name: "Pixel Joint", domain: "pixeljoint.com" },
+    { name: "Postype", domain: "postype.com" },
+    { name: "Joyreactor", domain: "joyreactor.cc" },
+    { name: "Joyreactor", domain: "reactor.cc" },
+    { name: "RedGIFs", domain: "redgifs.com" },
+    { name: "Sakura.ne.jp", domain: "sakura.ne.jp" },
+    { name: "Sankaku Complex", domain: "sankakucomplex.com" },
+    { name: "Spotify", domain: "spotify.com" },
+    { name: "SoundCloud", domain: "soundcloud.com" },
+    { name: "Steam", domain: "steamcommunity.com" },
+    { name: "SubscribeStar", domain: "subscribestar.adult" },
+    { name: "SubscribeStar", domain: "subscribestar.com" },
+    { name: "SuperRare", domain: "superrare.com" },
+    { name: "Suzuri", domain: "suzuri.jp" },
+    { name: "The Interviews", domain: "theinterviews.jp" },
+    { name: "Tapas", domain: "tapas.io" },
+    { name: "TeePublic", domain: "teepublic.com" },
+    { name: "Telegram", domain: "t.me" },
+    { name: "Tistory", domain: "tistory.com" },
+    { name: "Toyhouse", domain: "toyhou.se" },
+    { name: "tsunagu.cloud", domain: "tsunagu.cloud" },
+    { name: "Vimeo", domain: "vimeo.com" },
+    { name: "Vimeo", domain: "livestream.com" },
+    { name: "Webtoons", domain: "webtoons.com" },
+    { name: "Weebly", domain: "weebly.com" },
+    { name: "Weebly", domain: "weeblysite.com" },
+    { name: "Willow", domain: "wlo.link" },
+    { name: "Wix", domain: "wix.com" },
+    { name: "Wix", domain: "wixsite.com" },
+    { name: "WordPress", domain: "wordpress.com" },
+    { name: "Youtube", domain: "youtu.be" },
+];
+
+function getSitePriority (siteName) {
+    let priority = SITE_ORDER.indexOf(siteName);
+    return priority < 0 ? 1000 : priority;
+}
+
+function getSiteName (siteUrl) {
+    let { host, pathname } = new URL(siteUrl);
+    let { domain, sld, tld } = psl.parse(host);
+
+    let match = SITE_RULES.find(
+        (rule) => (!rule.host || rule.host === host)
+            && (!rule.domain || rule.domain === domain)
+            && (!rule.tld || rule.tld === tld)
+            && (!rule.pathname || pathname.includes(rule.pathname))
+    );
+
+    return match ? match.name : capitalize(sld || tld || host);
+}
+
+// https://github.com/danbooru/danbooru/blob/f955718672a31e9c19afc5381eceeb0c2e7653d6/app/models/artist_url.rb#L75
+function isSecondaryUrl (siteUrl) {
+    return [
+        /pixiv\.net\/stacc/i,
+        /pixiv\.net\/fanbox/i,
+        /twitter\.com\/intent/i,
+        /(?:www|com|dic)\.nicovideo\.jp/i,
+        /pawoo\.net\/web\/accounts/i,
+        /misskey\.(?:io|art|design)\/users/i,
+    ].some((rule) => siteUrl.match(rule));
 }
 
 function getImage (imageUrl) {
@@ -1466,12 +1743,13 @@ async function buildArtistTooltipContent (artist) {
 }
 
 function buildArtistUrlsHtml (artist) {
-    const getDomain = (url) => safeMatchMemoized(new URL(url.url).host, /[^.]*\.[^.]*$/);
     const artistUrls = _(artist.urls)
         .chain()
         .uniq("url")
         .sortBy("url")
-        .sortBy(getDomain)
+        .sortBy((artistUrl) => isSecondaryUrl(artistUrl.url))
+        .sortBy((artistUrl) => psl.parse(new URL(artistUrl.url).host).domain)
+        .sortBy((artistUrl) => getSitePriority(getSiteName(artistUrl.url)))
         .sortBy((artistUrl) => !artistUrl.is_active);
 
     return artistUrls
