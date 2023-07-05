@@ -43,6 +43,230 @@
 // @require      https://github.com/evazion/translate-pixiv-tags/raw/lib-20190830/lib/jquery-gm-shim.js
 // @resource     danbooru_icon https://github.com/evazion/translate-pixiv-tags/raw/resource-20190903/resource/danbooru-icon.ico
 // @resource     settings_icon https://github.com/evazion/translate-pixiv-tags/raw/resource-20190903/resource/settings-icon.svg
+// @resource     globe_icon https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/svgs/solid/globe.svg
+// @resource     4chan-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/4chan-logo.png
+// @resource     adobe-portfolio-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/adobe-portfolio-logo.png
+// @resource     allmylinks-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/allmylinks-logo.png
+// @resource     artstreet-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/artstreet-logo.png
+// @resource     amazon-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/amazon-logo.png
+// @resource     ameblo-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/ameblo-logo.png
+// @resource     amino-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/amino-logo.png
+// @resource     anilist-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/anilist-logo.png
+// @resource     anifty-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/anifty-logo.png
+// @resource     anime-news-network-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/anime-news-network-logo.png
+// @resource     animexx-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/animexx-logo.png
+// @resource     apple-music-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/apple-music-logo.png
+// @resource     arca.live-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/arca.live-logo.png
+// @resource     archive-of-our-own-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/archive-of-our-own-logo.png
+// @resource     artstation-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/artstation-logo.png
+// @resource     art-fight-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/art-fight-logo.png
+// @resource     artists-clients-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/artists-clients-logo.png
+// @resource     aryion-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/aryion-logo.png
+// @resource     ask.fm-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/ask.fm-logo.png
+// @resource     bcy-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/bcy-logo.png
+// @resource     bandcamp-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/bandcamp-logo.png
+// @resource     baraag-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/baraag-logo.png
+// @resource     beacons-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/beacons-logo.png
+// @resource     behance-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/behance-logo.png
+// @resource     big-cartel-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/big-cartel-logo.png
+// @resource     biglobe-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/biglobe-logo.png
+// @resource     bilibili-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/bilibili-logo.png
+// @resource     blogger-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/blogger-logo.png
+// @resource     boosty-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/boosty-logo.png
+// @resource     booth-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/booth-logo.png
+// @resource     buy-me-a-coffee-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/buy-me-a-coffee-logo.png
+// @resource     cafe24-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/cafe24-logo.png
+// @resource     carrd-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/carrd-logo.png
+// @resource     catbox-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/catbox-logo.png
+// @resource     circle.ms-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/circle.ms-logo.png
+// @resource     class101-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/class101-logo.png
+// @resource     clip-studio-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/clip-studio-logo.png
+// @resource     coconala-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/coconala-logo.png
+// @resource     colors-live-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/colors-live-logo.png
+// @resource     commishes-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/commishes-logo.png
+// @resource     creatorlink-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/creatorlink-logo.png
+// @resource     curious-cat-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/curious-cat-logo.png
+// @resource     dlsite-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/dlsite-logo.png
+// @resource     danbooru-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/danbooru-logo.png
+// @resource     deviant-art-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/deviant-art-logo.png
+// @resource     discord-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/discord-logo.png
+// @resource     doujinshi.org-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/doujinshi.org-logo.png
+// @resource     douyin-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/douyin-logo.png
+// @resource     drawcrowd-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/drawcrowd-logo.png
+// @resource     e-hentai-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/e-hentai-logo.png
+// @resource     enty-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/enty-logo.png
+// @resource     erogamescape-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/erogamescape-logo.png
+// @resource     etsy-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/etsy-logo.png
+// @resource     excite-blog-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/excite-blog-logo.png
+// @resource     fc2-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/fc2-logo.png
+// @resource     facebook-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/facebook-logo.png
+// @resource     fanfiction.net-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/fanfiction.net-logo.png
+// @resource     fanbox-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/fanbox-logo.png
+// @resource     fandom-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/fandom-logo.png
+// @resource     fantia-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/fantia-logo.png
+// @resource     fiverr-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/fiverr-logo.png
+// @resource     flavors-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/flavors-logo.png
+// @resource     flickr-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/flickr-logo.png
+// @resource     foriio-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/foriio-logo.png
+// @resource     foundation-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/foundation-logo.png
+// @resource     furaffinity-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/furaffinity-logo.png
+// @resource     fusetter-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/fusetter-logo.png
+// @resource     gelbooru-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/gelbooru-logo.png
+// @resource     geocities-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/geocities-logo.png
+// @resource     giftee-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/giftee-logo.png
+// @resource     github-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/github-logo.png
+// @resource     google-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/google-logo.png
+// @resource     gumroad-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/gumroad-logo.png
+// @resource     gunsta-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/gunsta-logo.png
+// @resource     hatena-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/hatena-logo.png
+// @resource     hatena-blog-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/hatena-blog-logo.png
+// @resource     hentai-foundry-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/hentai-foundry-logo.png
+// @resource     hitomi-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/hitomi-logo.png
+// @resource     hoyolab-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/hoyolab-logo.png
+// @resource     imagis-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/imagis-logo.png
+// @resource     imgur-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/imgur-logo.png
+// @resource     infoseek-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/infoseek-logo.png
+// @resource     inkbunny-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/inkbunny-logo.png
+// @resource     inprnt-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/inprnt-logo.png
+// @resource     instagram-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/instagram-logo.png
+// @resource     itch.io-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/itch.io-logo.png
+// @resource     jimdo-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/jimdo-logo.png
+// @resource     joyreactor-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/joyreactor-logo.png
+// @resource     kakao-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/kakao-logo.png
+// @resource     kemono-party-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/kemono-party-logo.png
+// @resource     kickstarter-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/kickstarter-logo.png
+// @resource     kirby-s-comic-art-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/kirby-s-comic-art-logo.png
+// @resource     kiru-made-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/kiru-made-logo.png
+// @resource     ko-fi-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/ko-fi-logo.png
+// @resource     konachan-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/konachan-logo.png
+// @resource     last.fm-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/last.fm-logo.png
+// @resource     letterboxd-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/letterboxd-logo.png
+// @resource     line-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/line-logo.png
+// @resource     linkedin-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/linkedin-logo.png
+// @resource     linktree-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/linktree-logo.png
+// @resource     listography-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/listography-logo.png
+// @resource     lit.link-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/lit.link-logo.png
+// @resource     livedoor-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/livedoor-logo.png
+// @resource     lofter-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/lofter-logo.png
+// @resource     luscious-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/luscious-logo.png
+// @resource     mangaupdates-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/mangaupdates-logo.png
+// @resource     marshmallow-qa-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/marshmallow-qa-logo.png
+// @resource     mastodon-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/mastodon-logo.png
+// @resource     mblg-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/mblg-logo.png
+// @resource     mega-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/mega-logo.png
+// @resource     melonbooks-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/melonbooks-logo.png
+// @resource     mihoyo-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/mihoyo-logo.png
+// @resource     mihuashi-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/mihuashi-logo.png
+// @resource     misskey.art-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/misskey.art-logo.png
+// @resource     misskey.design-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/misskey.design-logo.png
+// @resource     misskey.io-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/misskey.io-logo.png
+// @resource     mixi.jp-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/mixi.jp-logo.png
+// @resource     monappy-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/monappy-logo.png
+// @resource     mottohomete-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/mottohomete-logo.png
+// @resource     myanimelist-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/myanimelist-logo.png
+// @resource     myfigurecollection-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/myfigurecollection-logo.png
+// @resource     naver-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/naver-logo.png
+// @resource     newgrounds-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/newgrounds-logo.png
+// @resource     nico-seiga-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/nico-seiga-logo.png
+// @resource     nijie-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/nijie-logo.png
+// @resource     note-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/note-logo.png
+// @resource     ocn-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/ocn-logo.png
+// @resource     objkt-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/objkt-logo.png
+// @resource     odaibako-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/odaibako-logo.png
+// @resource     ofuse-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/ofuse-logo.png
+// @resource     onlyfans-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/onlyfans-logo.png
+// @resource     opensea-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/opensea-logo.png
+// @resource     overdoll-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/overdoll-logo.png
+// @resource     partme-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/partme-logo.png
+// @resource     patreon-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/patreon-logo.png
+// @resource     pawoo-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/pawoo-logo.png
+// @resource     paypal-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/paypal-logo.png
+// @resource     peing-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/peing-logo.png
+// @resource     photozou-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/photozou-logo.png
+// @resource     piapro.jp-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/piapro.jp-logo.png
+// @resource     picarto-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/picarto-logo.png
+// @resource     picdig-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/picdig-logo.png
+// @resource     picrew-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/picrew-logo.png
+// @resource     piczel-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/piczel-logo.png
+// @resource     pillowfort-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/pillowfort-logo.png
+// @resource     pinterest-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/pinterest-logo.png
+// @resource     pixel-joint-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/pixel-joint-logo.png
+// @resource     pixiv-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/pixiv-logo.png
+// @resource     pixiv-sketch-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/pixiv-sketch-logo.png
+// @resource     plurk-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/plurk-logo.png
+// @resource     poipiku-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/poipiku-logo.png
+// @resource     pornhub-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/pornhub-logo.png
+// @resource     portfoliobox-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/portfoliobox-logo.png
+// @resource     postype-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/postype-logo.png
+// @resource     potofu-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/potofu-logo.png
+// @resource     privatter-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/privatter-logo.png
+// @resource     profcard-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/profcard-logo.png
+// @resource     recomet-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/recomet-logo.png
+// @resource     redgifs-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/redgifs-logo.png
+// @resource     redbubble-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/redbubble-logo.png
+// @resource     reddit-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/reddit-logo.png
+// @resource     rule34.us-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/rule34.us-logo.png
+// @resource     rule34.xxx-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/rule34.xxx-logo.png
+// @resource     safebooru-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/safebooru-logo.png
+// @resource     sakura.ne.jp-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/sakura.ne.jp-logo.png
+// @resource     sankaku-complex-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/sankaku-complex-logo.png
+// @resource     shopee-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/shopee-logo.png
+// @resource     skeb-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/skeb-logo.png
+// @resource     sketchfab-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/sketchfab-logo.png
+// @resource     sketchmob-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/sketchmob-logo.png
+// @resource     skima-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/skima-logo.png
+// @resource     society6-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/society6-logo.png
+// @resource     soundcloud-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/soundcloud-logo.png
+// @resource     spotify-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/spotify-logo.png
+// @resource     steam-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/steam-logo.png
+// @resource     stickam-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/stickam-logo.png
+// @resource     storenvy-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/storenvy-logo.png
+// @resource     streamlabs-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/streamlabs-logo.png
+// @resource     subscribestar-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/subscribestar-logo.png
+// @resource     superrare-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/superrare-logo.png
+// @resource     suzuri-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/suzuri-logo.png
+// @resource     tbib-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/tbib-logo.png
+// @resource     taobao-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/taobao-logo.png
+// @resource     tapas-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/tapas-logo.png
+// @resource     teepublic-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/teepublic-logo.png
+// @resource     telegram-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/telegram-logo.png
+// @resource     the-interviews-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/the-interviews-logo.png
+// @resource     tictail-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/tictail-logo.png
+// @resource     tiktok-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/tiktok-logo.png
+// @resource     tinami-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/tinami-logo.png
+// @resource     tistory-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/tistory-logo.png
+// @resource     togetter-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/togetter-logo.png
+// @resource     toranoana-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/toranoana-logo.png
+// @resource     toyhouse-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/toyhouse-logo.png
+// @resource     trakteer-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/trakteer-logo.png
+// @resource     trello-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/trello-logo.png
+// @resource     tumblr-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/tumblr-logo.png
+// @resource     twipple-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/twipple-logo.png
+// @resource     twitpic-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/twitpic-logo.png
+// @resource     twitcasting-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/twitcasting-logo.png
+// @resource     twitch-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/twitch-logo.png
+// @resource     twitter-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/twitter-logo.png
+// @resource     twpf-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/twpf-logo.png
+// @resource     ustream-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/ustream-logo.png
+// @resource     vimeo-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/vimeo-logo.png
+// @resource     vk-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/vk-logo.png
+// @resource     wavebox-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/wavebox-logo.png
+// @resource     weasyl-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/weasyl-logo.png
+// @resource     webmshare-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/webmshare-logo.png
+// @resource     webtoons-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/webtoons-logo.png
+// @resource     weebly-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/weebly-logo.png
+// @resource     weibo-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/weibo-logo.png
+// @resource     wikipedia-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/wikipedia-logo.png
+// @resource     willow-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/willow-logo.png
+// @resource     wix-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/wix-logo.png
+// @resource     wordpress-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/wordpress-logo.png
+// @resource     yahoo-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/yahoo-logo.png
+// @resource     yande.re-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/yande.re-logo.png
+// @resource     yfrog-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/yfrog-logo.png
+// @resource     youtube-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/youtube-logo.png
+// @resource     zerochan-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/zerochan-logo.png
+// @resource     html.co.jp-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/html.co.jp-logo.png
+// @resource     tsunagu.cloud-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/tsunagu.cloud-logo.png
 // @connect      donmai.us
 // @connect      donmai.moe
 // @noframes
@@ -778,6 +1002,10 @@ function getSiteName (siteUrl) {
     return match ? match.name : capitalize(sld || tld || host);
 }
 
+function getSiteIconUrl (siteName) {
+    return GM_getResourceURL(`${siteName.toLowerCase().replace(/[^a-z0-9.]/g, "-")}-logo`);
+}
+
 // https://github.com/danbooru/danbooru/blob/f955718672a31e9c19afc5381eceeb0c2e7653d6/app/models/artist_url.rb#L75
 function isSecondaryUrl (siteUrl) {
     return [
@@ -1371,9 +1599,9 @@ const ARTIST_TOOLTIP_CSS = `
     }
 
     section.urls ul {
-        list-style: disc inside;
         padding: 0px;
         max-height: 145px;
+        line-height: 1.5em;
     }
 
     section.urls ul ::marker {
@@ -1389,6 +1617,12 @@ const ARTIST_TOOLTIP_CSS = `
         color: red;
         text-decoration: underline;
         text-decoration-style: dotted;
+    }
+
+    .artist-url-icon * {
+        height: 1.5em;
+        fill: currentColor;
+        vertical-align: middle;
     }
 
 
@@ -1746,21 +1980,24 @@ function buildArtistUrlsHtml (artist) {
     const artistUrls = _(artist.urls)
         .chain()
         .uniq("url")
+        .each((artistUrl) => artistUrl.siteName = getSiteName(artistUrl.url))
         .sortBy("url")
         .sortBy((artistUrl) => isSecondaryUrl(artistUrl.url))
         .sortBy((artistUrl) => psl.parse(new URL(artistUrl.url).host).domain)
-        .sortBy((artistUrl) => getSitePriority(getSiteName(artistUrl.url)))
+        .sortBy((artistUrl) => getSitePriority(artistUrl.siteName))
         .sortBy((artistUrl) => !artistUrl.is_active);
 
     return artistUrls
         .map((artistUrl) => {
             const normalizedUrl = artistUrl.url.replace(/\/$/, "");
             const urlClass = artistUrl.is_active ? "artist-url-active" : "artist-url-inactive";
+            const iconUrl = getSiteIconUrl(artistUrl.siteName);
+            const iconHtml = iconUrl ? `<img src="${iconUrl}">` : GM_getResourceText("globe_icon");
 
             return noIndents`
                 <li class="${urlClass}">
                     <a href="${normalizedUrl}" target="_blank">
-                        ${_.escape(normalizedUrl)}
+                        <span class="artist-url-icon">${iconHtml}</span> ${_.escape(normalizedUrl)}
                     </a>
                 </li>`;
         })
