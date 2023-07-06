@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion, 7nik, BrokenEagle
-// @version      20230706021246
+// @version      20230706134746
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -805,12 +805,12 @@ const SITE_ORDER = [
 const SITE_RULES = [
     { name: "Fanbox", domain: "fanbox.cc" },
     { name: "Fanbox", domain: "pixiv.net", pathname: "/fanbox/" },
-    { name: "Pixiv Sketch", host: "sketch.pixiv.net" },
+    { name: "Pixiv Sketch", hostname: "sketch.pixiv.net" },
     { name: "Booth", domain: "booth.pm" },
     { name: "Pixiv", domain: "pixiv.net" },
     { name: "Pixiv", domain: "pixiv.me" },
     { name: "Pixiv", domain: "pixiv.cc" },
-    { name: "TwitPic", host: "twitpic.com" },
+    { name: "TwitPic", hostname: "twitpic.com" },
     { name: "Twitter", domain: "twitter.com" },
     { name: "Twitter", domain: "t.co" },
     { name: "About Me", domain: "about.me" },
@@ -829,7 +829,7 @@ const SITE_RULES = [
     { name: "FC2", domain: "fc2.com" },
     { name: "FC2", domain: "fc2blog.net" },
     { name: "FC2", domain: "fc2blog.us" },
-    { name: "Foundation", host: "foundation.app" },
+    { name: "Foundation", hostname: "foundation.app" },
     { name: "Furaffinity", domain: "furaffinity.net" },
     { name: "Rule34.xxx", domain: "rule34.xxx" },
     { name: "Gelbooru", domain: "gelbooru.com" },
@@ -855,7 +855,7 @@ const SITE_RULES = [
     { name: "Poipiku", domain: "poipiku.com" },
     { name: "Reddit", domain: "reddit.com" },
     { name: "Reddit", domain: "redd.it" },
-    { name: "Skeb", host: "skeb.jp" },
+    { name: "Skeb", hostname: "skeb.jp" },
     { name: "Tinami", domain: "tinami.com" },
     { name: "Tinami", domain: "tinami.jp" },
     { name: "Tumblr", domain: "tumblr.com" },
@@ -867,7 +867,7 @@ const SITE_RULES = [
     { name: "Anime News Network", domain: "animenewsnetwork.com" },
     { name: "Amino", domain: "aminoapps.com" },
     { name: "AniList", domain: "anilist.co" },
-    { name: "Apple Music", host: "music.apple.com" },
+    { name: "Apple Music", hostname: "music.apple.com" },
     { name: "Archive of Our Own", domain: "archiveofourown.org" },
     { name: "Art Fight", domain: "artfight.net" },
     { name: "Artists&Clients", domain: "artistsnclients.com" },
@@ -897,7 +897,7 @@ const SITE_RULES = [
     { name: "Danbooru", domain: "donmai.us" },
     { name: "Discord", domain: "discordapp.com" },
     { name: "Doujinshi.org", domain: "doujinshi.org" },
-    { name: "Doujinshi.org", host: "doujinshi.mugimugi.org" },
+    { name: "Doujinshi.org", hostname: "doujinshi.mugimugi.org" },
     { name: "E-Hentai", domain: "e-hentai.org" },
     { name: "Excite Blog", domain: "exblog.jp" },
     { name: "Facebook", domain: "facebook.com" },
@@ -918,7 +918,7 @@ const SITE_RULES = [
     { name: "LinkedIn", domain: "linkedin.com" },
     { name: "Linktree", domain: "linktr.ee" },
     { name: "Livedoor", domain: "livedoor.jp" },
-    { name: "Livedoor", host: "livedoor.blogimg.jp" },
+    { name: "Livedoor", hostname: "livedoor.blogimg.jp" },
     { name: "Livedoor", domain: "blog.jp" },
     { name: "Livedoor", domain: "diary.to" },
     { name: "Livedoor", domain: "doorblog.jp" },
@@ -989,17 +989,23 @@ function getSitePriority (siteName) {
 }
 
 function getSiteName (siteUrl) {
-    let { host, pathname } = new URL(siteUrl);
-    let { domain, sld, tld } = psl.parse(host);
+    let { hostname, pathname } = new URL(siteUrl);
+    let { domain, sld, tld } = psl.parse(hostname);
 
     let match = SITE_RULES.find(
-        (rule) => (!rule.host || rule.host === host)
+        (rule) => (!rule.hostname || rule.hostname === hostname)
             && (!rule.domain || rule.domain === domain)
             && (!rule.tld || rule.tld === tld)
             && (!rule.pathname || pathname.includes(rule.pathname))
     );
 
-    return match ? match.name : capitalize(sld || tld || host);
+    return match ? match.name : capitalize(sld || tld || hostname);
+}
+
+function getSiteDisplayDomain (siteUrl) {
+    let { hostname } = new URL(siteUrl);
+    let { domain, tld } = psl.parse(hostname);
+    return domain || tld || hostname;
 }
 
 function getSiteIconUrl (siteName) {
@@ -1983,7 +1989,7 @@ function buildArtistUrlsHtml (artist) {
         .each((artistUrl) => artistUrl.siteName = getSiteName(artistUrl.url))
         .sortBy("url")
         .sortBy((artistUrl) => isSecondaryUrl(artistUrl.url))
-        .sortBy((artistUrl) => psl.parse(new URL(artistUrl.url).host).domain)
+        .sortBy((artistUrl) => getSiteDisplayDomain(artistUrl.url))
         .sortBy((artistUrl) => getSitePriority(artistUrl.siteName))
         .sortBy((artistUrl) => !artistUrl.is_active);
 
@@ -2067,10 +2073,7 @@ function buildPostPreview (post) {
     const height = Math.round(post.image_height * scale);
 
     const domain = post.source.match(/^https?:\/\//)
-        ? new URL(post.source).hostname
-            .split(".")
-            .slice(-2)
-            .join(".")
+        ? getSiteDisplayDomain(post.source)
         : "NON-WEB";
     const imgSize = [post.file_size, post.image_width, post.image_height].every(_.isFinite)
         ? `${formatBytes(post.file_size)} (${post.image_width}x${post.image_height})`
