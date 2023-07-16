@@ -1763,7 +1763,7 @@ const ARTIST_TOOLTIP_CSS = `
         z-index: 1;
     }
 
-    article.post-preview[data-has-sound=true]::before {
+    article.post-preview[data-tags~=sound]::before {
         content: "♪";
         position: absolute;
         width: 20px;
@@ -2064,7 +2064,6 @@ function buildPostPreview (post) {
 
     const dataAttributes = `
       data-id="${post.id}"
-      data-has-sound="${Boolean(post.tag_string.match(/(video_with_sound|flash_with_sound)/))}"
       data-tags="${_.escape(post.tag_string)}"
     `;
 
