@@ -537,7 +537,7 @@ const TOOLTIP_CSS = `
     --bc: #E2E2E2;
     background: var(--bg, white);
     padding: 5px 9px;
-    max-width: 558px;
+    max-width: 622px;
     font-size: 10.5px;
     line-height: 12px;
     box-sizing: initial;
@@ -669,16 +669,13 @@ const NETWORK_REQUEST_DICT = {
         data_type: "string_list",
         fields: [
             "created_at",
-            "file_size",
             "has_visible_children",
             "id",
-            "image_height",
-            "image_width",
             "is_flagged",
             "is_pending",
             "is_deleted",
             "parent_id",
-            "preview_file_url",
+            "media_asset[file_ext,file_size,image_width,image_height,variants]",
             "rating",
             "source",
             "tag_string",
@@ -1662,8 +1659,8 @@ const ARTIST_TOOLTIP_CSS = `
 
     /* Thumbnail styles taken from Danbooru */
     article.post-preview {
-        /*height: 154px;*/
-        width: 154px;
+        /*height: 184px;*/
+        width: 184px;
         margin: 0 10px 10px 0;
         float: left;
         overflow: hidden;
@@ -1827,7 +1824,7 @@ const ARTIST_TOOLTIP_CSS = `
 
     article.post-preview a {
         display: inline-block;
-        /*height: 154px;*/
+        /*height: 184px;*/
         overflow: hidden;
     }
 
@@ -2050,7 +2047,6 @@ function buildPostPreview (post) {
         q: 2,
         e: 3, // eslint-disable-line id-blacklist
     };
-    const previewFileUrl = `https://cdn.donmai.us/images/download-preview.png`;
 
     let previewClass = "post-preview";
     if (post.is_pending)           previewClass += " post-status-pending";
@@ -2067,15 +2063,27 @@ function buildPostPreview (post) {
       data-tags="${_.escape(post.tag_string)}"
     `;
 
-    const scale = Math.min(150 / post.image_width, 150 / post.image_height, 1);
-    const width = Math.round(post.image_width * scale);
-    const height = Math.round(post.image_height * scale);
+    let previewFileUrl, previewWidth, previewHeight;
+    let previewAsset = (post.media_asset.variants || []).find((variant) => variant.type === "180x180");
+    if (previewAsset !== undefined) {
+        previewFileUrl = previewAsset.url;
+        previewWidth = previewAsset.width;
+        previewHeight = previewAsset.height;
+    } else {
+        if (post.media_asset.file_ext === "swf") {
+            previewFileUrl = `${BOORU}/images/flash-preview.png`;
+        } else {
+            previewFileUrl = `https://cdn.donmai.us/images/download-preview.png`;
+        }
+        previewWidth = 180;
+        previewHeight = 180;
+    }
 
     const domain = post.source.match(/^https?:\/\//)
         ? getSiteDisplayDomain(post.source)
         : "NON-WEB";
-    const imgSize = [post.file_size, post.image_width, post.image_height].every(_.isFinite)
-        ? `${formatBytes(post.file_size)} (${post.image_width}x${post.image_height})`
+    const imgSize = [post.media_asset.file_size, post.media_asset.image_width, post.media_asset.image_height].every(_.isFinite)
+        ? `${formatBytes(post.media_asset.file_size)} (${post.media_asset.image_width}x${post.media_asset.image_height})`
         : "";
 
     const $preview = $(noIndents`
@@ -2084,8 +2092,8 @@ function buildPostPreview (post) {
                  class="${previewClass}"
                  ${dataAttributes} >
             <a href="${BOORU}/posts/${post.id}" target="_blank">
-                <img width="${width}"
-                     height="${height}"
+                <img width="${previewWidth}"
+                     height="${previewHeight}"
                      src="${previewFileUrl}"
                      title="${_.escape(post.tag_string)}"
                      part="post-preview rating-${post.rating}">
@@ -2100,18 +2108,13 @@ function buildPostPreview (post) {
         // Temporally set transparent 1x1 image
         // eslint-disable-next-line max-len
         $preview.find("img").prop("src", "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
-        getImage(post.preview_file_url || previewFileUrl).then((blob) => {
+        getImage(previewFileUrl).then((blob) => {
             const imageBlob = blob.slice(0, blob.size, "image/jpeg");
             const blobUrl = window.URL.createObjectURL(imageBlob);
             $preview.find("img").prop("src", blobUrl);
         });
     } else {
-        $preview.find("img").prop("src", post.preview_file_url);
-    }
-    if (!post.preview_file_url || post.preview_file_url.endsWith("/images/download-preview.png")) {
-        $preview.find("img").prop({
-            width: 150, height: 150,
-        });
+        $preview.find("img").prop("src", previewFileUrl);
     }
 
     return $preview;
