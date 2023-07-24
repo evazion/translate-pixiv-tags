@@ -44,6 +44,7 @@
 // @resource     danbooru_icon https://github.com/evazion/translate-pixiv-tags/raw/resource-20190903/resource/danbooru-icon.ico
 // @resource     settings_icon https://github.com/evazion/translate-pixiv-tags/raw/resource-20190903/resource/settings-icon.svg
 // @resource     globe_icon https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/svgs/solid/globe.svg
+// @resource     sound_icon https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/svgs/solid/volume-high.svg
 // @resource     4chan-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/4chan-logo.png
 // @resource     adobe-portfolio-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/adobe-portfolio-logo.png
 // @resource     allmylinks-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/allmylinks-logo.png
@@ -675,7 +676,7 @@ const NETWORK_REQUEST_DICT = {
             "is_pending",
             "is_deleted",
             "parent_id",
-            "media_asset[file_ext,file_size,image_width,image_height,variants]",
+            "media_asset[file_ext,file_size,image_width,image_height,duration,variants]",
             "rating",
             "source",
             "tag_string",
@@ -1747,30 +1748,17 @@ const ARTIST_TOOLTIP_CSS = `
                       var(--preview_has_parent_color);
     }
 
-    article.post-preview[data-tags~=animated]::before {
-        content: "►";
+    article.post-preview .post-animation-icon {
         position: absolute;
-        width: 20px;
-        height: 20px;
         color: white;
-        background-color: rgba(0,0,0,0.5);
-        margin: 2px;
-        text-align: center;
-        line-height: 18px;
-        z-index: 1;
+        background-color: rgba(0,0,0,0.7);
+        line-height: 1;
+        padding: 2px;
     }
-
-    article.post-preview[data-tags~=sound]::before {
-        content: "♪";
-        position: absolute;
-        width: 20px;
-        height: 20px;
-        color: white;
-        background-color: rgba(0,0,0,0.5);
-        margin: 2px;
-        text-align: center;
-        line-height: 18px;
-        z-index: 1;
+    article.post-preview .post-animation-icon * {
+        height: 1em;
+        fill: currentColor;
+        vertical-align: middle;
     }
 
     div.post-pager {
@@ -2033,6 +2021,15 @@ function timeToAgo (time) {
     return "∞ ago";
 }
 
+function formatDuration (seconds) {
+    seconds = Math.round(seconds) || 1;
+
+    let mm = Math.floor(seconds / 60 % 60);
+    let ss = String(seconds % 60).padStart(2, "0");
+
+    return `${mm}:${ss}`;
+}
+
 // Based on https://stackoverflow.com/questions/15900485
 function formatBytes (bytes) {
     const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
@@ -2086,12 +2083,25 @@ function buildPostPreview (post) {
         ? `${formatBytes(post.media_asset.file_size)} (${post.media_asset.image_width}x${post.media_asset.image_height})`
         : "";
 
+    const soundIcon = post.tag_string.match(/\bsound\b/)
+        ? GM_getResourceText("sound_icon")
+        : "";
+    const animationIcon = post.media_asset.duration
+        ? noIndents`
+            <div class="post-animation-icon">
+                <span class="post-duration">
+                    ${formatDuration(post.media_asset.duration)}
+                </span> ${soundIcon}
+            </div>
+        `
+        : "";
     const $preview = $(noIndents`
         <article itemscope
                  itemtype="http://schema.org/ImageObject"
                  class="${previewClass}"
                  ${dataAttributes} >
             <a href="${BOORU}/posts/${post.id}" target="_blank">
+                ${animationIcon}
                 <img width="${previewWidth}"
                      height="${previewHeight}"
                      src="${previewFileUrl}"
