@@ -666,7 +666,7 @@ const NETWORK_REQUEST_DICT = {
     // This can only be used as a single use and not as part a group
     post: {
         url: "/posts",
-        data_key: "tag_string",
+        data_key: "tag_string_artist",
         data_type: "string_list",
         fields: [
             "created_at",
@@ -679,7 +679,11 @@ const NETWORK_REQUEST_DICT = {
             "media_asset[id,file_ext,file_size,image_width,image_height,duration,variants]",
             "rating",
             "source",
-            "tag_string",
+            "tag_string_general",
+            "tag_string_character",
+            "tag_string_copyright",
+            "tag_string_artist",
+            "tag_string_meta",
         ].join(","),
         params (tagList) {
             return {
@@ -2041,6 +2045,21 @@ function formatBytes (bytes) {
     return `${parseFloat((bytes / (1024 ** i)).toFixed(2))} ${sizes[i]}`;
 }
 
+function formatTagString (post) {
+    return _([
+        post.tag_string_artist,
+        post.tag_string_copyright,
+        post.tag_string_character,
+        post.tag_string_meta,
+        post.tag_string_general,
+    ])
+        .chain()
+        .compact()
+        .join("\n")
+        .escape()
+        .value();
+}
+
 function buildPostPreview (post) {
     const RATINGS = {
         g: 0,
@@ -2061,7 +2080,7 @@ function buildPostPreview (post) {
 
     const dataAttributes = `
       data-id="${post.id}"
-      data-tags="${_.escape(post.tag_string)}"
+      data-tags="${formatTagString(post)}"
     `;
 
     let previewFileUrl, previewWidth, previewHeight;
@@ -2087,7 +2106,7 @@ function buildPostPreview (post) {
         ? `${formatBytes(post.media_asset.file_size)} .${post.media_asset.file_ext}, <a href="${BOORU}/media_assets/${post.media_asset.id}">${post.media_asset.image_width}x${post.media_asset.image_height}</a>`
         : "";
 
-    const soundIcon = post.tag_string.match(/\bsound\b/)
+    const soundIcon = post.tag_string_meta.match(/\bsound\b/)
         ? GM_getResourceText("sound_icon")
         : "";
     const animationIcon = post.media_asset.duration
@@ -2109,7 +2128,7 @@ function buildPostPreview (post) {
                 <img width="${previewWidth}"
                      height="${previewHeight}"
                      src="${previewFileUrl}"
-                     title="${_.escape(post.tag_string)}"
+                     title="${formatTagString(post)}"
                      part="post-preview rating-${post.rating}">
             </a>
             <p>${imgSize}</p>
