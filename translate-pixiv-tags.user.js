@@ -676,7 +676,7 @@ const NETWORK_REQUEST_DICT = {
             "is_pending",
             "is_deleted",
             "parent_id",
-            "media_asset[file_ext,file_size,image_width,image_height,duration,variants]",
+            "media_asset[id,file_ext,file_size,image_width,image_height,duration,variants]",
             "rating",
             "source",
             "tag_string",
@@ -1826,6 +1826,10 @@ const ARTIST_TOOLTIP_CSS = `
         letter-spacing: -0.1px;
     }
 
+    article.post-preview p a {
+        display: inline;
+    }
+
     article.post-preview.blur-post img {
         filter: blur(10px);
     }
@@ -2077,10 +2081,10 @@ function buildPostPreview (post) {
     }
 
     const domain = post.source.match(/^https?:\/\//)
-        ? getSiteDisplayDomain(post.source)
-        : "NON-WEB";
+        ? `<a href="${post.source}">${getSiteDisplayDomain(post.source)}</a>`
+        : `<span title="${post.source}">NON-WEB</span>`;
     const imgSize = [post.media_asset.file_size, post.media_asset.image_width, post.media_asset.image_height].every(_.isFinite)
-        ? `${formatBytes(post.media_asset.file_size)} (${post.media_asset.image_width}x${post.media_asset.image_height})`
+        ? `${formatBytes(post.media_asset.file_size)} .${post.media_asset.file_ext}, <a href="${BOORU}/media_assets/${post.media_asset.id}">${post.media_asset.image_width}x${post.media_asset.image_height}</a>`
         : "";
 
     const soundIcon = post.tag_string.match(/\bsound\b/)
