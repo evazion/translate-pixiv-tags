@@ -2100,8 +2100,8 @@ function buildPostPreview (post) {
     }
 
     const domain = post.source.match(/^https?:\/\//)
-        ? `<a href="${post.source}">${getSiteDisplayDomain(post.source)}</a>`
-        : `<span title="${post.source}">NON-WEB</span>`;
+        ? `<a href="${_.escape(post.source)}">${getSiteDisplayDomain(post.source)}</a>`
+        : `<span title="${_.escape(post.source)}">NON-WEB</span>`;
     const imgSize = [post.media_asset.file_size, post.media_asset.image_width, post.media_asset.image_height].every(_.isFinite)
         ? `${formatBytes(post.media_asset.file_size)} .${post.media_asset.file_ext}, <a href="${BOORU}/media_assets/${post.media_asset.id}">${post.media_asset.image_width}x${post.media_asset.image_height}</a>`
         : "";
