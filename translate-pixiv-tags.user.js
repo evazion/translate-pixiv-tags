@@ -1677,7 +1677,7 @@ const ARTIST_TOOLTIP_CSS = `
         margin: 0 2px 10px 0;
     }
 
-    article.post-preview a {
+    article.post-preview a.post-link {
         margin: auto;
         border: 2px solid transparent;
         display: inline-block;
@@ -2123,7 +2123,7 @@ function buildPostPreview (post) {
                  itemtype="http://schema.org/ImageObject"
                  class="${previewClass}"
                  ${dataAttributes} >
-            <a href="${BOORU}/posts/${post.id}" target="_blank">
+            <a class="post-link" href="${BOORU}/posts/${post.id}" target="_blank">
                 ${animationIcon}
                 <img width="${previewWidth}"
                      height="${previewHeight}"
