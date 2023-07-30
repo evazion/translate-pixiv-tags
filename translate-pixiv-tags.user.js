@@ -1758,6 +1758,7 @@ const ARTIST_TOOLTIP_CSS = `
         background-color: rgba(0,0,0,0.7);
         line-height: 1;
         padding: 2px;
+        z-index: 1;
     }
     article.post-preview .post-animation-icon * {
         height: 1em;
