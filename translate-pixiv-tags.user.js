@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion, 7nik, BrokenEagle
-// @version      20230717025146
+// @version      20230730145846
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -44,6 +44,7 @@
 // @resource     danbooru_icon https://github.com/evazion/translate-pixiv-tags/raw/resource-20190903/resource/danbooru-icon.ico
 // @resource     settings_icon https://github.com/evazion/translate-pixiv-tags/raw/resource-20190903/resource/settings-icon.svg
 // @resource     globe_icon https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/svgs/solid/globe.svg
+// @resource     sound_icon https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/svgs/solid/volume-high.svg
 // @resource     4chan-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/4chan-logo.png
 // @resource     adobe-portfolio-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/adobe-portfolio-logo.png
 // @resource     allmylinks-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/allmylinks-logo.png
@@ -537,7 +538,7 @@ const TOOLTIP_CSS = `
     --bc: #E2E2E2;
     background: var(--bg, white);
     padding: 5px 9px;
-    max-width: 558px;
+    max-width: 622px;
     font-size: 10.5px;
     line-height: 12px;
     box-sizing: initial;
@@ -665,23 +666,24 @@ const NETWORK_REQUEST_DICT = {
     // This can only be used as a single use and not as part a group
     post: {
         url: "/posts",
-        data_key: "tag_string",
+        data_key: "tag_string_artist",
         data_type: "string_list",
         fields: [
             "created_at",
-            "file_size",
             "has_visible_children",
             "id",
-            "image_height",
-            "image_width",
             "is_flagged",
             "is_pending",
             "is_deleted",
             "parent_id",
-            "preview_file_url",
+            "media_asset[id,file_ext,file_size,image_width,image_height,duration,variants]",
             "rating",
             "source",
-            "tag_string",
+            "tag_string_general",
+            "tag_string_character",
+            "tag_string_copyright",
+            "tag_string_artist",
+            "tag_string_meta",
         ].join(","),
         params (tagList) {
             return {
@@ -1662,8 +1664,8 @@ const ARTIST_TOOLTIP_CSS = `
 
     /* Thumbnail styles taken from Danbooru */
     article.post-preview {
-        /*height: 154px;*/
-        width: 154px;
+        /*height: 184px;*/
+        width: 184px;
         margin: 0 10px 10px 0;
         float: left;
         overflow: hidden;
@@ -1675,7 +1677,7 @@ const ARTIST_TOOLTIP_CSS = `
         margin: 0 2px 10px 0;
     }
 
-    article.post-preview a {
+    article.post-preview a.post-link {
         margin: auto;
         border: 2px solid transparent;
         display: inline-block;
@@ -1750,30 +1752,18 @@ const ARTIST_TOOLTIP_CSS = `
                       var(--preview_has_parent_color);
     }
 
-    article.post-preview[data-tags~=animated]::before {
-        content: "►";
+    article.post-preview .post-animation-icon {
         position: absolute;
-        width: 20px;
-        height: 20px;
         color: white;
-        background-color: rgba(0,0,0,0.5);
-        margin: 2px;
-        text-align: center;
-        line-height: 18px;
+        background-color: rgba(0,0,0,0.7);
+        line-height: 1;
+        padding: 2px;
         z-index: 1;
     }
-
-    article.post-preview[data-tags~=sound]::before {
-        content: "♪";
-        position: absolute;
-        width: 20px;
-        height: 20px;
-        color: white;
-        background-color: rgba(0,0,0,0.5);
-        margin: 2px;
-        text-align: center;
-        line-height: 18px;
-        z-index: 1;
+    article.post-preview .post-animation-icon * {
+        height: 1em;
+        fill: currentColor;
+        vertical-align: middle;
     }
 
     div.post-pager {
@@ -1827,7 +1817,7 @@ const ARTIST_TOOLTIP_CSS = `
 
     article.post-preview a {
         display: inline-block;
-        /*height: 154px;*/
+        /*height: 184px;*/
         overflow: hidden;
     }
 
@@ -1839,6 +1829,10 @@ const ARTIST_TOOLTIP_CSS = `
         text-align: center;
         margin: 0 0 2px 0;
         letter-spacing: -0.1px;
+    }
+
+    article.post-preview p a {
+        display: inline;
     }
 
     article.post-preview.blur-post img {
@@ -2036,11 +2030,35 @@ function timeToAgo (time) {
     return "∞ ago";
 }
 
+function formatDuration (seconds) {
+    seconds = Math.round(seconds) || 1;
+
+    let mm = Math.floor(seconds / 60 % 60);
+    let ss = String(seconds % 60).padStart(2, "0");
+
+    return `${mm}:${ss}`;
+}
+
 // Based on https://stackoverflow.com/questions/15900485
 function formatBytes (bytes) {
     const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return `${parseFloat((bytes / (1024 ** i)).toFixed(2))} ${sizes[i]}`;
+}
+
+function formatTagString (post) {
+    return _([
+        post.tag_string_artist,
+        post.tag_string_copyright,
+        post.tag_string_character,
+        post.tag_string_meta,
+        post.tag_string_general,
+    ])
+        .chain()
+        .compact()
+        .join("\n")
+        .escape()
+        .value();
 }
 
 function buildPostPreview (post) {
@@ -2050,7 +2068,6 @@ function buildPostPreview (post) {
         q: 2,
         e: 3, // eslint-disable-line id-blacklist
     };
-    const previewFileUrl = `https://cdn.donmai.us/images/download-preview.png`;
 
     let previewClass = "post-preview";
     if (post.is_pending)           previewClass += " post-status-pending";
@@ -2064,30 +2081,55 @@ function buildPostPreview (post) {
 
     const dataAttributes = `
       data-id="${post.id}"
-      data-tags="${_.escape(post.tag_string)}"
+      data-tags="${formatTagString(post)}"
     `;
 
-    const scale = Math.min(150 / post.image_width, 150 / post.image_height, 1);
-    const width = Math.round(post.image_width * scale);
-    const height = Math.round(post.image_height * scale);
+    let previewFileUrl, previewWidth, previewHeight;
+    let previewAsset = (post.media_asset.variants || []).find((variant) => variant.type === "180x180");
+    if (previewAsset !== undefined) {
+        previewFileUrl = previewAsset.url;
+        previewWidth = previewAsset.width;
+        previewHeight = previewAsset.height;
+    } else {
+        if (post.media_asset.file_ext === "swf") {
+            previewFileUrl = `${BOORU}/images/flash-preview.png`;
+        } else {
+            previewFileUrl = `https://cdn.donmai.us/images/download-preview.png`;
+        }
+        previewWidth = 180;
+        previewHeight = 180;
+    }
 
     const domain = post.source.match(/^https?:\/\//)
-        ? getSiteDisplayDomain(post.source)
-        : "NON-WEB";
-    const imgSize = [post.file_size, post.image_width, post.image_height].every(_.isFinite)
-        ? `${formatBytes(post.file_size)} (${post.image_width}x${post.image_height})`
+        ? `<a href="${_.escape(post.source)}">${getSiteDisplayDomain(post.source)}</a>`
+        : `<span title="${_.escape(post.source)}">NON-WEB</span>`;
+    const imgSize = [post.media_asset.file_size, post.media_asset.image_width, post.media_asset.image_height].every(_.isFinite)
+        ? `${formatBytes(post.media_asset.file_size)} .${post.media_asset.file_ext}, <a href="${BOORU}/media_assets/${post.media_asset.id}">${post.media_asset.image_width}x${post.media_asset.image_height}</a>`
         : "";
 
+    const soundIcon = post.tag_string_meta.match(/\bsound\b/)
+        ? GM_getResourceText("sound_icon")
+        : "";
+    const animationIcon = post.media_asset.duration
+        ? noIndents`
+            <div class="post-animation-icon">
+                <span class="post-duration">
+                    ${formatDuration(post.media_asset.duration)}
+                </span> ${soundIcon}
+            </div>
+        `
+        : "";
     const $preview = $(noIndents`
         <article itemscope
                  itemtype="http://schema.org/ImageObject"
                  class="${previewClass}"
                  ${dataAttributes} >
-            <a href="${BOORU}/posts/${post.id}" target="_blank">
-                <img width="${width}"
-                     height="${height}"
+            <a class="post-link" href="${BOORU}/posts/${post.id}" target="_blank">
+                ${animationIcon}
+                <img width="${previewWidth}"
+                     height="${previewHeight}"
                      src="${previewFileUrl}"
-                     title="${_.escape(post.tag_string)}"
+                     title="${formatTagString(post)}"
                      part="post-preview rating-${post.rating}">
             </a>
             <p>${imgSize}</p>
@@ -2100,18 +2142,13 @@ function buildPostPreview (post) {
         // Temporally set transparent 1x1 image
         // eslint-disable-next-line max-len
         $preview.find("img").prop("src", "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
-        getImage(post.preview_file_url || previewFileUrl).then((blob) => {
+        getImage(previewFileUrl).then((blob) => {
             const imageBlob = blob.slice(0, blob.size, "image/jpeg");
             const blobUrl = window.URL.createObjectURL(imageBlob);
             $preview.find("img").prop("src", blobUrl);
         });
     } else {
-        $preview.find("img").prop("src", post.preview_file_url);
-    }
-    if (!post.preview_file_url || post.preview_file_url.endsWith("/images/download-preview.png")) {
-        $preview.find("img").prop({
-            width: 150, height: 150,
-        });
+        $preview.find("img").prop("src", previewFileUrl);
     }
 
     return $preview;
