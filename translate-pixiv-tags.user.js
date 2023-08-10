@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
-// @author       evazion, 7nik, BrokenEagle
-// @version      20230730145846
+// @author       evazion, 7nik, BrokenEagle, hdk5
+// @version      20230810235446
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -25,6 +25,8 @@
 // @match        *://misskey.io/*
 // @match        *://misskey.art/*
 // @match        *://misskey.design/*
+// @match        *://skeb.jp/*
+// @match        *://fantia.jp/*
 // @grant        GM_getResourceText
 // @grant        GM_getResourceURL
 // @grant        GM_xmlhttpRequest
@@ -1253,6 +1255,12 @@ const NORMALIZE_PROFILE_URL = {
     "misskey.design": {
         path: /^\/@[\w_]+$/,
     },
+    "fantia.jp": {
+        path: /^\/([\w_]+|fanclubs\/\d+)$/,
+    },
+    "skeb.jp": {
+        path: /^\/@[\w_]+$/,
+    },
 };
 
 // Converts URLs to the same format used by the URL column on Danbooru
@@ -1290,9 +1298,9 @@ async function translateTag (target, tagName, options) {
     if (!tagName) return;
 
     const normalizedTag = tagName
-        // .trim()
         .normalize("NFKC")
         .replace(/^#/, "")
+        .trim()
         .replace(/[*]/g, "\\*") // Escape * (wildcard)
         .replace(/\s/g, "_"); // Wiki other names cannot contain spaces
 
@@ -3464,6 +3472,112 @@ function initializeMisskey () {
     });
 }
 
+function initializeFantia () {
+    GM_addStyle(`
+        /* for artist card */
+        .module-author {
+            display: flex;
+            align-items: center;
+        }
+        .module-author .fanclub-name {
+            line-height: unset !important;
+        }
+        .module-author .ex-artist-tag {
+            font-size: 85%;
+        }
+        .module-author .ex-artist-tag a {
+            position: absolute;
+            z-index: 1000;
+        }
+
+        /* selected tag on all works page */
+        .active .ex-translated-tags {
+            text-shadow: 0px 0px 5px white, 0px 0px 3px white;
+        }
+    `);
+
+    // Artist name on profile/work page
+    // https://fantia.jp/fanclubs/15340
+    // https://fantia.jp/posts/2032060
+    findAndTranslate("artist", "h1.fanclub-name", {
+        toProfileUrl: linkInChildren,
+        tagPosition: TAG_POSITIONS.beforeend,
+        classes: "inline",
+        asyncMode: false,
+        ruleName: "artist header",
+    });
+
+    // Artist name on work cards
+    // https://fantia.jp/ (投稿, 商品, コミッション tabs)
+    findAndTranslate("artist", "a", {
+        predicate: (el) => (
+            el.matches(".module-author > a:first-of-type") && el.getAttribute("href")
+        ),
+        requiredAttributes: "href",
+        tagPosition: {
+            insertTag: ($container, $elem) => $container.prev().append($elem),
+            findTag: ($container) => $container.prev().has(TAG_SELECTOR),
+            getTagContainer: ($elem) => $elem.parent(".module-author").next(".module-author>a"),
+        },
+        asyncMode: true,
+        ruleName: "artist card",
+    });
+
+    // All the tags
+    // https://fantia.jp/posts/2032060
+    findAndTranslate("tag", "a", {
+        predicate: "a[href*='tag=']",
+        tagPosition: TAG_POSITIONS.beforeend,
+        asyncMode: true,
+        ruleName: "tags",
+    });
+}
+
+function initializeSkeb () {
+    GM_addStyle(`
+        /* profile page */
+        div.hero-foot div.title + .ex-artist-tag {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        /* work page */
+        div.image-column + div.column div.subtitle + .ex-artist-tag {
+            font-size: 0.75rem;
+            font-weight: 400;
+        }
+
+        /* index page */
+        div.user-card-screen-name + .ex-artist-tag {
+            line-height: 1;
+            font-size: 0.75rem;
+        }
+    `);
+
+    // Artist name on profile page
+    // https://skeb.jp/@coconeeeco
+    findAndTranslate("artist", "div.title", {
+        predicate: "div.hero-foot div.title",
+        asyncMode: true,
+        ruleName: "artist profile page",
+    });
+
+    // Artist name on work page
+    // https://skeb.jp/@coconeeeco/works/34
+    findAndTranslate("artist", "div.subtitle", {
+        predicate: "div.image-column + div.column div.subtitle",
+        asyncMode: true,
+        ruleName: "artist work page",
+    });
+
+    // Artists on index page
+    // https://skeb.jp/
+    findAndTranslate("artist", "div.user-card-screen-name", {
+        asyncMode: true,
+        ruleName: "artist index page",
+    });
+}
+
 function initialize () {
     GM_jQuery_setup();
     GM_addStyle(PROGRAM_CSS);
@@ -3494,6 +3608,8 @@ function initialize () {
         case "misskey.io":             initializeMisskey();       break;
         case "misskey.art":            initializeMisskey();       break;
         case "misskey.design":         initializeMisskey();       break;
+        case "fantia.jp":              initializeFantia();        break;
+        case "skeb.jp":                initializeSkeb();          break;
         default:
             if (window.location.host.endsWith("artstation.com")) {
                 initializeArtStation();
