@@ -25,6 +25,8 @@
 // @match        *://misskey.io/*
 // @match        *://misskey.art/*
 // @match        *://misskey.design/*
+// @match        *://skeb.jp/*
+// @match        *://fantia.jp/*
 // @grant        GM_getResourceText
 // @grant        GM_getResourceURL
 // @grant        GM_xmlhttpRequest
@@ -3464,6 +3466,73 @@ function initializeMisskey () {
     });
 }
 
+function initializeFantia () {
+    GM_addStyle(`
+        .module-author .fanclub-name {
+            line-height: unset !important;
+        }
+
+        .module-author .ex-artist-tag {
+            font-size: 85%;
+        }
+
+        .module-author .ex-artist-tag a {
+            position: absolute;
+            z-index: 1000;
+        }
+    `);
+
+    // Artist name on profile/work page
+    // https://fantia.jp/fanclubs/15340
+    // https://fantia.jp/posts/2032060
+    findAndTranslate("artist", "h1.fanclub-name", {
+        toProfileUrl: linkInChildren,
+        tagPosition: TAG_POSITIONS.beforeend,
+        classes: "inline",
+        asyncMode: false,
+        ruleName: "artist header",
+    });
+
+    // Artist name on work cards
+    // https://fantia.jp/ (投稿, 商品, コミッション tabs)
+    findAndTranslate("artist", ".fanclub-name", {
+        predicate: ".module-author .fanclub-name",
+        toProfileUrl: (el) => $(el).closest('.module-author').find('a').prop('href'),
+        asyncMode: true,
+        ruleName: "artist card",
+    });
+}
+
+function initializeSkeb () {
+    GM_addStyle(`
+        div.hero-foot div.title + .ex-artist-tag {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        div.image-column + div.column div.subtitle + .ex-artist-tag {
+            font-size: 0.75rem;
+            font-weight: 400;
+        }
+    `);
+
+    // Artist name on profile page
+    // https://skeb.jp/@coconeeeco
+    findAndTranslate("artist", "div.title", {
+        predicate: "div.hero-foot div.title",
+        asyncMode: true,
+        ruleName: "artist profile page",
+    });
+
+    // Artist name on work page
+    // https://skeb.jp/@coconeeeco/works/34
+    findAndTranslate("artist", "div.subtitle", {
+        predicate: "div.image-column + div.column div.subtitle",
+        asyncMode: true,
+        ruleName: "artist work page",
+    });
+}
+
 function initialize () {
     GM_jQuery_setup();
     GM_addStyle(PROGRAM_CSS);
@@ -3494,6 +3563,8 @@ function initialize () {
         case "misskey.io":             initializeMisskey();       break;
         case "misskey.art":            initializeMisskey();       break;
         case "misskey.design":         initializeMisskey();       break;
+        case "fantia.jp":              initializeFantia();        break;
+        case "skeb.jp":                initializeSkeb();          break;
         default:
             if (window.location.host.endsWith("artstation.com")) {
                 initializeArtStation();
