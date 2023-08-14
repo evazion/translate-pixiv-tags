@@ -3484,9 +3484,11 @@ function initializeFantia () {
         }
         .module-author .ex-artist-tag {
             font-size: 85%;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .module-author .ex-artist-tag a {
-            position: absolute;
+            position: relative;
             z-index: 1000;
         }
 
