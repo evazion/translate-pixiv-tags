@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion, 7nik, BrokenEagle, hdk5
-// @version      20231005215541
+// @version      20231108095921
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -21,6 +21,7 @@
 // @match        *://*.artstation.com/*
 // @match        *://saucenao.com/*
 // @match        *://pawoo.net/*
+// @match        *://baraag.net/*
 // @match        *://*.fanbox.cc/*
 // @match        *://misskey.io/*
 // @match        *://misskey.art/*
@@ -1229,6 +1230,9 @@ const NORMALIZE_PROFILE_URL = {
         params: /id=\d+/,
     },
     "pawoo.net": {
+        path: /^\/@[\w_-]+$/,
+    },
+    "baraag.net": {
         path: /^\/@[\w_-]+$/,
     },
     "www.pixiv.net": {
@@ -3282,7 +3286,7 @@ function initializeSauceNAO () {
     });
 }
 
-function initializePawoo () {
+function initializeMastodon () {
     watchSiteTheme(document.body, "class", (body) => (
         body.classList.contains("theme-default") ? "dark" : "light"
     ));
@@ -3293,39 +3297,73 @@ function initializePawoo () {
         }
     `);
 
+    const getUrlFromElement = (el) => {
+        let fullName = el.textContent.trim();
+
+        let [, name, host] = matchMemoized(fullName, /^@([\w_]+)(?:@([\w.-]+))?$/) || [];
+        host ||= window.location.host;
+
+        return name ? `https://${host}/@${name}` : null;
+    }
+
     // https://pawoo.net/@yamadorikodi
+    // https://baraag.net/@casytay
     // artist name in channel header
-    findAndTranslate("artist", ".public-account-header__tabs__name small", {
-        toProfileUrl: (el) => `https://pawoo.net/@${safeMatchMemoized(el.textContent.trim(), /[^@]+/)}`,
-        tagPosition: TAG_POSITIONS.beforebegin,
+    findAndTranslate("artist", "span", {
+        predicate: ".account__header__tabs__name small span",
+        toProfileUrl: getUrlFromElement,
+        tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
         ruleName: "artist profile",
+        asyncMode: true,
     });
 
     // Post author, commentor
-    // Pawoo can include reposted messages from other mastodon-based sites
-    findAndTranslate("artist", "a[href^='https://pawoo.net/@'].status__display-name span span", {
+    // can include reposted messages from other activitypub sites
+    findAndTranslate("artist", "span.display-name__account", {
+        predicate: "div.status span.display-name__account",
+        toProfileUrl: getUrlFromElement,
+        tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
         ruleName: "post/comment author",
+        asyncMode: true,
     });
 
     // Expanded post author
     // https://pawoo.net/@mayumani/102910946688187767
-    findAndTranslate("artist", "a.detailed-status__display-name span strong", {
-        classes: "inline",
+    findAndTranslate("artist", "span.display-name__account", {
+        predicate: "div.detailed-status span.display-name__account",
+        toProfileUrl: getUrlFromElement,
         tagPosition: TAG_POSITIONS.beforeend,
+        classes: "inline",
         ruleName: "expanded post author",
+        asyncMode: true,
     });
 
     // Cards of following users and followers
-    findAndTranslate("artist", ".card__bar .display-name span:not([id])", {
-        tagPosition: TAG_POSITIONS.beforebegin,
+    // https://pawoo.net/@yamadorikodi/following
+    findAndTranslate("artist", "span.display-name__account", {
+        predicate: "div.account span.display-name__account",
+        toProfileUrl: getUrlFromElement,
+        tagPosition: TAG_POSITIONS.beforeend,
+        classes: "inline",
         ruleName: "artist followers",
+        asyncMode: true,
     });
 
-    // Tags https://pawoo.net/@SilSinn9801
+    // Tags inside tweet
+    // https://pawoo.net/@SilSinn9801/111354884652386567
     findAndTranslate("tag", ".hashtag", {
         ruleName: "tags",
+        asyncMode: true,
+    });
+
+    // Tags bar
+    // https://baraag.net/@casytay/111370093922321621
+    findAndTranslate("tag", "a", {
+        predicate: ".hashtag-bar a[href^='/tags/']",
+        ruleName: "tags bar",
+        asyncMode: true,
     });
 }
 
@@ -3613,11 +3651,12 @@ function initialize () {
         case "mobile.twitter.com":     initializeTwitter();       break;
         case "tweetdeck.twitter.com":  initializeTweetDeck();     break;
         case "saucenao.com":           initializeSauceNAO();      break;
-        case "pawoo.net":              initializePawoo();         break;
+        case "pawoo.net":
+        case "baraag.net":             initializeMastodon();      break;
         case "www.deviantart.com":     initializeDeviantArt();    break;
         case "www.artstation.com":     initializeArtStation();    break;
-        case "misskey.io":             initializeMisskey();       break;
-        case "misskey.art":            initializeMisskey();       break;
+        case "misskey.io":
+        case "misskey.art":
         case "misskey.design":         initializeMisskey();       break;
         case "fantia.jp":              initializeFantia();        break;
         case "skeb.jp":                initializeSkeb();          break;
