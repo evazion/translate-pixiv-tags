@@ -3,7 +3,6 @@
 A userscript that translates tags and artist names on
 [Pixiv](https://www.pixiv.net) to their corresponding Danbooru tags. Also works on
 [ArtStation](https://www.artstation.com/),
-[BCY](https://bcy.net),
 [DeviantArt](https://www.deviantart.com),
 [Fantia](https://fantia.jp),
 [Hentai-Foundry](https://www.hentai-foundry.com),

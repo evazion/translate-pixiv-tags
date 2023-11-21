@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion, 7nik, BrokenEagle, hdk5
-// @version      20231119194412
+// @version      20231121185112
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -12,7 +12,6 @@
 // @match        *://nijie.info/*
 // @match        *://seiga.nicovideo.jp/*
 // @match        *://www.tinami.com/*
-// @match        *://bcy.net/*
 // @match        *://*.deviantart.com/*
 // @match        *://*.hentai-foundry.com/*
 // @match        *://twitter.com/*
@@ -2586,7 +2585,7 @@ function initializePixiv () {
         .shadow.ex-translated-tags a {
             text-shadow: 0 0 3px #fff8;
         }
-        .tpt-dark .shadow.ex-translated-tags a, dark-shadow.ex-translated-tags a {
+        .tpt-dark .shadow.ex-translated-tags a, .dark-shadow.ex-translated-tags a {
             text-shadow: 0 0 3px #000B;
         }
         .ex-translated-tags.no-brackets::before,
@@ -2630,7 +2629,7 @@ function initializePixiv () {
 
     // Main tag on search pages: https://www.pixiv.net/en/tags/%E6%9D%B1%E6%96%B9project/artworks
     findAndTranslate("tag", "div", {
-        predicate: "#root>div>div>div>div>div>div:nth-of-type(2)>div>div:has(>span:first-child)",
+        predicate: "#root>div>div>div>div>div>div>div>div:nth-of-type(2)>div>div:has(>span:first-child)",
         asyncMode: true,
         ruleName: "search tag",
     });
@@ -2673,7 +2672,7 @@ function initializePixiv () {
     findAndTranslate("tag", "h2", {
         predicate: "section > div > div > h2",
         toTagName: (el) => (el.textContent.includes("#")
-            ? el.textContent.slice(el.textContent.indexOf("#") + 1)
+            ? el.textContent.slice(el.textContent.indexOf("#") + 1).replaceAll(" ", "_")
             : null),
         tagPosition: TAG_POSITIONS.beforeend,
         asyncMode: true,
@@ -2771,6 +2770,17 @@ function initializePixiv () {
         classes: "inline",
         asyncMode: true,
         ruleName: "contest participant",
+    });
+
+    // Booth items of artist you follow on the index page:
+    // https://www.pixiv.net/ https://www.pixiv.net/en/
+    findAndTranslate("artist", "div", {
+        predicate: "a.gtm-toppage-thumbnail-illustration-booth-following + div>div:has(>div[title]>a)",
+        tagPosition: TAG_POSITIONS.afterend,
+        classes: "inline",
+        toProfileUrl: linkInChildren,
+        asyncMode: true,
+        ruleName: "booth item artist",
     });
 }
 
@@ -2895,45 +2905,6 @@ function initializeNicoSeiga () {
     });
 }
 
-function initializeBCY () {
-    // Prfile page https://bcy.net/u/3935930
-    findAndTranslate("artist", "div.user-info-name", {
-        toProfileUrl: (el) => $(el).closest(".user-info").find("a.avatar-user").prop("href"),
-        tagPosition: TAG_POSITIONS.beforeend,
-        classes: "inline",
-        ruleName: "artist profile",
-    });
-
-    // Illust pages https://bcy.net/item/detail/6561698116674781447
-    findAndTranslate("artist", ".col-small .user-name a", {
-        toProfileUrl: (el) => el.href.replace(/\?.*$/, ""),
-        ruleName: "illust artist",
-        onadded: ($tag, options) => $tag.parent().css("top", "15px"),
-    });
-
-    // Search pages https://bcy.net/tags/name/看板娘
-    findAndTranslate("artist", "a.title-txt", {
-        toProfileUrl: (el) => el.href.replace(/\?.*$/, ""),
-        tagPosition: TAG_POSITIONS.afterend,
-        classes: "inline title-txt",
-        asyncMode: true,
-        ruleName: "artist on search",
-    });
-
-    // Search pages https://bcy.net/tags/name/看板娘
-    findAndTranslate("tag", ".circle-desc-name, .tag", {
-        tagPosition: TAG_POSITIONS.beforeend,
-        asyncMode: true,
-        ruleName: "tag search",
-    });
-
-    // Illust pages https://bcy.net/item/detail/6561698116674781447
-    findAndTranslate("tag", ".dm-tag-a", {
-        tagPosition: TAG_POSITIONS.beforeend,
-        ruleName: "illust tags",
-    });
-}
-
 function initializeDeviantArt () {
     watchSiteTheme(document.body, "class", (body) => (
         body.classList.contains("theme-dark") ? "dark" : "light"
@@ -2943,7 +2914,7 @@ function initializeDeviantArt () {
         .ex-artist-tag {
             font-weight: bold;
         }
-        div.W9O1j + .ex-artist-tag {
+        div._4GWw7._22pif + .ex-artist-tag {
             margin-left: -0.5em;
         }
         .ex-artist-tag + button {
@@ -2967,6 +2938,7 @@ function initializeDeviantArt () {
     // Post page
     // https://www.deviantart.com/koyorin/art/Ruby-570526828
     findAndTranslate("artist", "a.user-link", {
+        toProfileUrl: (a) => a.href.replace("/gallery", ""),
         predicate: "div[data-hook='deviation_meta'] a.user-link:not(:has(img))",
         requiredAttributes: "href",
         tagPosition: TAG_POSITIONS.afterParent,
@@ -3078,7 +3050,7 @@ function initializeTwitter () {
 
     // Deleted channel https://twitter.com/6o2_iii
     findAndTranslate("artist", "span.r-qvutc0", {
-        predicate: ".r-135wba7.r-3s2u2q span .r-qvutc0",
+        predicate: ".r-135wba7.r-3s2u2q span.r-1vr29t4 > .r-qvutc0.r-1pos5eu",
         toProfileUrl: URLfromLocation,
         classes: "inline",
         asyncMode: true,
@@ -3115,16 +3087,12 @@ function initializeTwitter () {
 
 function initializeArtStation () {
     GM_addStyle(`
-        .artist-name-and-headline .ex-artist-tag {
-            font-size: 12pt;
-            line-height: 150%;
+        h1 + .ex-artist-tag {
+            margin: -8px 0 2px;
         }
         .hover-card .ex-artist-tag {
             font-size: 12pt;
             margin-top: -10px;
-        }
-        a.user .ex-artist-tag {
-            line-height: 100%;
         }
         .site-title .ex-artist-tag {
             font-size: 12pt;
@@ -3166,27 +3134,32 @@ function initializeArtStation () {
         return `https://www.artstation.com/${artistName}`;
     }
 
-    function hasValidHref (el) {
-        const href = el.getAttribute("href");
-        return href && (href.startsWith("http") || href.startsWith("/") && href.length > 1);
-    }
-
     // https://www.artstation.com/jubi
     // https://www.artstation.com/jubi/*
-    findAndTranslate("artist", "h1.artist-name", {
+    findAndTranslate("artist", "h1", {
+        predicate: ".user-info > h1",
         toProfileUrl: toFullURL,
         asyncMode: true,
         ruleName: "arist profile",
+        // the artist name is removed when the profile page is a bit scrolled
+        onadded: ($tag) => {
+            const h1 = $tag.prev()[0];
+            const container = $tag.parent()[0];
+            const mo = new MutationObserver(() => {
+                if (!container.contains(h1)) {
+                    $tag.remove();
+                    mo.disconect();
+                }
+            });
+            mo.observe(container, { childList: true });
+        },
     });
 
     // https://www.artstation.com/artwork/0X40zG
-    findAndTranslate("artist", "a", {
-        predicate: (el) => (
-            el.matches(".name > a[hover-card], .project-author-name > a")
-            && hasValidHref(el)
-        ),
-        requiredAttributes: "href",
-        toProfileUrl: (el) => el.href,
+    findAndTranslate("artist", "h3", {
+        predicate: ".project-author-name > h3:has(a)",
+        tagPosition: TAG_POSITIONS.afterend,
+        toProfileUrl: linkInChildren,
         asyncMode: true,
         ruleName: "illust artist",
     });
@@ -3200,16 +3173,16 @@ function initializeArtStation () {
     // Hover card
     findAndTranslate("artist", "a", {
         requiredAttributes: "href",
-        predicate: (el) => el.matches(".hover-card-name > a:first-child") && hasValidHref(el),
+        predicate: (el) => el.matches(".hover-card-name > a:first-child"),
         asyncMode: true,
         ruleName: "artist popup",
     });
 
     // https://www.artstation.com/jubi/following
     // https://www.artstation.com/jubi/followers
-    findAndTranslate("artist", ".users-grid-name", {
-        toProfileUrl: (el) => toFullURL($(el).find("a")),
+    findAndTranslate("artist", "h3.user-name", {
         asyncMode: true,
+        class: "inline",
         ruleName: "artist followers",
     });
 
@@ -3644,7 +3617,6 @@ function initialize () {
         case "nijie.info":             initializeNijie();         break;
         case "seiga.nicovideo.jp":     initializeNicoSeiga();     break;
         case "www.tinami.com":         initializeTinami();        break;
-        case "bcy.net":                initializeBCY();           break;
         case "www.hentai-foundry.com": initializeHentaiFoundry(); break;
         case "twitter.com":            initializeTwitter();       break;
         case "mobile.twitter.com":     initializeTwitter();       break;
