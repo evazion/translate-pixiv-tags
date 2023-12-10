@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion, 7nik, BrokenEagle, hdk5
-// @version      20231121185112
+// @version      20231210182312
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -2095,11 +2095,14 @@ function buildPostPreview (post) {
     `;
 
     let previewFileUrl, previewWidth, previewHeight;
-    let previewAsset = (post.media_asset.variants || []).find((variant) => variant.type === "180x180");
+    let hidpi = devicePixelRatio > 1;
+    let size = hidpi ? "360x360" : "180x180"
+    let scale = hidpi ? 0.5 : 1;
+    let previewAsset = (post.media_asset.variants || []).find((variant) => variant.type === size);
     if (previewAsset !== undefined) {
         previewFileUrl = previewAsset.url;
-        previewWidth = previewAsset.width;
-        previewHeight = previewAsset.height;
+        previewWidth = previewAsset.width * scale;
+        previewHeight = previewAsset.height * scale;
     } else {
         if (post.media_asset.file_ext === "swf") {
             previewFileUrl = `${BOORU}/images/flash-preview.png`;
