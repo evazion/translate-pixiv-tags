@@ -1069,7 +1069,7 @@ function queueNetworkRequest (type, item) {
 const queueNetworkRequestMemoized = _.memoize(queueNetworkRequest, memoizeKey);
 
 function intervalNetworkHandler () {
-    Object.keys(NETWORK_REQUEST_DICT).forEach((type) => {
+    for (const type of Object.keys(NETWORK_REQUEST_DICT)) {
         const requests = QUEUED_NETWORK_REQUESTS.filter((request) => (request.type === type));
         if (requests.length > 0) {
             const items = requests.map((request) => request.item);
@@ -1082,7 +1082,7 @@ function intervalNetworkHandler () {
             const url = `${BOORU}${NETWORK_REQUEST_DICT[type].url}.json`;
             getLong(url, params, requests, type);
         }
-    });
+    }
     // Clear the queue once all network requests have been sent
     QUEUED_NETWORK_REQUESTS.length = 0;
 }
@@ -1091,7 +1091,7 @@ async function getLong (url, params, requests, type) {
     const sleepHalfSecond = (resolve) => setTimeout(resolve, 500);
     const domain = new URL(url).hostname;
     if (!(checkNetworkErrors(domain, false))) {
-        requests.forEach((request) => request.promise.resolve([]));
+        for (const request of requests) request.promise.resolve([]);
         return;
     }
 
@@ -1128,7 +1128,7 @@ async function getLong (url, params, requests, type) {
                 error.status,
             );
             if (!checkNetworkErrors(domain, true)) {
-                requests.forEach((request) => request.promise.resolve([]));
+                for (const request of requests) request.promise.resolve([]);
                 return;
             }
             await new Promise(sleepHalfSecond);
@@ -1167,7 +1167,7 @@ async function getLong (url, params, requests, type) {
             console.error("[TPT]: Unsupported type of response data");
             return;
     }
-    requests.forEach((request) => {
+    for (const request of requests) {
         const found = finalResp.filter((data) => {
             if (includes(data[dataKey], request.item)) {
                 data.used = true; // eslint-disable-line no-param-reassign
@@ -1177,7 +1177,7 @@ async function getLong (url, params, requests, type) {
         });
         // Fulfill the promise which returns the results to the function that queued it
         request.promise.resolve(found);
-    });
+    }
     const unusedData = finalResp.filter((data) => !data.used);
     if (unusedData.length > 0) {
         debuglog("Unused results found:", unusedData);
@@ -1398,14 +1398,14 @@ async function translateArtistByURL (element, profileUrls, options) {
         .filter(Boolean)
         .map((url) => queueNetworkRequestMemoized("url", url));
 
-    const artists = (await Promise.all(promiseArray)).flat();
+    const artists = await Promise.all(promiseArray).then((arr) => arr.flat());
     if (artists.length === 0) {
         const urls = Array.isArray(profileUrls) ? profileUrls.join(", ") : profileUrls;
         debuglog(`No artist at "${urls}", rule "${options.ruleName}"`);
         return;
     }
 
-    artists.forEach((artist) => addDanbooruArtist($(element), artist, options));
+    for (const artist of artists) addDanbooruArtist($(element), artist, options);
 }
 
 async function translateArtistByName (element, artistName, options) {
@@ -1418,7 +1418,7 @@ async function translateArtistByName (element, artistName, options) {
         return;
     }
 
-    artists.forEach((artist) => addDanbooruArtist($(element), artist, options));
+    for (const artist of artists) addDanbooruArtist($(element), artist, options);
 }
 
 function addDanbooruArtist ($target, artist, options = {}) {
@@ -2095,11 +2095,13 @@ function buildPostPreview (post) {
       data-tags="${formatTagString(post)}"
     `;
 
-    let previewFileUrl, previewWidth, previewHeight;
+    let previewFileUrl;
+    let previewWidth;
+    let previewHeight;
     const hidpi = devicePixelRatio > 1;
-    const size = hidpi ? "360x360" : "180x180"
+    const size = hidpi ? "360x360" : "180x180";
     const scale = hidpi ? 0.5 : 1;
-    const previewAsset = (post.media_asset.variants || []).find((variant) => variant.type === size);
+    const previewAsset = post.media_asset.variants?.find((variant) => variant.type === size);
     if (previewAsset === undefined) {
         previewFileUrl = post.media_asset.file_ext === "swf"
             ? `${BOORU}/images/flash-preview.png`
@@ -2115,8 +2117,16 @@ function buildPostPreview (post) {
     const domain = /^https?:\/\//.test(post.source)
         ? `<a href="${_.escape(post.source)}">${getSiteDisplayDomain(post.source)}</a>`
         : `<span title="${_.escape(post.source)}">NON-WEB</span>`;
-    const imgSize = [post.media_asset.file_size, post.media_asset.image_width, post.media_asset.image_height].every(_.isFinite)
-        ? `${formatBytes(post.media_asset.file_size)} .${post.media_asset.file_ext}, <a href="${BOORU}/media_assets/${post.media_asset.id}">${post.media_asset.image_width}x${post.media_asset.image_height}</a>`
+    const imgSize = [
+        post.media_asset.file_size,
+        post.media_asset.image_width,
+        post.media_asset.image_height,
+    ].every(_.isFinite)
+        ? `${formatBytes(post.media_asset.file_size)}
+            .${post.media_asset.file_ext},
+            <a href="${BOORU}/media_assets/${post.media_asset.id}">
+                ${post.media_asset.image_width}x${post.media_asset.image_height}
+            </a>`
         : "";
 
     const soundIcon = /\bsound\b/.test(post.tag_string_meta)
@@ -2363,6 +2373,7 @@ function watchSiteTheme (elem, attr, themeExtractor) {
         debuglog(`theme changed to ${theme}`);
     }
 
+    // eslint-disable-next-line unicorn/no-array-for-each
     new MutationObserver((mutations) => mutations.forEach(updateTheme))
         .observe(elem, {
             attributeFilter: [attr],
@@ -2431,6 +2442,7 @@ function findAndTranslate (mode, selector, options = {}) {
             if (summary.attributeChanged) {
                 elems = [...elems, ...Object.values(summary.attributeChanged).flat(1)];
             }
+            // eslint-disable-next-line unicorn/no-array-for-each
             elems.forEach(tryToTranslate);
         },
     });
@@ -3047,7 +3059,8 @@ function initializeTwitter () {
     $(channelNameSelector).each((i, elem) => watchForChanges(elem));
     new MutationSummary({
         queries: [{ element: "div" }],
-        callback: ([summary]) => summary.added.forEach((elem) => watchForChanges(elem)),
+        // eslint-disable-next-line unicorn/no-array-for-each
+        callback: ([summary]) => summary.added.forEach(watchForChanges),
     });
 
     // Deleted channel https://twitter.com/6o2_iii
@@ -3387,9 +3400,8 @@ function initializePixivFanbox () {
 
     const getPixivLink = async (userNick) => {
         // Use direct query
-        const resp = await (
-            await fetch(`https://api.fanbox.cc/creator.get?creatorId=${userNick}`)
-        ).json();
+        const resp = await fetch(`https://api.fanbox.cc/creator.get?creatorId=${userNick}`)
+            .then((r) => r.json());
         return `https://www.pixiv.net/users/${resp.body.user.userId}`;
     };
     const getPixivLinkMemoized = _.memoize(getPixivLink);

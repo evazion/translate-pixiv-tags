@@ -1,7 +1,7 @@
 {
     "parserOptions": {
         "ecmaVersion": 2022,
-        "sourceType": "script",
+        "sourceType": "script"
     },
     "env": {
         // "es2017": true,
@@ -12,11 +12,11 @@
     "extends": [
         "plugin:unicorn/recommended",
         "plugin:sonarjs/recommended",
-        "airbnb-base",
+        "airbnb-base"
     ],
     "plugins": [
         "unicorn",
-        "sonarjs",
+        "sonarjs"
     ],
     "rules": {
         /* override default rule settings */
@@ -30,7 +30,7 @@
         ],
         "arrow-parens": [
             "error",
-            "always",
+            "always"
         ],
         "curly": [
             "error",
@@ -48,7 +48,7 @@
             {
                 "SwitchCase": 1,
                 "flatTernaryExpressions": true,
-                "ignoredNodes": ["TemplateLiteral *"], // no correct support in string templates
+                "ignoredNodes": ["TemplateLiteral *"] // no correct support in string templates
             }
         ],
         "id-blacklist": ["error", "e", "$e", "arguments"],
@@ -60,12 +60,12 @@
             "warn",
             {
                 "code": 100,
-                "ignoreUrls": true,
+                "ignoreUrls": true
             }
         ],
         "max-statements-per-line": [
             "error",
-            { "max": 2 },
+            { "max": 2 }
         ],
         "multiline-ternary": [
             "error",
@@ -73,11 +73,22 @@
         ],
         "no-plusplus": [
             "error",
-            { "allowForLoopAfterthoughts": true },
+            { "allowForLoopAfterthoughts": true }
+        ],
+        // override airbnb's params
+        "no-restricted-syntax": [
+            "error",
+            {
+                "selector": "LabeledStatement",
+                "message": "Labels are a form of GOTO; using them makes code confusing and hard to maintain and understand."
+            }, {
+                "selector": "WithStatement",
+                "message": "`with` is disallowed in strict mode because it makes code impossible to predict and optimize."
+            }
         ],
         "no-use-before-define": [
             "error",
-            "nofunc", // funcs are hoisted
+            "nofunc" // funcs are hoisted
         ],
         "no-unused-vars": [
             "error",
@@ -96,27 +107,17 @@
             "error",
             { "blankLine": "always", "prev": "function", "next": "*" },
             { "blankLine": "always", "prev": "class", "next": "*" },
-            { "blankLine": "always", "prev": "directive", "next": "*" },
+            { "blankLine": "always", "prev": "directive", "next": "*" }
         ],
         "space-before-function-paren": [
             "error",
-            "always",
+            "always"
         ],
         "strict": [
             "error",
             "global"
         ],
         "unicorn/no-unsafe-regex": "error",
-
-        /* canditates for disabling */
-        "capitalized-comments": [
-            "error",
-            "always",
-            {
-                "ignoreConsecutiveComments": true,
-                "ignoreInlineComments": true
-            }
-        ],
 
         /* disable */
         "no-console": "off",
@@ -127,7 +128,11 @@
         "sonarjs/no-duplicate-string": "off",
         "unicorn/catch-error-name": "off",
         "unicorn/consistent-function-scoping": "off",
+        "unicorn/no-array-callback-reference": "off", // triggers on $.find()
+        "unicorn/no-null": "off", // too late, it should be done in 1995
+        "unicorn/prefer-module": "off",
         "unicorn/prefer-query-selector": "off",
         "unicorn/prevent-abbreviations": "off",
+        "unicorn/switch-case-braces": ["error", "avoid"]
     }
 }
