@@ -275,7 +275,7 @@
 // @noframes
 // ==/UserScript==
 
-/* globals MutationSummary _ GM_jQuery_setup tooltipGenerator */
+/* globals MutationSummary _ GM_jQuery_setup tooltipGenerator psl */
 
 "use strict";
 
@@ -353,7 +353,7 @@ const SETTINGS = {
             return null;
         }
         const value = GM_getValue(settingName);
-        if (typeof value === "undefined" || !this.isValid(settingName, value)) {
+        if (value === undefined || !this.isValid(settingName, value)) {
             GM_setValue(settingName, setting.defValue);
             return setting.defValue;
         }
@@ -388,10 +388,10 @@ const SHOW_DELETED = SETTINGS.get("show_deleted");
 const DEBUG = SETTINGS.get("debug");
 
 // Domains where images outside of whitelist are blocked
-const CORS_IMAGE_DOMAINS = [
+const CORS_IMAGE_DOMAINS = new Set([
     "twitter.com",
     "bcy.net",
-];
+]);
 
 // The maximum size of a URL before using a POST request.
 // The actual limit is 8154, but setting it lower accounts for the rest of the URL as well.
@@ -714,19 +714,19 @@ function memoizeKey (...args) {
 function noIndents (strings, ...values) {
     // Remove all spaces before/after a tag and leave one in other cases
     const compactStrings = strings.map((str) => (
-        str.replace(
+        str.replaceAll(
             /(>)?\n *(<)?/g,
-            (s, lt, gt) => (lt && gt ? lt + gt : (lt || gt ? (lt || gt) : " ")),
+            (s, lt, gt) => (lt && gt ? lt + gt : ((lt || gt) ?? " ")),
         )
     ));
 
-    const res = new Array(values.length * 2 + 1);
+    const res = Array.from({ length: values.length * 2 + 1 });
     // eslint-disable-next-line unicorn/no-for-loop
     for (let i = 0; i < values.length; i++) {
         res[i * 2] = compactStrings[i];
         res[i * 2 + 1] = values[i];
     }
-    res[res.length - 1] = compactStrings[compactStrings.length - 1];
+    res[res.length - 1] = compactStrings.at(-1);
 
     return res.join("");
 }
@@ -748,63 +748,62 @@ function capitalize (string) {
 
 // https://github.com/danbooru/danbooru/blob/f955718672a31e9c19afc5381eceeb0c2e7653d6/app/models/artist_url.rb#L95
 const SITE_ORDER = [
-    'Pixiv',
-    'Twitter',
-    'Anifty',
-    'ArtStation',
-    'Baraag',
-    'Bilibili',
-    'BCY',
-    'Booth',
-    'Deviant Art',
-    'Fantia',
-    'Foundation',
-    'Furaffinity',
-    'Hentai Foundry',
-    'Lofter',
-    'Newgrounds',
-    'Nico Seiga',
-    'Nijie',
-    'Pawoo',
-    'Fanbox',
-    'Pixiv Sketch',
-    'Plurk',
-    'Reddit',
-    'Skeb',
-    'Tinami',
-    'Tumblr',
-    'Weibo',
-    'Misskey.io',
-    'Misskey.art',
-    'Misskey.design',
-    'Ask.fm',
-    'Facebook',
-    'FC2',
-    'Gumroad',
-    'Instagram',
-    'Ko-fi',
-    'Livedoor',
-    'Mihuashi',
-    'Mixi.jp',
-    'Patreon',
-    'Piapro.jp',
-    'Picarto',
-    'Privatter',
-    'Sakura.ne.jp',
-    'Stickam',
-    'Twitch',
-    'Youtube',
-    'Amazon',
-    'Circle.ms',
-    'DLSite',
-    'Doujinshi.org',
-    'Erogamescape',
-    'Mangaupdates',
-    'Melonbooks',
-    'Toranoana',
-    'Wikipedia',
+    "Pixiv",
+    "Twitter",
+    "Anifty",
+    "ArtStation",
+    "Baraag",
+    "Bilibili",
+    "BCY",
+    "Booth",
+    "Deviant Art",
+    "Fantia",
+    "Foundation",
+    "Furaffinity",
+    "Hentai Foundry",
+    "Lofter",
+    "Newgrounds",
+    "Nico Seiga",
+    "Nijie",
+    "Pawoo",
+    "Fanbox",
+    "Pixiv Sketch",
+    "Plurk",
+    "Reddit",
+    "Skeb",
+    "Tinami",
+    "Tumblr",
+    "Weibo",
+    "Misskey.io",
+    "Misskey.art",
+    "Misskey.design",
+    "Ask.fm",
+    "Facebook",
+    "FC2",
+    "Gumroad",
+    "Instagram",
+    "Ko-fi",
+    "Livedoor",
+    "Mihuashi",
+    "Mixi.jp",
+    "Patreon",
+    "Piapro.jp",
+    "Picarto",
+    "Privatter",
+    "Sakura.ne.jp",
+    "Stickam",
+    "Twitch",
+    "Youtube",
+    "Amazon",
+    "Circle.ms",
+    "DLSite",
+    "Doujinshi.org",
+    "Erogamescape",
+    "Mangaupdates",
+    "Melonbooks",
+    "Toranoana",
+    "Wikipedia",
 ];
-
 
 const SITE_RULES = [
     { name: "Fanbox", domain: "fanbox.cc" },
@@ -988,32 +987,32 @@ const SITE_RULES = [
 ];
 
 function getSitePriority (siteName) {
-    let priority = SITE_ORDER.indexOf(siteName);
+    const priority = SITE_ORDER.indexOf(siteName);
     return priority < 0 ? 1000 : priority;
 }
 
 function getSiteName (siteUrl) {
-    let { hostname, pathname } = new URL(siteUrl);
-    let { domain, sld, tld } = psl.parse(hostname);
+    const { hostname, pathname } = new URL(siteUrl);
+    const { domain, sld, tld } = psl.parse(hostname);
 
-    let match = SITE_RULES.find(
+    const match = SITE_RULES.find(
         (rule) => (!rule.hostname || rule.hostname === hostname)
             && (!rule.domain || rule.domain === domain)
             && (!rule.tld || rule.tld === tld)
-            && (!rule.pathname || pathname.includes(rule.pathname))
+            && (!rule.pathname || pathname.includes(rule.pathname)),
     );
 
     return match ? match.name : capitalize(sld || tld || hostname);
 }
 
 function getSiteDisplayDomain (siteUrl) {
-    let { hostname } = new URL(siteUrl);
-    let { domain, tld } = psl.parse(hostname);
+    const { hostname } = new URL(siteUrl);
+    const { domain, tld } = psl.parse(hostname);
     return domain || tld || hostname;
 }
 
 function getSiteIconUrl (siteName) {
-    return GM_getResourceURL(`${siteName.toLowerCase().replace(/[^a-z0-9.]/g, "-")}-logo`);
+    return GM_getResourceURL(`${siteName.replaceAll(/[^\w.]/g, "-")}-logo`);
 }
 
 // https://github.com/danbooru/danbooru/blob/f955718672a31e9c19afc5381eceeb0c2e7653d6/app/models/artist_url.rb#L75
@@ -1189,7 +1188,7 @@ const NORMALIZE_PROFILE_URL = {
     ".artstation.com": {
         path: /^\/[\w-]+$/,
         normalize (url) {
-            const username = safeMatchMemoized(url.hostname, /([\w_-]+)\.artstation\.com/, 1);
+            const username = safeMatchMemoized(url.hostname, /([\w-]+)\.artstation\.com/, 1);
             return `https://www.artstation.com/${username}`;
         },
     },
@@ -1211,9 +1210,9 @@ const NORMALIZE_PROFILE_URL = {
         },
     },
     "www.hentai-foundry.com": {
-        path: /^\/user\/[\w_-]+$/,
+        path: /^\/user\/[\w-]+$/,
         normalize (url) {
-            const username = safeMatchMemoized(url.pathname, /\/user\/([\w_-]+)(\/profile)?/, 1);
+            const username = safeMatchMemoized(url.pathname, /\/user\/([\w-]+)(\/profile)?/, 1);
             return `https://www.hentai-foundry.com/user/${username}`;
         },
     },
@@ -1229,10 +1228,10 @@ const NORMALIZE_PROFILE_URL = {
         params: /id=\d+/,
     },
     "pawoo.net": {
-        path: /^\/@[\w_-]+$/,
+        path: /^\/@[\w-]+$/,
     },
     "baraag.net": {
-        path: /^\/@[\w_-]+$/,
+        path: /^\/@[\w-]+$/,
     },
     "www.pixiv.net": {
         path: /^\/users\/\d+$/,
@@ -1247,22 +1246,22 @@ const NORMALIZE_PROFILE_URL = {
         path: /^\/creator\/profile\/\d+$/,
     },
     "twitter.com": {
-        path: /^\/[\w_-]+|\/intent\/user$/,
+        path: /^\/[\w-]+|\/intent\/user$/,
     },
     "misskey.io": {
-        path: /^\/@[\w_]+$/,
+        path: /^\/@\w+$/,
     },
     "misskey.art": {
-        path: /^\/@[\w_]+$/,
+        path: /^\/@\w+$/,
     },
     "misskey.design": {
-        path: /^\/@[\w_]+$/,
+        path: /^\/@\w+$/,
     },
     "fantia.jp": {
-        path: /^\/([\w_]+|fanclubs\/\d+)$/,
+        path: /^\/(\w+|fanclubs\/\d+)$/,
     },
     "skeb.jp": {
-        path: /^\/@[\w_]+$/,
+        path: /^\/@\w+$/,
     },
 };
 
@@ -1304,7 +1303,7 @@ async function translateTag (target, tagName, options) {
         .normalize("NFKC")
         .replace(/^#/, "")
         .trim()
-        .replace(/\s/g, "_"); // Wiki other names cannot contain spaces
+        .replaceAll(/\s/g, "_"); // Wiki other names cannot contain spaces
 
     /* Don't search for empty tags. */
     if (normalizedTag.length === 0) {
@@ -1320,11 +1319,11 @@ async function translateTag (target, tagName, options) {
             .filter(({ tag }) => tag)
             .map(({ title, tag }) => ({
                 name: title,
-                prettyName: title.replace(/_/g, " "),
+                prettyName: title.replaceAll("_", " "),
                 category: tag.category,
             }));
     // `normalizedTag` consists of only ASCII characters except percent, asterics, and comma
-    } else if (normalizedTag.match(/^[\u0020-\u0024\u0026-\u0029\u002B\u002D-\u007F]+$/)) {
+    } else if (/^[\u0020-\u0024\u0026-\u0029+\u002D-\u007F]+$/.test(normalizedTag)) {
         // The server is already converting the values to
         // lowercase on its end so no need to do it here
         tags = await queueNetworkRequestMemoized("tag", normalizedTag);
@@ -1334,7 +1333,7 @@ async function translateTag (target, tagName, options) {
         }
         tags = tags.map((tag) => ({
             name: tag.name,
-            prettyName: tag.name.replace(/_/g, " "),
+            prettyName: tag.name.replaceAll("_", " "),
             category: tag.category,
         }));
     }
@@ -1357,6 +1356,7 @@ function addDanbooruTags ($target, tags, options = {}) {
             insertTag = TAG_POSITIONS.afterend.insertTag,
             findTag = TAG_POSITIONS.afterend.findTag,
         } = {},
+        ruleName,
     } = options;
     let { classes = "" } = options;
     classes = `ex-translated-tags ${classes}`;
@@ -1384,7 +1384,7 @@ function addDanbooruTags ($target, tags, options = {}) {
         return;
     }
 
-    if (DEBUG) $tagsContainer.attr("rulename", options.ruleName || "");
+    if (DEBUG) $tagsContainer.attr("rulename", ruleName || "");
     insertTag($target, $tagsContainer);
 
     if (onadded) onadded($tagsContainer, options);
@@ -1395,7 +1395,7 @@ async function translateArtistByURL (element, profileUrls, options) {
 
     const promiseArray = (Array.isArray(profileUrls) ? profileUrls : [profileUrls])
         .map(normalizeProfileURL)
-        .filter((url) => url)
+        .filter(Boolean)
         .map((url) => queueNetworkRequestMemoized("url", url));
 
     const artists = (await Promise.all(promiseArray)).flat();
@@ -1411,7 +1411,7 @@ async function translateArtistByURL (element, profileUrls, options) {
 async function translateArtistByName (element, artistName, options) {
     if (!artistName) return;
 
-    const artists = await queueNetworkRequestMemoized("artist", artistName.replace(/ /g, "_"));
+    const artists = await queueNetworkRequestMemoized("artist", artistName.replaceAll(" ", "_"));
 
     if (artists.length === 0) {
         debuglog(`No artist "${artistName}", rule "${options.ruleName}"`);
@@ -1429,12 +1429,13 @@ function addDanbooruArtist ($target, artist, options = {}) {
             insertTag = TAG_POSITIONS.afterend.insertTag,
             findTag = TAG_POSITIONS.afterend.findTag,
         } = {},
+        ruleName,
     } = options;
     let { classes = "" } = options;
 
     classes += artist.is_banned ? " ex-artist-tag ex-banned-artist-tag" : " ex-artist-tag";
     /* eslint-disable no-param-reassign */
-    artist.prettyName = artist.name.replace(/_/g, " ");
+    artist.prettyName = artist.name.replaceAll("_", " ");
     artist.escapedName = _.escape(artist.prettyName);
     artist.encodedName = encodeURIComponent(artist.name);
     /* eslint-enable no-param-reassign */
@@ -1454,7 +1455,7 @@ function addDanbooruArtist ($target, artist, options = {}) {
             </div>`);
     }
     const $tag = renderedArtists[artist.id].clone().prop("className", classes);
-    if (DEBUG) $tag.attr("rulename", options.ruleName || "");
+    if (DEBUG) $tag.attr("rulename", ruleName || "");
     insertTag($target, $tag);
     addTooltip($tag.find("a")[0], (tip) => buildArtistTooltip(artist, tip));
 
@@ -1926,7 +1927,7 @@ async function buildArtistTooltipContent (artist) {
             <li>
                 <a href="${BOORU}/artists?search[name]=${encodeURIComponent(otherName)}"
                    target="_blank">
-                    ${_.escape(otherName.replace(/_/g, " "))}
+                    ${_.escape(otherName.replaceAll("_", " "))}
                 </a>
             </li>`
         ))
@@ -1990,7 +1991,7 @@ function buildArtistUrlsHtml (artist) {
     const artistUrls = _(artist.urls)
         .chain()
         .uniq("url")
-        .each((artistUrl) => artistUrl.siteName = getSiteName(artistUrl.url))
+        .map((artistUrl) => ({ ...artistUrl, siteName: getSiteName(artistUrl.url) }))
         .sortBy("url")
         .sortBy((artistUrl) => isSecondaryUrl(artistUrl.url))
         .sortBy((artistUrl) => getSiteDisplayDomain(artistUrl.url))
@@ -2016,7 +2017,7 @@ function buildArtistUrlsHtml (artist) {
 
 function timeToAgo (time) {
     const interval = new Date(Date.now() - new Date(time));
-    if (interval < 60000) return "less than a minute ago";
+    if (interval < 60_000) return "less than a minute ago";
     const ranks = [{
         value: interval.getUTCFullYear() - 1970,
         unit: "year",
@@ -2035,16 +2036,16 @@ function timeToAgo (time) {
     }];
     const rank = ranks.find(({ value }) => value);
     if (rank.value) {
-        return `${rank.value} ${(rank.value > 1 ? `${rank.unit}s` : rank.unit)} ago`;
+        return `${rank.value} ${rank.unit}${rank.value > 1 ? "" : rank.unit} ago`;
     }
     return "∞ ago";
 }
 
 function formatDuration (seconds) {
-    seconds = Math.round(seconds) || 1;
+    const sec = Math.round(seconds) || 1;
 
-    let mm = Math.floor(seconds / 60 % 60);
-    let ss = String(seconds % 60).padStart(2, "0");
+    const mm = Math.floor(sec / 60 % 60);
+    const ss = String(sec % 60).padStart(2, "0");
 
     return `${mm}:${ss}`;
 }
@@ -2053,7 +2054,7 @@ function formatDuration (seconds) {
 function formatBytes (bytes) {
     const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return `${parseFloat((bytes / (1024 ** i)).toFixed(2))} ${sizes[i]}`;
+    return `${Number.parseFloat((bytes / (1024 ** i)).toFixed(2))} ${sizes[i]}`;
 }
 
 function formatTagString (post) {
@@ -2095,32 +2096,30 @@ function buildPostPreview (post) {
     `;
 
     let previewFileUrl, previewWidth, previewHeight;
-    let hidpi = devicePixelRatio > 1;
-    let size = hidpi ? "360x360" : "180x180"
-    let scale = hidpi ? 0.5 : 1;
-    let previewAsset = (post.media_asset.variants || []).find((variant) => variant.type === size);
-    if (previewAsset !== undefined) {
+    const hidpi = devicePixelRatio > 1;
+    const size = hidpi ? "360x360" : "180x180"
+    const scale = hidpi ? 0.5 : 1;
+    const previewAsset = (post.media_asset.variants || []).find((variant) => variant.type === size);
+    if (previewAsset === undefined) {
+        previewFileUrl = post.media_asset.file_ext === "swf"
+            ? `${BOORU}/images/flash-preview.png`
+            : `https://cdn.donmai.us/images/download-preview.png`;
+        previewWidth = 180;
+        previewHeight = 180;
+    } else {
         previewFileUrl = previewAsset.url;
         previewWidth = previewAsset.width * scale;
         previewHeight = previewAsset.height * scale;
-    } else {
-        if (post.media_asset.file_ext === "swf") {
-            previewFileUrl = `${BOORU}/images/flash-preview.png`;
-        } else {
-            previewFileUrl = `https://cdn.donmai.us/images/download-preview.png`;
-        }
-        previewWidth = 180;
-        previewHeight = 180;
     }
 
-    const domain = post.source.match(/^https?:\/\//)
+    const domain = /^https?:\/\//.test(post.source)
         ? `<a href="${_.escape(post.source)}">${getSiteDisplayDomain(post.source)}</a>`
         : `<span title="${_.escape(post.source)}">NON-WEB</span>`;
     const imgSize = [post.media_asset.file_size, post.media_asset.image_width, post.media_asset.image_height].every(_.isFinite)
         ? `${formatBytes(post.media_asset.file_size)} .${post.media_asset.file_ext}, <a href="${BOORU}/media_assets/${post.media_asset.id}">${post.media_asset.image_width}x${post.media_asset.image_height}</a>`
         : "";
 
-    const soundIcon = post.tag_string_meta.match(/\bsound\b/)
+    const soundIcon = /\bsound\b/.test(post.tag_string_meta)
         ? GM_getResourceText("sound_icon")
         : "";
     const animationIcon = post.media_asset.duration
@@ -2151,7 +2150,7 @@ function buildPostPreview (post) {
         </article>
     `);
 
-    if (CORS_IMAGE_DOMAINS.includes(window.location.host)) {
+    if (CORS_IMAGE_DOMAINS.has(window.location.host)) {
         // Temporally set transparent 1x1 image
         // eslint-disable-next-line max-len
         $preview.find("img").prop("src", "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
@@ -2430,7 +2429,7 @@ function findAndTranslate (mode, selector, options = {}) {
         callback: ([summary]) => {
             let elems = summary.added;
             if (summary.attributeChanged) {
-                elems = elems.concat(Object.values(summary.attributeChanged).flat(1));
+                elems = [...elems, ...Object.values(summary.attributeChanged).flat(1)];
             }
             elems.forEach(tryToTranslate);
         },
@@ -3110,13 +3109,13 @@ function initializeArtStation () {
     const getArtistName = (ref) => {
         if (!ref) return "";
         if (ref.startsWith("/")) {
-            const word = ref.match(/[a-z0-9_-]+/i);
+            const word = ref.match(/[\w-]+/i);
             if (word) return word[0];
         } else if (ref.startsWith("https://www")) {
-            const word = ref.match(/artstation\.com\/([a-z0-9_-]+)/i);
+            const word = ref.match(/artstation\.com\/([\w-]+)/i);
             if (word) return word[1];
         } else if (ref.startsWith("https://")) {
-            const word = ref.match(/\/\/([a-z0-9_-]+)\.artstation\.com/i);
+            const word = ref.match(/\/\/([\w-]+)\.artstation\.com/i);
             if (word) return word[1];
         }
         return "";
@@ -3144,7 +3143,7 @@ function initializeArtStation () {
         toProfileUrl: toFullURL,
         asyncMode: true,
         ruleName: "arist profile",
-        // the artist name is removed when the profile page is a bit scrolled
+        // The artist name is removed when the profile page is a bit scrolled
         onadded: ($tag) => {
             const h1 = $tag.prev()[0];
             const container = $tag.parent()[0];
@@ -3236,15 +3235,14 @@ function initializeSauceNAO () {
         "strong:contains('Author:')+a",
         "strong:contains('Twitter:')+a",
         "strong:contains('User ID:')+a",
-    ].join(), {
+    ].join(","), {
         classes: "inline",
         ruleName: "artist by link",
         toProfileUrl: (el) => {
-            const { href } = el;
-            if (!href.startsWith("https://twitter.com/")) return href;
+            if (!el.href.startsWith("https://twitter.com/")) return el.href;
             return [
                 `https://twitter.com/${el.textContent.slice(1)}`,
-                `https://twitter.com/intent/user?user_id=${href.match(/\d+/)[0]}`,
+                `https://twitter.com/intent/user?user_id=${el.href.match(/\d+/)[0]}`,
             ];
         },
     });
@@ -3273,13 +3271,12 @@ function initializeMastodon () {
     `);
 
     const getUrlFromElement = (el) => {
-        let fullName = el.textContent.trim();
+        const fullName = el.textContent.trim();
 
-        let [, name, host] = matchMemoized(fullName, /^@([\w_]+)(?:@([\w.-]+))?$/) || [];
-        host ||= window.location.host;
+        const [, name, host = window.location.host] = matchMemoized(fullName, /^@(\w+)(?:@([\w.-]+))?$/) || [];
 
         return name ? `https://${host}/@${name}` : null;
-    }
+    };
 
     // https://pawoo.net/@yamadorikodi
     // https://baraag.net/@casytay
@@ -3400,8 +3397,8 @@ function initializePixivFanbox () {
     const addPixivTranslation = (options, el) => {
         const url = new URL(el.closest("a").href);
         const userNick = url.host === "www.fanbox.cc"
-            ? url.pathname.match(/[\d\w_-]+/)[0]
-            : url.host.match(/[\d\w_-]+/)[0];
+            ? url.pathname.match(/[\w-]+/)[0]
+            : url.host.match(/[\w-]+/)[0];
         getPixivLinkMemoized(userNick)
             .then((pixivLink) => findAndTranslate("artist", el, {
                 ...options,
@@ -3468,13 +3465,12 @@ function initializeMisskey () {
     });
 
     const getUrlFromElement = (el) => {
-        let fullName = el.textContent.trim();
+        const fullName = el.textContent.trim();
 
-        let [, name, host] = matchMemoized(fullName, /^@([\w_]+)(?:@([\w.-]+))?$/) || [];
-        host ||= window.location.host;
+        const [, name, host = window.location.host] = matchMemoized(fullName, /^@(\w+)(?:@([\w.-]+))?$/) || [];
 
         return name ? `https://${host}/@${name}` : null;
-    }
+    };
 
     // Artist name in floating header
     // https://misskey.io/@ixy194
