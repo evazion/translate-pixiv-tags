@@ -3377,6 +3377,17 @@ function initializeTweetDeck () {
 }
 
 function initializePixivFanbox () {
+    GM_addStyle(`
+        /* fix multiline text in the name of searched tag */
+        div[class^=TagPage__TagTitle] {
+            display: block;
+        }
+        div[class^=TagPage__Count] {
+            display: inline-block;
+            vertical-align: middle;
+        }
+    `);
+
     const getPixivLink = async (userNick) => {
         // Use direct query
         const resp = await (
@@ -3411,6 +3422,28 @@ function initializePixivFanbox () {
         }),
         classes: "inline",
         ruleName: "channel header fanbox",
+    });
+
+    // https://morinohon.fanbox.cc/posts/5055514
+    // post tags
+    findAndTranslate("tag", "div", {
+        predicate: "div[class^=Tag__Text]",
+        asyncMode: true,
+        classes: "inline",
+        ruleName: "post tag fanbox",
+        // Prevent React Router from navigation
+        onadded: ($el) => $el.click((ev) => ev.stopPropagation()),
+    });
+
+    // https://morinohon.fanbox.cc/tags/ブレイブソード×ブレイズソウル
+    // searched tag
+    findAndTranslate("tag", "div", {
+        predicate: "div[class^=TagPage__Count]",
+        tagPosition: TAG_POSITIONS.beforebegin,
+        toTagName: (el) => el.previousSibling?.textContent,
+        asyncMode: true,
+        classes: "inline",
+        ruleName: "search tag fanbox",
     });
 }
 
