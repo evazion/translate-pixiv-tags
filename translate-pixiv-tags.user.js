@@ -1088,13 +1088,6 @@ function intervalNetworkHandler () {
 }
 
 async function getLong (url, params, requests, type) {
-    const sleepHalfSecond = (resolve) => setTimeout(resolve, 500);
-    const domain = new URL(url).hostname;
-    if (!(checkNetworkErrors(domain, false))) {
-        for (const request of requests) request.promise.resolve([]);
-        return;
-    }
-
     // Default to GET requests
     let method = "get";
     let finalParams = params;
@@ -1106,35 +1099,12 @@ async function getLong (url, params, requests, type) {
 
     /* eslint-disable no-await-in-loop */
     let resp = [];
-    for (let i = 0; i < MAX_NETWORK_RETRIES; i++) {
-        try {
-            resp = await $.ajax(url, {
-                dataType: "json",
-                data: finalParams,
-                method,
-                // Do not use the failed and cached first try
-                cache: i === 0,
-            });
-            break;
-        } catch (error) {
-            console.error(
-                "[TPT]: Failed try #",
-                i + 1,
-                "\nURL:",
-                url,
-                "\nParameters:",
-                finalParams,
-                "\nHTTP Error:",
-                error.status,
-            );
-            if (!checkNetworkErrors(domain, true)) {
-                for (const request of requests) request.promise.resolve([]);
-                return;
-            }
-            await new Promise(sleepHalfSecond);
-        }
+    try {
+        resp = await makeRequest(method, url, finalParams);
+    } catch {
+        for (const request of requests) request.promise.resolve([]);
+        return;
     }
-    /* eslint-enable no-await-in-loop */
 
     let finalResp = resp;
     if (NETWORK_REQUEST_DICT[type].filter) {
@@ -1182,6 +1152,43 @@ async function getLong (url, params, requests, type) {
     if (unusedData.length > 0) {
         debuglog("Unused results found:", unusedData);
     }
+}
+
+async function makeRequest (method, url, data) {
+    const sleepHalfSecond = (resolve) => setTimeout(resolve, 500);
+    const domain = new URL(url).hostname;
+    if (!(checkNetworkErrors(domain, false))) {
+        throw new Error(`${domain} had too many network errors`);
+    }
+    for (let i = 0; i < MAX_NETWORK_RETRIES; i++) {
+        try {
+            // eslint-disable-next-line no-await-in-loop
+            return await $.ajax(url, {
+                dataType: "json",
+                data,
+                method,
+                // Do not use the failed and cached first try
+                cache: i === 0,
+            });
+        } catch (error) {
+            console.error(
+                "[TPT]: Failed try #",
+                i + 1,
+                "\nURL:",
+                url,
+                "\nParameters:",
+                data,
+                "\nHTTP Error:",
+                error.status,
+            );
+            if (!checkNetworkErrors(domain, true)) {
+                throw new Error(`${domain} reached network errors limit`);
+            }
+            // eslint-disable-next-line no-await-in-loop
+            await new Promise(sleepHalfSecond);
+        }
+    }
+    throw new Error(`${domain} reached request attempts limit`);
 }
 
 const NORMALIZE_PROFILE_URL = {
@@ -2072,6 +2079,42 @@ function formatTagString (post) {
         .value();
 }
 
+function formatImageInfo (post) {
+    if (![
+        post.media_asset.file_size,
+        post.media_asset.image_width,
+        post.media_asset.image_height,
+    ].every(_.isFinite)) {
+        return "";
+    }
+    return `${formatBytes(post.media_asset.file_size)}
+        .${post.media_asset.file_ext},
+        <a href="${BOORU}/media_assets/${post.media_asset.id}">
+            ${post.media_asset.image_width}x${post.media_asset.image_height}
+        </a>`;
+}
+
+function getPostPreview (post) {
+    const hidpi = window.devicePixelRatio > 1;
+    const size = hidpi ? "360x360" : "180x180";
+    const scale = hidpi ? 0.5 : 1;
+    const previewAsset = post.media_asset.variants?.find((variant) => variant.type === size);
+    if (previewAsset) {
+        return {
+            url: previewAsset.url,
+            width: previewAsset.width * scale,
+            height: previewAsset.height * scale,
+        };
+    }
+    return {
+        url: post.media_asset.file_ext === "swf"
+            ? `${BOORU}/images/flash-preview.png`
+            : `https://cdn.donmai.us/images/download-preview.png`,
+        width: 180,
+        height: 180,
+    };
+}
+
 function buildPostPreview (post) {
     const RATINGS = {
         g: 0,
@@ -2095,39 +2138,11 @@ function buildPostPreview (post) {
       data-tags="${formatTagString(post)}"
     `;
 
-    let previewFileUrl;
-    let previewWidth;
-    let previewHeight;
-    const hidpi = devicePixelRatio > 1;
-    const size = hidpi ? "360x360" : "180x180";
-    const scale = hidpi ? 0.5 : 1;
-    const previewAsset = post.media_asset.variants?.find((variant) => variant.type === size);
-    if (previewAsset === undefined) {
-        previewFileUrl = post.media_asset.file_ext === "swf"
-            ? `${BOORU}/images/flash-preview.png`
-            : `https://cdn.donmai.us/images/download-preview.png`;
-        previewWidth = 180;
-        previewHeight = 180;
-    } else {
-        previewFileUrl = previewAsset.url;
-        previewWidth = previewAsset.width * scale;
-        previewHeight = previewAsset.height * scale;
-    }
+    const preview = getPostPreview(post);
 
     const domain = /^https?:\/\//.test(post.source)
         ? `<a href="${_.escape(post.source)}">${getSiteDisplayDomain(post.source)}</a>`
         : `<span title="${_.escape(post.source)}">NON-WEB</span>`;
-    const imgSize = [
-        post.media_asset.file_size,
-        post.media_asset.image_width,
-        post.media_asset.image_height,
-    ].every(_.isFinite)
-        ? `${formatBytes(post.media_asset.file_size)}
-            .${post.media_asset.file_ext},
-            <a href="${BOORU}/media_assets/${post.media_asset.id}">
-                ${post.media_asset.image_width}x${post.media_asset.image_height}
-            </a>`
-        : "";
 
     const soundIcon = /\bsound\b/.test(post.tag_string_meta)
         ? GM_getResourceText("sound_icon")
@@ -2148,13 +2163,13 @@ function buildPostPreview (post) {
                  ${dataAttributes} >
             <a class="post-link" href="${BOORU}/posts/${post.id}" target="_blank">
                 ${animationIcon}
-                <img width="${previewWidth}"
-                     height="${previewHeight}"
-                     src="${previewFileUrl}"
+                <img width="${preview.width}"
+                     height="${preview.height}"
+                     src="${preview.url}"
                      title="${formatTagString(post)}"
                      part="post-preview rating-${post.rating}">
             </a>
-            <p>${imgSize}</p>
+            <p>${formatImageInfo(post)}</p>
             <p>${domain}, rating:${post.rating.toUpperCase()}</p>
             <p>${timeToAgo(post.created_at)}</p>
         </article>
@@ -2164,13 +2179,11 @@ function buildPostPreview (post) {
         // Temporally set transparent 1x1 image
         // eslint-disable-next-line max-len
         $preview.find("img").prop("src", "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
-        getImage(previewFileUrl).then((blob) => {
+        getImage(preview.url).then((blob) => {
             const imageBlob = blob.slice(0, blob.size, "image/jpeg");
             const blobUrl = window.URL.createObjectURL(imageBlob);
             $preview.find("img").prop("src", blobUrl);
         });
-    } else {
-        $preview.find("img").prop("src", previewFileUrl);
     }
 
     return $preview;
@@ -2491,6 +2504,15 @@ const getNormalizedHashtagName = (el) => {
     return tagName;
 };
 
+const getNormilizedDecentralizedSocNetUrl = (el) => {
+    const fullName = el.textContent.trim();
+
+    // eslint-disable-next-line max-len
+    const [, name, host = window.location.host] = matchMemoized(fullName, /^@(\w+)(?:@([\w.-]+))?$/) || [];
+
+    return name ? `https://${host}/@${name}` : null;
+};
+
 function initializePixiv () {
     watchSiteTheme(document.documentElement, "data-theme", (html) => (
         html.dataset.theme === "default" ? "light" : "dark"
@@ -2643,6 +2665,7 @@ function initializePixiv () {
 
     // Main tag on search pages: https://www.pixiv.net/en/tags/%E6%9D%B1%E6%96%B9project/artworks
     findAndTranslate("tag", "div", {
+        // eslint-disable-next-line max-len
         predicate: "#root>div>div>div>div>div>div>div>div:nth-of-type(2)>div>div:has(>span:first-child)",
         asyncMode: true,
         ruleName: "search tag",
@@ -2789,6 +2812,7 @@ function initializePixiv () {
     // Booth items of artist you follow on the index page:
     // https://www.pixiv.net/ https://www.pixiv.net/en/
     findAndTranslate("artist", "div", {
+        // eslint-disable-next-line max-len
         predicate: "a.gtm-toppage-thumbnail-illustration-booth-following + div>div:has(>div[title]>a)",
         tagPosition: TAG_POSITIONS.afterend,
         classes: "inline",
@@ -3283,20 +3307,12 @@ function initializeMastodon () {
         }
     `);
 
-    const getUrlFromElement = (el) => {
-        const fullName = el.textContent.trim();
-
-        const [, name, host = window.location.host] = matchMemoized(fullName, /^@(\w+)(?:@([\w.-]+))?$/) || [];
-
-        return name ? `https://${host}/@${name}` : null;
-    };
-
     // https://pawoo.net/@yamadorikodi
     // https://baraag.net/@casytay
     // artist name in channel header
     findAndTranslate("artist", "span", {
         predicate: ".account__header__tabs__name small span",
-        toProfileUrl: getUrlFromElement,
+        toProfileUrl: getNormilizedDecentralizedSocNetUrl,
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
         ruleName: "artist profile",
@@ -3307,7 +3323,7 @@ function initializeMastodon () {
     // can include reposted messages from other activitypub sites
     findAndTranslate("artist", "span.display-name__account", {
         predicate: "div.status span.display-name__account",
-        toProfileUrl: getUrlFromElement,
+        toProfileUrl: getNormilizedDecentralizedSocNetUrl,
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
         ruleName: "post/comment author",
@@ -3318,7 +3334,7 @@ function initializeMastodon () {
     // https://pawoo.net/@mayumani/102910946688187767
     findAndTranslate("artist", "span.display-name__account", {
         predicate: "div.detailed-status span.display-name__account",
-        toProfileUrl: getUrlFromElement,
+        toProfileUrl: getNormilizedDecentralizedSocNetUrl,
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
         ruleName: "expanded post author",
@@ -3329,7 +3345,7 @@ function initializeMastodon () {
     // https://pawoo.net/@yamadorikodi/following
     findAndTranslate("artist", "span.display-name__account", {
         predicate: "div.account span.display-name__account",
-        toProfileUrl: getUrlFromElement,
+        toProfileUrl: getNormilizedDecentralizedSocNetUrl,
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
         ruleName: "artist followers",
@@ -3476,14 +3492,6 @@ function initializeMisskey () {
         ruleName: "tags",
     });
 
-    const getUrlFromElement = (el) => {
-        const fullName = el.textContent.trim();
-
-        const [, name, host = window.location.host] = matchMemoized(fullName, /^@(\w+)(?:@([\w.-]+))?$/) || [];
-
-        return name ? `https://${host}/@${name}` : null;
-    };
-
     // Artist name in floating header
     // https://misskey.io/@ixy194
     // https://misskey.art/@Igiroitsu
@@ -3494,7 +3502,7 @@ function initializeMisskey () {
     // https://misskey.art/notes/9em92xdrid
     // https://misskey.design/notes/9eh5y6d2rz
     findAndTranslate("artist", ".xpJo5", {
-        toProfileUrl: getUrlFromElement,
+        toProfileUrl: getNormilizedDecentralizedSocNetUrl,
         asyncMode: true,
         ruleName: "artist profile",
     });
@@ -3502,7 +3510,7 @@ function initializeMisskey () {
     // Artist name in header
     findAndTranslate("artist", "span", {
         predicate: ".username > span:first-child",
-        toProfileUrl: getUrlFromElement,
+        toProfileUrl: getNormilizedDecentralizedSocNetUrl,
         asyncMode: true,
         ruleName: "artist header",
     });
@@ -3510,7 +3518,7 @@ function initializeMisskey () {
     // Artist name in note
     findAndTranslate("artist", "span", {
         predicate: ".x1TBL > span:first-child",
-        toProfileUrl: getUrlFromElement,
+        toProfileUrl: getNormilizedDecentralizedSocNetUrl,
         asyncMode: true,
         classes: "inline",
         ruleName: "artist note",
@@ -3519,7 +3527,7 @@ function initializeMisskey () {
     // Artist name in note comment
     findAndTranslate("artist", "span", {
         predicate: ".xBLVI > span:first-child",
-        toProfileUrl: getUrlFromElement,
+        toProfileUrl: getNormilizedDecentralizedSocNetUrl,
         asyncMode: true,
         classes: "inline",
         ruleName: "artist note comment",
@@ -3529,7 +3537,7 @@ function initializeMisskey () {
     // (hover profile picture)
     findAndTranslate("artist", "span", {
         predicate: ".x8X77 > span:first-child",
-        toProfileUrl: getUrlFromElement,
+        toProfileUrl: getNormilizedDecentralizedSocNetUrl,
         asyncMode: true,
         ruleName: "artist popup",
     });
