@@ -3,6 +3,7 @@
         "ecmaVersion": 2022,
         "sourceType": "script"
     },
+    "ignorePatterns": ["*.ts"],
     "env": {
         // "es2017": true,
         "browser": true,

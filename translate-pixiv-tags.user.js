@@ -1,3 +1,4 @@
+/* spell-checker: disable */
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion, 7nik, BrokenEagle, hdk5
@@ -275,7 +276,13 @@
 // @noframes
 // ==/UserScript==
 
+/* spell-checker: enable */
+// cSpell:ignoreRegExp [-\.#]\w+
+
 /* globals MutationSummary _ GM_jQuery_setup tooltipGenerator psl */
+
+// @ts-expect-error - it has no exports or import but types are get correctly
+/** @typedef {import("./node_modules/mutation-summary/src/mutation-summary")} */
 
 "use strict";
 
@@ -374,17 +381,20 @@ const SETTINGS = {
     },
 };
 
-// Which domain to send requests to
+/** @type {string} Which domain to send requests to */
 const BOORU = SETTINGS.get("booru");
-// How long (in seconds) to cache translated tag lookups.
+/** @type {string} How long (in seconds) to cache translated tag lookups */
 const CACHE_LIFETIME = `${SETTINGS.get("cache_lifetime")}s`;
-// Number of recent posts to show in artist tooltips.
+/** @type {number} Number of recent posts to show in artist tooltips */
 const ARTIST_POST_PREVIEW_LIMIT = SETTINGS.get("preview_limit");
-// The upper level of rating to show preview. Higher ratings will be blurred.
+/**
+ * The upper level of rating to show preview. Higher ratings will be blurred
+ * @type {import("./types").Rating}
+ */
 const SHOW_PREVIEW_RATING = SETTINGS.get("show_preview_rating");
-// Whether to show deleted images in the preview or from the posts link
+/** @type {boolean} Whether to show deleted images in the preview or from the posts link */
 const SHOW_DELETED = SETTINGS.get("show_deleted");
-// Whether to print an additional info into the console
+/** @type {boolean} Whether to print an additional info into the console */
 const DEBUG = SETTINGS.get("debug");
 
 // Domains where images outside of whitelist are blocked
@@ -405,32 +415,34 @@ const MAX_NETWORK_RETRIES = 3;
 
 const TAG_SELECTOR = ".ex-translated-tags, .ex-artist-tag";
 
+/** @typedef {import("./types").TagPosition} TagPosition */
+
 const TAG_POSITIONS = {
-    beforebegin: {
-        insertTag: ($container, $elem) => $container.before($elem),
+    beforebegin: /** @type {TagPosition} */ ({
+        insertTag:  ($container, $elem) => $container.before($elem),
         findTag: ($container) => $container.prevAll(TAG_SELECTOR),
         getTagContainer: ($elem) => $elem.next(),
-    },
-    afterbegin:  {
+    }),
+    afterbegin: /** @type {TagPosition} */ ({
         insertTag: ($container, $elem) => $container.prepend($elem),
         findTag: ($container) => $container.find(TAG_SELECTOR),
         getTagContainer: ($elem) => $elem.parent(),
-    },
-    beforeend:   {
+    }),
+    beforeend: /** @type {TagPosition} */ ({
         insertTag: ($container, $elem) => $container.append($elem),
         findTag: ($container) => $container.find(TAG_SELECTOR),
         getTagContainer: ($elem) => $elem.parent(),
-    },
-    afterend:    {
+    }),
+    afterend: /** @type {TagPosition} */ ({
         insertTag: ($container, $elem) => $container.after($elem),
         findTag: ($container) => $container.nextAll(TAG_SELECTOR),
         getTagContainer: ($elem) => $elem.prev(),
-    },
-    afterParent: {
+    }),
+    afterParent: /** @type {TagPosition} */ ({
         insertTag: ($container, $elem) => $container.parent().after($elem),
         findTag: ($container) => $container.parent().nextAll(TAG_SELECTOR),
         getTagContainer: ($elem) => $elem.prev().find("a"),
-    },
+    }),
 };
 
 const PROGRAM_CSS = `
@@ -569,6 +581,8 @@ const TOOLTIP_CSS = `
 }
 `;
 
+// eslint-disable-next-line max-len
+/** @type {import("./types").TooltipConstructor} */
 const addTooltip = tooltipGenerator({
     showDelay: 500,
     hideDelay: 250,
@@ -581,8 +595,20 @@ const CACHE_PARAM = (CACHE_LIFETIME ? { expires_in: CACHE_LIFETIME } : {});
 // Setting this to the maximum since batches could return more than the amount being queried
 const API_LIMIT = 1000;
 
+/** @typedef {import("./types").RequestType} RequestType */
+/** @template {RequestType} T @typedef {import("./types").RequestParams<T>} RequestParams */
+/** @template {RequestType} T @typedef {import("./types").RequestResponse<T>} RequestResponse */
+
+/**
+ * @type {{
+ *  type: RequestType,
+ *  item: RequestParams<RequestType>,
+ *  promise: JQuery.Deferred<RequestResponse<RequestType>[], any, any>
+ * }[]}
+ */
 const QUEUED_NETWORK_REQUESTS = [];
 
+/** @type {import("./types").RequestDefinitions} */
 const NETWORK_REQUEST_DICT = {
     wiki: {
         url: "/wiki_pages",
@@ -706,7 +732,7 @@ function debuglog (...args) {
 }
 
 function memoizeKey (...args) {
-    const paramHash = Object.assign(...args.map((param, i) => ({ [i]: param })));
+    const paramHash = Object.fromEntries(args.entries());
     return $.param(paramHash);
 }
 
@@ -731,9 +757,11 @@ function noIndents (strings, ...values) {
     return res.join("");
 }
 
+/** @type {(string: string, regex: RegExp) => RegExpMatchArray|null} */
 const matchMemoized = _.memoize((string, regex) => string.match(regex), memoizeKey);
 
-// For safe ways to use regexes in a single line of code
+// For safe ways to use regexp in a single line of code
+/** @type {(string: string, regex: RegExp, group?: number, defaultValue?: string) => string} */
 function safeMatchMemoized (string, regex, group = 0, defaultValue = "") {
     const match = matchMemoized(string, regex);
     if (match) {
@@ -742,11 +770,13 @@ function safeMatchMemoized (string, regex, group = 0, defaultValue = "") {
     return defaultValue;
 }
 
+/** @type {(s:string) => string} */
 function capitalize (string) {
     return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
 }
 
 // https://github.com/danbooru/danbooru/blob/f955718672a31e9c19afc5381eceeb0c2e7653d6/app/models/artist_url.rb#L95
+/* spell-checker: disable */
 const SITE_ORDER = [
     "Pixiv",
     "Twitter",
@@ -985,15 +1015,18 @@ const SITE_RULES = [
     { name: "WordPress", domain: "wordpress.com" },
     { name: "Youtube", domain: "youtu.be" },
 ];
+/* spell-checker: enable */
 
+/** @type {(siteName:string) => number} */
 function getSitePriority (siteName) {
     const priority = SITE_ORDER.indexOf(siteName);
     return priority < 0 ? 1000 : priority;
 }
 
+/** @type {(siteUrl:string) => string} */
 function getSiteName (siteUrl) {
     const { hostname, pathname } = new URL(siteUrl);
-    const { domain, sld, tld } = psl.parse(hostname);
+    const { domain, sld, tld } = /** @type {import("psl").ParsedDomain} */ (psl.parse(hostname));
 
     const match = SITE_RULES.find(
         (rule) => (!rule.hostname || rule.hostname === hostname)
@@ -1005,17 +1038,22 @@ function getSiteName (siteUrl) {
     return match ? match.name : capitalize(sld || tld || hostname);
 }
 
+/** @type {(siteUrl:string) => string} */
 function getSiteDisplayDomain (siteUrl) {
     const { hostname } = new URL(siteUrl);
-    const { domain, tld } = psl.parse(hostname);
+    const { domain, tld } = /** @type {import("psl").ParsedDomain} */ (psl.parse(hostname));
     return domain || tld || hostname;
 }
 
+/** @type {(siteName:string) => string} */
 function getSiteIconUrl (siteName) {
     return GM_getResourceURL(`${siteName.replaceAll(/[^\w.]/g, "-")}-logo`);
 }
 
-// https://github.com/danbooru/danbooru/blob/f955718672a31e9c19afc5381eceeb0c2e7653d6/app/models/artist_url.rb#L75
+/**
+ * @type {(siteUrl:string) => boolean}
+ * @see https://github.com/danbooru/danbooru/blob/f955718672a31e9c19afc5381eceeb0c2e7653d6/app/models/artist_url.rb#L75
+ */
 function isSecondaryUrl (siteUrl) {
     return [
         /pixiv\.net\/stacc/i,
@@ -1027,6 +1065,11 @@ function isSecondaryUrl (siteUrl) {
     ].some((rule) => siteUrl.match(rule));
 }
 
+/**
+ * Get the image as Blob in CORS-safe way
+ * @param {string} imageUrl
+ * @returns {Promise<Blob>}
+ */
 function getImage (imageUrl) {
     return GM
         .xmlHttpRequest({
@@ -1037,16 +1080,17 @@ function getImage (imageUrl) {
         .then(({ response }) => response);
 }
 
-function checkNetworkErrors (domain, hasError) {
+/** @type {(domain: string, logError: boolean) => boolean} */
+function checkNetworkErrors (domain, logError) {
     const data = checkNetworkErrors[domain] || (checkNetworkErrors[domain] = { error: 0 });
 
-    if (hasError) {
+    if (logError) {
         console.log("[TPT]: Total errors:", data.error);
         data.error += 1;
     }
     if (data.error >= MAX_NETWORK_ERRORS) {
         console.error(
-            "[TPT]: Maximun number of errors exceeded",
+            "[TPT]: Maximum number of errors exceeded",
             MAX_NETWORK_ERRORS,
             "for",
             domain,
@@ -1056,24 +1100,31 @@ function checkNetworkErrors (domain, hasError) {
     return true;
 }
 
+/**
+ * @template {RequestType} T
+ * @param {T} type
+ * @param {RequestParams<T>} item
+ * @returns {JQuery.Deferred<RequestResponse<T>[], any, any>}
+ */
 function queueNetworkRequest (type, item) {
     const request = {
         type,
         item,
-        promise: $.Deferred(),
+        promise: /** @type {JQuery.Deferred<RequestResponse<T>[], any, any>} */($.Deferred()),
     };
     QUEUED_NETWORK_REQUESTS.push(request);
     return request.promise;
 }
 
+/** @type {typeof queueNetworkRequest} */
 const queueNetworkRequestMemoized = _.memoize(queueNetworkRequest, memoizeKey);
 
 function intervalNetworkHandler () {
-    for (const type of Object.keys(NETWORK_REQUEST_DICT)) {
+    for (const type of /** @type {RequestType[]} */ (Object.keys(NETWORK_REQUEST_DICT))) {
         const requests = QUEUED_NETWORK_REQUESTS.filter((request) => (request.type === type));
         if (requests.length > 0) {
             const items = requests.map((request) => request.item);
-            const typeParam = NETWORK_REQUEST_DICT[type].params(items);
+            const typeParam = NETWORK_REQUEST_DICT[type].params(/** @type {any} */(items));
             const limitParam = { limit: API_LIMIT };
             if (NETWORK_REQUEST_DICT[type].limit) {
                 limitParam.limit = NETWORK_REQUEST_DICT[type].limit;
@@ -1087,6 +1138,13 @@ function intervalNetworkHandler () {
     QUEUED_NETWORK_REQUESTS.length = 0;
 }
 
+/**
+ * @template {RequestType} T
+ * @param {string} url
+ * @param {import("./types").UrlParams} params
+ * @param {typeof QUEUED_NETWORK_REQUESTS} requests
+ * @param {T} type
+ */
 async function getLong (url, params, requests, type) {
     // Default to GET requests
     let method = "get";
@@ -1097,12 +1155,12 @@ async function getLong (url, params, requests, type) {
         method = "post";
     }
 
-    /* eslint-disable no-await-in-loop */
+    /** @type {RequestResponse<T>[]} */
     let resp = [];
     try {
         resp = await makeRequest(method, url, finalParams);
     } catch {
-        for (const request of requests) request.promise.resolve([]);
+        for (const request of requests) request.promise.resolve(/** @type{any} */([]));
         return;
     }
 
@@ -1137,10 +1195,11 @@ async function getLong (url, params, requests, type) {
             console.error("[TPT]: Unsupported type of response data");
             return;
     }
+    const unusedData = new Set(finalResp);
     for (const request of requests) {
         const found = finalResp.filter((data) => {
             if (includes(data[dataKey], request.item)) {
-                data.used = true; // eslint-disable-line no-param-reassign
+                unusedData.delete(data);
                 return true;
             }
             return false;
@@ -1148,12 +1207,16 @@ async function getLong (url, params, requests, type) {
         // Fulfill the promise which returns the results to the function that queued it
         request.promise.resolve(found);
     }
-    const unusedData = finalResp.filter((data) => !data.used);
-    if (unusedData.length > 0) {
-        debuglog("Unused results found:", unusedData);
+    if (unusedData.size > 0) {
+        debuglog("Unused results found:", [...unusedData.values()]);
     }
 }
 
+/**
+ * @param {string} method
+ * @param {string} url
+ * @param {any} data
+ */
 async function makeRequest (method, url, data) {
     const sleepHalfSecond = (resolve) => setTimeout(resolve, 500);
     const domain = new URL(url).hostname;
@@ -1191,6 +1254,7 @@ async function makeRequest (method, url, data) {
     throw new Error(`${domain} reached request attempts limit`);
 }
 
+/** @type {Record<string, {path?:RegExp, params?:RegExp, normalize?: (url:URL)=>string}>} */
 const NORMALIZE_PROFILE_URL = {
     ".artstation.com": {
         path: /^\/[\w-]+$/,
@@ -1272,7 +1336,11 @@ const NORMALIZE_PROFILE_URL = {
     },
 };
 
-// Converts URLs to the same format used by the URL column on Danbooru
+/**
+ * Converts URLs to the same format used by the URL column on Danbooru
+ * @param {string} profileUrl
+ * @param {number} [depth]
+ */
 function normalizeProfileURL (profileUrl, depth = 0) {
     const url = new URL(profileUrl.toLowerCase());
     if (url.protocol !== "https:") url.protocol = "https:";
@@ -1303,6 +1371,12 @@ function normalizeProfileURL (profileUrl, depth = 0) {
     return link;
 }
 
+/**
+ * Translate a regular tag on the given element
+ * @param {HTMLElement} target - the element to attach translation
+ * @param {string} tagName - the tag name to translate
+ * @param {TranslationOptions} options - translation options
+ */
 async function translateTag (target, tagName, options) {
     if (!tagName) return;
 
@@ -1319,6 +1393,7 @@ async function translateTag (target, tagName, options) {
 
     const wikiPages = await queueNetworkRequestMemoized("wiki", normalizedTag);
 
+    /** @type {Array<{name:string, prettyName:string, category:number}>} */
     let tags = [];
     if (wikiPages.length > 0) {
         tags = wikiPages
@@ -1329,16 +1404,16 @@ async function translateTag (target, tagName, options) {
                 prettyName: title.replaceAll("_", " "),
                 category: tag.category,
             }));
-    // `normalizedTag` consists of only ASCII characters except percent, asterics, and comma
+    // `normalizedTag` consists of only ASCII characters except percent, asterisks, and comma
     } else if (/^[\u0020-\u0024\u0026-\u0029+\u002D-\u007F]+$/.test(normalizedTag)) {
         // The server is already converting the values to
         // lowercase on its end so no need to do it here
-        tags = await queueNetworkRequestMemoized("tag", normalizedTag);
-        if (tags.length === 0) {
+        let rawTags = await queueNetworkRequestMemoized("tag", normalizedTag);
+        if (rawTags.length === 0) {
             const aliases = await queueNetworkRequestMemoized("alias", normalizedTag);
-            tags = aliases.map((alias) => alias.consequent_tag);
+            rawTags = aliases.map((alias) => alias.consequent_tag);
         }
-        tags = tags.map((tag) => ({
+        tags = rawTags.map((tag) => ({
             name: tag.name,
             prettyName: tag.name.replaceAll("_", " "),
             category: tag.category,
@@ -1353,12 +1428,19 @@ async function translateTag (target, tagName, options) {
     addDanbooruTags($(target), tags, options);
 }
 
-function addDanbooruTags ($target, tags, options = {}) {
+/** @type {Record<string, JQuery>} */
+const renderedTagsCache = {};
+/**
+ * Attached translations to the target element
+ * @param {JQuery} $target - the element to attach the translation
+ * @param {Array<{name:string, prettyName:string, category:number}>} tags - translated tags
+ * @param {TranslationOptions} options - extra translation options
+ */
+function addDanbooruTags ($target, tags, options) {
     if (tags.length === 0) return;
 
-    const renderedTags = addDanbooruTags.cache || (addDanbooruTags.cache = {});
     const {
-        onadded = null, // ($tag, options)=>{},
+        onadded = null,
         tagPosition: {
             insertTag = TAG_POSITIONS.afterend.insertTag,
             findTag = TAG_POSITIONS.afterend.findTag,
@@ -1369,8 +1451,8 @@ function addDanbooruTags ($target, tags, options = {}) {
     classes = `ex-translated-tags ${classes}`;
 
     const key = tags.map((tag) => tag.name).join("");
-    if (!(key in renderedTags)) {
-        renderedTags[key] = $(noIndents`
+    if (!(key in renderedTagsCache)) {
+        renderedTagsCache[key] = $(noIndents`
             <span class="${classes}">
                 ${tags.map((tag) => (
                     noIndents`
@@ -1383,7 +1465,7 @@ function addDanbooruTags ($target, tags, options = {}) {
                 .join(", ")}
             </span>`);
     }
-    const $tagsContainer = renderedTags[key].clone().prop("className", classes);
+    const $tagsContainer = renderedTagsCache[key].clone().prop("className", classes);
 
     const $duplicates = findTag($target)
         .filter((i, el) => el.textContent.trim() === $tagsContainer.text().trim());
@@ -1397,6 +1479,12 @@ function addDanbooruTags ($target, tags, options = {}) {
     if (onadded) onadded($tagsContainer, options);
 }
 
+/**
+ * Translate an artist on the given element using the url to their profile
+ * @param {HTMLElement} element - the element to attach the translations
+ * @param {string|string[]} profileUrls - the artist's urls to translate
+ * @param {TranslationOptions} options - extra translation options
+ */
 async function translateArtistByURL (element, profileUrls, options) {
     if (!profileUrls || profileUrls.length === 0) return;
 
@@ -1415,6 +1503,12 @@ async function translateArtistByURL (element, profileUrls, options) {
     for (const artist of artists) addDanbooruArtist($(element), artist, options);
 }
 
+/**
+ * Translate an artist on the given element using the their name
+ * @param {HTMLElement} element - the element to attach the translations
+ * @param {string} artistName - the artist name
+ * @param {TranslationOptions} options - extra translation options
+ */
 async function translateArtistByName (element, artistName, options) {
     if (!artistName) return;
 
@@ -1428,10 +1522,25 @@ async function translateArtistByName (element, artistName, options) {
     for (const artist of artists) addDanbooruArtist($(element), artist, options);
 }
 
-function addDanbooruArtist ($target, artist, options = {}) {
-    const renderedArtists = addDanbooruArtist.cache || (addDanbooruArtist.cache = {});
+/** @type {Record<string, JQuery>} */
+const renderedArtistsCache = {};
+
+/**
+ * @typedef {import("./types").ResponseArtist & Partial<{
+ *      prettyName: string,
+ *      escapedName: string,
+ *      encodedName: string,
+ *  }>} TranslatedArtist
+ * */
+/**
+ * Attach the artist's translation to the target element
+ * @param {JQuery} $target - the target element to attach the translation
+ * @param {TranslatedArtist} artist - the artist data
+ * @param {TranslationOptions} options - extra translation options
+ */
+function addDanbooruArtist ($target, artist, options) {
     const {
-        onadded = null, // ($tag, options)=>{},
+        onadded = null,
         tagPosition: {
             insertTag = TAG_POSITIONS.afterend.insertTag,
             findTag = TAG_POSITIONS.afterend.findTag,
@@ -1453,28 +1562,38 @@ function addDanbooruArtist ($target, artist, options = {}) {
         return;
     }
 
-    if (!(artist.id in renderedArtists)) {
-        renderedArtists[artist.id] = $(noIndents`
+    if (!(artist.id in renderedArtistsCache)) {
+        renderedArtistsCache[artist.id] = $(noIndents`
             <div class="${classes}">
                 <a href="${BOORU}/artists/${artist.id}" target="_blank">
                     ${artist.escapedName}
                 </a>
             </div>`);
     }
-    const $tag = renderedArtists[artist.id].clone().prop("className", classes);
+    const $tag = renderedArtistsCache[artist.id].clone().prop("className", classes);
     if (DEBUG) $tag.attr("rulename", ruleName || "");
     insertTag($target, $tag);
-    addTooltip($tag.find("a")[0], (tip) => buildArtistTooltip(artist, tip));
+    addTooltip(
+        $tag.find("a")[0],
+        (tip) => buildArtistTooltip(/** @type {Required<TranslatedArtist>} */(artist), tip),
+    );
 
     if (onadded) onadded($tag, options);
 }
 
+/** @type {(css:string) => CSSStyleSheet} */
 const makeStyleSheetMemoized = _.memoize((css) => {
     const sheet = new CSSStyleSheet();
     sheet.replaceSync(css);
     return sheet;
 });
 
+/**
+ * Universal method to attach add a content as Shadow DOM
+ * @param {JQuery} $target - container for the Shadow DOM
+ * @param {JQuery} $content - the Shadow DOM content
+ * @param {string} css - the Shadow DOM CSS
+ */
 function attachShadow ($target, $content, css) {
     // Return if the target already have shadow
     if ($target.prop("shadowRoot")) return;
@@ -1492,6 +1611,11 @@ function attachShadow ($target, $content, css) {
     }
 }
 
+/**
+ * Get a color similar to the background under the element and theme type
+ * @param {JQuery} $element - the target element
+ * @returns {{ theme:"dark"|"light", adjustedColor:string}}
+ */
 function chooseBackgroundColorScheme ($element) {
     const TRANSPARENT_COLOR = "rgba(0, 0, 0, 0)";
     // Halfway between white/black in the RGB scheme
@@ -1499,15 +1623,16 @@ function chooseBackgroundColorScheme ($element) {
 
     // Get background colors of all parent elements with a nontransparent background color
     const backgroundColors = $element.parents().addBack()
-        .map((i, el) => $(el).css("background-color"))
         .get()
+        .map((el) => $(el).css("background-color"))
         .filter((color) => color !== TRANSPARENT_COLOR)
         .reverse()
         .map((color) => color.match(/\d+/g));
     // Calculate summary color and get RGB channels
     let colorChannels = [255, 255, 255];
     // eslint-disable-next-line no-restricted-syntax
-    for (const [r2, g2, b2, al2 = 1] of backgroundColors) {
+    for (const channels of backgroundColors) {
+        const [r2, g2, b2, al2 = 1] = channels.map(Number);
         const [r1, g1, b1, al1 = 1] = colorChannels;
         colorChannels = [
             r1 * al1 * (1 - al2) + r2 * al2,
@@ -1537,11 +1662,17 @@ function chooseBackgroundColorScheme ($element) {
     };
 }
 
-async function buildArtistTooltip (artist, { tooltip, content, target }) {
-    const renderedTips = buildArtistTooltip.cache || (buildArtistTooltip.cache = {});
+/** @type {Record<string, Promise<JQuery>>} */
+const renderedTipsCache = {};
 
-    if (!(artist.name in renderedTips)) {
-        renderedTips[artist.name] = buildArtistTooltipContent(artist);
+/**
+ * Fills the artist tooltip with a content
+ * @param {Required<TranslatedArtist>} artist - the artist data
+ * @param {import("./types").TooltipInstance} tip - the tooltip instance
+ */
+async function buildArtistTooltip (artist, { tooltip, content, target }) {
+    if (!(artist.name in renderedTipsCache)) {
+        renderedTipsCache[artist.name] = buildArtistTooltipContent(artist);
     }
 
     if (
@@ -1556,7 +1687,7 @@ async function buildArtistTooltip (artist, { tooltip, content, target }) {
     }
 
     target.classList.add("loading-data");
-    let $tipContent = await renderedTips[artist.name];
+    let $tipContent = await renderedTipsCache[artist.name];
     // For correct work of CORS images must not be cloned at first displaying
     if ($tipContent.parent().length > 0) $tipContent = $tipContent.clone(true, true);
     // eslint-disable-next-line no-use-before-define
@@ -1896,6 +2027,10 @@ const ARTIST_TOOLTIP_CSS = `
     }
 `;
 
+/**
+ * Builds artist tooltip content
+ * @param {Required<TranslatedArtist>} artist - the artist data
+ */
 async function buildArtistTooltipContent (artist) {
     const status = SHOW_DELETED ? "status:any" : "-status:deleted";
     const rating = ["https://safebooru.donmai.us", "https://donmai.moe/"].includes(BOORU)
@@ -1988,12 +2123,16 @@ async function buildArtistTooltipContent (artist) {
             </section>
         </article>
     `);
-    $content.find(".post-list").append(posts.map(buildPostPreview));
+    $content.find(".post-list").append(...posts.map(buildPostPreview));
     $content.find(".settings-icon").click(showSettings);
     $content.find(".btn").click(loadNextPage);
     return $content;
 }
 
+/**
+ * Format artist urls
+ * @param {Required<TranslatedArtist>} artist - the artist data
+ */
 function buildArtistUrlsHtml (artist) {
     const artistUrls = _(artist.urls)
         .chain()
@@ -2022,9 +2161,13 @@ function buildArtistUrlsHtml (artist) {
         .join("");
 }
 
+/**
+ * Format time in relative form
+ * @param {number|string} time - timestamp
+ */
 function timeToAgo (time) {
-    const interval = new Date(Date.now() - new Date(time));
-    if (interval < 60_000) return "less than a minute ago";
+    const interval = new Date(Date.now() - new Date(time).getTime());
+    if (interval.getTime() < 60_000) return "less than a minute ago";
     const ranks = [{
         value: interval.getUTCFullYear() - 1970,
         unit: "year",
@@ -2048,6 +2191,10 @@ function timeToAgo (time) {
     return "∞ ago";
 }
 
+/**
+ * Format time in MM:SS format
+ * @param {number} seconds
+ */
 function formatDuration (seconds) {
     const sec = Math.round(seconds) || 1;
 
@@ -2057,13 +2204,21 @@ function formatDuration (seconds) {
     return `${mm}:${ss}`;
 }
 
-// Based on https://stackoverflow.com/questions/15900485
+/**
+ * Format file size in CI units
+ * @param {number} bytes
+ * @see https://stackoverflow.com/questions/15900485
+ */
 function formatBytes (bytes) {
     const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return `${Number.parseFloat((bytes / (1024 ** i)).toFixed(2))} ${sizes[i]}`;
 }
 
+/**
+ * Format the post tags
+ * @param {import("./types").ResponsePosts} post - the pose data
+ */
 function formatTagString (post) {
     return _([
         post.tag_string_artist,
@@ -2079,6 +2234,10 @@ function formatTagString (post) {
         .value();
 }
 
+/**
+ * Format the post image info
+ * @param {import("./types").ResponsePosts} post - the pose data
+ */
 function formatImageInfo (post) {
     if (![
         post.media_asset.file_size,
@@ -2094,10 +2253,14 @@ function formatImageInfo (post) {
         </a>`;
 }
 
+/**
+ * Extract the post preview info
+ * @param {import("./types").ResponsePosts} post - the pose data
+ */
 function getPostPreview (post) {
-    const hidpi = window.devicePixelRatio > 1;
-    const size = hidpi ? "360x360" : "180x180";
-    const scale = hidpi ? 0.5 : 1;
+    const hiDpi = window.devicePixelRatio > 1;
+    const size = hiDpi ? "360x360" : "180x180";
+    const scale = hiDpi ? 0.5 : 1;
     const previewAsset = post.media_asset.variants?.find((variant) => variant.type === size);
     if (previewAsset) {
         return {
@@ -2115,6 +2278,10 @@ function getPostPreview (post) {
     };
 }
 
+/**
+ * Build the post preview
+ * @param {import("./types").ResponsePosts} post - the pose data
+ */
 function buildPostPreview (post) {
     const RATINGS = {
         g: 0,
@@ -2189,6 +2356,10 @@ function buildPostPreview (post) {
     return $preview;
 }
 
+/**
+ * Load a neighbor page of preview
+ * @param {JQuery.Event} ev - event of pressing the button
+ */
 async function loadNextPage (ev) {
     const $btn = $(ev.target);
     const $container = $btn.parent();
@@ -2211,10 +2382,14 @@ async function loadNextPage (ev) {
     intervalNetworkHandler();
     const posts = await waitPosts;
     $container.removeClass("loading");
-    $container.find(".post-list").empty().append(posts.map(buildPostPreview));
+    $container.find(".post-list").empty().append(...posts.map(buildPostPreview));
 }
 
 function showSettings () {
+    /**
+     * Generate input for a setting
+     * @param {typeof SETTINGS.list[number]} setting
+     */
     function settingToInput (setting) {
         const value = SETTINGS.get(setting.name);
         switch (setting.type) {
@@ -2256,6 +2431,7 @@ function showSettings () {
         $(document).off("keydown", closeSettingsOnEscape);
     }
 
+    /** @param {JQuery.Event} ev */
     function closeSettingsOnEscape (ev) {
         if (ev.key === "Escape" && !ev.altKey && !ev.ctrlKey && !ev.shiftKey) {
             closeSettings();
@@ -2340,9 +2516,9 @@ function showSettings () {
             let value = null;
             if ($input.is("select")) {
                 value = $input.val();
-            } else if ($input.prop("type") === "number") {
+            } else if (/** @type {any} */($input.prop("type")) === "number") {
                 value = Number($input.val());
-            } else if ($input.prop("type") === "checkbox") {
+            } else if (/** @type {any} */($input.prop("type")) === "checkbox") {
                 value = $input.prop("checked");
             } else {
                 return;
@@ -2374,6 +2550,9 @@ function showSettings () {
  * tinami - light only?
  * twitter, tweetdeck - body[style] + body[data-nightmode=true/false]
  * saucenao - dark only
+ * @param {HTMLElement} elem - the element that contains theme info
+ * @param {string} attr - the attribute name with the theme info
+ * @param {(el:HTMLElement) => string} themeExtractor - theme getter
  */
 function watchSiteTheme (elem, attr, themeExtractor) {
     let theme;
@@ -2394,18 +2573,36 @@ function watchSiteTheme (elem, attr, themeExtractor) {
     updateTheme();
 }
 
-function findAndTranslate (mode, selector, options = {}) {
+/** @typedef {import("./types").TranslationOptions} TranslationOptions */
+/**
+ * @template {TranslationOptions["mode"]} T
+ * @typedef {T extends "artist"
+ *  ? Omit<TranslationOptions, "mode"|"toTagName">
+ *  : Omit<TranslationOptions, "mode"|"toProfileUrl">
+ * } TranslationOptionsT
+ */
+
+/**
+ * Add translations to the matched elements
+ * @template {TranslationOptions["mode"]} T
+ * @param {T} mode - method of translating the element
+ * @param {string} selector - simple selector of the translated element.
+ *  Max example: `div.class#id[attr][attr2=val], *[attr3~="part"][attr4='val']`
+ * @param {TranslationOptionsT<T>} [options] - extra options for translating
+ */
+function findAndTranslate (mode, selector, options) {
+    /** @type {TranslationOptions} */
     const fullOptions = {
         asyncMode: false,
         requiredAttributes: null,
-        predicate: null, // (el) => true,
-        toProfileUrl: (el) => $(el).closest("a").prop("href"),
+        predicate: null,
+        toProfileUrl: /** @type {(el:HTMLElement)=>any} */((el) => $(el).closest("a").prop("href")),
         toTagName: (el) => el.textContent,
         tagPosition: TAG_POSITIONS.afterend,
         classes: "",
-        onadded: null, // ($tag, options) => {},
+        onadded: null,
         mode,
-        ...options,
+        ...(options),
     };
 
     if (typeof fullOptions.predicate === "string") {
@@ -2435,13 +2632,15 @@ function findAndTranslate (mode, selector, options = {}) {
         }
     }());
 
+    /** @param {HTMLElement} elem */
     const tryToTranslate = (elem) => {
-        if (!fullOptions.predicate || fullOptions.predicate(elem)) {
+        const canTranslate = /** @type {((el: HTMLElement) => boolean)} */(fullOptions.predicate);
+        if (!canTranslate || canTranslate(elem)) {
             translate(elem, getData(elem), fullOptions);
         }
     };
 
-    $(selector).each((i, elem) => tryToTranslate(elem));
+    $(selector).each((i, elem) => tryToTranslate(/** @type {HTMLElement} */(elem)));
 
     if (!fullOptions.asyncMode) return;
 
@@ -2451,16 +2650,21 @@ function findAndTranslate (mode, selector, options = {}) {
         rootNode: document.body,
         queries: [query],
         callback: ([summary]) => {
-            let elems = summary.added;
+            let elements = summary.added;
             if (summary.attributeChanged) {
-                elems = [...elems, ...Object.values(summary.attributeChanged).flat(1)];
+                elements = [...elements, ...Object.values(summary.attributeChanged).flat(1)];
             }
             // eslint-disable-next-line unicorn/no-array-for-each
-            elems.forEach(tryToTranslate);
+            elements.forEach(tryToTranslate);
         },
     });
 }
 
+/**
+ * Delete the tag element when the target element will change url (`href`)
+ * @param {JQuery} $tag - the tag to remove
+ * @param {TranslationOptions} options - translation options
+ */
 function deleteOnUrlChange ($tag, options) {
     const $container = options.tagPosition.getTagContainer($tag);
     const watcher = new MutationObserver((mutations) => {
@@ -2472,13 +2676,18 @@ function deleteOnUrlChange ($tag, options) {
     watcher.observe($container[0], { attributes: true });
 }
 
+/**
+ * Find and get link in child elements
+ * @param {HTMLElement} el - the parent element
+ * @returns {string}
+ */
 function linkInChildren (el) {
-    return $(el).find("a").prop("href");
+    return /** @type {any} */($(el).find("a").prop("href"));
 }
 
 /* https://twitter.com/search?q=%23ガルパン版深夜のお絵描き60分一本勝負 */
 /* #艦これ版深夜のお絵描き60分一本勝負 search query for TweetDeck */
-const COMMON_HASHTAG_REGEXES = [
+const COMMON_HASHTAG_REGEXPS = [
     /生誕祭\d*$/,
     /誕生祭\d*$/,
     /版もうひとつの深夜の真剣お絵描き60分一本勝負(?:_\d+$|$)/,
@@ -2489,10 +2698,14 @@ const COMMON_HASHTAG_REGEXES = [
     /版真剣お絵描き60分一本勝(?:_\d+$|$)/,
     /版お絵描き60分一本勝負(?:_\d+$|$)/,
 ];
+/**
+ * Get tag name without common prefixes or suffixes
+ * @param {HTMLElement} el - the target element
+ */
 const getNormalizedHashtagName = (el) => {
     const tagName = el.textContent;
     // eslint-disable-next-line no-restricted-syntax
-    for (const regexp of COMMON_HASHTAG_REGEXES) {
+    for (const regexp of COMMON_HASHTAG_REGEXPS) {
         const normalizedTagName = tagName.replace(regexp, "");
         if (normalizedTagName !== tagName) {
             if (normalizedTagName !== "") {
@@ -2504,7 +2717,11 @@ const getNormalizedHashtagName = (el) => {
     return tagName;
 };
 
-const getNormilizedDecentralizedSocNetUrl = (el) => {
+/**
+ * Normalize profile url for soc.net. like Mastodon or Misskey
+ * @param {HTMLElement} el - the target element
+ */
+const getNormalizedDecentralizedSocNetUrl = (el) => {
     const fullName = el.textContent.trim();
 
     // eslint-disable-next-line max-len
@@ -2634,7 +2851,7 @@ function initializePixiv () {
         }
     `);
 
-    // To remove smth like `50000users入り`, e.g. here https://www.pixiv.net/en/artworks/68318104
+    // To remove something like `50000users入り`, e.g. here https://www.pixiv.net/en/artworks/68318104
     const getNormalizedTagName = (el) => el.textContent.replace(/\d+users入り$/, "");
 
     findAndTranslate("tag", [
@@ -2705,7 +2922,7 @@ function initializePixiv () {
         ruleName: "popular tag",
     });
 
-    // Tag of recommended illusts on index page: https://www.pixiv.net/ https://www.pixiv.net/en/
+    // Tag of recommended posts on index page: https://www.pixiv.net/ https://www.pixiv.net/en/
     findAndTranslate("tag", "h2", {
         predicate: "section > div > div > h2",
         toTagName: (el) => (el.textContent.includes("#")
@@ -2713,7 +2930,7 @@ function initializePixiv () {
             : null),
         tagPosition: TAG_POSITIONS.beforeend,
         asyncMode: true,
-        ruleName: "tag of recommended illusts",
+        ruleName: "tag of recommended posts",
     });
 
     // Illust author aside https://www.pixiv.net/en/artworks/66475847
@@ -2846,7 +3063,7 @@ function initializeNijie () {
     // https://nijie.info/view.php?id=325606
     findAndTranslate("artist", "#dojin_left > .right > :first-child > a", {
         classes: "inline",
-        ruleName: "doujin artist",
+        ruleName: "dojin artist",
     });
 
     // http://nijie.info/view.php?id=208491
@@ -2932,7 +3149,7 @@ function initializeNicoSeiga () {
     findAndTranslate("artist", "div.lg_txt_illust:has(strong)", {
         classes: "inline",
         tagPosition: TAG_POSITIONS.beforeend,
-        toProfileUrl: (el) => $("a:has(.pankuzu_suffix)").prop("href"),
+        toProfileUrl: () => /** @type {any} */($("a:has(.pankuzu_suffix)").prop("href")),
         ruleName: "illust artist anon",
     });
 
@@ -2976,7 +3193,7 @@ function initializeDeviantArt () {
     // Post page
     // https://www.deviantart.com/koyorin/art/Ruby-570526828
     findAndTranslate("artist", "a.user-link", {
-        toProfileUrl: (a) => a.href.replace("/gallery", ""),
+        toProfileUrl: (a) => /** @type {HTMLAnchorElement} */(a).href.replace("/gallery", ""),
         predicate: "div[data-hook='deviation_meta'] a.user-link:not(:has(img))",
         requiredAttributes: "href",
         tagPosition: TAG_POSITIONS.afterParent,
@@ -3015,7 +3232,7 @@ function initializeHentaiFoundry () {
         ruleName: "main profile tab",
     });
 
-    // Orher tabs https://www.hentai-foundry.com/pictures/user/DrGraevling
+    // Other tabs https://www.hentai-foundry.com/pictures/user/DrGraevling
     findAndTranslate("artist", ".breadcrumbs a[href^='/user/']", {
         classes: "inline",
         ruleName: "sub-profile tab",
@@ -3179,7 +3396,7 @@ function initializeArtStation () {
         predicate: ".user-info > h1",
         toProfileUrl: toFullURL,
         asyncMode: true,
-        ruleName: "arist profile",
+        ruleName: "artist profile",
         // The artist name is removed when the profile page is a bit scrolled
         onadded: ($tag) => {
             const h1 = $tag.prev()[0];
@@ -3187,7 +3404,7 @@ function initializeArtStation () {
             const mo = new MutationObserver(() => {
                 if (!container.contains(h1)) {
                     $tag.remove();
-                    mo.disconect();
+                    mo.disconnect();
                 }
             });
             mo.observe(container, { childList: true });
@@ -3221,7 +3438,7 @@ function initializeArtStation () {
     // https://www.artstation.com/jubi/followers
     findAndTranslate("artist", "h3.user-name", {
         asyncMode: true,
-        class: "inline",
+        classes: "inline",
         ruleName: "artist followers",
     });
 
@@ -3235,7 +3452,7 @@ function initializeArtStation () {
     // https://dylan-kowalski.artstation.com/
     findAndTranslate("artist", ".site-title a", {
         toProfileUrl: toFullURL,
-        ruleName: "perosnal sites",
+        ruleName: "personal sites",
     });
 }
 
@@ -3276,10 +3493,11 @@ function initializeSauceNAO () {
         classes: "inline",
         ruleName: "artist by link",
         toProfileUrl: (el) => {
-            if (!el.href.startsWith("https://twitter.com/")) return el.href;
+            const a = /** @type {HTMLAnchorElement} */(el);
+            if (!a.href.startsWith("https://twitter.com/")) return a.href;
             return [
-                `https://twitter.com/${el.textContent.slice(1)}`,
-                `https://twitter.com/intent/user?user_id=${el.href.match(/\d+/)[0]}`,
+                `https://twitter.com/${a.textContent.slice(1)}`,
+                `https://twitter.com/intent/user?user_id=${a.href.match(/\d+/)[0]}`,
             ];
         },
     });
@@ -3312,18 +3530,18 @@ function initializeMastodon () {
     // artist name in channel header
     findAndTranslate("artist", "span", {
         predicate: ".account__header__tabs__name small span",
-        toProfileUrl: getNormilizedDecentralizedSocNetUrl,
+        toProfileUrl: getNormalizedDecentralizedSocNetUrl,
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
         ruleName: "artist profile",
         asyncMode: true,
     });
 
-    // Post author, commentor
-    // can include reposted messages from other activitypub sites
+    // Post author, commenter
+    // can include re-posted messages from other ActivityPub sites
     findAndTranslate("artist", "span.display-name__account", {
         predicate: "div.status span.display-name__account",
-        toProfileUrl: getNormilizedDecentralizedSocNetUrl,
+        toProfileUrl: getNormalizedDecentralizedSocNetUrl,
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
         ruleName: "post/comment author",
@@ -3334,7 +3552,7 @@ function initializeMastodon () {
     // https://pawoo.net/@mayumani/102910946688187767
     findAndTranslate("artist", "span.display-name__account", {
         predicate: "div.detailed-status span.display-name__account",
-        toProfileUrl: getNormilizedDecentralizedSocNetUrl,
+        toProfileUrl: getNormalizedDecentralizedSocNetUrl,
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
         ruleName: "expanded post author",
@@ -3345,7 +3563,7 @@ function initializeMastodon () {
     // https://pawoo.net/@yamadorikodi/following
     findAndTranslate("artist", "span.display-name__account", {
         predicate: "div.account span.display-name__account",
-        toProfileUrl: getNormilizedDecentralizedSocNetUrl,
+        toProfileUrl: getNormalizedDecentralizedSocNetUrl,
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
         ruleName: "artist followers",
@@ -3502,7 +3720,7 @@ function initializeMisskey () {
     // https://misskey.art/notes/9em92xdrid
     // https://misskey.design/notes/9eh5y6d2rz
     findAndTranslate("artist", ".xpJo5", {
-        toProfileUrl: getNormilizedDecentralizedSocNetUrl,
+        toProfileUrl: getNormalizedDecentralizedSocNetUrl,
         asyncMode: true,
         ruleName: "artist profile",
     });
@@ -3510,7 +3728,7 @@ function initializeMisskey () {
     // Artist name in header
     findAndTranslate("artist", "span", {
         predicate: ".username > span:first-child",
-        toProfileUrl: getNormilizedDecentralizedSocNetUrl,
+        toProfileUrl: getNormalizedDecentralizedSocNetUrl,
         asyncMode: true,
         ruleName: "artist header",
     });
@@ -3518,7 +3736,7 @@ function initializeMisskey () {
     // Artist name in note
     findAndTranslate("artist", "span", {
         predicate: ".x1TBL > span:first-child",
-        toProfileUrl: getNormilizedDecentralizedSocNetUrl,
+        toProfileUrl: getNormalizedDecentralizedSocNetUrl,
         asyncMode: true,
         classes: "inline",
         ruleName: "artist note",
@@ -3527,7 +3745,7 @@ function initializeMisskey () {
     // Artist name in note comment
     findAndTranslate("artist", "span", {
         predicate: ".xBLVI > span:first-child",
-        toProfileUrl: getNormilizedDecentralizedSocNetUrl,
+        toProfileUrl: getNormalizedDecentralizedSocNetUrl,
         asyncMode: true,
         classes: "inline",
         ruleName: "artist note comment",
@@ -3537,7 +3755,7 @@ function initializeMisskey () {
     // (hover profile picture)
     findAndTranslate("artist", "span", {
         predicate: ".x8X77 > span:first-child",
-        toProfileUrl: getNormilizedDecentralizedSocNetUrl,
+        toProfileUrl: getNormalizedDecentralizedSocNetUrl,
         asyncMode: true,
         ruleName: "artist popup",
     });
@@ -3584,7 +3802,7 @@ function initializeFantia () {
     // https://fantia.jp/ (投稿, 商品, コミッション tabs)
     findAndTranslate("artist", "a", {
         predicate: (el) => (
-            el.matches(".module-author > a:first-of-type") && el.getAttribute("href")
+            el.matches(".module-author > a:first-of-type") && !!el.getAttribute("href")
         ),
         requiredAttributes: "href",
         tagPosition: {
