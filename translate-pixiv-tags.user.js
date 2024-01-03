@@ -614,6 +614,7 @@ const addTooltip = tooltipGenerator({
     containerName: "ex-tips",
 });
 
+/** @type {{expires_in:number} | {}} */
 const CACHE_PARAM = (CACHE_LIFETIME ? { expires_in: CACHE_LIFETIME } : {});
 // Setting this to the maximum since batches could return more than the amount being queried
 const API_LIMIT = 1000;
@@ -2093,16 +2094,23 @@ async function buildArtistTooltipContent (artist) {
     // Process the queue immediately
     intervalNetworkHandler();
     // This function is cached so it's OK to do direct calls
-    const waitVisiblePostCount = artist.is_banned
-        ? Promise.resolve({ counts: { posts: 0 } })
-        : $.getJSON(
-            `${BOORU}/counts/posts.json`,
-            { tags: `${artist.name} ${status} ${rating}`, ...CACHE_PARAM },
-        );
-    const waitTotalPostCount = $.getJSON(
+    /** @type {Promise<{ counts: { posts: number } }>} */
+    const waitTotalPostCount = makeRequest(
+        "GET",
         `${BOORU}/counts/posts.json`,
         { tags: `${artist.name} status:any`, ...CACHE_PARAM },
     );
+
+    /** @type {Promise<{ counts: { posts: number } }>} */
+    const waitVisiblePostCount = artist.is_banned
+        ? Promise.resolve({ counts: { posts: 0 } })
+        : (SHOW_DELETED && !rating
+            ? waitTotalPostCount
+            : makeRequest(
+                "GET",
+                `${BOORU}/counts/posts.json`,
+                { tags: `${artist.name} ${status} ${rating}`, ...CACHE_PARAM },
+            ));
 
     const [
         { counts: { posts: visiblePostsCount } } = { counts: { posts: 0 } },
