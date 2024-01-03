@@ -490,21 +490,6 @@ const PROGRAM_CSS = `
     white-space: nowrap;
 }
 /* dirt hack for DevianArt: add :not(#id) to rapidly increase rule specificity */
-.ex-translated-tag-category-5:not(#id) {
-    color: #fd9200 !important;
-}
-.ex-translated-tag-category-4:not(#id) {
-    color: #00ab2c !important;
-}
-.ex-translated-tag-category-3:not(#id) {
-    color: #a800aa !important;
-}
-.ex-translated-tag-category-1:not(#id) {
-    color: #c00004 !important;
-}
-.ex-translated-tag-category-0:not(#id) {
-    color: #0075f8 !important;
-}
 .tpt-dark .ex-translated-tag-category-5:not(#id) {
     color: #ead084 !important;
 }
@@ -519,6 +504,21 @@ const PROGRAM_CSS = `
 }
 .tpt-dark .ex-translated-tag-category-0:not(#id) {
     color: #009be6 !important;
+}
+.ex-translated-tag-category-5:not(#id), .tpt-light .ex-translated-tag-category-5:not(#id) {
+    color: #fd9200 !important;
+}
+.ex-translated-tag-category-4:not(#id), .tpt-light .ex-translated-tag-category-4:not(#id) {
+    color: #00ab2c !important;
+}
+.ex-translated-tag-category-3:not(#id), .tpt-light .ex-translated-tag-category-3:not(#id) {
+    color: #a800aa !important;
+}
+.ex-translated-tag-category-1:not(#id), .tpt-light .ex-translated-tag-category-2:not(#id) {
+    color: #c00004 !important;
+}
+.ex-translated-tag-category-0:not(#id), .tpt-light .ex-translated-tag-category-1:not(#id) {
+    color: #0075f8 !important;
 }
 
 .ex-artist-tag {
@@ -1712,6 +1712,35 @@ function chooseBackgroundColorScheme ($element) {
     };
 }
 
+/* eslint-disable unicorn/numeric-separators-style */
+/** @param {number} c */
+const gammaToLinear = (c) => (c >= 0.04045 ? ((c + 0.055) / 1.055) ** 2.4 : c / 12.92);
+/**
+ * Converts an RGB color to OKLCH
+ * @param {number} r
+ * @param {number} g
+ * @param {number} b
+ * @see https://gist.github.com/mjackson/5311256
+ */
+function rgbToOklch (r, g, b) {
+    // eslint-disable-next-line no-param-reassign, max-statements-per-line
+    r = gammaToLinear(r / 255); g = gammaToLinear(g / 255); b = gammaToLinear(b / 255);
+    // firstly get OKLAB
+    const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+    const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+    const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+    const L = l * +0.2104542553 + m * +0.793617785 + s * -0.0040720468;
+    const A = l * +1.9779984951 + m * -2.428592205 + s * +0.4505937099;
+    const B = l * +0.0259040371 + m * +0.7827717662 + s * -0.808675766;
+    // https://github.com/color-js/color.js/blob/main/src/spaces/oklch.js#L26
+    return [
+        L,
+        Math.hypot(A, B),
+        Math.atan2(B, A) * 180 / Math.PI,
+    ];
+}
+/* eslint-enable unicorn/numeric-separators-style */
+
 /** @type {Record<string, Promise<JQuery>>} */
 const renderedTipsCache = {};
 
@@ -2889,16 +2918,19 @@ function initializePixiv () {
             margin-left: 6px;
         }
         /* Tags in a box */
+        a[color] {
+            color: #333;
+        }
         a[color] > div:not(#id) {
             max-width: initial;
         }
         a[color] > div > .ex-translated-tags a {
             font-weight: bold;
         }
-        .shadow.ex-translated-tags a {
-            text-shadow: 0 0 3px #fff8;
+        .ex-translated-tags.darker a {
+            filter: contrast(1.1) brightness(0.85);
         }
-        .tpt-dark .shadow.ex-translated-tags a, .dark-shadow.ex-translated-tags a {
+        .dark-shadow.ex-translated-tags a {
             text-shadow: 0 0 3px #000B;
         }
         .ex-translated-tags.no-brackets::before,
@@ -2960,17 +2992,23 @@ function initializePixiv () {
             findTag: ($container) => $container.parent().find(TAG_SELECTOR),
             getTagContainer: ($elem) => $elem.nextUntil(":last-child"),
         },
-        classes: "no-brackets shadow",
+        classes: "no-brackets tpt-light darker",
         asyncMode: true,
         // Fix bad contrast of tag color over colored bg
-        onadded: ($tag) => $tag
-            .closest("section,ul")
-            .find("a[color!='']")
-            .css("background-color", (_, color) => {
-                const alpha = $("body").is(".tpt-dark") ? 0.5 : 0.75;
-                return `${color.slice(0, -1)}, ${alpha})`;
-            })
-            .attr("color", ""),
+        onadded: ($tag) => {
+            $tag.click((ev) => ev.stopPropagation()); // prevent navigation at clicking the tag
+            $tag.closest("section,ul")
+                .find("a[color]:not([style])")
+                .css("background-color", () => `oklch(85% 0.15 ${Math.random() * 30 + 185})`);
+            $tag.closest("a")
+                .css("background-color", () => {
+                    const color = $tag.find("a").css("color")?.match(/\d+/g)?.map(Number);
+                    if (!color) return "";
+                    let h = rgbToOklch(color[0], color[1], color[2])[2];
+                    h += Math.round(Math.random() * 30) - 15;
+                    return `oklch(85% 0.15 ${h})`;
+                });
+        },
         ruleName: "related tag",
     });
 
