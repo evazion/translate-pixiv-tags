@@ -286,60 +286,72 @@
 
 "use strict";
 
-const SETTINGS = {
-    list: [
-        {
-            name: "booru",
-            defValue: "https://danbooru.donmai.us",
-            descr: "Danbooru subdomain for sending requests",
-            type: "list",
-            values: {
-                "https://danbooru.donmai.us":   "Danbooru",
-                "https://safebooru.donmai.us":  "Safebooru",
-                "https://betabooru.donmai.us":  "Betabooru",
-                "https://donmai.moe":           "Donmai.moe",
-            },
-        }, {
-            name: "cache_lifetime",
-            defValue: 60 * 5,
-            descr:
-                "The amount of time in seconds to cache data from Danbooru before querying again",
-            type: "number",
-        }, {
-            name: "preview_limit",
-            defValue: 3,
-            descr: "The number of recent posts to show in artist tooltips",
-            type: "number",
-        }, {
-            name: "show_preview_rating",
-            defValue: "s",
-            descr: "The upper level of rating for preview (higher ratings will be blurred)",
-            type: "list",
-            values: {
-                g: "General",
-                s: "Sensitive",
-                q: "Questionable",
-                e: "Explicit", // eslint-disable-line id-blacklist
-            },
-        }, {
-            name: "show_deleted",
-            defValue: true,
-            descr: "Check to show deleted posts, uncheck to hide",
-            type: "boolean",
-        }, {
-            name: "show_settings",
-            defValue: true,
-            descr: "Show the settings button in the script manager menu",
-            type: "boolean",
-        }, {
-            name: "debug",
-            defValue: false,
-            descr: "Print debug messages in console",
-            type: "boolean",
+/** @satisfies {import("./types").Setting[]} */
+const SETTINGS_SCHEMA = /** @type {const} */([
+    {
+        name: "booru",
+        defValue: "https://danbooru.donmai.us",
+        descr: "Danbooru subdomain for sending requests",
+        type: "list",
+        values: {
+            "https://danbooru.donmai.us":   "Danbooru",
+            "https://safebooru.donmai.us":  "Safebooru",
+            "https://betabooru.donmai.us":  "Betabooru",
+            "https://donmai.moe":           "Donmai.moe",
         },
-    ],
+    }, {
+        name: "cache_lifetime",
+        defValue: 60 * 5,
+        descr:
+            "The amount of time in seconds to cache data from Danbooru before querying again",
+        type: "number",
+    }, {
+        name: "preview_limit",
+        defValue: 3,
+        descr: "The number of recent posts to show in artist tooltips",
+        type: "number",
+    }, {
+        name: "show_preview_rating",
+        defValue: "s",
+        descr: "The upper level of rating for preview (higher ratings will be blurred)",
+        type: "list",
+        values: {
+            g: "General",
+            s: "Sensitive",
+            q: "Questionable",
+            e: "Explicit", // eslint-disable-line id-blacklist
+        },
+    }, {
+        name: "show_deleted",
+        defValue: true,
+        descr: "Check to show deleted posts, uncheck to hide",
+        type: "boolean",
+    }, {
+        name: "show_settings",
+        defValue: true,
+        descr: "Show the settings button in the script manager menu",
+        type: "boolean",
+    }, {
+        name: "debug",
+        defValue: false,
+        descr: "Print debug messages in console",
+        type: "boolean",
+    },
+]);
+
+/** @typedef {typeof SETTINGS_SCHEMA[number]["name"]} SettingsNames */
+/**
+ * @template {SettingsNames} T
+ * @typedef {import("./types").GetSettingType<typeof SETTINGS_SCHEMA[number], T>} SettingsType
+ */
+
+const SETTINGS = {
+    /**
+     * @param {string} settingName
+     * @param {any} value
+     */
     isValid (settingName, value) {
-        const setting = this.list.find((s) => s.name === settingName);
+        const setting = SETTINGS_SCHEMA.find((s) => s.name === settingName);
         if (!setting) {
             console.error(`[TPT]: No setting ${settingName}`);
             return false;
@@ -349,25 +361,36 @@ const SETTINGS = {
             case "list": return value in setting.values;
             case "boolean": return typeof value === "boolean";
             default:
+                // @ts-expect-error - here `type` is `never`
                 console.error(`[TPT]: Unsupported type ${setting.type}`);
                 return false;
         }
     },
+    /**
+     * @template {SettingsNames} N
+     * @param {N} settingName
+     * @returns {SettingsType<N>}
+     */
     get (settingName) {
-        const setting = this.list.find((s) => s.name === settingName);
+        const setting = SETTINGS_SCHEMA.find((s) => s.name === settingName);
         if (!setting) {
             console.error(`[TPT]: No setting ${settingName}`);
-            return null;
+            return /** @type {never} */ (null);
         }
         const value = GM_getValue(settingName);
         if (value === undefined || !this.isValid(settingName, value)) {
             GM_setValue(settingName, setting.defValue);
-            return setting.defValue;
+            return /** @type {SettingsType<N>} */(setting.defValue);
         }
         return value;
     },
+    /**
+     * @template {SettingsNames} N
+     * @param {N} settingName
+     * @param {SettingsType<N>} value
+     */
     set (settingName, value) {
-        const setting = this.list.find((s) => s.name === settingName);
+        const setting = SETTINGS_SCHEMA.find((s) => s.name === settingName);
         if (!setting) {
             console.error(`[TPT]: No setting ${settingName}`);
             return null;
@@ -376,7 +399,7 @@ const SETTINGS = {
             GM_setValue(settingName, value);
             return true;
         }
-        console.warn(`[TPT]: Invalid value ${value} for ${settingName}`);
+        console.warn(`[TPT]: Invalid value ${String(value)} for ${settingName}`);
         return false;
     },
 };
@@ -608,12 +631,36 @@ const API_LIMIT = 1000;
  */
 const QUEUED_NETWORK_REQUESTS = [];
 
+const REQUEST_DATA_MATCHERS = {
+    /**
+     * Case-insensitive comparing strings
+     * @param {string} data
+     * @param {string} item
+     */
+    string: (data, item) => data.toLowerCase() === item.toLowerCase(),
+    /**
+     * Case-insensitive looking in array of strings
+     * @param {string[]} data
+     * @param {string} item
+     */
+    array: (data, item) => data
+        .map((it) => it.toLowerCase())
+        .includes(item.toLowerCase()),
+    /**
+     * Case-insensitive looking in string-array
+     * @param {string} data
+     * @param {{ tag:string }} item
+     */
+    string_list: (data, item) => data
+        .toLowerCase()
+        .split(" ")
+        .includes(item.tag.toLowerCase()),
+};
+
 /** @type {import("./types").RequestDefinitions} */
 const NETWORK_REQUEST_DICT = {
     wiki: {
         url: "/wiki_pages",
-        data_key: "other_names",
-        data_type: "array",
         fields: "title,other_names,tag[category]",
         params (otherNamesList) {
             return {
@@ -624,11 +671,12 @@ const NETWORK_REQUEST_DICT = {
                 only: this.fields,
             };
         },
+        matches (data, item) {
+            return REQUEST_DATA_MATCHERS.array(data.other_names, item);
+        },
     },
     artist: {
         url: "/artists",
-        data_key: "name",
-        data_type: "string",
         fields: "id,name,is_banned,other_names,urls[url,is_active]",
         params (nameList) {
             return {
@@ -639,11 +687,12 @@ const NETWORK_REQUEST_DICT = {
                 only: this.fields,
             };
         },
+        matches (data, item) {
+            return REQUEST_DATA_MATCHERS.string(data.name, item);
+        },
     },
     tag: {
         url: "/tags",
-        data_key: "name",
-        data_type: "string",
         fields: "name,category,post_count",
         params (nameList) {
             return {
@@ -653,11 +702,12 @@ const NETWORK_REQUEST_DICT = {
                 only: this.fields,
             };
         },
+        matches (data, item) {
+            return REQUEST_DATA_MATCHERS.string(data.name, item);
+        },
     },
     alias: {
         url: "/tag_aliases",
-        data_key: "antecedent_name",
-        data_type: "string",
         fields: "antecedent_name,consequent_tag[name,category,post_count]",
         params (nameList) {
             return {
@@ -667,11 +717,12 @@ const NETWORK_REQUEST_DICT = {
                 only: this.fields,
             };
         },
+        matches (data, item) {
+            return REQUEST_DATA_MATCHERS.string(data.antecedent_name, item);
+        },
     },
     url: {
         url: "/artists",
-        data_key: "url_arr",
-        data_type: "array",
         fields: "id,name,is_deleted,is_banned,other_names,urls[url,is_active]",
         params (urlList) {
             return {
@@ -681,21 +732,14 @@ const NETWORK_REQUEST_DICT = {
                 only: this.fields,
             };
         },
-        filter: (artists) => (
-            artists
-                .filter((artist) => !artist.is_deleted)
-                // Add a field to be able to retrieve the artist from the array
-                .map((artist) => ({
-                    ...artist,
-                    url_arr: artist.urls.map((url) => url.url),
-                }))
-        ),
+        filter: (artists) => artists.filter((artist) => !artist.is_deleted),
+        matches (data, item) {
+            return REQUEST_DATA_MATCHERS.array(data.urls.map((url) => url.url), item);
+        },
     },
     // This can only be used as a single use and not as part a group
     post: {
         url: "/posts",
-        data_key: "tag_string_artist",
-        data_type: "string_list",
         fields: [
             "created_at",
             "has_visible_children",
@@ -721,22 +765,26 @@ const NETWORK_REQUEST_DICT = {
                 only: this.fields,
             };
         },
+        matches (data, item) {
+            return REQUEST_DATA_MATCHERS.string_list(data.tag_string_artist, item);
+        },
         limit: ARTIST_POST_PREVIEW_LIMIT,
     },
 };
 
-function debuglog (...args) {
-    if (DEBUG) {
-        console.log("[TPT]:", ...args);
-    }
-}
+const debuglog = DEBUG ? console.log.bind(console, "[TPT]:") : () => {};
 
+/** @param {object[]} args */
 function memoizeKey (...args) {
     const paramHash = Object.fromEntries(args.entries());
     return $.param(paramHash);
 }
 
-// Tag function for template literals to remove newlines and leading spaces
+/**
+ * Tag function for template literals to remove newlines and leading spaces
+ * @param {TemplateStringsArray} strings
+ * @param {(string|number)[]} values
+ */
 function noIndents (strings, ...values) {
     // Remove all spaces before/after a tag and leave one in other cases
     const compactStrings = strings.map((str) => (
@@ -760,8 +808,13 @@ function noIndents (strings, ...values) {
 /** @type {(string: string, regex: RegExp) => RegExpMatchArray|null} */
 const matchMemoized = _.memoize((string, regex) => string.match(regex), memoizeKey);
 
-// For safe ways to use regexp in a single line of code
-/** @type {(string: string, regex: RegExp, group?: number, defaultValue?: string) => string} */
+/**
+ * For safe ways to use regexp in a single line of code
+ * @param {string} string
+ * @param {RegExp} regex
+ * @param {number} [group=0]
+ * @param {string} [defaultValue=""]
+ */
 function safeMatchMemoized (string, regex, group = 0, defaultValue = "") {
     const match = matchMemoized(string, regex);
     if (match) {
@@ -770,7 +823,7 @@ function safeMatchMemoized (string, regex, group = 0, defaultValue = "") {
     return defaultValue;
 }
 
-/** @type {(s:string) => string} */
+/** @param {string} string */
 function capitalize (string) {
     return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
 }
@@ -1017,13 +1070,13 @@ const SITE_RULES = [
 ];
 /* spell-checker: enable */
 
-/** @type {(siteName:string) => number} */
+/** @param {string} siteName */
 function getSitePriority (siteName) {
     const priority = SITE_ORDER.indexOf(siteName);
     return priority < 0 ? 1000 : priority;
 }
 
-/** @type {(siteUrl:string) => string} */
+/** @param {string} siteUrl */
 function getSiteName (siteUrl) {
     const { hostname, pathname } = new URL(siteUrl);
     const { domain, sld, tld } = /** @type {import("psl").ParsedDomain} */ (psl.parse(hostname));
@@ -1038,20 +1091,20 @@ function getSiteName (siteUrl) {
     return match ? match.name : capitalize(sld || tld || hostname);
 }
 
-/** @type {(siteUrl:string) => string} */
+/** @param {string} siteUrl */
 function getSiteDisplayDomain (siteUrl) {
     const { hostname } = new URL(siteUrl);
     const { domain, tld } = /** @type {import("psl").ParsedDomain} */ (psl.parse(hostname));
     return domain || tld || hostname;
 }
 
-/** @type {(siteName:string) => string} */
+/** @param {string} siteName */
 function getSiteIconUrl (siteName) {
     return GM_getResourceURL(`${siteName.replaceAll(/[^\w.]/g, "-")}-logo`);
 }
 
 /**
- * @type {(siteUrl:string) => boolean}
+ * @param {string} siteUrl
  * @see https://github.com/danbooru/danbooru/blob/f955718672a31e9c19afc5381eceeb0c2e7653d6/app/models/artist_url.rb#L75
  */
 function isSecondaryUrl (siteUrl) {
@@ -1080,9 +1133,16 @@ function getImage (imageUrl) {
         .then(({ response }) => response);
 }
 
-/** @type {(domain: string, logError: boolean) => boolean} */
+/** @type {Record<string, {error:number}>} */
+const networkErrors = {};
+
+/**
+ * Checks whether the number of failed requests to the domain reached the limit
+ * @param {string} domain - the domain to check
+ * @param {boolean} logError - increase the number of errors
+ */
 function checkNetworkErrors (domain, logError) {
-    const data = checkNetworkErrors[domain] || (checkNetworkErrors[domain] = { error: 0 });
+    const data = networkErrors[domain] ?? (networkErrors[domain] = { error: 0 });
 
     if (logError) {
         console.log("[TPT]: Total errors:", data.error);
@@ -1122,15 +1182,16 @@ const queueNetworkRequestMemoized = _.memoize(queueNetworkRequest, memoizeKey);
 function intervalNetworkHandler () {
     for (const type of /** @type {RequestType[]} */ (Object.keys(NETWORK_REQUEST_DICT))) {
         const requests = QUEUED_NETWORK_REQUESTS.filter((request) => (request.type === type));
+        const requestTools = NETWORK_REQUEST_DICT[type];
         if (requests.length > 0) {
             const items = requests.map((request) => request.item);
-            const typeParam = NETWORK_REQUEST_DICT[type].params(/** @type {any} */(items));
+            const typeParam = requestTools.params(/** @type {any} */(items));
             const limitParam = { limit: API_LIMIT };
-            if (NETWORK_REQUEST_DICT[type].limit) {
-                limitParam.limit = NETWORK_REQUEST_DICT[type].limit;
+            if (requestTools.limit) {
+                limitParam.limit = requestTools.limit;
             }
             const params = Object.assign(typeParam, limitParam, CACHE_PARAM);
-            const url = `${BOORU}${NETWORK_REQUEST_DICT[type].url}.json`;
+            const url = `${BOORU}${requestTools.url}.json`;
             getLong(url, params, requests, type);
         }
     }
@@ -1160,45 +1221,21 @@ async function getLong (url, params, requests, type) {
     try {
         resp = await makeRequest(method, url, finalParams);
     } catch {
-        for (const request of requests) request.promise.resolve(/** @type{any} */([]));
+        for (const request of requests) request.promise.resolve([]);
         return;
     }
 
+    const requestTools = NETWORK_REQUEST_DICT[type];
     let finalResp = resp;
-    if (NETWORK_REQUEST_DICT[type].filter) {
+    if (requestTools.filter) {
         // Do any necessary filtering after the network request completes
-        finalResp = NETWORK_REQUEST_DICT[type].filter(resp);
+        finalResp = requestTools.filter(resp);
     }
 
-    // Get the data key which is used to find successful hits in the batch results
-    const dataKey = NETWORK_REQUEST_DICT[type].data_key;
-    let includes;
-    switch (NETWORK_REQUEST_DICT[type].data_type) {
-        case "string":
-            // Check for matching case-insensitive results
-            includes = (data, item) => data.toLowerCase() === item.toLowerCase();
-            break;
-        case "array":
-            // Check for inclusion of case-insensitive results
-            includes = (data, item) => data
-                .map((it) => it.toLowerCase())
-                .includes(item.toLowerCase());
-            break;
-        case "string_list":
-            // Check for inclusion of case-insensitive results
-            includes = (data, item) => data
-                .toLowerCase()
-                .split(" ")
-                .includes(item.tag.toLowerCase());
-            break;
-        default:
-            console.error("[TPT]: Unsupported type of response data");
-            return;
-    }
     const unusedData = new Set(finalResp);
     for (const request of requests) {
         const found = finalResp.filter((data) => {
-            if (includes(data[dataKey], request.item)) {
+            if (requestTools.matches(data, /** @type {RequestParams<T>} */(request.item))) {
                 unusedData.delete(data);
                 return true;
             }
@@ -1215,10 +1252,10 @@ async function getLong (url, params, requests, type) {
 /**
  * @param {string} method
  * @param {string} url
- * @param {any} data
+ * @param {import("./types").UrlParams} data
  */
 async function makeRequest (method, url, data) {
-    const sleepHalfSecond = (resolve) => setTimeout(resolve, 500);
+    const sleepHalfSecond = (/** @type {TimerHandler} */ resolve) => setTimeout(resolve, 500);
     const domain = new URL(url).hostname;
     if (!(checkNetworkErrors(domain, false))) {
         throw new Error(`${domain} had too many network errors`);
@@ -1242,7 +1279,7 @@ async function makeRequest (method, url, data) {
                 "\nParameters:",
                 data,
                 "\nHTTP Error:",
-                error.status,
+                error && typeof error === "object" && "status" in error ? error.status : error,
             );
             if (!checkNetworkErrors(domain, true)) {
                 throw new Error(`${domain} reached network errors limit`);
@@ -1254,7 +1291,15 @@ async function makeRequest (method, url, data) {
     throw new Error(`${domain} reached request attempts limit`);
 }
 
-/** @type {Record<string, {path?:RegExp, params?:RegExp, normalize?: (url:URL)=>string}>} */
+/**
+ * Checks whether the url is normalized and optionally normalizes
+ * @typedef {object} UrlNormalizer
+ * @prop {RegExp} [path] - test for normalized url path
+ * @prop {RegExp} [params] - test for normalized url search params
+ * @prop {(url:URL) => string} [normalize] - url normalizer
+ */
+
+/** @type {Record<string, UrlNormalizer>} */
 const NORMALIZE_PROFILE_URL = {
     ".artstation.com": {
         path: /^\/[\w-]+$/,
@@ -1340,8 +1385,13 @@ const NORMALIZE_PROFILE_URL = {
  * Converts URLs to the same format used by the URL column on Danbooru
  * @param {string} profileUrl
  * @param {number} [depth]
+ * @returns {string}
  */
 function normalizeProfileURL (profileUrl, depth = 0) {
+    if (depth > 10) {
+        console.error("[TPT]: Recursive URL normalization:", profileUrl);
+        return profileUrl;
+    }
     const url = new URL(profileUrl.toLowerCase());
     if (url.protocol !== "https:") url.protocol = "https:";
     let host = url.hostname;
@@ -1357,12 +1407,12 @@ function normalizeProfileURL (profileUrl, depth = 0) {
     if (path && !path.test(url.pathname) || params && !params.test(url.search)) {
         if (!normalize) {
             console.error("[TPT]: Normalization isn't implemented:", profileUrl);
-            return null;
+            return profileUrl;
         }
         // Normalize and validate the url without infinite loop
-        const res = depth < 10  ? normalizeProfileURL(normalize(url), depth + 1) : null;
-        if (!res || res === profileUrl) {
-            console.error("[TPT]: Failed to normalize URL:", profileUrl);
+        const res = normalizeProfileURL(normalize(url), depth + 1);
+        if (res === profileUrl) {
+            console.error("[TPT]: URL normalized to itself:", profileUrl);
         }
         return res;
     }
@@ -1371,11 +1421,13 @@ function normalizeProfileURL (profileUrl, depth = 0) {
     return link;
 }
 
+/** @typedef {{name:string, prettyName:string, category:number}} TranslatedTag */
+
 /**
  * Translate a regular tag on the given element
  * @param {HTMLElement} target - the element to attach translation
  * @param {string} tagName - the tag name to translate
- * @param {TranslationOptions} options - translation options
+ * @param {TranslationOptionsFull} options - translation options
  */
 async function translateTag (target, tagName, options) {
     if (!tagName) return;
@@ -1393,7 +1445,7 @@ async function translateTag (target, tagName, options) {
 
     const wikiPages = await queueNetworkRequestMemoized("wiki", normalizedTag);
 
-    /** @type {Array<{name:string, prettyName:string, category:number}>} */
+    /** @type {TranslatedTag[]} */
     let tags = [];
     if (wikiPages.length > 0) {
         tags = wikiPages
@@ -1431,10 +1483,10 @@ async function translateTag (target, tagName, options) {
 /** @type {Record<string, JQuery>} */
 const renderedTagsCache = {};
 /**
- * Attached translations to the target element
+ * Attaches translations to the target element
  * @param {JQuery} $target - the element to attach the translation
- * @param {Array<{name:string, prettyName:string, category:number}>} tags - translated tags
- * @param {TranslationOptions} options - extra translation options
+ * @param {TranslatedTag[]} tags - translated tags
+ * @param {TranslationOptionsFull} options - extra translation options
  */
 function addDanbooruTags ($target, tags, options) {
     if (tags.length === 0) return;
@@ -1468,7 +1520,7 @@ function addDanbooruTags ($target, tags, options) {
     const $tagsContainer = renderedTagsCache[key].clone().prop("className", classes);
 
     const $duplicates = findTag($target)
-        .filter((i, el) => el.textContent.trim() === $tagsContainer.text().trim());
+        .filter((i, el) => el.textContent?.trim() === $tagsContainer.text().trim());
     if ($duplicates.length > 0) {
         return;
     }
@@ -1482,20 +1534,18 @@ function addDanbooruTags ($target, tags, options) {
 /**
  * Translate an artist on the given element using the url to their profile
  * @param {HTMLElement} element - the element to attach the translations
- * @param {string|string[]} profileUrls - the artist's urls to translate
- * @param {TranslationOptions} options - extra translation options
+ * @param {string} profileUrl - the artist's urls to translate
+ * @param {TranslationOptionsFull} options - extra translation options
  */
-async function translateArtistByURL (element, profileUrls, options) {
-    if (!profileUrls || profileUrls.length === 0) return;
+async function translateArtistByURL (element, profileUrl, options) {
+    if (!profileUrl) return;
 
-    const promiseArray = (Array.isArray(profileUrls) ? profileUrls : [profileUrls])
-        .map(normalizeProfileURL)
-        .filter(Boolean)
-        .map((url) => queueNetworkRequestMemoized("url", url));
+    const normalizedUrl = normalizeProfileURL(profileUrl);
+    if (!normalizedUrl) return;
 
-    const artists = await Promise.all(promiseArray).then((arr) => arr.flat());
+    const artists = await queueNetworkRequestMemoized("url", normalizedUrl);
     if (artists.length === 0) {
-        const urls = Array.isArray(profileUrls) ? profileUrls.join(", ") : profileUrls;
+        const urls = Array.isArray(profileUrl) ? profileUrl.join(", ") : profileUrl;
         debuglog(`No artist at "${urls}", rule "${options.ruleName}"`);
         return;
     }
@@ -1507,7 +1557,7 @@ async function translateArtistByURL (element, profileUrls, options) {
  * Translate an artist on the given element using the their name
  * @param {HTMLElement} element - the element to attach the translations
  * @param {string} artistName - the artist name
- * @param {TranslationOptions} options - extra translation options
+ * @param {TranslationOptionsFull} options - extra translation options
  */
 async function translateArtistByName (element, artistName, options) {
     if (!artistName) return;
@@ -1536,7 +1586,7 @@ const renderedArtistsCache = {};
  * Attach the artist's translation to the target element
  * @param {JQuery} $target - the target element to attach the translation
  * @param {TranslatedArtist} artist - the artist data
- * @param {TranslationOptions} options - extra translation options
+ * @param {TranslationOptionsFull} options - extra translation options
  */
 function addDanbooruArtist ($target, artist, options) {
     const {
@@ -1557,7 +1607,7 @@ function addDanbooruArtist ($target, artist, options) {
     /* eslint-enable no-param-reassign */
 
     const $duplicates = findTag($target)
-        .filter((i, el) => el.textContent.trim() === artist.escapedName);
+        .filter((i, el) => el.textContent?.trim() === artist.escapedName);
     if ($duplicates.length > 0) {
         return;
     }
@@ -1589,7 +1639,7 @@ const makeStyleSheetMemoized = _.memoize((css) => {
 });
 
 /**
- * Universal method to attach add a content as Shadow DOM
+ * Universal method to add a content as Shadow DOM
  * @param {JQuery} $target - container for the Shadow DOM
  * @param {JQuery} $content - the Shadow DOM content
  * @param {string} css - the Shadow DOM CSS
@@ -1622,26 +1672,25 @@ function chooseBackgroundColorScheme ($element) {
     const MIDDLE_LUMINOSITY = 128;
 
     // Get background colors of all parent elements with a nontransparent background color
-    const backgroundColors = $element.parents().addBack()
+    const backgroundColors = _.compact($element.parents().addBack()
         .get()
         .map((el) => $(el).css("background-color"))
         .filter((color) => color !== TRANSPARENT_COLOR)
         .reverse()
-        .map((color) => color.match(/\d+/g));
+        .map((color) => color.match(/\d+(\.\d+)?/g)));
     // Calculate summary color and get RGB channels
-    let colorChannels = [255, 255, 255];
-    // eslint-disable-next-line no-restricted-syntax
+    let colorChannels = backgroundColors.shift()?.map(Number) ?? [255, 255, 255];
     for (const channels of backgroundColors) {
-        const [r2, g2, b2, al2 = 1] = channels.map(Number);
+        // If there is no transparency
+        if (colorChannels[3] === 1) break;
         const [r1, g1, b1, al1 = 1] = colorChannels;
+        const [r2, g2, b2, al2 = 1] = channels.map(Number);
         colorChannels = [
             r1 * al1 * (1 - al2) + r2 * al2,
             g1 * al1 * (1 - al2) + g2 * al2,
             b1 * al1 * (1 - al2) + b2 * al2,
             al1 * (1 - al2) + al2,
         ];
-        // If there is no transparency
-        if (colorChannels[3] === 1) break;
     }
     // Drop alpha channel
     colorChannels.length = 3;
@@ -2058,7 +2107,7 @@ async function buildArtistTooltipContent (artist) {
     const [
         { counts: { posts: visiblePostsCount } } = { counts: { posts: 0 } },
         { counts: { posts: totalPostsCount } } = { counts: { posts: 0 } },
-        posts = [],
+        posts,
     ] = await Promise.all([waitVisiblePostCount, waitTotalPostCount, waitPosts]);
 
     const otherNames = artist.other_names
@@ -2158,7 +2207,8 @@ function buildArtistUrlsHtml (artist) {
                     </a>
                 </li>`;
         })
-        .join("");
+        .join("")
+        .value();
 }
 
 /**
@@ -2185,8 +2235,8 @@ function timeToAgo (time) {
         unit: "minute",
     }];
     const rank = ranks.find(({ value }) => value);
-    if (rank.value) {
-        return `${rank.value} ${rank.unit}${rank.value > 1 ? "" : rank.unit} ago`;
+    if (rank?.value) {
+        return `${rank.value} ${rank.unit}${rank.value > 1 ? "s" : ""} ago`;
     }
     return "∞ ago";
 }
@@ -2229,8 +2279,8 @@ function formatTagString (post) {
     ])
         .chain()
         .compact()
+        .map(_.escape)
         .join("\n")
-        .escape()
         .value();
 }
 
@@ -2357,7 +2407,7 @@ function buildPostPreview (post) {
 }
 
 /**
- * Load a neighbor page of preview
+ * Load a neighbor page of posts
  * @param {JQuery.Event} ev - event of pressing the button
  */
 async function loadNextPage (ev) {
@@ -2388,7 +2438,7 @@ async function loadNextPage (ev) {
 function showSettings () {
     /**
      * Generate input for a setting
-     * @param {typeof SETTINGS.list[number]} setting
+     * @param {typeof SETTINGS_SCHEMA[number]} setting
      */
     function settingToInput (setting) {
         const value = SETTINGS.get(setting.name);
@@ -2419,6 +2469,7 @@ function showSettings () {
                            ${value ? "checked" : ""}
                            name="${setting.name}" />`;
             default:
+                // @ts-expect-error - here `type` is `never`
                 console.error(`[TPT]: Unsupported type ${setting.type}`);
                 return "";
         }
@@ -2485,7 +2536,7 @@ function showSettings () {
         <div id="ui-settings">
             <div class="container">
                 <h2>Translate Pixiv Tags settings</h2>
-                ${SETTINGS.list
+                ${SETTINGS_SCHEMA
                     .map((setting) => (
                         noIndents`
                         <div>${setting.descr}:</div>
@@ -2516,9 +2567,9 @@ function showSettings () {
             let value = null;
             if ($input.is("select")) {
                 value = $input.val();
-            } else if (/** @type {any} */($input.prop("type")) === "number") {
+            } else if (/** @type {string} */($input.prop("type")) === "number") {
                 value = Number($input.val());
-            } else if (/** @type {any} */($input.prop("type")) === "checkbox") {
+            } else if (/** @type {string} */($input.prop("type")) === "checkbox") {
                 value = $input.prop("checked");
             } else {
                 return;
@@ -2555,6 +2606,7 @@ function showSettings () {
  * @param {(el:HTMLElement) => string} themeExtractor - theme getter
  */
 function watchSiteTheme (elem, attr, themeExtractor) {
+    /** @type {string} */
     let theme;
     function updateTheme () {
         const newTheme = themeExtractor(elem);
@@ -2574,6 +2626,7 @@ function watchSiteTheme (elem, attr, themeExtractor) {
 }
 
 /** @typedef {import("./types").TranslationOptions} TranslationOptions */
+/** @typedef {Required<TranslationOptions>} TranslationOptionsFull */
 /**
  * @template {TranslationOptions["mode"]} T
  * @typedef {T extends "artist"
@@ -2586,12 +2639,12 @@ function watchSiteTheme (elem, attr, themeExtractor) {
  * Add translations to the matched elements
  * @template {TranslationOptions["mode"]} T
  * @param {T} mode - method of translating the element
- * @param {string} selector - simple selector of the translated element.
+ * @param {string|HTMLElement} selector - simple selector of the translated element.
  *  Max example: `div.class#id[attr][attr2=val], *[attr3~="part"][attr4='val']`
  * @param {TranslationOptionsT<T>} [options] - extra options for translating
  */
 function findAndTranslate (mode, selector, options) {
-    /** @type {TranslationOptions} */
+    /** @type {TranslationOptionsFull} */
     const fullOptions = {
         asyncMode: false,
         requiredAttributes: null,
@@ -2601,50 +2654,49 @@ function findAndTranslate (mode, selector, options) {
         tagPosition: TAG_POSITIONS.afterend,
         classes: "",
         onadded: null,
+        ruleName: "<not provided>",
         mode,
-        ...(options),
+        ...options,
     };
 
-    if (typeof fullOptions.predicate === "string") {
-        const predicateSelector = fullOptions.predicate;
-        fullOptions.predicate = (el) => $(el).is(predicateSelector);
-    }
+    const canTranslate = (typeof fullOptions.predicate === "string")
+        ? (/** @type {HTMLElement} */el) => $(el).is(/** @type {string} */(fullOptions.predicate))
+        : fullOptions.predicate ?? (() => true);
 
-    const { translate, getData } = (function fn () {
-        switch (mode) {
-            case "artist":
-                return {
-                    translate: translateArtistByURL,
-                    getData: fullOptions.toProfileUrl,
-                };
-            case "artistByName":
-                return {
-                    translate: translateArtistByName,
-                    getData: fullOptions.toTagName,
-                };
-            case "tag":
-                return {
-                    translate: translateTag,
-                    getData: fullOptions.toTagName,
-                };
-            default:
-                throw new Error(`Unsupported mode ${mode}`);
-        }
-    }());
+    const { translate, getData } = {
+        artist: {
+            translate: translateArtistByURL,
+            getData: fullOptions.toProfileUrl,
+        },
+        artistByName: {
+            translate: translateArtistByName,
+            getData: fullOptions.toTagName,
+        },
+        tag: {
+            translate: translateTag,
+            getData: fullOptions.toTagName,
+        },
+    }[mode];
 
-    /** @param {HTMLElement} elem */
+    /** @param {Node} elem */
     const tryToTranslate = (elem) => {
-        const canTranslate = /** @type {((el: HTMLElement) => boolean)} */(fullOptions.predicate);
-        if (!canTranslate || canTranslate(elem)) {
-            translate(elem, getData(elem), fullOptions);
+        if (!(elem instanceof HTMLElement)) return;
+        if (!canTranslate(elem)) return;
+        const data = getData(elem);
+        if (Array.isArray(data)) {
+            // eslint-disable-next-line unicorn/no-array-for-each
+            data.forEach((item) => translate(elem, item, fullOptions));
+        } else if (data) {
+            translate(elem, data, fullOptions);
         }
     };
 
-    $(selector).each((i, elem) => tryToTranslate(/** @type {HTMLElement} */(elem)));
+    $(selector).each((i, elem) => tryToTranslate(elem));
 
     if (!fullOptions.asyncMode) return;
 
-    const query = { element: selector };
+    /** @type {Query} */
+    const query = { element: /** @type {string} */(selector) };
     if (fullOptions.requiredAttributes) query.elementAttributes = fullOptions.requiredAttributes;
     new MutationSummary({
         rootNode: document.body,
@@ -2663,7 +2715,7 @@ function findAndTranslate (mode, selector, options) {
 /**
  * Delete the tag element when the target element will change url (`href`)
  * @param {JQuery} $tag - the tag to remove
- * @param {TranslationOptions} options - translation options
+ * @param {TranslationOptionsFull} options - translation options
  */
 function deleteOnUrlChange ($tag, options) {
     const $container = options.tagPosition.getTagContainer($tag);
@@ -2682,7 +2734,7 @@ function deleteOnUrlChange ($tag, options) {
  * @returns {string}
  */
 function linkInChildren (el) {
-    return /** @type {any} */($(el).find("a").prop("href"));
+    return $(el).find("a").prop("href");
 }
 
 /* https://twitter.com/search?q=%23ガルパン版深夜のお絵描き60分一本勝負 */
@@ -2706,7 +2758,7 @@ const getNormalizedHashtagName = (el) => {
     const tagName = el.textContent;
     // eslint-disable-next-line no-restricted-syntax
     for (const regexp of COMMON_HASHTAG_REGEXPS) {
-        const normalizedTagName = tagName.replace(regexp, "");
+        const normalizedTagName = tagName?.replace(regexp, "") ?? null;
         if (normalizedTagName !== tagName) {
             if (normalizedTagName !== "") {
                 return normalizedTagName;
@@ -2722,7 +2774,7 @@ const getNormalizedHashtagName = (el) => {
  * @param {HTMLElement} el - the target element
  */
 const getNormalizedDecentralizedSocNetUrl = (el) => {
-    const fullName = el.textContent.trim();
+    const fullName = el.textContent?.trim() ?? "";
 
     // eslint-disable-next-line max-len
     const [, name, host = window.location.host] = matchMemoized(fullName, /^@(\w+)(?:@([\w.-]+))?$/) || [];
@@ -2852,7 +2904,8 @@ function initializePixiv () {
     `);
 
     // To remove something like `50000users入り`, e.g. here https://www.pixiv.net/en/artworks/68318104
-    const getNormalizedTagName = (el) => el.textContent.replace(/\d+users入り$/, "");
+    /** @param {HTMLElement} el */
+    const getNormalizedTagName = (el) => el.textContent?.replace(/\d+users入り$/, "") ?? null;
 
     findAndTranslate("tag", [
         // https://www.pixiv.net/bookmark_add.php?type=illust&illust_id=123456
@@ -2925,7 +2978,7 @@ function initializePixiv () {
     // Tag of recommended posts on index page: https://www.pixiv.net/ https://www.pixiv.net/en/
     findAndTranslate("tag", "h2", {
         predicate: "section > div > div > h2",
-        toTagName: (el) => (el.textContent.includes("#")
+        toTagName: (el) => (el.textContent?.includes("#")
             ? el.textContent.slice(el.textContent.indexOf("#") + 1).replaceAll(" ", "_")
             : null),
         tagPosition: TAG_POSITIONS.beforeend,
@@ -3149,7 +3202,7 @@ function initializeNicoSeiga () {
     findAndTranslate("artist", "div.lg_txt_illust:has(strong)", {
         classes: "inline",
         tagPosition: TAG_POSITIONS.beforeend,
-        toProfileUrl: () => /** @type {any} */($("a:has(.pankuzu_suffix)").prop("href")),
+        toProfileUrl: () => $("a:has(.pankuzu_suffix)").prop("href"),
         ruleName: "illust artist anon",
     });
 
@@ -3275,7 +3328,9 @@ function initializeTwitter () {
     // On switching to a channel from another channel, Twitter updates only text nodes
     // so, for correct work, it's required to watch for
     // the channel name regardless whether it was translated
+    /** @param {Node} elem */
     const watchForChanges = (elem) => {
+        if (!(elem instanceof HTMLElement)) return;
         if (!elem.matches(channelNameSelector) || elem.matches(TAG_SELECTOR)) {
             return;
         }
@@ -3326,7 +3381,7 @@ function initializeTwitter () {
     // Quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
     findAndTranslate("artist", "div.r-dnmrzs.r-1ny4l3l", {
         predicate: "[id]>[tabindex] [tabindex]:not([role])",
-        toProfileUrl: (el) => `https://twitter.com/${el.textContent.slice(1)}`,
+        toProfileUrl: (el) => `https://twitter.com/${el.textContent?.slice(1)}`,
         classes: "inline",
         asyncMode: true,
         ruleName: "quoted tweet author",
@@ -3360,6 +3415,7 @@ function initializeArtStation () {
         }
     `);
 
+    /** @param {string|null} ref */
     const getArtistName = (ref) => {
         if (!ref) return "";
         if (ref.startsWith("/")) {
@@ -3375,13 +3431,10 @@ function initializeArtStation () {
         return "";
     };
 
-    function toFullURL (url) {
-        if (url && typeof url !== "string") {
-            // eslint-disable-next-line no-param-reassign
-            url = (url[0] || url).getAttribute("href");
-        }
-
-        let artistName = getArtistName(url) || getArtistName(window.location.href);
+    /** @param {HTMLElement} el */
+    function toFullURL (el) {
+        let artistName = getArtistName(el.getAttribute("href"))
+             || getArtistName(window.location.href);
         if (artistName === "artwork") artistName = "";
         if (!artistName) {
             return "";
@@ -3473,7 +3526,7 @@ function initializeSauceNAO () {
         .contents()
         .filter((i, el) => el.nodeType === 3) // Get text nodes
         .wrap("<span class=target>");
-    $(".target:contains(', ')").replaceWith((i, html) => (
+    $(".target:contains(', ')").replaceWith((/** @type {number} */i, /** @type {string} */html) => (
         html
             .split(", ")
             .map((str) => `<span class="target">${str}</span>`)
@@ -3496,8 +3549,8 @@ function initializeSauceNAO () {
             const a = /** @type {HTMLAnchorElement} */(el);
             if (!a.href.startsWith("https://twitter.com/")) return a.href;
             return [
-                `https://twitter.com/${a.textContent.slice(1)}`,
-                `https://twitter.com/intent/user?user_id=${a.href.match(/\d+/)[0]}`,
+                `https://twitter.com/${a.textContent?.slice(1)}`,
+                `https://twitter.com/intent/user?user_id=${a.href.match(/\d+/)?.[0]}`,
             ];
         },
     });
@@ -3632,6 +3685,7 @@ function initializePixivFanbox () {
         }
     `);
 
+    /** @param {string} userNick */
     const getPixivLink = async (userNick) => {
         // Use direct query
         const resp = await fetch(`https://api.fanbox.cc/creator.get?creatorId=${userNick}`)
@@ -3640,11 +3694,16 @@ function initializePixivFanbox () {
     };
     const getPixivLinkMemoized = _.memoize(getPixivLink);
 
+    /**
+     * @param {Omit<TranslationOptions, "mode">} options
+     * @param {HTMLElement} el
+     */
     const addPixivTranslation = (options, el) => {
-        const url = new URL(el.closest("a").href);
+        const url = new URL(el.closest("a")?.href ?? window.location.href);
         const userNick = url.host === "www.fanbox.cc"
-            ? url.pathname.match(/[\w-]+/)[0]
-            : url.host.match(/[\w-]+/)[0];
+            ? url.pathname.match(/[\w-]+/)?.[0]
+            : url.host.match(/[\w-]+/)?.[0];
+        if (!userNick) return null;
         getPixivLinkMemoized(userNick)
             .then((pixivLink) => findAndTranslate("artist", el, {
                 ...options,
@@ -3683,7 +3742,7 @@ function initializePixivFanbox () {
     findAndTranslate("tag", "div", {
         predicate: "div[class^=TagPage__Count]",
         tagPosition: TAG_POSITIONS.beforebegin,
-        toTagName: (el) => el.previousSibling?.textContent,
+        toTagName: (el) => el.previousSibling?.textContent ?? null,
         asyncMode: true,
         classes: "inline",
         ruleName: "search tag fanbox",

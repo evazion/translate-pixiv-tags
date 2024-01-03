@@ -3,6 +3,7 @@
         "target": "ESNext",
         "allowJs": true,
         "checkJs": true,
+        "strict": true,
         "outDir": "./dist"
     }
 }

@@ -1,3 +1,20 @@
+export type SettingT<N extends string, T> = {
+    name: string,
+    defValue: T,
+    descr: string,
+    type: N,
+}
+export type Setting = SettingT<"number", number>
+    | SettingT<"boolean", boolean>
+    | SettingT<"list", string> & { values: { [P in string]: string } }
+
+export type SettingType<S extends Setting> = S["type"] extends "boolean" ? boolean
+    : S["type"] extends "number" ? number
+    : S extends { values: { [P in string]: string } } ? keyof S["values"] : never;
+
+export type GetSetting<S extends Setting, N extends string> = Extract<S, { name: N }>;
+export type GetSettingType<S extends Setting, N extends string> = SettingType<GetSetting<S, N>>;
+
 export type Rating = "g"|"s"|"q"|"e"
 export type TagPosition = {
     insertTag: ($container: JQuery, $elem: JQuery) => void,
@@ -21,14 +38,12 @@ export type RequestParams<T extends RequestType> = T extends "post" ? {tag:strin
 export type RequestDefinition<In, Out> = {
     /** api endpoint */
     url: string,
-    /** field in response to match it with request */
-    data_key: string,
-    /** type of `data_key` */
-    data_type: string,
     /** fields to request */
     fields: string,
     /** convert data to request params */
     params: (data: In[]) => UrlParams,
+    /** check whether the data is for the passed request */
+    matches: (data: Out, item: In) => boolean,
     /** filter items in the responses */
     filter?: (items: Out[]) => Out[],
     /** limit of items in the response */
@@ -120,13 +135,13 @@ export interface TranslationOptions {
     /** checks whether the element is translatable */
     predicate?: string | ((el:HTMLElement) => boolean) | null,
     /** extracts the link to the profile from the element, by default - `href` from closest `<a>` */
-    toProfileUrl?: (el:HTMLElement) => string|string[],
+    toProfileUrl?: (el:HTMLElement) => string | string[] | null,
     /** extracts the tag name from the element, by default - the element's text */
-    toTagName?: (el:HTMLElement) => string,
+    toTagName?: (el:HTMLElement) => string | null,
     /** methods for inserting and retrieving the tag element relatively to the matched element, by default `afterend` */
     tagPosition?: TagPosition,
     /** extra classes to add to the tag element */
     classes?: string,
     /** handler for the added tag elements */
-    onadded?: (($el:JQuery, options: TranslationOptions) => void) | null,
+    onadded?: (($el:JQuery, options: Required<TranslationOptions>) => void) | null,
 }
