@@ -469,6 +469,23 @@ const TAG_POSITIONS = {
 };
 
 const PROGRAM_CSS = `
+html, .tpt-light {
+    --tpt-artist: #c00004;
+    --tpt-cat-0: #0075f8;
+    --tpt-cat-1: #c00004;
+    --tpt-cat-3: #a800aa;
+    --tpt-cat-4: #00ab2c;
+    --tpt-cat-5: #fd9200;
+}
+.tpt-dark {
+    --tpt-artist: #ff8a8b;
+    --tpt-cat-0: #009be6;
+    --tpt-cat-1: #ff8a8b;
+    --tpt-cat-3: #c797ff;
+    --tpt-cat-4: #35c64a;
+    --tpt-cat-5: #ead084;
+}
+
 .ex-translated-tags {
     margin: 0 0.5em;
 }
@@ -489,36 +506,25 @@ const PROGRAM_CSS = `
     content: ")";
     white-space: nowrap;
 }
+.ex-translated-tags.no-brackets::before,
+.ex-translated-tags.no-brackets::after {
+    content: none;
+}
 /* dirt hack for DevianArt: add :not(#id) to rapidly increase rule specificity */
-.tpt-dark .ex-translated-tag-category-5:not(#id) {
-    color: #ead084 !important;
+.ex-translated-tag-category-5:not(#id) {
+    color: var(--tpt-cat-5) !important;
 }
-.tpt-dark .ex-translated-tag-category-4:not(#id) {
-    color: #35c64a !important;
+.ex-translated-tag-category-4:not(#id) {
+    color: var(--tpt-cat-4) !important;
 }
-.tpt-dark .ex-translated-tag-category-3:not(#id) {
-    color: #c797ff !important;
+.ex-translated-tag-category-3:not(#id) {
+    color: var(--tpt-cat-3) !important;
 }
-.tpt-dark .ex-translated-tag-category-1:not(#id) {
-    color: #ff8a8b !important;
+.ex-translated-tag-category-1:not(#id) {
+    color: var(--tpt-cat-1) !important;
 }
-.tpt-dark .ex-translated-tag-category-0:not(#id) {
-    color: #009be6 !important;
-}
-.ex-translated-tag-category-5:not(#id), .tpt-light .ex-translated-tag-category-5:not(#id) {
-    color: #fd9200 !important;
-}
-.ex-translated-tag-category-4:not(#id), .tpt-light .ex-translated-tag-category-4:not(#id) {
-    color: #00ab2c !important;
-}
-.ex-translated-tag-category-3:not(#id), .tpt-light .ex-translated-tag-category-3:not(#id) {
-    color: #a800aa !important;
-}
-.ex-translated-tag-category-1:not(#id), .tpt-light .ex-translated-tag-category-1:not(#id) {
-    color: #c00004 !important;
-}
-.ex-translated-tag-category-0:not(#id), .tpt-light .ex-translated-tag-category-0:not(#id) {
-    color: #0075f8 !important;
+.ex-translated-tag-category-0:not(#id) {
+    color: var(--tpt-cat-0) !important;
 }
 
 .ex-artist-tag {
@@ -529,12 +535,9 @@ const PROGRAM_CSS = `
     margin-left: 0.5em;
 }
 .ex-artist-tag a:not(#id) {
-    color: #c00004 !important;
+    color: var(--tpt-artist) !important;
     margin-left: 0.3ch;
     text-decoration: none;
-}
-.tpt-dark .ex-artist-tag a:not(#id) {
-    color: #ff8a8b !important;
 }
 .ex-artist-tag::before {
     content: "";
@@ -2661,6 +2664,7 @@ function findAndTranslate (mode, selector, options) {
         toTagName: (el) => el.textContent,
         tagPosition: TAG_POSITIONS.afterend,
         classes: "",
+        css: "",
         onadded: null,
         ruleName: "<not provided>",
         mode,
@@ -2699,6 +2703,8 @@ function findAndTranslate (mode, selector, options) {
         }
     };
 
+    if (fullOptions.css) GM_addStyle(fullOptions.css);
+
     $(selector).each((i, elem) => tryToTranslate(elem));
 
     if (!fullOptions.asyncMode) return;
@@ -2735,6 +2741,12 @@ function deleteOnUrlChange ($tag, options) {
     });
     watcher.observe($container[0], { attributes: true });
 }
+
+/**
+ * When the tag is inside another <a>, prevents soft navigation by the outer link
+ * @param {JQuery} $el
+ */
+const preventSiteNavigation = ($el) => $el.click((ev) => ev.stopPropagation());
 
 /**
  * Find and get link in child elements
@@ -2792,134 +2804,8 @@ const getNormalizedDecentralizedSocNetUrl = (el) => {
 
 function initializePixiv () {
     watchSiteTheme(document.documentElement, "data-theme", (html) => (
-        html.dataset.theme === "default" ? "light" : "dark"
+        html.dataset.theme === "dark" ? "dark" : "light"
     ));
-
-    GM_addStyle(`
-        /* Fix https://www.pixiv.net/tags.php to display tags as vertical list. */
-        .tag-list.slash-separated li {
-            display: block;
-        }
-        .tag-list.slash-separated li + li:before {
-            content: none;
-        }
-        /* Hide Pixiv's translated tags  */
-        .ex-translated-tags + div,
-        .ex-translated-tags + span .gtm-new-work-romaji-tag-event-click,
-        .ex-translated-tags + span .gtm-new-work-translate-tag-event-click {
-            display: none;
-        }
-        /* Remove hashtags from translated tags */
-        a.tag-value::before,
-        span.ex-translated-tags a::before,
-        figcaption li > span:first-child > a::before {
-            content: "";
-        }
-        /* Fix styles for tags on search page */
-        div + .ex-translated-tags {
-            font-size: 20px;
-            font-weight: bold;
-        }
-        /**
-         * On the artist profile page, locate the danbooru artist tag
-         * between the artist name and follower count because there can be
-         * "premium" and "accepting requests" labels to the right of the artist name
-         */
-        div.dqLunY {
-            display: grid;
-            grid-gap: 4px;
-            grid-auto-rows: 16px;
-            grid-template-columns: auto auto 1fr;
-            justify-items: start;
-        }
-        .dqLunY .ex-artist-tag {
-            grid-area: 2/1 / 3/4;
-        }
-        .dqLunY .ex-artist-tag + .ex-artist-tag {
-            grid-area: 3/1 / 4/4;
-        }
-        /* Illust page: fix locate artist tag to not trigger native tooltip */
-        main>section h2:not(#id),
-        main+aside>section>h2:not(#id) {
-            display: flex;
-            flex-direction: column-reverse;
-            align-items: flex-start;
-        }
-        main>section h2>.ex-artist-tag+:not(.ex-artist-tag),
-        main+aside>section>h2>.ex-artist-tag+:not(.ex-artist-tag) {
-            pointer-events: none;
-        }
-        main>section h2>.ex-artist-tag+div>a,
-        main>section h2>.ex-artist-tag+div>div>*,
-        main+aside>section>h2>.ex-artist-tag+div>div>*,
-        main+aside>section>h2>.ex-artist-tag+div>a {
-            pointer-events: all;
-        }
-        main>section h2>.ex-artist-tag+div>::after,
-        main+aside>section>h2>.ex-artist-tag+div>::after {
-            content: "";
-            height: 18px;
-        }
-        main>section h2>.ex-artist-tag+.ex-artist-tag+div>::after,
-        main+aside>section>h2>.ex-artist-tag+.ex-artist-tag+div>::after {
-            height: 30px;
-        }
-        main>section h2 .ex-artist-tag,
-        main+aside>section>h2 .ex-artist-tag {
-            margin-left: 50px;
-            height: 0;
-            position: relative;
-            top: -24px;
-        }
-        main>section h2 .ex-artist-tag + .ex-artist-tag,
-        main+aside>section>h2 .ex-artist-tag + .ex-artist-tag {
-            top: -38px;
-        }
-        main section h2+button {
-            margin-left: 8px;
-        }
-        /* Illust page: fix artist tag overflowing in related works and on search page */
-        section div[type="illust"] ~ div:last-child,
-        aside li>div>div:nth-child(3) {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-        section ul .ex-artist-tag,
-        aside ul .ex-artist-tag {
-            margin-left: 6px;
-        }
-        /* Tags in a box */
-        a[color] {
-            text-shadow: 0 0 5px #0003;
-        }
-        a[color] > div:not(#id) {
-            max-width: initial;
-        }
-        a[color] > div > .ex-translated-tags a {
-            font-weight: bold;
-            text-shadow: 0 0 5px #fff4;
-        }
-        a[color] > div > .ex-translated-tags a.ex-translated-tag-category-5:not(#id) {
-            color: #794906 !important;
-        }
-        a[color] > div > .ex-translated-tags a.ex-translated-tag-category-4:not(#id) {
-            color: #008020 !important;
-        }
-        a[color] > div > .ex-translated-tags a.ex-translated-tag-category-0:not(#id) {
-            color: #003cb3 !important;
-        }
-        .dark-shadow.ex-translated-tags a {
-            text-shadow: 0 0 3px #000B;
-        }
-        .ex-translated-tags.no-brackets::before,
-        .ex-translated-tags.no-brackets::after {
-            content: none;
-        }
-        /* On contest page */
-        span.user-name {
-            text-align: left;
-        }
-    `);
 
     // To remove something like `50000users入り`, e.g. here https://www.pixiv.net/en/artworks/68318104
     /** @param {HTMLElement} el */
@@ -2933,6 +2819,14 @@ function initializePixiv () {
         ".tag-list li .tag-value",
     ].join(", "), {
         toTagName: getNormalizedTagName,
+        css: `
+            /* Display popular tags as vertical list */
+            .tag-list.slash-separated li {
+                display: block;
+            }
+            .tag-list.slash-separated li + li:before {
+                content: none;
+            }`,
         ruleName: "simple tags",
     });
 
@@ -2948,14 +2842,29 @@ function initializePixiv () {
         predicate: "figcaption li > span > span:first-child",
         toTagName: getNormalizedTagName,
         asyncMode: true,
+        css: `
+            /* Prevent adding # to translated tags */
+            span.ex-translated-tags a::before { content:none; }
+            /* Hide Pixiv's translated tags */
+            .ex-translated-tags + div,
+            .ex-translated-tags + span .gtm-new-work-romaji-tag-event-click,
+            .ex-translated-tags + span .gtm-new-work-translate-tag-event-click {
+                display: none;
+            }`,
         ruleName: "artwork tags",
     });
 
     // Main tag on search pages: https://www.pixiv.net/en/tags/%E6%9D%B1%E6%96%B9project/artworks
     findAndTranslate("tag", "div", {
         // eslint-disable-next-line max-len
-        predicate: "#root>div>div>div>div>div>div>div>div:nth-of-type(2)>div>div:has(>span:first-child)",
+        predicate: "#root>div>div>div>div>div>div>div>div:nth-last-of-type(2)>div>div:has(>span:first-child)",
         asyncMode: true,
+        css: `
+            .ex-translated-tags[rulename='search tag'] {
+                font-size: 20px;
+                font-weight: bold;
+                align-self: center;
+            }`,
         ruleName: "search tag",
     });
 
@@ -2970,13 +2879,33 @@ function initializePixiv () {
             findTag: ($container) => $container.parent().find(TAG_SELECTOR),
             getTagContainer: ($elem) => $elem.nextUntil(":last-child"),
         },
-        classes: "no-brackets tpt-light",
         asyncMode: true,
+        classes: "no-brackets tpt-light",
+        css: `
+            a[color] {
+                text-shadow: 0 0 5px #0003;
+            }
+            a[color] > div:not(#id) {
+                max-width: initial;
+            }
+            a[color] > div > .ex-translated-tags a {
+                font-weight: bold;
+                text-shadow: 0 0 5px #fff4;
+            }
+            a[color] > div > .ex-translated-tags a.ex-translated-tag-category-5:not(#id) {
+                color: #794906 !important;
+            }
+            a[color] > div > .ex-translated-tags a.ex-translated-tag-category-4:not(#id) {
+                color: #008020 !important;
+            }
+            a[color] > div > .ex-translated-tags a.ex-translated-tag-category-0:not(#id) {
+                color: #003cb3 !important;
+            }`,
         // Fix bad contrast of tag color over colored bg
         onadded: ($tag) => {
+            preventSiteNavigation($tag);
             const [category] = $tag.find("a").prop("className").match(/\d/) ?? [];
             const hue = [230, 5, 0, 300, 110, 50][category];
-            $tag.click((ev) => ev.stopPropagation()); // prevent navigation at clicking the tag
             $tag.closest("section,ul")
                 .find("a[color]:not([style])")
                 .css("background-color", () => `hsl(${Math.random() * 40 + 150}, 35%, 65%)`);
@@ -2990,8 +2919,13 @@ function initializePixiv () {
     findAndTranslate("tag", "div", {
         predicate: "a.gtm-toppage-tag-popular-tag-illustration>div>div:first-child>div:only-child",
         tagPosition: TAG_POSITIONS.beforebegin,
-        classes: "no-brackets dark-shadow",
         asyncMode: true,
+        classes: "no-brackets dark-shadow",
+        css: `
+            ex-translated-tags[rulename='popular tag'] {
+                text-shadow: 0 0 3px #000B;
+            }`,
+        onadded: preventSiteNavigation,
         ruleName: "popular tag",
     });
 
@@ -3018,6 +2952,47 @@ function initializePixiv () {
         },
         asyncMode: true,
         onadded: deleteOnUrlChange,
+        css: `
+            /* Locate artist tag without triggering native tooltip */
+            main>section h2:not(#id),
+            main+aside>section>h2:not(#id) {
+                display: flex;
+                flex-direction: column-reverse;
+                align-items: flex-start;
+            }
+            main>section h2>.ex-artist-tag+:not(.ex-artist-tag),
+            main+aside>section>h2>.ex-artist-tag+:not(.ex-artist-tag) {
+                pointer-events: none;
+            }
+            main>section h2>.ex-artist-tag+div>a,
+            main>section h2>.ex-artist-tag+div>div>*,
+            main+aside>section>h2>.ex-artist-tag+div>div>*,
+            main+aside>section>h2>.ex-artist-tag+div>a {
+                pointer-events: all;
+            }
+            main>section h2>.ex-artist-tag+div>::after,
+            main+aside>section>h2>.ex-artist-tag+div>::after {
+                content: "";
+                height: 18px;
+            }
+            main>section h2>.ex-artist-tag+.ex-artist-tag+div>::after,
+            main+aside>section>h2>.ex-artist-tag+.ex-artist-tag+div>::after {
+                height: 30px;
+            }
+            main>section h2 .ex-artist-tag,
+            main+aside>section>h2 .ex-artist-tag {
+                margin-left: 50px;
+                height: 0;
+                position: relative;
+                top: -24px;
+            }
+            main>section h2 .ex-artist-tag + .ex-artist-tag,
+            main+aside>section>h2 .ex-artist-tag + .ex-artist-tag {
+                top: -38px;
+            }
+            main section h2+button {
+                margin-left: 8px;
+            }`,
         ruleName: "illust artist",
     });
 
@@ -3031,6 +3006,18 @@ function initializePixiv () {
         predicate: "section ul div>div:last-child:not([type='illust'])>div[aria-haspopup]:not(.ex-artist-tag)>a:last-child",
         tagPosition: TAG_POSITIONS.afterParent,
         asyncMode: true,
+        css: `
+            /* Fix artist tag overflowing */
+            div[type="illust"] ~ div:last-child {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .ex-artist-tag[rulename='artist below illust thumb'] {
+                margin-left: 6px;
+                max-width: 100%;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }`,
         ruleName: "artist below illust thumb",
     });
 
@@ -3040,6 +3027,22 @@ function initializePixiv () {
         predicate: "div.dqLunY > h1",
         toProfileUrl: normalizePageUrl,
         asyncMode: true,
+        css: `
+            /**
+             * Locate the artist tag between the artist name and
+             * followers count because there can be "premium" and
+             * "accepting requests" labels to the right of the artist name
+             */
+            div.dqLunY {
+                display: grid;
+                grid-gap: 4px;
+                grid-auto-rows: 16px;
+                grid-template-columns: auto auto 1fr;
+                justify-items: start;
+            }
+            .dqLunY .ex-artist-tag {
+                grid-row-start: 2;
+            }`,
         ruleName: "artist profile",
     });
 
@@ -3113,23 +3116,9 @@ function initializePixiv () {
 }
 
 function initializeNijie () {
-    GM_addStyle(`
-        .ex-translated-tags {
-            font-family: Verdana, Helvetica, sans-serif;
-        }
-        /* Fix tag lists in http://nijie.info/view.php?id=203787 pages. */
-        #dojin_left #view-tag .tag {
-            white-space: nowrap;
-            border: 0;
-        }
-        #login_illust_detail .ex-artist-tag {
-            display: inline-block;
-            margin-left: 0.5em;
-        }
-    `);
-
     // http://nijie.info/view.php?id=208491
     findAndTranslate("artist", "#pro .user_icon .name, .popup_member > a, #login_illust_detail a", {
+        classes: "inline",
         ruleName: "artist",
     });
 
@@ -3142,6 +3131,14 @@ function initializeNijie () {
     // http://nijie.info/view.php?id=208491
     findAndTranslate("tag", ".tag .tag_name a:first-child", {
         tagPosition: TAG_POSITIONS.beforeend,
+        css: `
+            .ex-translated-tags {
+                font-family: Verdana, Helvetica, sans-serif;
+            }
+            #dojin_left #view-tag .tag {
+                white-space: nowrap;
+                border: 0;
+            }`,
         ruleName: "illust tags",
     });
 
@@ -3153,16 +3150,14 @@ function initializeNijie () {
 }
 
 function initializeTinami () {
-    GM_addStyle(`
-        .ex-translated-tags {
-            font-family: Verdana, Helvetica, sans-serif;
-            float: none !important;
-            display: inline !important;
-        }
-    `);
-
     // http://www.tinami.com/view/979474
     findAndTranslate("tag", ".tag > span > a:nth-child(2)", {
+        css: `
+            .ex-translated-tags {
+                font-family: Verdana, Helvetica, sans-serif;
+                float: none !important;
+                display: inline !important;
+            }`,
         ruleName: "illust tags",
     });
 
@@ -3182,22 +3177,6 @@ function initializeTinami () {
 }
 
 function initializeNicoSeiga () {
-    GM_addStyle(`
-        /* Fix tags in http://seiga.nicovideo.jp/seiga/im7626097 */
-        .illust_tag .tag {
-            background: #ebebeb;
-            height: auto;
-            margin: 0 10px 5px 0;
-        }
-        /* Fix artist tag in http://seiga.nicovideo.jp/seiga/im6950870 */
-        .im_head_bar .inner .user ul .user_link .ex-artist-tag a {
-            display: inline-block;
-            border: none;
-            background: none;
-            padding: 0;
-        }
-    `);
-
     // http://seiga.nicovideo.jp/tag/艦これ
     findAndTranslate("tag", "h1:has(.icon_tag_big)", {
         tagPosition: TAG_POSITIONS.beforeend,
@@ -3209,12 +3188,26 @@ function initializeNicoSeiga () {
         predicate: ".tag > a, a.tag",
         tagPosition: TAG_POSITIONS.beforeend,
         asyncMode: true,
+        css: `
+            /* When authorized */
+            .illust_tag .tag {
+                background: #ebebeb;
+                height: auto;
+                margin: 0 10px 5px 0;
+            }`,
         ruleName: "illust tags",
     });
 
     // http://seiga.nicovideo.jp/user/illust/14767435
     findAndTranslate("artist", ".user_info h1 a", {
         classes: "inline",
+        css: `
+            .im_head_bar .inner .user ul .user_link .ex-artist-tag a {
+                display: inline-block;
+                border: none;
+                background: none;
+                padding: 0;
+            }`,
         ruleName: "illust artist",
     });
 
@@ -3238,28 +3231,19 @@ function initializeDeviantArt () {
         body.classList.contains("theme-dark") ? "dark" : "light"
     ));
 
-    GM_addStyle(`
-        .ex-artist-tag {
-            font-weight: bold;
-        }
-        div._4GWw7._22pif + .ex-artist-tag {
-            margin-left: -0.5em;
-        }
-        .ex-artist-tag + button {
-            margin-left: 1em;
-        }
-        /* fix cropped long tags */
-        a[href^='https://www.deviantart.com/tag/'] {
-            max-width: initial;
-        }
-    `);
-
     // Profile page
     // https://www.deviantart.com/adsouto
     findAndTranslate("artist", "h1", {
         toProfileUrl: linkInChildren,
         predicate: "h1:has(>a.user-link)",
         asyncMode: true,
+        css: `
+            .ex-artist-tag {
+                font-weight: bold;
+            }
+            .ex-artist-tag[rulename='artist profile'] {
+                margin-top: -10px;
+            }`,
         ruleName: "artist profile",
     });
 
@@ -3270,9 +3254,16 @@ function initializeDeviantArt () {
         predicate: "div[data-hook='deviation_meta'] a.user-link:not(:has(img))",
         requiredAttributes: "href",
         tagPosition: TAG_POSITIONS.afterParent,
-        classes: "inline",
         asyncMode: true,
         onadded: deleteOnUrlChange,
+        classes: "inline",
+        css: `
+            .ex-artist-tag[rulename='illust artist'] {
+                margin-left: -0.5em;
+            }
+            .ex-artist-tag[rulename='illust artist'] + button {
+                margin-left: 1em;
+            }`,
         ruleName: "illust artist",
     });
 
@@ -3280,12 +3271,18 @@ function initializeDeviantArt () {
     findAndTranslate("artist", "a.user-link", {
         predicate: "body > div:not(#root) a.user-link:not(:has(img))",
         asyncMode: true,
+        classes: "tpt-light",
         ruleName: "artist popup",
     });
 
     findAndTranslate("tag", "span", {
         predicate: "a[href^='https://www.deviantart.com/tag/'] > span:first-child",
         asyncMode: true,
+        css: `
+            /* fix cropped long tags */
+            a[href^='https://www.deviantart.com/tag/'] {
+                max-width: initial;
+            }`,
         ruleName: "tags",
     });
 }
@@ -3321,14 +3318,6 @@ function initializeTwitter () {
         .ex-artist-tag {
             font-family: system-ui, -apple-system, BlinkMacSystemFont,
                 "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
-        }
-        /* Fix position of the artist tag in the channel header */
-        h2 .r-1ny4l3l>.r-1ny4l3l {
-            flex-direction: row;
-        }
-        /* In the non-expanded tweets add spacing before the artist tag */
-        .r-18u37iz>.ex-artist-tag {
-            margin-left: 0.5em;
         }
     `);
 
@@ -3395,15 +3384,27 @@ function initializeTwitter () {
         predicate: `div:has(>div>a.r-1wbh5a2[tabindex])`,
         toProfileUrl: linkInChildren,
         asyncMode: true,
+        classes: "inline",
+        css: `
+            /* "in this photo", people in sidebar */
+            [data-testid='UserCell'] .ex-artist-tag {
+                display: block;
+                margin-left: 0;
+            }`,
         ruleName: "tweet/comment author",
     });
 
     // Quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
-    findAndTranslate("artist", "div.r-dnmrzs.r-1ny4l3l", {
-        predicate: "[id]>[tabindex] [tabindex]:not([role])",
+    findAndTranslate("artist", "div.r-1wvb978", {
+        predicate: "[data-testid=User-Name] [tabindex]:not([role]) > div",
         toProfileUrl: (el) => `https://twitter.com/${el.textContent?.slice(1)}`,
-        classes: "inline",
         asyncMode: true,
+        classes: "inline",
+        css: `
+            [data-testid=User-Name] [tabindex]:not([role]) {
+                flex-direction: row;
+            }
+            `,
         ruleName: "quoted tweet author",
     });
 
@@ -3417,24 +3418,6 @@ function initializeTwitter () {
 }
 
 function initializeArtStation () {
-    GM_addStyle(`
-        h1 + .ex-artist-tag {
-            margin: -8px 0 2px;
-        }
-        .hover-card .ex-artist-tag {
-            font-size: 12pt;
-            margin-top: -10px;
-        }
-        .site-title .ex-artist-tag {
-            font-size: 12pt;
-            line-height: 100%;
-            margin-top: -10px;
-        }
-        .site-title .ex-artist-tag a {
-            font-size: 12pt;
-        }
-    `);
-
     /** @param {string|null} ref */
     const getArtistName = (ref) => {
         if (!ref) return "";
@@ -3469,18 +3452,21 @@ function initializeArtStation () {
         predicate: ".user-info > h1",
         toProfileUrl: toFullURL,
         asyncMode: true,
+        css: `
+            .ex-artist-tag[rulename='artist profile'] {
+                margin: -8px 0 2px;
+            }`,
         ruleName: "artist profile",
         // The artist name is removed when the profile page is a bit scrolled
         onadded: ($tag) => {
-            const h1 = $tag.prev()[0];
-            const container = $tag.parent()[0];
-            const mo = new MutationObserver(() => {
+            const h1 = $tag.prev().get(0);
+            const container = $tag.parent().get(0);
+            new MutationObserver((_, observer) => {
                 if (!container.contains(h1)) {
                     $tag.remove();
-                    mo.disconnect();
+                    observer.disconnect();
                 }
-            });
-            mo.observe(container, { childList: true });
+            }).observe(container, { childList: true });
         },
     });
 
@@ -3504,6 +3490,11 @@ function initializeArtStation () {
         requiredAttributes: "href",
         predicate: (el) => el.matches(".hover-card-name > a:first-child"),
         asyncMode: true,
+        css: `
+            .ex-artist-tag[rulename='artist popup'] {
+                font-size: 12pt;
+                margin-top: -10px;
+            }`,
         ruleName: "artist popup",
     });
 
@@ -3525,33 +3516,29 @@ function initializeArtStation () {
     // https://dylan-kowalski.artstation.com/
     findAndTranslate("artist", ".site-title a", {
         toProfileUrl: toFullURL,
+        css: `
+            .ex-artist-tag[rulename='personal sites'] {
+                font-size: 12pt;
+                line-height: 100%;
+                margin-top: -10px;
+            }
+            .ex-artist-tag[rulename='personal sites'] a {
+                font-size: 12pt;
+            }`,
         ruleName: "personal sites",
     });
 }
 
 function initializeSauceNAO () {
     GM_addStyle(`
-        .ex-translated-tags {
-            margin: 0;
-        }
-        .ex-translated-tags::before, .ex-translated-tags::after {
-            content: none;
-        }
-        .ex-translated-tags + .target, .ex-artist-tag + .target {
-            display: none;
-        }
     `);
 
     $(".resulttitle, .resultcontentcolumn")
         .contents()
         .filter((i, el) => el.nodeType === 3) // Get text nodes
-        .wrap("<span class=target>");
-    $(".target:contains(', ')").replaceWith((/** @type {number} */i, /** @type {string} */html) => (
-        html
-            .split(", ")
-            .map((str) => `<span class="target">${str}</span>`)
-            .join(", ")
-    ));
+        .replaceWith((/** @type {number} */i, /** @type {string} */html) => (
+            html.split(", ").map((str) => `<span class="target">${str}</span>`).join(", ")
+        ));
 
     // http://saucenao.com/search.php?db=999&url=https%3A%2F%2Fraikou4.donmai.us%2Fpreview%2F5e%2F8e%2F5e8e7a03c49906aaad157de8aeb188e4.jpg
     // http://saucenao.com/search.php?db=999&url=https%3A%2F%2Fraikou4.donmai.us%2Fpreview%2Fad%2F90%2Fad90ad1cc3407f03955f22b427d21707.jpg
@@ -3578,11 +3565,23 @@ function initializeSauceNAO () {
     findAndTranslate("artistByName", ".resulttitle .target", {
         tagPosition: TAG_POSITIONS.beforebegin,
         classes: "inline",
+        css: `
+            .ex-artist-tag + .target {
+                display: none;
+            }`,
         ruleName: "artist by name",
     });
 
     findAndTranslate("tag", ".resultcontentcolumn .target", {
         tagPosition: TAG_POSITIONS.beforebegin,
+        classes: "no-brackets",
+        css: `
+            .ex-translated-tags {
+                margin: 0;
+            }
+            .ex-translated-tags + .target {
+                display: none;
+            }`,
         ruleName: "tags",
     });
 }
@@ -3694,17 +3693,6 @@ function initializeTweetDeck () {
 }
 
 function initializePixivFanbox () {
-    GM_addStyle(`
-        /* fix multiline text in the name of searched tag */
-        div[class^=TagPage__TagTitle] {
-            display: block;
-        }
-        div[class^=TagPage__Count] {
-            display: inline-block;
-            vertical-align: middle;
-        }
-    `);
-
     /** @param {string} userNick */
     const getPixivLink = async (userNick) => {
         // Use direct query
@@ -3765,19 +3753,20 @@ function initializePixivFanbox () {
         toTagName: (el) => el.previousSibling?.textContent ?? null,
         asyncMode: true,
         classes: "inline",
+        css: `
+            /* fix multiline text */
+            div[class^=TagPage__TagTitle] {
+                display: block;
+            }
+            div[class^=TagPage__Count] {
+                display: inline-block;
+                vertical-align: middle;
+            }`,
         ruleName: "search tag fanbox",
     });
 }
 
 function initializeMisskey () {
-    GM_addStyle(`
-        /* artist name in the floating header */
-        .xfdH7 .ex-artist-tag {
-            font-size: .8em;
-            font-weight: 400;
-        }
-    `);
-
     // Hashtags
     // https://misskey.io/tags/ブルアカ
     // https://misskey.art/tags/ブルアカ
@@ -3801,15 +3790,20 @@ function initializeMisskey () {
     findAndTranslate("artist", ".xpJo5", {
         toProfileUrl: getNormalizedDecentralizedSocNetUrl,
         asyncMode: true,
-        ruleName: "artist profile",
+        css: `
+            .ex-artist-tag[rulename='artist header'] {
+                font-size: .8em;
+                font-weight: 400;
+            }`,
+        ruleName: "artist header",
     });
 
-    // Artist name in header
+    // Artist name in profile
     findAndTranslate("artist", "span", {
         predicate: ".username > span:first-child",
         toProfileUrl: getNormalizedDecentralizedSocNetUrl,
         asyncMode: true,
-        ruleName: "artist header",
+        ruleName: "artist profile",
     });
 
     // Artist name in note
@@ -3841,31 +3835,6 @@ function initializeMisskey () {
 }
 
 function initializeFantia () {
-    GM_addStyle(`
-        /* for artist card */
-        .module-author {
-            display: flex;
-            align-items: center;
-        }
-        .module-author .fanclub-name {
-            line-height: unset !important;
-        }
-        .module-author .ex-artist-tag {
-            font-size: 85%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .module-author .ex-artist-tag a {
-            position: relative;
-            z-index: 1000;
-        }
-
-        /* selected tag on all works page */
-        .active .ex-translated-tags {
-            text-shadow: 0px 0px 5px white, 0px 0px 3px white;
-        }
-    `);
-
     // Artist name on profile/work page
     // https://fantia.jp/fanclubs/15340
     // https://fantia.jp/posts/2032060
@@ -3890,53 +3859,63 @@ function initializeFantia () {
             getTagContainer: ($elem) => $elem.parent(".module-author").next(".module-author>a"),
         },
         asyncMode: true,
+        css: `
+            .module-author {
+                display: flex;
+                align-items: center;
+            }
+            .module-author .fanclub-name {
+                line-height: unset !important;
+            }
+            .module-author .ex-artist-tag {
+                font-size: 85%;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .module-author .ex-artist-tag a {
+                position: relative;
+                z-index: 1000;
+            }`,
         ruleName: "artist card",
     });
 
     // All the tags
     // https://fantia.jp/posts/2032060
     findAndTranslate("tag", "a", {
-        predicate: "a[href*='tag=']",
+        predicate: "a[href*='tag=']:not([target='_blank'])",
         tagPosition: TAG_POSITIONS.beforeend,
         asyncMode: true,
+        css: `
+            .active > a {
+                filter: brightness(1.2);
+            }
+            .active .ex-translated-tags {
+                filter: brightness(0.7) contrast(2);
+                text-shadow: 0 0 5px #fff8;
+            }
+        `,
         ruleName: "tags",
     });
 }
 
 function initializeSkeb () {
-    GM_addStyle(`
-        /* profile page */
-        div.hero-foot div.title + .ex-artist-tag {
-            font-size: 1.25rem;
-            font-weight: 600;
-        }
-
-        /* work page */
-        div.image-column + div.column div.subtitle + .ex-artist-tag {
-            font-size: 0.75rem;
-            font-weight: 400;
-        }
-
-        /* index page */
-        div.user-card-screen-name + .ex-artist-tag {
-            line-height: 1;
-            font-size: 0.75rem;
-        }
-    `);
-
     // Artist name on profile page
     // https://skeb.jp/@coconeeeco
     findAndTranslate("artist", "div.title", {
-        predicate: "div.hero-foot div.title",
+        predicate: "div.hero-foot div.title:first-child",
         asyncMode: true,
+        classes: "inline title is-5",
+        onadded: preventSiteNavigation,
         ruleName: "artist profile page",
     });
 
     // Artist name on work page
     // https://skeb.jp/@coconeeeco/works/34
     findAndTranslate("artist", "div.subtitle", {
-        predicate: "div.image-column + div.column div.subtitle",
+        predicate: "div.image-column + div.column div.title + div.subtitle",
         asyncMode: true,
+        classes: "subtitle is-7",
+        onadded: preventSiteNavigation,
         ruleName: "artist work page",
     });
 
@@ -3944,6 +3923,8 @@ function initializeSkeb () {
     // https://skeb.jp/
     findAndTranslate("artist", "div.user-card-screen-name", {
         asyncMode: true,
+        classes: "subtitle is-7",
+        onadded: preventSiteNavigation,
         ruleName: "artist index page",
     });
 }

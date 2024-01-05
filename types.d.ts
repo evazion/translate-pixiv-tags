@@ -142,6 +142,8 @@ export interface TranslationOptions {
     tagPosition?: TagPosition,
     /** extra classes to add to the tag element */
     classes?: string,
+    /** general piece of CSS related to this rule */
+    css?: string,
     /** handler for the added tag elements */
     onadded?: (($el:JQuery, options: Required<TranslationOptions>) => void) | null,
 }
