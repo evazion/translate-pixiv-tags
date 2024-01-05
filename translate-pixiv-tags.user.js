@@ -3537,9 +3537,13 @@ function initializeSauceNAO () {
     $(".resulttitle, .resultcontentcolumn")
         .contents()
         .filter((i, el) => el.nodeType === 3) // Get text nodes
-        .replaceWith((/** @type {number} */i, /** @type {string} */html) => (
-            html.split(", ").map((str) => `<span class="target">${str}</span>`).join(", ")
-        ));
+        .replaceWith(function fn () {
+            return $(this)
+                .text()
+                .split(", ")
+                .map((str) => `<span class="target">${str}</span>`)
+                .join(", ");
+        });
 
     // http://saucenao.com/search.php?db=999&url=https%3A%2F%2Fraikou4.donmai.us%2Fpreview%2F5e%2F8e%2F5e8e7a03c49906aaad157de8aeb188e4.jpg
     // http://saucenao.com/search.php?db=999&url=https%3A%2F%2Fraikou4.donmai.us%2Fpreview%2Fad%2F90%2Fad90ad1cc3407f03955f22b427d21707.jpg
