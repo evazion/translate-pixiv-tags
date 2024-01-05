@@ -706,6 +706,7 @@ const NETWORK_REQUEST_DICT = {
                 only: this.fields,
             };
         },
+        filter: (items) => items.filter((item) => item.post_count > 0),
         matches (data, item) {
             return REQUEST_DATA_MATCHERS.string(data.name, item);
         },
