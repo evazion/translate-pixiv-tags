@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion, 7nik, BrokenEagle, hdk5
-// @version      20231210182312
+// @version      20240107235012
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -286,7 +286,26 @@
 
 "use strict";
 
-/** @satisfies {import("./types").Setting[]} */
+/**
+ * @template {string} N, T
+ * @typedef {{ name: string, defValue: T, descr: string, type: N }} SettingT
+ */
+/**
+ * @typedef {SettingT<"number", number>
+ * | SettingT<"boolean", boolean>
+ * | SettingT<"list", string> & { values: Record<string, string> }
+ * } Setting
+*/
+/**
+ * @template {Setting} S
+ * @typedef {S["type"] extends "boolean" ? boolean
+ * : S["type"] extends "number" ? number
+ * : S extends { values: Record<string, string> }
+ * ? keyof S["values"] : never
+ * } SettingType
+ */
+
+/** @satisfies {Setting[]} */
 const SETTINGS_SCHEMA = /** @type {const} */([
     {
         name: "booru",
@@ -341,8 +360,12 @@ const SETTINGS_SCHEMA = /** @type {const} */([
 
 /** @typedef {typeof SETTINGS_SCHEMA[number]["name"]} SettingsNames */
 /**
- * @template {SettingsNames} T
- * @typedef {import("./types").GetSettingType<typeof SETTINGS_SCHEMA[number], T>} SettingsType
+ * @template {SettingsNames} N
+ * @typedef {Extract<typeof SETTINGS_SCHEMA[number], { name: N }>} GetSetting
+ */
+/**
+ * @template {SettingsNames} N
+ * @typedef {SettingType<GetSetting<N>>} GetSettingType
  */
 
 const SETTINGS = {
@@ -369,7 +392,7 @@ const SETTINGS = {
     /**
      * @template {SettingsNames} N
      * @param {N} settingName
-     * @returns {SettingsType<N>}
+     * @returns {GetSettingType<N>}
      */
     get (settingName) {
         const setting = SETTINGS_SCHEMA.find((s) => s.name === settingName);
@@ -380,14 +403,14 @@ const SETTINGS = {
         const value = GM_getValue(settingName);
         if (value === undefined || !this.isValid(settingName, value)) {
             GM_setValue(settingName, setting.defValue);
-            return /** @type {SettingsType<N>} */(setting.defValue);
+            return /** @type {GetSettingType<N>} */(setting.defValue);
         }
         return value;
     },
     /**
      * @template {SettingsNames} N
      * @param {N} settingName
-     * @param {SettingsType<N>} value
+     * @param {GetSettingType<N>} value
      */
     set (settingName, value) {
         const setting = SETTINGS_SCHEMA.find((s) => s.name === settingName);
@@ -404,6 +427,8 @@ const SETTINGS = {
     },
 };
 
+/** @typedef {"g"|"s"|"q"|"e"} Rating */
+
 /** @type {string} Which domain to send requests to */
 const BOORU = SETTINGS.get("booru");
 /** @type {string} How long (in seconds) to cache translated tag lookups */
@@ -412,7 +437,7 @@ const CACHE_LIFETIME = `${SETTINGS.get("cache_lifetime")}s`;
 const ARTIST_POST_PREVIEW_LIMIT = SETTINGS.get("preview_limit");
 /**
  * The upper level of rating to show preview. Higher ratings will be blurred
- * @type {import("./types").Rating}
+ * @type {Rating}
  */
 const SHOW_PREVIEW_RATING = SETTINGS.get("show_preview_rating");
 /** @type {boolean} Whether to show deleted images in the preview or from the posts link */
@@ -438,34 +463,40 @@ const MAX_NETWORK_RETRIES = 3;
 
 const TAG_SELECTOR = ".ex-translated-tags, .ex-artist-tag";
 
-/** @typedef {import("./types").TagPosition} TagPosition */
+/**
+ * @typedef {object} TagPosition
+ * @prop {($container: JQuery, $elem: JQuery) => void} insertTag Adds the tag  around the container
+ * @prop {($container: JQuery) => JQuery} findTag Finds a tag around the container
+ * @prop {($elem: JQuery) => JQuery} getTagContainer Get the tag's container
+ */
 
+/** @satisfies {Record<string, TagPosition>} */
 const TAG_POSITIONS = {
-    beforebegin: /** @type {TagPosition} */ ({
-        insertTag:  ($container, $elem) => $container.before($elem),
+    beforebegin: {
+        insertTag: ($container, $elem) => $container.before($elem),
         findTag: ($container) => $container.prevAll(TAG_SELECTOR),
         getTagContainer: ($elem) => $elem.next(),
-    }),
-    afterbegin: /** @type {TagPosition} */ ({
+    },
+    afterbegin: {
         insertTag: ($container, $elem) => $container.prepend($elem),
         findTag: ($container) => $container.find(TAG_SELECTOR),
         getTagContainer: ($elem) => $elem.parent(),
-    }),
-    beforeend: /** @type {TagPosition} */ ({
+    },
+    beforeend: {
         insertTag: ($container, $elem) => $container.append($elem),
         findTag: ($container) => $container.find(TAG_SELECTOR),
         getTagContainer: ($elem) => $elem.parent(),
-    }),
-    afterend: /** @type {TagPosition} */ ({
+    },
+    afterend: {
         insertTag: ($container, $elem) => $container.after($elem),
         findTag: ($container) => $container.nextAll(TAG_SELECTOR),
         getTagContainer: ($elem) => $elem.prev(),
-    }),
-    afterParent: /** @type {TagPosition} */ ({
+    },
+    afterParent: {
         insertTag: ($container, $elem) => $container.parent().after($elem),
         findTag: ($container) => $container.parent().nextAll(TAG_SELECTOR),
         getTagContainer: ($elem) => $elem.prev().find("a"),
-    }),
+    },
 };
 
 const PROGRAM_CSS = `
@@ -607,8 +638,15 @@ const TOOLTIP_CSS = `
 }
 `;
 
-// eslint-disable-next-line max-len
-/** @type {import("./types").TooltipConstructor} */
+/** @typedef {{tooltip: HTMLElement, content: HTMLElement, target: HTMLElement}} TooltipInstance */
+/**
+ * @callback TooltipConstructor
+ * @param {HTMLElement} target Element triggering the tooltip
+ * @param {(tip: TooltipInstance) => void} contentProvider Tooltip content setter
+ * @returns {void}
+ */
+
+/** @type {TooltipConstructor} */
 const addTooltip = tooltipGenerator({
     showDelay: 500,
     hideDelay: 250,
@@ -622,16 +660,101 @@ const CACHE_PARAM = (CACHE_LIFETIME ? { expires_in: CACHE_LIFETIME } : {});
 // Setting this to the maximum since batches could return more than the amount being queried
 const API_LIMIT = 1000;
 
-/** @typedef {import("./types").RequestType} RequestType */
-/** @template {RequestType} T @typedef {import("./types").RequestParams<T>} RequestParams */
-/** @template {RequestType} T @typedef {import("./types").RequestResponse<T>} RequestResponse */
+/** @typedef {"wiki"|"artist"|"tag"|"alias"|"url"|"post"} RequestType */
+/**
+ * @template {RequestType} T
+ * @typedef {T extends "post" ? {tag:string,page:number} : string} RequestParams
+ * */
+/**
+ * @template In, Out
+ * @typedef {object} RequestDefinition
+ * @prop {string} url Api endpoint
+ * @prop {string} fields Fields to request
+ * @prop {(requests: In[]) => UrlParams} params Convert data requests to endpoint request params
+ * @prop {(response: Out, request: In) => boolean} matches Is it a response for the passed request
+ * @prop {(responses: Out[]) => Out[]} [filter] Filters the responded items
+ * @prop {number} [limit] Limit number of items in the response
+ */
+/**
+ * @typedef {object} ResponseWiki
+ * @prop {string} title
+ * @prop {string[]} other_names
+ * @prop {{ category: number }} tag
+ */
+/**
+ * @typedef {object} ResponseArtist
+ * @prop {number} id
+ * @prop {string} name
+ * @prop {boolean} is_banned
+ * @prop {string[]} other_names
+ * @prop {Array<{ url: string, is_active: boolean }>} urls
+ */
+/**
+ * @typedef {object} ResponseTag
+ * @prop {string} name
+ * @prop {number} post_count
+ * @prop {number} category
+ */
+/**
+ * @typedef {object} ResponseTagAlias
+ * @prop {string} antecedent_name
+ * @prop {{ name: string, category: number, post_count: number }} consequent_tag
+ */
+/** @typedef {ResponseArtist & { is_deleted: boolean }} ResponseUrl */
+/**
+ * @typedef {object} MediaAssetVariant
+ * @prop {string} type
+ * @prop {string} url
+ * @prop {number} width
+ * @prop {number} height
+ * @prop {string} file_ext
+ */
+/**
+ * @typedef {object} MediaAsset
+ * @prop {number} id
+ * @prop {string} file_ext
+ * @prop {number} file_size
+ * @prop {number|null} duration
+ * @prop {number} image_width
+ * @prop {number} image_height
+ * @prop {MediaAssetVariant[]} variants
+ */
+/**
+ * @typedef {object} ResponsePosts
+ * @prop {number} id
+ * @prop {string} created_at
+ * @prop {string} source
+ * @prop {Rating} rating
+ * @prop {number|null} parent_id
+ * @prop {boolean} is_pending
+ * @prop {boolean} is_flagged
+ * @prop {boolean} is_deleted
+ * @prop {boolean} has_visible_children
+ * @prop {string} tag_string_general
+ * @prop {string} tag_string_character
+ * @prop {string} tag_string_copyright
+ * @prop {string} tag_string_artist
+ * @prop {string} tag_string_meta
+ * @prop {MediaAsset} media_asset
+ */
+/** @typedef {{ counts: { posts: number} }} ResponseCount */
+/**
+ * @template {RequestType} T
+ * @typedef {T extends "wiki" ? ResponseWiki :
+ * T extends "artist" ? ResponseArtist :
+ * T extends "tag" ? ResponseTag :
+ * T extends "alias" ? ResponseTagAlias :
+ * T extends "url" ? ResponseUrl :
+ * T extends "post" ? ResponsePosts :
+ * never} RequestResponse
+ */
 
 /**
- * @type {{
+ * @type {Array<{
  *  type: RequestType,
  *  item: RequestParams<RequestType>,
  *  promise: JQuery.Deferred<RequestResponse<RequestType>[], any, any>
- * }[]}
+ * }>}
  */
 const QUEUED_NETWORK_REQUESTS = [];
 
@@ -661,7 +784,7 @@ const REQUEST_DATA_MATCHERS = {
         .includes(item.tag.toLowerCase()),
 };
 
-/** @type {import("./types").RequestDefinitions} */
+/** @type {{ [K in RequestType]: RequestDefinition<RequestParams<K>, RequestResponse<K>> }} */
 const NETWORK_REQUEST_DICT = {
     wiki: {
         url: "/wiki_pages",
@@ -765,7 +888,7 @@ const NETWORK_REQUEST_DICT = {
         params (tagList) {
             return {
                 // As this is called immediately and as a single use, only pass the first tag
-                tags: `${(SHOW_DELETED ? "status:any" : "-status:deleted")} ${tagList[0].tag}`,
+                tags: `${SHOW_DELETED ? "status:any" : "-status:deleted"} ${tagList[0].tag}`,
                 page: tagList[0].page,
                 only: this.fields,
             };
@@ -1143,8 +1266,8 @@ const networkErrors = {};
 
 /**
  * Checks whether the number of failed requests to the domain reached the limit
- * @param {string} domain - the domain to check
- * @param {boolean} logError - increase the number of errors
+ * @param {string} domain The domain to check
+ * @param {boolean} logError Increase the number of errors
  */
 function checkNetworkErrors (domain, logError) {
     const data = networkErrors[domain] ?? (networkErrors[domain] = { error: 0 });
@@ -1204,10 +1327,12 @@ function intervalNetworkHandler () {
     QUEUED_NETWORK_REQUESTS.length = 0;
 }
 
+/** @typedef {{ [k: string]: string|number|boolean|string[]|UrlParams}} UrlParams */
+
 /**
  * @template {RequestType} T
  * @param {string} url
- * @param {import("./types").UrlParams} params
+ * @param {UrlParams} params
  * @param {typeof QUEUED_NETWORK_REQUESTS} requests
  * @param {T} type
  */
@@ -1257,7 +1382,7 @@ async function getLong (url, params, requests, type) {
 /**
  * @param {string} method
  * @param {string} url
- * @param {import("./types").UrlParams} data
+ * @param {UrlParams} data
  */
 async function makeRequest (method, url, data) {
     const sleepHalfSecond = (/** @type {TimerHandler} */ resolve) => setTimeout(resolve, 500);
@@ -1299,9 +1424,9 @@ async function makeRequest (method, url, data) {
 /**
  * Checks whether the url is normalized and optionally normalizes
  * @typedef {object} UrlNormalizer
- * @prop {RegExp} [path] - test for normalized url path
- * @prop {RegExp} [params] - test for normalized url search params
- * @prop {(url:URL) => string} [normalize] - url normalizer
+ * @prop {RegExp} [path] Test for normalized url path
+ * @prop {RegExp} [params] Test for normalized url search params
+ * @prop {(url:URL) => string} [normalize] Url normalizer
  */
 
 /** @type {Record<string, UrlNormalizer>} */
@@ -1430,9 +1555,9 @@ function normalizeProfileURL (profileUrl, depth = 0) {
 
 /**
  * Translate a regular tag on the given element
- * @param {HTMLElement} target - the element to attach translation
- * @param {string} tagName - the tag name to translate
- * @param {TranslationOptionsFull} options - translation options
+ * @param {HTMLElement} target The element to attach translation
+ * @param {string} tagName The tag name to translate
+ * @param {TranslationOptionsFull} options Translation options
  */
 async function translateTag (target, tagName, options) {
     if (!tagName) return;
@@ -1489,9 +1614,9 @@ async function translateTag (target, tagName, options) {
 const renderedTagsCache = {};
 /**
  * Attaches translations to the target element
- * @param {JQuery} $target - the element to attach the translation
- * @param {TranslatedTag[]} tags - translated tags
- * @param {TranslationOptionsFull} options - extra translation options
+ * @param {JQuery} $target The element to attach the translation
+ * @param {TranslatedTag[]} tags Translated tags
+ * @param {TranslationOptionsFull} options Translation options
  */
 function addDanbooruTags ($target, tags, options) {
     if (tags.length === 0) return;
@@ -1538,9 +1663,9 @@ function addDanbooruTags ($target, tags, options) {
 
 /**
  * Translate an artist on the given element using the url to their profile
- * @param {HTMLElement} element - the element to attach the translations
- * @param {string} profileUrl - the artist's urls to translate
- * @param {TranslationOptionsFull} options - extra translation options
+ * @param {HTMLElement} element The element to attach the translations
+ * @param {string} profileUrl The artist's urls to translate
+ * @param {TranslationOptionsFull} options Translation options
  */
 async function translateArtistByURL (element, profileUrl, options) {
     if (!profileUrl) return;
@@ -1560,9 +1685,9 @@ async function translateArtistByURL (element, profileUrl, options) {
 
 /**
  * Translate an artist on the given element using the their name
- * @param {HTMLElement} element - the element to attach the translations
- * @param {string} artistName - the artist name
- * @param {TranslationOptionsFull} options - extra translation options
+ * @param {HTMLElement} element The element to attach the translations
+ * @param {string} artistName The artist name
+ * @param {TranslationOptionsFull} options Translation options
  */
 async function translateArtistByName (element, artistName, options) {
     if (!artistName) return;
@@ -1581,19 +1706,19 @@ async function translateArtistByName (element, artistName, options) {
 const renderedArtistsCache = {};
 
 /**
- * @typedef {import("./types").ResponseArtist & Partial<{
+ * @typedef {ResponseArtist & {
  *      prettyName: string,
  *      escapedName: string,
  *      encodedName: string,
- *  }>} TranslatedArtist
+ *  }} TranslatedArtist
  * */
 /**
  * Attach the artist's translation to the target element
- * @param {JQuery} $target - the target element to attach the translation
- * @param {TranslatedArtist} artist - the artist data
- * @param {TranslationOptionsFull} options - extra translation options
+ * @param {JQuery} $target The target element to attach the translation
+ * @param {ResponseArtist} rawArtist The artist data
+ * @param {TranslationOptionsFull} options Translation options
  */
-function addDanbooruArtist ($target, artist, options) {
+function addDanbooruArtist ($target, rawArtist, options) {
     const {
         onadded = null,
         tagPosition: {
@@ -1604,12 +1729,14 @@ function addDanbooruArtist ($target, artist, options) {
     } = options;
     let { classes = "" } = options;
 
+    const artist = {
+        ...rawArtist,
+        prettyName: rawArtist.name.replaceAll("_", " "),
+        escapedName: _.escape(rawArtist.name.replaceAll("_", " ")),
+        encodedName: encodeURIComponent(rawArtist.name),
+    };
+
     classes += artist.is_banned ? " ex-artist-tag ex-banned-artist-tag" : " ex-artist-tag";
-    /* eslint-disable no-param-reassign */
-    artist.prettyName = artist.name.replaceAll("_", " ");
-    artist.escapedName = _.escape(artist.prettyName);
-    artist.encodedName = encodeURIComponent(artist.name);
-    /* eslint-enable no-param-reassign */
 
     const $duplicates = findTag($target)
         .filter((i, el) => el.textContent?.trim() === artist.escapedName);
@@ -1630,7 +1757,7 @@ function addDanbooruArtist ($target, artist, options) {
     insertTag($target, $tag);
     addTooltip(
         $tag.find("a")[0],
-        (tip) => buildArtistTooltip(/** @type {Required<TranslatedArtist>} */(artist), tip),
+        (tip) => buildArtistTooltip(artist, tip),
     );
 
     if (onadded) onadded($tag, options);
@@ -1645,9 +1772,9 @@ const makeStyleSheetMemoized = _.memoize((css) => {
 
 /**
  * Universal method to add a content as Shadow DOM
- * @param {JQuery} $target - container for the Shadow DOM
- * @param {JQuery} $content - the Shadow DOM content
- * @param {string} css - the Shadow DOM CSS
+ * @param {JQuery} $target Container for the Shadow DOM
+ * @param {JQuery} $content The Shadow DOM content
+ * @param {string} css The Shadow DOM CSS
  */
 function attachShadow ($target, $content, css) {
     // Return if the target already have shadow
@@ -1668,7 +1795,7 @@ function attachShadow ($target, $content, css) {
 
 /**
  * Get a color similar to the background under the element and theme type
- * @param {JQuery} $element - the target element
+ * @param {JQuery} $element The target element
  * @returns {{ theme:"dark"|"light", adjustedColor:string}}
  */
 function chooseBackgroundColorScheme ($element) {
@@ -1721,8 +1848,8 @@ const renderedTipsCache = {};
 
 /**
  * Fills the artist tooltip with a content
- * @param {Required<TranslatedArtist>} artist - the artist data
- * @param {import("./types").TooltipInstance} tip - the tooltip instance
+ * @param {TranslatedArtist} artist The artist data
+ * @param {TooltipInstance} tip The tooltip instance
  */
 async function buildArtistTooltip (artist, { tooltip, content, target }) {
     if (!(artist.name in renderedTipsCache)) {
@@ -2083,7 +2210,7 @@ const ARTIST_TOOLTIP_CSS = `
 
 /**
  * Builds artist tooltip content
- * @param {Required<TranslatedArtist>} artist - the artist data
+ * @param {TranslatedArtist} artist The artist data
  */
 async function buildArtistTooltipContent (artist) {
     const status = SHOW_DELETED ? "status:any" : "-status:deleted";
@@ -2098,14 +2225,14 @@ async function buildArtistTooltipContent (artist) {
     // Process the queue immediately
     intervalNetworkHandler();
     // This function is cached so it's OK to do direct calls
-    /** @type {Promise<{ counts: { posts: number } }>} */
+    /** @type {Promise<ResponseCount>} */
     const waitTotalPostCount = makeRequest(
         "GET",
         `${BOORU}/counts/posts.json`,
         { tags: `${artist.name} status:any`, ...CACHE_PARAM },
     );
 
-    /** @type {Promise<{ counts: { posts: number } }>} */
+    /** @type {Promise<ResponseCount>} */
     const waitVisiblePostCount = artist.is_banned
         ? Promise.resolve({ counts: { posts: 0 } })
         : (SHOW_DELETED && !rating
@@ -2192,7 +2319,7 @@ async function buildArtistTooltipContent (artist) {
 
 /**
  * Format artist urls
- * @param {Required<TranslatedArtist>} artist - the artist data
+ * @param {TranslatedArtist} artist The artist data
  */
 function buildArtistUrlsHtml (artist) {
     const artistUrls = _(artist.urls)
@@ -2225,7 +2352,7 @@ function buildArtistUrlsHtml (artist) {
 
 /**
  * Format time in relative form
- * @param {number|string} time - timestamp
+ * @param {number|string} time Timestamp
  */
 function timeToAgo (time) {
     const interval = new Date(Date.now() - new Date(time).getTime());
@@ -2279,7 +2406,7 @@ function formatBytes (bytes) {
 
 /**
  * Format the post tags
- * @param {import("./types").ResponsePosts} post - the pose data
+ * @param {ResponsePosts} post The post data
  */
 function formatTagString (post) {
     return _([
@@ -2298,7 +2425,7 @@ function formatTagString (post) {
 
 /**
  * Format the post image info
- * @param {import("./types").ResponsePosts} post - the pose data
+ * @param {ResponsePosts} post The post data
  */
 function formatImageInfo (post) {
     if (![
@@ -2317,7 +2444,7 @@ function formatImageInfo (post) {
 
 /**
  * Extract the post preview info
- * @param {import("./types").ResponsePosts} post - the pose data
+ * @param {ResponsePosts} post The post data
  */
 function getPostPreview (post) {
     const hiDpi = window.devicePixelRatio > 1;
@@ -2342,7 +2469,7 @@ function getPostPreview (post) {
 
 /**
  * Build the post preview
- * @param {import("./types").ResponsePosts} post - the pose data
+ * @param {ResponsePosts} post The post data
  */
 function buildPostPreview (post) {
     const RATINGS = {
@@ -2420,7 +2547,7 @@ function buildPostPreview (post) {
 
 /**
  * Load a neighbor page of posts
- * @param {JQuery.Event} ev - event of pressing the button
+ * @param {JQuery.Event} ev Event of pressing the button
  */
 async function loadNextPage (ev) {
     const $btn = $(ev.target);
@@ -2613,9 +2740,9 @@ function showSettings () {
  * tinami - light only?
  * twitter, tweetdeck - body[style] + body[data-nightmode=true/false]
  * saucenao - dark only
- * @param {HTMLElement} elem - the element that contains theme info
- * @param {string} attr - the attribute name with the theme info
- * @param {(el:HTMLElement) => string} themeExtractor - theme getter
+ * @param {HTMLElement} elem The element that contains theme info
+ * @param {string} attr The attribute name with the theme info
+ * @param {(el:HTMLElement) => string} themeExtractor Theme getter
  */
 function watchSiteTheme (elem, attr, themeExtractor) {
     /** @type {string} */
@@ -2637,23 +2764,38 @@ function watchSiteTheme (elem, attr, themeExtractor) {
     updateTheme();
 }
 
-/** @typedef {import("./types").TranslationOptions} TranslationOptions */
-/** @typedef {Required<TranslationOptions>} TranslationOptionsFull */
 /**
- * @template {TranslationOptions["mode"]} T
- * @typedef {T extends "artist"
- *  ? Omit<TranslationOptions, "mode"|"toTagName">
- *  : Omit<TranslationOptions, "mode"|"toProfileUrl">
- * } TranslationOptionsT
+ * @typedef {object} TranslationOptions
+ * @prop {"tag" | "artist" | "artistByName"} mode Method of translating
+ * @prop {string} ruleName Just a name of rule for translations
+ * @prop {boolean} [asyncMode] Watch for new entries to translate, by default - no
+ * @prop {string | null} [requiredAttributes] Required attributes on the element
+ * @prop {string | ((el:HTMLElement) => boolean) | null} [predicate]
+ *  Checks whether the element is translatable
+ * @prop {(el:HTMLElement) => string | string[] | null} [toProfileUrl]
+ *  Extracts the link to the profile from the element, by default - `href` from closest `<a>`
+ * @prop {(el:HTMLElement) => string | null} [toTagName]
+ *  Extracts the tag name from the element, by default - the element's text
+ * @prop {TagPosition} [tagPosition]
+ *  Methods for inserting and retrieving the tag element relatively to the
+ *  matched element, by default it's `afterend`
+ * @prop {string} [classes] Extra classes to add to the tag element
+ * @prop {string} [css] General piece of CSS related to this rule
+ * @prop {(($el:JQuery, options: Required<TranslationOptions>) => void) | null} [onadded]
+ *  Handler for the added tag elements
  */
+/** @typedef {Required<TranslationOptions>} TranslationOptionsFull */
 
 /**
  * Add translations to the matched elements
  * @template {TranslationOptions["mode"]} T
- * @param {T} mode - method of translating the element
- * @param {string|HTMLElement} selector - simple selector of the translated element.
+ * @param {T} mode Method of translating the element
+ * @param {string|HTMLElement} selector Simple selector of the translated element.
  *  Max example: `div.class#id[attr][attr2=val], *[attr3~="part"][attr4='val']`
- * @param {TranslationOptionsT<T>} [options] - extra options for translating
+ * @param {T extends "artist"
+ *  ? Omit<TranslationOptions, "mode"|"toTagName">
+ *  : Omit<TranslationOptions, "mode"|"toProfileUrl">
+ * } [options] Extra options for translating
  */
 function findAndTranslate (mode, selector, options) {
     /** @type {TranslationOptionsFull} */
@@ -2729,8 +2871,8 @@ function findAndTranslate (mode, selector, options) {
 
 /**
  * Delete the tag element when the target element will change url (`href`)
- * @param {JQuery} $tag - the tag to remove
- * @param {TranslationOptionsFull} options - translation options
+ * @param {JQuery} $tag The tag to remove
+ * @param {TranslationOptionsFull} options Translation options
  */
 function deleteOnUrlChange ($tag, options) {
     const $container = options.tagPosition.getTagContainer($tag);
@@ -2751,7 +2893,7 @@ const preventSiteNavigation = ($el) => $el.click((ev) => ev.stopPropagation());
 
 /**
  * Find and get link in child elements
- * @param {HTMLElement} el - the parent element
+ * @param {HTMLElement} el The parent element
  * @returns {string}
  */
 function linkInChildren (el) {
@@ -2773,7 +2915,7 @@ const COMMON_HASHTAG_REGEXPS = [
 ];
 /**
  * Get tag name without common prefixes or suffixes
- * @param {HTMLElement} el - the target element
+ * @param {HTMLElement} el The target element
  */
 const getNormalizedHashtagName = (el) => {
     const tagName = el.textContent;
@@ -2792,7 +2934,7 @@ const getNormalizedHashtagName = (el) => {
 
 /**
  * Normalize profile url for soc.net. like Mastodon or Misskey
- * @param {HTMLElement} el - the target element
+ * @param {HTMLElement} el The target element
  */
 const getNormalizedDecentralizedSocNetUrl = (el) => {
     const fullName = el.textContent?.trim() ?? "";
