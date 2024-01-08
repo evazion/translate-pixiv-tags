@@ -1228,7 +1228,7 @@ function getSiteDisplayDomain (siteUrl) {
 
 /** @param {string} siteName */
 function getSiteIconUrl (siteName) {
-    return GM_getResourceURL(`${siteName.replaceAll(/[^\w.]/g, "-")}-logo`);
+    return GM_getResourceURL(`${siteName.toLowerCase().replaceAll(/[^\w.]/g, "-")}-logo`);
 }
 
 /**
