@@ -500,7 +500,7 @@ const TAG_POSITIONS = {
 };
 
 const PROGRAM_CSS = `
-html, .tpt-light {
+:root, .tpt-light, .tpt-auto {
     --tpt-artist: #c00004;
     --tpt-cat-0: #0075f8;
     --tpt-cat-1: #c00004;
@@ -515,6 +515,16 @@ html, .tpt-light {
     --tpt-cat-3: #c797ff;
     --tpt-cat-4: #35c64a;
     --tpt-cat-5: #ead084;
+}
+@media (prefers-color-scheme: dark) {
+    .tpt-auto {
+        --tpt-artist: #ff8a8b;
+        --tpt-cat-0: #009be6;
+        --tpt-cat-1: #ff8a8b;
+        --tpt-cat-3: #c797ff;
+        --tpt-cat-4: #35c64a;
+        --tpt-cat-5: #ead084;
+    }
 }
 
 .ex-translated-tags {
@@ -2751,7 +2761,7 @@ function watchSiteTheme (elem, attr, themeExtractor) {
         const newTheme = themeExtractor(elem);
         if (newTheme === theme) return;
         theme = newTheme;
-        $("html").removeClass("tpt-dark tpt-light")
+        $(":root").removeClass("tpt-dark tpt-light tpt-auto")
             .addClass(`tpt-${theme}`);
         debuglog(`theme changed to ${theme}`);
     }
@@ -2946,9 +2956,13 @@ const getNormalizedDecentralizedSocNetUrl = (el) => {
 };
 
 function initializePixiv () {
-    watchSiteTheme(document.documentElement, "data-theme", (html) => (
-        html.dataset.theme === "dark" ? "dark" : "light"
-    ));
+    watchSiteTheme(document.documentElement, "data-theme", (html) => {
+        switch (html.dataset.theme) {
+            case "dark": return "dark";
+            case "light": return "light";
+            default: return "auto";
+        }
+    });
 
     // To remove something like `50000users入り`, e.g. here https://www.pixiv.net/en/artworks/68318104
     /** @param {HTMLElement} el */
