@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion, 7nik, BrokenEagle, hdk5
-// @version      20240108220612
+// @version      20240109161412
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -1238,7 +1238,7 @@ function getSiteDisplayDomain (siteUrl) {
 
 /** @param {string} siteName */
 function getSiteIconUrl (siteName) {
-    return GM_getResourceURL(`${siteName.replaceAll(/[^\w.]/g, "-")}-logo`);
+    return GM_getResourceURL(`${siteName.toLowerCase().replaceAll(/[^\w.]/g, "-")}-logo`);
 }
 
 /**
