@@ -2959,7 +2959,7 @@ function initializePixiv () {
     watchSiteTheme(document.documentElement, "data-theme", (html) => {
         switch (html.dataset.theme) {
             case "dark": return "dark";
-            case "light": return "light";
+            case "default": return "light";
             default: return "auto";
         }
     });
