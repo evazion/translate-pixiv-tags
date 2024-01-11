@@ -1,0 +1,23 @@
+name: Bump userscript version
+on:
+  push:
+    branches: [ master ]
+    path: [ translate-pixiv-tags.user.js ]
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: true
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Update version
+        run: sed -i "s/\/\/ @version\s\+[0-9]\+/\/\/ @version      $(date -u +%Y%m%d%H%M%S)/" translate-pixiv-tags.user.js
+
+      - name: Commit changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: 'Bump version'
+          add: translate-pixiv-tags.user.js
