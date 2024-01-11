@@ -44,7 +44,7 @@
 // @require      https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.0.8/dist/floating-ui.dom.umd.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore.js
 // @require      https://github.com/evazion/translate-pixiv-tags/raw/lib-20221207/lib/tooltip.js
-// @require      https://github.com/evazion/translate-pixiv-tags/raw/lib-20190830/lib/jquery-gm-shim.js
+// @require      https://github.com/evazion/translate-pixiv-tags/raw/lib-20240111/lib/jquery-gm-shim.js
 // @resource     danbooru_icon https://github.com/evazion/translate-pixiv-tags/raw/resource-20190903/resource/danbooru-icon.ico
 // @resource     settings_icon https://github.com/evazion/translate-pixiv-tags/raw/resource-20190903/resource/settings-icon.svg
 // @resource     globe_icon https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/svgs/solid/globe.svg
@@ -356,6 +356,11 @@ const SETTINGS_SCHEMA = /** @type {const} */([
         defValue: false,
         descr: "Print debug messages in console",
         type: "boolean",
+    }, {
+        name: "display_network_errors",
+        defValue: true,
+        descr: "Display a message when a request error occurs",
+        type: "boolean",
     },
 ]);
 
@@ -430,21 +435,20 @@ const SETTINGS = {
 
 /** @typedef {"g"|"s"|"q"|"e"} Rating */
 
-/** @type {string} Which domain to send requests to */
+/** Which domain to send requests to */
 const BOORU = SETTINGS.get("booru");
-/** @type {string} How long (in seconds) to cache translated tag lookups */
+/** How long (in seconds) to cache translated tag lookups */
 const CACHE_LIFETIME = `${SETTINGS.get("cache_lifetime")}s`;
-/** @type {number} Number of recent posts to show in artist tooltips */
+/** Number of recent posts to show in artist tooltips */
 const ARTIST_POST_PREVIEW_LIMIT = SETTINGS.get("preview_limit");
-/**
- * The upper level of rating to show preview. Higher ratings will be blurred
- * @type {Rating}
- */
+/** The upper level of rating to show preview. Higher ratings will be blurred */
 const SHOW_PREVIEW_RATING = SETTINGS.get("show_preview_rating");
-/** @type {boolean} Whether to show deleted images in the preview or from the posts link */
+/** Whether to show deleted images in the preview or from the posts link */
 const SHOW_DELETED = SETTINGS.get("show_deleted");
-/** @type {boolean} Whether to print an additional info into the console */
+/** Whether to print an additional info into the console */
 const DEBUG = SETTINGS.get("debug");
+/** Show an error message when a request error happens */
+const DISPLAY_NETWORK_ERRORS = SETTINGS.get("display_network_errors");
 
 // Domains where images outside of whitelist are blocked
 const DOMAIN_USES_CSP = [
@@ -460,8 +464,10 @@ const DOMAIN_USES_CSP = [
 const MAXIMUM_URI_LENGTH = 4000;
 
 // For network error management
-const MAX_NETWORK_ERRORS = 25;
+const MAX_NETWORK_ERRORS = 12;
 const MAX_NETWORK_RETRIES = 3;
+const REQUEST_INTERVAL = 500; // in ms
+const RETRY_REQUEST_INTERVAL = 30_000; // in ms
 
 const TAG_SELECTOR = ".ex-translated-tags, .ex-artist-tag";
 
@@ -596,7 +602,7 @@ const PROGRAM_CSS = `
     content: " (banned)";
 }
 
-#ex-settings {
+#ex-settings, #ex-message {
     position: fixed;
     top: 0;
     left: 0;
@@ -672,19 +678,21 @@ const CACHE_PARAM = (CACHE_LIFETIME ? { expires_in: CACHE_LIFETIME } : {});
 // Setting this to the maximum since batches could return more than the amount being queried
 const API_LIMIT = 1000;
 
-/** @typedef {"wiki"|"artist"|"tag"|"alias"|"url"|"post"} RequestType */
 /**
- * @template {RequestType} T
- * @typedef {T extends "post" ? {tag:string,page:number} : string} RequestParams
- * */
+ * @template {object|object[]} T
+ * @typedef {T extends object[] ? T[number] : T} Single
+ */
+
+/** @typedef {"wiki"|"artist"|"tag"|"alias"|"url"|"post"|"count"} RequestName */
 /**
- * @template In, Out
+ * @template {object} Resp
  * @typedef {object} RequestDefinition
  * @prop {string} url Api endpoint
  * @prop {string} fields Fields to request
- * @prop {(requests: In[]) => UrlParams} params Convert data requests to endpoint request params
- * @prop {(response: Out, request: In) => boolean} matches Is it a response for the passed request
- * @prop {(responses: Out[]) => Out[]} [filter] Filters the responded items
+ * @prop {(requests: string[]) => UrlParams} params Convert data requests to endpoint request params
+ * @prop {(response: Single<Resp>, request: string) => boolean} matches
+ *  Check whether the response is for the passed request
+ * @prop {(responses: Resp) => Resp} [filter] Filters the responded items
  * @prop {number} [limit] Limit number of items in the response
  */
 /**
@@ -751,22 +759,30 @@ const API_LIMIT = 1000;
  */
 /** @typedef {{ counts: { posts: number} }} ResponseCount */
 /**
- * @template {RequestType} T
- * @typedef {T extends "wiki" ? ResponseWiki :
- * T extends "artist" ? ResponseArtist :
- * T extends "tag" ? ResponseTag :
- * T extends "alias" ? ResponseTagAlias :
- * T extends "url" ? ResponseUrl :
- * T extends "post" ? ResponsePosts :
- * never} RequestResponse
+ * @template {RequestName} N
+ * @typedef {N extends "wiki" ? ResponseWiki :
+ * N extends "artist" ? ResponseArtist :
+ * N extends "tag" ? ResponseTag :
+ * N extends "alias" ? ResponseTagAlias :
+ * N extends "url" ? ResponseUrl :
+ * N extends "post" ? ResponsePosts :
+ * N extends "count" ? ResponseCount :
+ * never} ResponseEntity
+ */
+/**
+ * @template {RequestName} N
+ * @typedef {N extends "count" ? ResponseCount : ResponseEntity<N>[]} DBResponse
+*/
+/**
+ * @template {RequestName} N
+ * @typedef {object} RequestPromise
+ * @prop {N} type
+ * @prop {string} item
+ * @prop {JQuery.Deferred<DBResponse<N>, any, any>} promise
  */
 
 /**
- * @type {Array<{
- *  type: RequestType,
- *  item: RequestParams<RequestType>,
- *  promise: JQuery.Deferred<RequestResponse<RequestType>[], any, any>
- * }>}
+ * @type {RequestPromise<RequestName>[]}
  */
 const QUEUED_NETWORK_REQUESTS = [];
 
@@ -788,15 +804,15 @@ const REQUEST_DATA_MATCHERS = {
     /**
      * Case-insensitive looking in string-array
      * @param {string} data
-     * @param {{ tag:string }} item
+     * @param {string} item
      */
     string_list: (data, item) => data
         .toLowerCase()
         .split(" ")
-        .includes(item.tag.toLowerCase()),
+        .includes(item.toLowerCase()),
 };
 
-/** @type {{ [K in RequestType]: RequestDefinition<RequestParams<K>, RequestResponse<K>> }} */
+/** @type {{ [N in RequestName]: RequestDefinition<DBResponse<N>> }} */
 const NETWORK_REQUEST_DICT = {
     wiki: {
         url: "/wiki_pages",
@@ -898,17 +914,24 @@ const NETWORK_REQUEST_DICT = {
             "tag_string_meta",
         ].join(","),
         params (tagList) {
+            const [tag, page] = tagList[0].split(" ");
             return {
                 // As this is called immediately and as a single use, only pass the first tag
-                tags: `${SHOW_DELETED ? "status:any" : "-status:deleted"} ${tagList[0].tag}`,
-                page: tagList[0].page,
+                tags: `${SHOW_DELETED ? "status:any" : "-status:deleted"} ${tag}`,
+                page,
                 only: this.fields,
             };
         },
         matches (data, item) {
-            return REQUEST_DATA_MATCHERS.string_list(data.tag_string_artist, item);
+            return REQUEST_DATA_MATCHERS.string_list(data.tag_string_artist, item.split(" ")[0]);
         },
         limit: ARTIST_POST_PREVIEW_LIMIT,
+    },
+    count: {
+        url: "/counts/posts",
+        fields: "",
+        params: (tags) => ({ tags: tags.join(" ") }),
+        matches: () => true,
     },
 };
 
@@ -1296,36 +1319,42 @@ const networkErrors = {};
  * @param {string} domain The domain to check
  * @param {boolean} logError Increase the number of errors
  */
-function checkNetworkErrors (domain, logError) {
+function tooManyNetworkErrors (domain, logError = false) {
     const data = networkErrors[domain] ?? (networkErrors[domain] = { error: 0 });
 
     if (logError) {
         console.log("[TPT]: Total errors:", data.error);
         data.error += 1;
     }
-    if (data.error >= MAX_NETWORK_ERRORS) {
+    if (data.error < MAX_NETWORK_ERRORS) return false;
+    if (logError) {
+        if (data.error === MAX_NETWORK_ERRORS) {
+            setTimeout(() => {
+                console.log("[TPT]: Errors reset");
+                data.error = 0;
+            }, RETRY_REQUEST_INTERVAL);
+        }
         console.error(
             "[TPT]: Maximum number of errors exceeded",
             MAX_NETWORK_ERRORS,
             "for",
             domain,
         );
-        return false;
     }
     return true;
 }
 
 /**
- * @template {RequestType} T
+ * @template {RequestName} T
  * @param {T} type
- * @param {RequestParams<T>} item
- * @returns {JQuery.Deferred<RequestResponse<T>[], any, any>}
+ * @param {string} item
+ * @returns {RequestPromise<T>["promise"]}
  */
 function queueNetworkRequest (type, item) {
     const request = {
         type,
         item,
-        promise: /** @type {JQuery.Deferred<RequestResponse<T>[], any, any>} */($.Deferred()),
+        promise: /** @type {RequestPromise<T>["promise"]} */($.Deferred()),
     };
     QUEUED_NETWORK_REQUESTS.push(request);
     return request.promise;
@@ -1335,19 +1364,39 @@ function queueNetworkRequest (type, item) {
 const queueNetworkRequestMemoized = _.memoize(queueNetworkRequest, memoizeKey);
 
 function intervalNetworkHandler () {
-    for (const type of /** @type {RequestType[]} */ (Object.keys(NETWORK_REQUEST_DICT))) {
+    if (QUEUED_NETWORK_REQUESTS.length === 0) return;
+    if (!navigator.onLine) {
+        if (DISPLAY_NETWORK_ERRORS) {
+            showMessage("No Internet connection");
+        }
+        return;
+    }
+    if (tooManyNetworkErrors(new URL(BOORU).hostname)) return;
+
+    const types = /** @template {RequestName} T @type {T[]} */(Object.keys(NETWORK_REQUEST_DICT));
+    for (const type of types) {
         const requests = QUEUED_NETWORK_REQUESTS.filter((request) => (request.type === type));
+        if (requests.length <= 0) continue; // eslint-disable-line no-continue
+
         const requestTools = NETWORK_REQUEST_DICT[type];
-        if (requests.length > 0) {
-            const items = requests.map((request) => request.item);
-            const typeParam = requestTools.params(/** @type {any} */(items));
-            const limitParam = { limit: API_LIMIT };
-            if (requestTools.limit) {
-                limitParam.limit = requestTools.limit;
+        const url = `${BOORU}${requestTools.url}.json`;
+        const limitParam = { limit: requestTools.limit ?? API_LIMIT };
+        if (type === "count") {
+            for (const request of requests) {
+                const typeParam = requestTools.params([request.item]);
+                const params = Object.assign(typeParam, limitParam, CACHE_PARAM);
+                getLong(url, params, [request], requestTools).catch(() => {
+                    // in case of error return the request to the queue
+                    QUEUED_NETWORK_REQUESTS.push(request);
+                });
             }
+        } else {
+            const typeParam = requestTools.params(requests.map((request) => request.item));
             const params = Object.assign(typeParam, limitParam, CACHE_PARAM);
-            const url = `${BOORU}${requestTools.url}.json`;
-            getLong(url, params, requests, type);
+            getLong(url, params, requests, requestTools).catch(() => {
+                // in case of error return requests to the queue
+                QUEUED_NETWORK_REQUESTS.push(...requests);
+            });
         }
     }
     // Clear the queue once all network requests have been sent
@@ -1357,13 +1406,13 @@ function intervalNetworkHandler () {
 /** @typedef {{ [k: string]: string|number|boolean|string[]|UrlParams}} UrlParams */
 
 /**
- * @template {RequestType} T
+ * @template {RequestName} T
  * @param {string} url
  * @param {UrlParams} params
- * @param {typeof QUEUED_NETWORK_REQUESTS} requests
- * @param {T} type
+ * @param {RequestPromise<RequestName>[]} requests
+ * @param {RequestDefinition<DBResponse<T>>} tools
  */
-async function getLong (url, params, requests, type) {
+async function getLong (url, params, requests, tools) {
     // Default to GET requests
     let method = "get";
     let finalParams = params;
@@ -1373,36 +1422,33 @@ async function getLong (url, params, requests, type) {
         method = "post";
     }
 
-    /** @type {RequestResponse<T>[]} */
-    let resp = [];
-    try {
-        resp = await makeRequest(method, url, finalParams);
-    } catch {
-        for (const request of requests) request.promise.resolve([]);
+    /** @type {DBResponse<T>} */
+    let resp = await makeRequest(method, url, finalParams);
+    // Do any necessary filtering after the network request completes
+    if (tools.filter) resp = tools.filter(resp);
+
+    if (!Array.isArray(resp)) {
+        for (const request of requests) {
+            request.promise.resolve(resp);
+        }
         return;
     }
 
-    const requestTools = NETWORK_REQUEST_DICT[type];
-    let finalResp = resp;
-    if (requestTools.filter) {
-        // Do any necessary filtering after the network request completes
-        finalResp = requestTools.filter(resp);
-    }
-
-    const unusedData = new Set(finalResp);
+    /** @type {Set<ResponseEntity<RequestName>>} */
+    const unusedResp = new Set(resp);
     for (const request of requests) {
-        const found = finalResp.filter((data) => {
-            if (requestTools.matches(data, /** @type {RequestParams<T>} */(request.item))) {
-                unusedData.delete(data);
+        const found = /** @type {DBResponse<T>} */ (resp.filter((data) => {
+            if (tools.matches(/** @type {any} */(data), request.item)) {
+                unusedResp.delete(data);
                 return true;
             }
             return false;
-        });
+        }));
         // Fulfill the promise which returns the results to the function that queued it
         request.promise.resolve(found);
     }
-    if (unusedData.size > 0) {
-        debuglog("Unused results found:", [...unusedData.values()]);
+    if (unusedResp.size > 0) {
+        debuglog("Unused results found:", [...unusedResp.values()]);
     }
 }
 
@@ -1412,22 +1458,29 @@ async function getLong (url, params, requests, type) {
  * @param {UrlParams} data
  */
 async function makeRequest (method, url, data) {
-    const sleepHalfSecond = (/** @type {TimerHandler} */ resolve) => setTimeout(resolve, 500);
+    const sleepHalfSecond = () => new Promise((resolve) => { setTimeout(resolve, 500); });
     const domain = new URL(url).hostname;
-    if (!(checkNetworkErrors(domain, false))) {
+    if (tooManyNetworkErrors(domain)) {
         throw new Error(`${domain} had too many network errors`);
     }
+    let status = -1;
+    let statusText = "";
+
     for (let i = 0; i < MAX_NETWORK_RETRIES; i++) {
         try {
             // eslint-disable-next-line no-await-in-loop
-            return await $.ajax(url, {
+            const resp = await $.ajax(url, {
                 dataType: "json",
                 data,
                 method,
                 // Do not use the failed and cached first try
                 cache: i === 0,
             });
+            showMessage("");
+            return resp;
         } catch (error) {
+            tooManyNetworkErrors(domain, true);
+            ({ status, statusText } = /** @type {XMLHttpRequest} */(error));
             console.error(
                 "[TPT]: Failed try #",
                 i + 1,
@@ -1436,16 +1489,22 @@ async function makeRequest (method, url, data) {
                 "\nParameters:",
                 data,
                 "\nHTTP Error:",
-                error && typeof error === "object" && "status" in error ? error.status : error,
+                status,
+                statusText,
             );
-            if (!checkNetworkErrors(domain, true)) {
-                throw new Error(`${domain} reached network errors limit`);
-            }
             // eslint-disable-next-line no-await-in-loop
-            await new Promise(sleepHalfSecond);
+            await sleepHalfSecond();
         }
     }
-    throw new Error(`${domain} reached request attempts limit`);
+    const errorMsg = (!status || statusText?.startsWith("NetworkError"))
+        ? `Failed to connect to ${domain}`
+        : (status >= 500
+            ? `Bad response from ${domain}: ${status} ${statusText}`
+            : `Invalid response from ${domain}: ${status} ${statusText}`);
+    if (DISPLAY_NETWORK_ERRORS) {
+        showMessage(errorMsg);
+    }
+    throw new Error(errorMsg);
 }
 
 /**
@@ -2247,31 +2306,14 @@ async function buildArtistTooltipContent (artist) {
         ? "rating:g"
         : "";
 
-    const waitPosts = queueNetworkRequestMemoized(
-        "post",
-        { tag: artist.name, page: 1 },
-    );
-    // Process the queue immediately
-    intervalNetworkHandler();
-    // This function is cached so it's OK to do direct calls
-    /** @type {Promise<ResponseCount>} */
-    const waitTotalPostCount = makeRequest(
-        "GET",
-        `${BOORU}/counts/posts.json`,
-        { tags: `${artist.name} status:any`, ...CACHE_PARAM },
-    );
-
-    /** @type {Promise<ResponseCount>} */
+    const waitPosts = queueNetworkRequestMemoized("post", `${artist.name} 1`);
+    const waitTotalPostCount = queueNetworkRequestMemoized("count", `${artist.name} status:any`);
     const waitVisiblePostCount = artist.is_banned
         ? Promise.resolve({ counts: { posts: 0 } })
-        : (SHOW_DELETED && !rating
-            ? waitTotalPostCount
-            : makeRequest(
-                "GET",
-                `${BOORU}/counts/posts.json`,
-                { tags: `${artist.name} ${status} ${rating}`, ...CACHE_PARAM },
-            ));
+        : queueNetworkRequestMemoized("count", `${artist.name} ${status} ${rating}`.trim());
 
+    // Process the queue immediately
+    intervalNetworkHandler();
     const [
         { counts: { posts: visiblePostsCount } } = { counts: { posts: 0 } },
         { counts: { posts: totalPostsCount } } = { counts: { posts: 0 } },
@@ -2597,7 +2639,7 @@ async function loadNextPage (ev) {
     if (page === lastPage) $container.find(".btn:last-child").addClass("disabled");
 
     $container.data("page", page).addClass("loading");
-    const waitPosts = queueNetworkRequestMemoized("post", { tag, page });
+    const waitPosts = queueNetworkRequestMemoized("post", `${tag} ${page}`);
     // Process the queue immediately
     intervalNetworkHandler();
     const posts = await waitPosts;
@@ -2676,6 +2718,7 @@ function showSettings () {
             background: rgba(0,0,0,0.75);
         }
         .container {
+            font-family: Verdana, Helvetica, sans-serif;
             padding: 20px;
             display: grid;
             grid-template-columns: 300px 1fr;
@@ -2756,6 +2799,93 @@ function showSettings () {
     $settings.addClass(`tip-${theme}`);
 
     attachShadow($shadowContainer, $settings, styles);
+}
+
+/** @type {JQuery} */
+let $messageContainer;
+
+/** @param {string} msg */
+function showMessage (msg) {
+    if ($messageContainer) {
+        if ($messageContainer.find("#msg").text() === msg) return;
+        $messageContainer.toggleClass("hide", !msg).find("#msg").text(msg);
+        return;
+    }
+    if (!$messageContainer && !msg) return;
+
+    const $shadowContainer = $("<div id=ex-message>").appendTo("body");
+
+    const styles = `
+        #ui-message {
+            width: 100vw;
+            height: 0;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            position: relative;
+            z-index: 3100000;
+        }
+        .container {
+            font-family: Verdana, Helvetica, sans-serif;
+            padding: 20px;
+            font-size: 12px;
+            opacity: 1;
+            transform: translateY(20px);
+            transition: all 0.5s;
+            box-shadow: 0 0 50px #f00;
+        }
+        .hide .container {
+            opacity: 0;
+            transform: translateY(-100%);
+        }
+        .tip-light .container {
+            background-color: #fff;
+            border: 1px solid #888;
+            color: #222;
+        }
+        .tip-dark .container {
+            background-color: #222;
+            border: 1px solid #888;
+            color: #fff;
+        }
+        .container h2 {
+            margin: auto;
+        }
+        input[type="button"] {
+            margin: 0 5px;
+        }
+
+        .settings-icon {
+            position:absolute;
+            top: 5px;
+            right: 5px;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        .settings-icon path {
+            fill: #888;
+        }
+    `;
+    $messageContainer = $(noIndents`
+        <div id="ui-message" class="hide">
+            <div class="container">
+                Translate Pixiv Tags: <span id="msg"></span>
+                <input class="close" type="button" value="Close" />
+                ${GM_getResourceText("settings_icon")}
+            </div>
+        </div>
+    `);
+
+    $messageContainer.find(".settings-icon").click(showSettings);
+    $messageContainer.find(".close").click(() => $messageContainer.addClass("hide"));
+
+    const { theme } = chooseBackgroundColorScheme($("body"));
+    $messageContainer.addClass(`tip-${theme}`);
+
+    attachShadow($shadowContainer, $messageContainer, styles);
+
+    showMessage(msg);
 }
 
 /**
@@ -4152,7 +4282,7 @@ function initialize () {
     }
 
     // Check for new network requests every half-second
-    setInterval(intervalNetworkHandler, 500);
+    setInterval(intervalNetworkHandler, REQUEST_INTERVAL);
 }
 
 //------------------------
