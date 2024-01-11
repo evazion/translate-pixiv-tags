@@ -36,6 +36,7 @@
 // @grant        GM_setValue
 // @grant        GM_addStyle
 // @grant        GM_registerMenuCommand
+// @grant        GM_addElement
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/psl/1.9.0/psl.min.js
 // @require      https://raw.githubusercontent.com/rafaelw/mutation-summary/421110f84178aa9e4098b38df83f727e5aea3d97/src/mutation-summary.js
@@ -446,10 +447,11 @@ const SHOW_DELETED = SETTINGS.get("show_deleted");
 const DEBUG = SETTINGS.get("debug");
 
 // Domains where images outside of whitelist are blocked
-const CORS_IMAGE_DOMAINS = new Set([
+const DOMAIN_USES_CSP = [
     "twitter.com",
     "bcy.net",
-]);
+    "pawoo.net",
+].includes(window.location.host);
 
 // The maximum size of a URL before using a POST request.
 // The actual limit is 8154, but setting it lower accounts for the rest of the URL as well.
@@ -583,7 +585,7 @@ const PROGRAM_CSS = `
 .ex-artist-tag::before {
     content: "";
     display: inline-block;
-    background-image: url(${GM_getResourceURL("danbooru_icon")});
+    background-image: url(${getResourceUrl("danbooru_icon", true)});
     background-repeat: no-repeat;
     background-size: 0.8em;
     width: 0.8em;
@@ -1238,7 +1240,7 @@ function getSiteDisplayDomain (siteUrl) {
 
 /** @param {string} siteName */
 function getSiteIconUrl (siteName) {
-    return GM_getResourceURL(`${siteName.toLowerCase().replaceAll(/[^\w.]/g, "-")}-logo`);
+    return getResourceUrl(`${siteName.toLowerCase().replaceAll(/[^\w.]/g, "-")}-logo`);
 }
 
 /**
@@ -1257,18 +1259,33 @@ function isSecondaryUrl (siteUrl) {
 }
 
 /**
- * Get the image as Blob in CORS-safe way
+ * Get a resource url
+ * TM always returns the resource as base64 while other script managers use blob by default.
+ * Although blob is more efficient, it is affected by CORS.
+ * @param {string} name The `@resource` name
+ * @param {boolean} [asBase64] Force base64 format
+ */
+function getResourceUrl (name, asBase64 = false) {
+    return /** @type {(name:string, asBlob:boolean)=>string} */(GM_getResourceURL)(
+        name,
+        !asBase64 && !DOMAIN_USES_CSP,
+    );
+}
+
+/**
+ * Get the image as blob-link in CORS-safe way
  * @param {string} imageUrl
- * @returns {Promise<Blob>}
+ * @returns {Promise<string>}
  */
 function getImage (imageUrl) {
-    return GM
-        .xmlHttpRequest({
+    return new Promise((resolve) => {
+        GM.xmlHttpRequest({
             method: "GET",
             url: imageUrl,
             responseType: "blob",
-        })
-        .then(({ response }) => response);
+            onload: ({ response }) => resolve(window.URL.createObjectURL(response)),
+        });
+    });
 }
 
 /** @type {Record<string, {error:number}>} */
@@ -1794,10 +1811,12 @@ function attachShadow ($target, $content, css) {
         const shadowRoot = $target.get(0).attachShadow({ mode: "open" });
         $(shadowRoot).append($content);
         if ("adoptedStyleSheets" in shadowRoot) {
-            shadowRoot.adoptedStyleSheets = [makeStyleSheetMemoized(css)];
-        } else {
-            $(shadowRoot).append(`<style>${css}</style>`);
+            try {
+                shadowRoot.adoptedStyleSheets = [makeStyleSheetMemoized(css)];
+                return;
+            } catch { /* empty */ }
         }
+        GM_addElement(/** @type {any} */(shadowRoot), "style", { textContent: css });
     } else {
         $target.empty().append($content, `<style>${css}</style>`);
     }
@@ -2461,20 +2480,29 @@ function getPostPreview (post) {
     const size = hiDpi ? "360x360" : "180x180";
     const scale = hiDpi ? 0.5 : 1;
     const previewAsset = post.media_asset.variants?.find((variant) => variant.type === size);
-    if (previewAsset) {
-        return {
+
+    const info = previewAsset
+        ? {
             url: previewAsset.url,
+            safeUrl: /** @type {Promise<string>|null} */(null),
             width: previewAsset.width * scale,
             height: previewAsset.height * scale,
+        }
+        : {
+            url: post.media_asset.file_ext === "swf"
+                ? `${BOORU}/images/flash-preview.png`
+                : `https://cdn.donmai.us/images/download-preview.png`,
+            safeUrl: /** @type {Promise<string>|null} */(null),
+            width: 180,
+            height: 180,
         };
+
+    if (DOMAIN_USES_CSP) {
+        info.safeUrl = getImage(info.url);
+        // transparent 1x1 image
+        info.url = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
     }
-    return {
-        url: post.media_asset.file_ext === "swf"
-            ? `${BOORU}/images/flash-preview.png`
-            : `https://cdn.donmai.us/images/download-preview.png`,
-        width: 180,
-        height: 180,
-    };
+    return info;
 }
 
 /**
@@ -2541,16 +2569,9 @@ function buildPostPreview (post) {
         </article>
     `);
 
-    if (CORS_IMAGE_DOMAINS.has(window.location.host)) {
-        // Temporally set transparent 1x1 image
-        // eslint-disable-next-line max-len
-        $preview.find("img").prop("src", "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
-        getImage(preview.url).then((blob) => {
-            const imageBlob = blob.slice(0, blob.size, "image/jpeg");
-            const blobUrl = window.URL.createObjectURL(imageBlob);
-            $preview.find("img").prop("src", blobUrl);
-        });
-    }
+    preview.safeUrl?.then((url) => {
+        $preview.find("img").prop("src", url);
+    });
 
     return $preview;
 }
