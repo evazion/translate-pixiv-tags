@@ -2603,6 +2603,7 @@ function buildPostPreview (post) {
                      height="${preview.height}"
                      src="${preview.url}"
                      title="${formatTagString(post)}"
+                     referrerpolicy="origin"
                      part="post-preview rating-${post.rating}">
             </a>
             <p>${formatImageInfo(post)}</p>
