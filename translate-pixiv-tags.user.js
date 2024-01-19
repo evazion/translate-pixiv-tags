@@ -749,6 +749,7 @@ const API_LIMIT = 1000;
  * @prop {boolean} is_pending
  * @prop {boolean} is_flagged
  * @prop {boolean} is_deleted
+ * @prop {boolean} is_banned
  * @prop {boolean} has_visible_children
  * @prop {string} tag_string_general
  * @prop {string} tag_string_character
@@ -903,6 +904,7 @@ const NETWORK_REQUEST_DICT = {
             "is_flagged",
             "is_pending",
             "is_deleted",
+            "is_banned",
             "parent_id",
             "media_asset[id,file_ext,file_size,image_width,image_height,duration,variants]",
             "rating",
@@ -1970,14 +1972,14 @@ const ARTIST_TOOLTIP_CSS = `
         --preview_has_parent_color: #ccaa00;
         --preview_deleted_color: #1e1e2c;
         --preview_pending_color: #0075f8;
-        --preview_flagged_color: #ed2426;
+        --preview_banned_color: #ed2426;
     }
     :host(.tip-content-dark) {
         --preview_has_children_color: #35c64a;
         --preview_has_parent_color: #fd9200;
         --preview_deleted_color: #ababbc;
         --preview_pending_color: #009be6;
-        --preview_flagged_color: #ed2426;
+        --preview_banned_color: #ed2426;
     }
 
     article.container {
@@ -2168,6 +2170,35 @@ const ARTIST_TOOLTIP_CSS = `
                       var(--preview_pending_color)
                       var(--preview_pending_color)
                       var(--preview_has_parent_color);
+    }
+
+    article.post-preview.post-status-banned a {
+        border-color: var(--preview_banned_color);
+    }
+
+    article.post-preview.post-status-has-children.post-status-banned a {
+        border-color: var(--preview_has_children_color)
+                      var(--preview_banned_color)
+                      var(--preview_banned_color)
+                      var(--preview_has_children_color);
+    }
+
+    article.post-preview.post-status-has-parent.post-status-banned a {
+        border-color: var(--preview_has_parent_color)
+                      var(--preview_banned_color)
+                      var(--preview_banned_color)
+                      var(--preview_has_parent_color);
+    }
+
+    article.post-preview.post-status-has-children.post-status-has-parent.post-status-banned a {
+        border-color: var(--preview_has_children_color)
+                      var(--preview_banned_color)
+                      var(--preview_banned_color)
+                      var(--preview_has_parent_color);
+    }
+
+    article.post-preview img {
+        display: block;
     }
 
     article.post-preview .post-animation-icon {
@@ -2563,6 +2594,7 @@ function buildPostPreview (post) {
     if (post.is_pending)           previewClass += " post-status-pending";
     if (post.is_flagged)           previewClass += " post-status-flagged";
     if (post.is_deleted)           previewClass += " post-status-deleted";
+    if (post.is_banned)            previewClass += " post-status-banned";
     if (post.parent_id)            previewClass += " post-status-has-parent";
     if (post.has_visible_children) previewClass += " post-status-has-children";
     if (RATINGS[post.rating] > RATINGS[SHOW_PREVIEW_RATING]) {
