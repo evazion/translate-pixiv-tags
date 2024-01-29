@@ -3592,7 +3592,7 @@ function initializeDeviantArt () {
     // https://www.deviantart.com/koyorin/art/Ruby-570526828
     findAndTranslate("artist", "a.user-link", {
         toProfileUrl: (a) => /** @type {HTMLAnchorElement} */(a).href.replace("/gallery", ""),
-        predicate: "div[data-hook='deviation_meta'] a.user-link:not(:has(img))",
+        predicate: "main>*>:nth-child(3) :nth-child(2) > a.user-link:not(:has(img))",
         requiredAttributes: "href",
         tagPosition: TAG_POSITIONS.afterParent,
         asyncMode: true,
