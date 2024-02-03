@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion, 7nik, BrokenEagle, hdk5
-// @version      20240129163017
+// @version      20240203225837
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -28,6 +28,8 @@
 // @match        *://misskey.design/*
 // @match        *://skeb.jp/*
 // @match        *://fantia.jp/*
+// @match        *://ci-en.net/*
+// @match        *://ci-en.dlsite.com/*
 // @grant        GM_getResourceText
 // @grant        GM_getResourceURL
 // @grant        GM_xmlhttpRequest
@@ -83,6 +85,7 @@
 // @resource     cafe24-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/cafe24-logo.png
 // @resource     carrd-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/carrd-logo.png
 // @resource     catbox-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/catbox-logo.png
+// @resource     ci-en-logo https://raw.githubusercontent.com/danbooru/danbooru/a6be8ff21cbceb7a1ce12534c0f9a6c4695e0178/public/images/ci-en-logo.png
 // @resource     circle.ms-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/circle.ms-logo.png
 // @resource     class101-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/class101-logo.png
 // @resource     clip-studio-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/clip-studio-logo.png
@@ -1009,6 +1012,7 @@ const SITE_ORDER = [
     "Booth",
     "Deviant Art",
     "Fantia",
+    "Ci-En",
     "Foundation",
     "Furaffinity",
     "Hentai Foundry",
@@ -1077,6 +1081,7 @@ const SITE_RULES = [
     { name: "ArtStreet", domain: "medibang.com" },
     { name: "Bilibili", domain: "bilibili.com" },
     { name: "e621", domain: "e621.net" },
+    { name: "Ci-En", domain: "ci-en.net" },
     { name: "Deviant Art", domain: "deviantart.com" },
     { name: "Deviant Art", domain: "fav.me" },
     { name: "Deviant Art", domain: "sta.sh" },
@@ -1607,6 +1612,9 @@ const NORMALIZE_PROFILE_URL = {
     },
     "skeb.jp": {
         path: /^\/@\w+$/,
+    },
+    "ci-en.net": {
+        path: /^\/creator\/\d+$/,
     },
 };
 
@@ -4285,6 +4293,84 @@ function initializeSkeb () {
     });
 }
 
+function initializeCiEn () {
+    const getNormalizedUrl = (/** @type {HTMLElement} */ el) => {
+        const a = /** @type {HTMLAnchorElement} */(el);
+        return `https://ci-en.net/creator/${safeMatchMemoized(a.href, /\/creator\/(\d+)/, 1)}`;
+    };
+
+    // Artist name
+    // In profile: https://ci-en.dlsite.com/creator/4126
+    // In article: https://ci-en.dlsite.com/creator/4126/article/1035340
+    findAndTranslate("artist", "a", {
+        asyncMode: true,
+        predicate: ".c-grid-account-name .e-title > a",
+        toProfileUrl: getNormalizedUrl,
+        tagPosition: TAG_POSITIONS.afterend,
+        classes: "inline",
+        ruleName: "artist profile",
+    });
+
+    // Artist in article card by followed artists
+    // https://ci-en.dlsite.com/mypage
+    findAndTranslate("artist", "a", {
+        asyncMode: true,
+        predicate: ".c-card-article .c-card-content .e-title > a",
+        toProfileUrl: getNormalizedUrl,
+        tagPosition: TAG_POSITIONS.afterParent,
+        ruleName: "artist article card",
+    });
+
+    // Artist in article card in ranking
+    // https://ci-en.dlsite.com/mypage
+    findAndTranslate("artist", "a", {
+        asyncMode: true,
+        predicate: ".c-card-article-ranking .c-card-article-ranking-name .l-media-content > a",
+        toProfileUrl: getNormalizedUrl,
+        tagPosition: TAG_POSITIONS.afterend,
+        ruleName: "artist article ranking card",
+    });
+
+    // Artist in artist card in artist recommendations
+    // https://ci-en.dlsite.com/mypage
+    findAndTranslate("artist", "a", {
+        asyncMode: true,
+        predicate: ".c-card-creator .c-card-header .e-title > a",
+        toProfileUrl: getNormalizedUrl,
+        tagPosition: TAG_POSITIONS.afterParent,
+        ruleName: "artist creator card",
+    });
+
+    // Artist in artist card in artist ranking
+    // https://ci-en.dlsite.com/mypage
+    // https://ci-en.dlsite.com/ranking/creators/daily?categoryId=1
+    findAndTranslate("artist", "a", {
+        asyncMode: true,
+        predicate: ".c-card-creator-archives .c-card-creator-archives-name .e-title > a",
+        toProfileUrl: getNormalizedUrl,
+        tagPosition: TAG_POSITIONS.afterParent,
+        ruleName: "artist creator ranking card",
+    });
+
+    // Tags in article
+    // https://ci-en.dlsite.com/creator/4126/article/1035340
+    findAndTranslate("tag", "a", {
+        asyncMode: true,
+        predicate: ".c-hashTagList .c-hashTagList-item > a",
+        tagPosition: TAG_POSITIONS.beforeend,
+        ruleName: "tag article",
+    });
+
+    // Tags in sidebar
+    // https://ci-en.dlsite.com/creator/4126/article/1035340
+    findAndTranslate("tag", "a", {
+        asyncMode: true,
+        predicate: ".c-articleFilteringList .c-articleFilteringList-item > a",
+        tagPosition: TAG_POSITIONS.afterend,
+        ruleName: "tag sidebar",
+    });
+}
+
 function initialize () {
     GM_jQuery_setup();
     GM_addStyle(PROGRAM_CSS);
@@ -4317,6 +4403,8 @@ function initialize () {
         case "misskey.design":         initializeMisskey();       break;
         case "fantia.jp":              initializeFantia();        break;
         case "skeb.jp":                initializeSkeb();          break;
+        case "ci-en.net":
+        case "ci-en.dlsite.com":       initializeCiEn();          break;
         default:
             if (window.location.host.endsWith("artstation.com")) {
                 initializeArtStation();
