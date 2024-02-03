@@ -4177,6 +4177,15 @@ function initializeMisskey () {
         asyncMode: true,
         ruleName: "artist popup",
     });
+
+    // Artist name in re-notes/reactions
+    // (re-notes/reactions tabs under a note)
+    findAndTranslate("artist", "span", {
+        predicate: ".xsb3x > span:first-child",
+        toProfileUrl: getNormalizedDecentralizedSocNetUrl,
+        asyncMode: true,
+        ruleName: "artist re-note",
+    });
 }
 
 function initializeFantia () {
