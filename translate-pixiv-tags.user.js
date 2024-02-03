@@ -93,12 +93,14 @@
 // @resource     curious-cat-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/curious-cat-logo.png
 // @resource     dlsite-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/dlsite-logo.png
 // @resource     danbooru-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/danbooru-logo.png
+// @resource     dc-inside-logo https://raw.githubusercontent.com/danbooru/danbooru/69dc86865679f8affc31547b57c3af6c5406a827/public/images/dc-inside-logo.png
 // @resource     deviant-art-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/deviant-art-logo.png
 // @resource     discord-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/discord-logo.png
 // @resource     doujinshi.org-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/doujinshi.org-logo.png
 // @resource     douyin-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/douyin-logo.png
 // @resource     drawcrowd-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/drawcrowd-logo.png
 // @resource     e-hentai-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/e-hentai-logo.png
+// @resource     e621-logo https://raw.githubusercontent.com/danbooru/danbooru/ab00f437256fb652841b09a8e44294ff409ac9ec/public/images/e621-logo.png
 // @resource     enty-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/enty-logo.png
 // @resource     erogamescape-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/erogamescape-logo.png
 // @resource     etsy-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/etsy-logo.png
@@ -131,7 +133,7 @@
 // @resource     imagis-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/imagis-logo.png
 // @resource     imgur-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/imgur-logo.png
 // @resource     infoseek-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/infoseek-logo.png
-// @resource     inkbunny-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/inkbunny-logo.png
+// @resource     inkbunny-logo https://raw.githubusercontent.com/danbooru/danbooru/09872130a5d6aa849989f5955af23b9fd389a381/public/images/inkbunny-logo.png
 // @resource     inprnt-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/inprnt-logo.png
 // @resource     instagram-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/instagram-logo.png
 // @resource     itch.io-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/itch.io-logo.png
@@ -265,6 +267,7 @@
 // @resource     willow-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/willow-logo.png
 // @resource     wix-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/wix-logo.png
 // @resource     wordpress-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/wordpress-logo.png
+// @resource     xfolio-logo https://raw.githubusercontent.com/danbooru/danbooru/9f6b2379533d29751edb21e150ca4ddcd3c3871f/public/images/xfolio-logo.png
 // @resource     yahoo-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/yahoo-logo.png
 // @resource     yande.re-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/yande.re-logo.png
 // @resource     yfrog-logo https://raw.githubusercontent.com/danbooru/danbooru/e2edff29d5c23bfdf0c6852ed8c195e1b70e08a4/public/images/yfrog-logo.png
@@ -993,7 +996,7 @@ function capitalize (string) {
     return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
 }
 
-// https://github.com/danbooru/danbooru/blob/f955718672a31e9c19afc5381eceeb0c2e7653d6/app/models/artist_url.rb#L95
+// https://github.com/danbooru/danbooru/blob/963f34d7dfb8b4cbe78961503f072fe0662b0961/app/models/artist_url.rb#L97
 /* spell-checker: disable */
 const SITE_ORDER = [
     "Pixiv",
@@ -1018,6 +1021,8 @@ const SITE_ORDER = [
     "Pixiv Sketch",
     "Plurk",
     "Reddit",
+    "Arca.live",
+    "DC Inside",
     "Skeb",
     "Tinami",
     "Tumblr",
@@ -1025,6 +1030,7 @@ const SITE_ORDER = [
     "Misskey.io",
     "Misskey.art",
     "Misskey.design",
+    "Xfolio",
     "Ask.fm",
     "Facebook",
     "FC2",
@@ -1070,6 +1076,7 @@ const SITE_RULES = [
     { name: "ArtStation", domain: "artstation.com" },
     { name: "ArtStreet", domain: "medibang.com" },
     { name: "Bilibili", domain: "bilibili.com" },
+    { name: "e621", domain: "e621.net" },
     { name: "Deviant Art", domain: "deviantart.com" },
     { name: "Deviant Art", domain: "fav.me" },
     { name: "Deviant Art", domain: "sta.sh" },
@@ -1088,6 +1095,7 @@ const SITE_RULES = [
     { name: "Gumroad", domain: "gum.co" },
     { name: "Hentai Foundry", domain: "hentai-foundry.com" },
     { name: "Imgur", domain: "imgur.com" },
+    { name: "Inkbunny", domain: "inkbunny.net" },
     { name: "Instagram", domain: "instagram.com" },
     { name: "Lofter", domain: "lofter.com" },
     { name: "Lofter", domain: "127.net" },
@@ -1112,6 +1120,7 @@ const SITE_RULES = [
     { name: "Tumblr", domain: "tumblr.com" },
     { name: "Weibo", domain: "weibo.com" },
     { name: "Weibo", domain: "sinaimg.cn" },
+    { name: "Xfolio", domain: "xfolio.jp" },
     { name: "Zerochan", domain: "zerochan.net" },
     { name: "Adobe Portfolio", domain: "myportfolio.com" },
     { name: "AllMyLinks", domain: "allmylinks.com" },
@@ -1146,6 +1155,7 @@ const SITE_RULES = [
     { name: "DLSite", domain: "dlsite.net" },
     { name: "DLSite", domain: "dlsite.jp" },
     { name: "Danbooru", domain: "donmai.us" },
+    { name: "DC Inside", domain: "dcinside.com" },
     { name: "Discord", domain: "discordapp.com" },
     { name: "Doujinshi.org", domain: "doujinshi.org" },
     { name: "Doujinshi.org", hostname: "doujinshi.mugimugi.org" },
@@ -1270,7 +1280,7 @@ function getSiteIconUrl (siteName) {
 
 /**
  * @param {string} siteUrl
- * @see https://github.com/danbooru/danbooru/blob/f955718672a31e9c19afc5381eceeb0c2e7653d6/app/models/artist_url.rb#L75
+ * @see https://github.com/danbooru/danbooru/blob/963f34d7dfb8b4cbe78961503f072fe0662b0961/app/models/artist_url.rb#L75
  */
 function isSecondaryUrl (siteUrl) {
     return [
@@ -1280,6 +1290,7 @@ function isSecondaryUrl (siteUrl) {
         /(?:www|com|dic)\.nicovideo\.jp/i,
         /pawoo\.net\/web\/accounts/i,
         /misskey\.(?:io|art|design)\/users/i,
+        /inkbunny\.net\/user\.php/i,
     ].some((rule) => siteUrl.match(rule));
 }
 
