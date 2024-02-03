@@ -4283,7 +4283,10 @@ function initializeSkeb () {
 }
 
 function initializeCiEn () {
-    const toProfileUrl = (el) => `https://ci-en.net/creator/${safeMatchMemoized(el.href, /\/creator\/(\d+)/, 1)}`;
+    const getNormalizedUrl = (/** @type {HTMLElement} */ el) => {
+        const a = /** @type {HTMLAnchorElement} */(el);
+        return `https://ci-en.net/creator/${safeMatchMemoized(a.href, /\/creator\/(\d+)/, 1)}`;
+    };
 
     // Artist name
     // In profile: https://ci-en.dlsite.com/creator/4126
@@ -4291,7 +4294,7 @@ function initializeCiEn () {
     findAndTranslate("artist", "a", {
         asyncMode: true,
         predicate: ".c-grid-account-name .e-title > a",
-        toProfileUrl,
+        toProfileUrl: getNormalizedUrl,
         tagPosition: TAG_POSITIONS.afterend,
         classes: "inline",
         ruleName: "artist profile",
@@ -4302,7 +4305,7 @@ function initializeCiEn () {
     findAndTranslate("artist", "a", {
         asyncMode: true,
         predicate: ".c-card-article .c-card-content .e-title > a",
-        toProfileUrl,
+        toProfileUrl: getNormalizedUrl,
         tagPosition: TAG_POSITIONS.afterParent,
         ruleName: "artist article card",
     });
@@ -4312,7 +4315,7 @@ function initializeCiEn () {
     findAndTranslate("artist", "a", {
         asyncMode: true,
         predicate: ".c-card-article-ranking .c-card-article-ranking-name .l-media-content > a",
-        toProfileUrl,
+        toProfileUrl: getNormalizedUrl,
         tagPosition: TAG_POSITIONS.afterend,
         ruleName: "artist article ranking card",
     });
@@ -4322,7 +4325,7 @@ function initializeCiEn () {
     findAndTranslate("artist", "a", {
         asyncMode: true,
         predicate: ".c-card-creator .c-card-header .e-title > a",
-        toProfileUrl,
+        toProfileUrl: getNormalizedUrl,
         tagPosition: TAG_POSITIONS.afterParent,
         ruleName: "artist creator card",
     });
@@ -4333,7 +4336,7 @@ function initializeCiEn () {
     findAndTranslate("artist", "a", {
         asyncMode: true,
         predicate: ".c-card-creator-archives .c-card-creator-archives-name .e-title > a",
-        toProfileUrl,
+        toProfileUrl: getNormalizedUrl,
         tagPosition: TAG_POSITIONS.afterParent,
         ruleName: "artist creator ranking card",
     });
