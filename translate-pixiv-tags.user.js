@@ -4098,6 +4098,37 @@ function initializePixivFanbox () {
         ruleName: "channel header fanbox",
     });
 
+    // Front page - supported creators list
+    findAndTranslate("artist", "div", {
+        predicate: "div[class^=PlanOnlyUserInfo__UserName]",
+        asyncMode: true,
+        toProfileUrl: addPixivTranslation.bind(null, {
+            tagPosition: TAG_POSITIONS.beforeend,
+            ruleName: "supported pixiv",
+        }),
+        tagPosition: TAG_POSITIONS.beforeend,
+        css: `
+            div[class^=PlanOnlyUserInfo__UserName]:has(.ex-artist-tag) {
+                line-height: 20px !important;
+            }
+        `,
+        ruleName: "supported fanbox",
+    });
+
+    // Front page - feed
+    findAndTranslate("artist", "div", {
+        predicate: "div[class^=PostItem__UserName]",
+        asyncMode: true,
+        toProfileUrl: addPixivTranslation.bind(null, {
+            classes: "inline",
+            tagPosition: TAG_POSITIONS.beforeend,
+            ruleName: "post pixiv",
+        }),
+        classes: "inline",
+        tagPosition: TAG_POSITIONS.beforeend,
+        ruleName: "post fanbox",
+    });
+
     // https://morinohon.fanbox.cc/posts/5055514
     // post tags
     findAndTranslate("tag", "div", {
