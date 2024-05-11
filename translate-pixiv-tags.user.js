@@ -3629,7 +3629,7 @@ function initializeDeviantArt () {
 
     // Popup card
     findAndTranslate("artist", "a.user-link", {
-        predicate: "body > div:not(#root) a.user-link:not(:has(img))",
+        predicate: "body > .popper-portal a.user-link:not(:has(img))",
         asyncMode: true,
         classes: "tpt-light",
         ruleName: "artist popup",
