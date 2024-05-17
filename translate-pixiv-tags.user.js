@@ -16,6 +16,7 @@
 // @match        *://*.deviantart.com/*
 // @match        *://*.hentai-foundry.com/*
 // @match        *://twitter.com/*
+// @match        *://x.com/*
 // @match        *://mobile.twitter.com/*
 // @match        *://tweetdeck.twitter.com/*
 // @match        *://*.artstation.com/*
@@ -1553,12 +1554,6 @@ const NORMALIZE_PROFILE_URL = {
         },
     },
     ".fanbox.cc": { path: /^\/$/ },
-    "mobile.twitter.com": {
-        path: /^x$/, // Just invalidate any path
-        normalize (url) {
-            return normalizeProfileURL(`https://twitter.com${url.pathname}`);
-        },
-    },
     "www.hentai-foundry.com": {
         path: /^\/user\/[\w-]+$/,
         normalize (url) {
@@ -1597,6 +1592,18 @@ const NORMALIZE_PROFILE_URL = {
     },
     "twitter.com": {
         path: /^\/[\w-]+|\/intent\/user$/,
+    },
+    "mobile.twitter.com": {
+        path: /^x$/, // Just invalidate any path
+        normalize (url) {
+            return `https://twitter.com${url.pathname}`;
+        },
+    },
+    "x.com": {
+        path: /^x$/, // Just invalidate any path
+        normalize (url) {
+            return `https://twitter.com${url.pathname}`;
+        },
     },
     "misskey.io": {
         path: /^\/@\w+$/,
@@ -4430,7 +4437,8 @@ function initialize () {
         case "seiga.nicovideo.jp":     initializeNicoSeiga();     break;
         case "www.tinami.com":         initializeTinami();        break;
         case "www.hentai-foundry.com": initializeHentaiFoundry(); break;
-        case "twitter.com":            initializeTwitter();       break;
+        case "x.com":
+        case "twitter.com":
         case "mobile.twitter.com":     initializeTwitter();       break;
         case "tweetdeck.twitter.com":  initializeTweetDeck();     break;
         case "saucenao.com":           initializeSauceNAO();      break;
