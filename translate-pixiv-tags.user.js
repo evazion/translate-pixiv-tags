@@ -462,6 +462,7 @@ const DOMAIN_USES_CSP = [
     "twitter.com",
     "bcy.net",
     "pawoo.net",
+    "x.com",
 ].includes(window.location.host);
 
 // The maximum size of a URL before using a POST request.
