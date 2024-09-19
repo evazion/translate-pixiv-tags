@@ -3371,12 +3371,12 @@ function initializePixiv () {
     // Posts of followed artists: https://www.pixiv.net/bookmark_new_illust.php
     findAndTranslate("artist", "a", {
         // eslint-disable-next-line max-len
-        predicate: "section ul div>div:last-child:not([type='illust'])>div[aria-haspopup]:not(.ex-artist-tag)>a:last-child",
+        predicate: "section ul>li>div>div:last-child>div[aria-haspopup]>a",
         tagPosition: TAG_POSITIONS.afterParent,
         asyncMode: true,
         css: `
             /* Fix artist tag overflowing */
-            div[type="illust"] ~ div:last-child {
+            ul>li>div>div:last-child {
                 flex-direction: column;
                 align-items: flex-start;
             }
@@ -3415,12 +3415,14 @@ function initializePixiv () {
     });
 
     // Deleted artist profile: https://www.pixiv.net/en/users/1843825
-    findAndTranslate("artist", ".error-title", {
+    findAndTranslate("artist", "h1", {
+        predicate: "#root>div>div>div>h1",
+        asyncMode: true,
         // Trigger only on profile page
         toProfileUrl: () => (safeMatchMemoized(window.location.pathname, /^\/(en\/)?users/)
             ? normalizePageUrl()
             : ""),
-        tagPosition: TAG_POSITIONS.afterbegin,
+        tagPosition: TAG_POSITIONS.beforebegin,
         ruleName: "deleted artist profile",
     });
 
@@ -3738,7 +3740,7 @@ function initializeTwitter () {
 
     // Deleted channel https://twitter.com/6o2_iii
     findAndTranslate("artist", "span.r-qvutc0", {
-        predicate: ".r-135wba7.r-3s2u2q span.r-1vr29t4 > .r-qvutc0.r-1pos5eu",
+        predicate: ".r-135wba7.r-3s2u2q span.r-1vr29t4 > .r-qvutc0:not(:empty)",
         toProfileUrl: URLfromLocation,
         classes: "inline",
         asyncMode: true,
@@ -4104,6 +4106,34 @@ function initializePixivFanbox () {
         }),
         classes: "inline",
         ruleName: "channel header fanbox",
+    });
+
+    // Creators on the index page https://www.fanbox.cc/
+    findAndTranslate("artist", "div", {
+        predicate: "div[class^=Creator__Name]",
+        asyncMode: true,
+        toProfileUrl: addPixivTranslation.bind(null, {
+            classes: "inline",
+            ruleName: "find creator index pixiv",
+        }),
+        ruleName: "find creator index",
+        css: `
+            div[class^=Creator__Name] {
+                margin: -6px;
+            }
+        `,
+    });
+
+    // Find more creators https://www.fanbox.cc/creators/find
+    findAndTranslate("artist", "a", {
+        predicate: "a[class^=styled__UserNameText]",
+        asyncMode: true,
+        toProfileUrl: addPixivTranslation.bind(null, {
+            classes: "inline",
+            ruleName: "find creator more pixiv",
+        }),
+        ruleName: "find creator more",
+        classes: "inline",
     });
 
     // Front page - supported creators list
