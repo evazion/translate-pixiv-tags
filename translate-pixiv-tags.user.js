@@ -2229,18 +2229,41 @@ const ARTIST_TOOLTIP_CSS = /* CSS */`
         display: block;
     }
 
-    article.post-preview .post-animation-icon {
+    article.post-preview .post-icon {
         position: absolute;
+        top: 0;
+        left: 0;
         color: white;
         background-color: rgba(0,0,0,0.7);
-        line-height: 1;
-        padding: 2px;
+        border-radius: .25rem;
+        line-height: 1.2;
+        padding: 0.125rem 0.2rem;
+        margin: 0.125rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5ch;
         z-index: 1;
     }
-    article.post-preview .post-animation-icon * {
+    article.post-preview .post-icon.ai-icon {
+        left: auto;
+        right: 0;
+    }
+    article.post-preview .post-icon * {
         height: 1em;
         fill: currentColor;
         vertical-align: middle;
+    }
+    article.post-preview .post-icon .animation-icon {
+        font-weight: bold;
+        margin-bottom: -1px;
+    }
+    article.post-preview .post-icon .ai-generated {
+        color: red;
+        font-weight: bold;
+        margin-bottom: -1px;
+    }
+    article.post-preview .post-icon .ai-assisted {
+        color: orange;
     }
 
     div.post-pager {
@@ -2293,6 +2316,7 @@ const ARTIST_TOOLTIP_CSS = /* CSS */`
     }
 
     article.post-preview a {
+        position: relative;
         display: inline-block;
         /*height: 184px;*/
         overflow: hidden;
@@ -2645,13 +2669,31 @@ function buildPostPreview (post) {
         : "";
     const animationIcon = post.media_asset.duration
         ? noIndents/* HTML */`
-            <div class="post-animation-icon">
+            <div class="post-icon animation-icon"
+                 title="Animated post ${soundIcon ? "with a sound" : ""}"
+            >
                 <span class="post-duration">
                     ${formatDuration(post.media_asset.duration)}
-                </span> ${soundIcon}
+                </span>
+                ${soundIcon}
             </div>
         `
         : "";
+
+    const aiIcon = /\bai-generated\b/.test(post.tag_string_meta)
+        ? /* HTML */`
+            <div class="post-icon ai-icon" title="AI generated image">
+                    <span class="ai-generated">AI</span>
+            </div>
+        `
+        : (/\bai-assisted\b/.test(post.tag_string_meta)
+            ? /* HTML */`
+                <div class="post-icon ai-icon" title="AI assisted image">
+                    <span class="ai-assisted">+AI</span>
+                </div>
+            `
+            : "");
+
     const $preview = $(noIndents/* HTML */`
         <article itemscope
                  itemtype="http://schema.org/ImageObject"
@@ -2659,6 +2701,7 @@ function buildPostPreview (post) {
                  ${dataAttributes} >
             <a class="post-link" href="${BOORU}/posts/${post.id}" target="_blank">
                 ${animationIcon}
+                ${aiIcon}
                 <img width="${preview.width}"
                      height="${preview.height}"
                      src="${preview.url}"
