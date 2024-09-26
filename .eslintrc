@@ -119,6 +119,7 @@
             "global"
         ],
         "unicorn/no-unsafe-regex": "error",
+        "unicorn/template-indent": [ "error", { "indent": 4 } ],
 
         /* disable */
         "no-console": "off",

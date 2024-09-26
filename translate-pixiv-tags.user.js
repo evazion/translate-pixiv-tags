@@ -515,7 +515,7 @@ const TAG_POSITIONS = {
     },
 };
 
-const PROGRAM_CSS = `
+const PROGRAM_CSS = /* CSS */`
 :root, .tpt-light, .tpt-auto {
     --tpt-artist: #c00004;
     --tpt-cat-0: #0075f8;
@@ -618,7 +618,7 @@ const PROGRAM_CSS = `
 }
 `;
 
-const TOOLTIP_CSS = `
+const TOOLTIP_CSS = /* CSS */`
 .loading-data, .loading-data a {
     cursor: wait;
 }
@@ -1749,18 +1749,18 @@ function addDanbooruTags ($target, tags, options) {
 
     const key = tags.map((tag) => tag.name).join("");
     if (!(key in renderedTagsCache)) {
-        renderedTagsCache[key] = $(noIndents`
+        renderedTagsCache[key] = $(noIndents/* HTML */`
             <span class="${classes}">
-                ${tags.map((tag) => (
-                    noIndents`
+                ${tags.map((tag) => noIndents/* HTML */`
                     <a class="ex-translated-tag-category-${tag.category}"
                        href="${BOORU}/posts?tags=${encodeURIComponent(tag.name)}"
                        target="_blank">
                             ${_.escape(tag.prettyName)}
-                    </a>`
-                ))
+                    </a>
+                `)
                 .join(", ")}
-            </span>`);
+            </span>
+        `);
     }
     const $tagsContainer = renderedTagsCache[key].clone().prop("className", classes);
 
@@ -1860,12 +1860,13 @@ function addDanbooruArtist ($target, rawArtist, options) {
     }
 
     if (!(artist.id in renderedArtistsCache)) {
-        renderedArtistsCache[artist.id] = $(noIndents`
+        renderedArtistsCache[artist.id] = $(noIndents/* HTML */`
             <div class="${classes}">
                 <a href="${BOORU}/artists/${artist.id}" target="_blank">
                     ${artist.escapedName}
                 </a>
-            </div>`);
+            </div>
+        `);
     }
     const $tag = renderedArtistsCache[artist.id].clone().prop("className", classes);
     if (DEBUG) $tag.attr("rulename", ruleName || "");
@@ -1993,7 +1994,7 @@ async function buildArtistTooltip (artist, { tooltip, content, target }) {
     target.classList.remove("loading-data");
 }
 
-const ARTIST_TOOLTIP_CSS = `
+const ARTIST_TOOLTIP_CSS = /* CSS */`
     :host {
         --preview_has_children_color: #35c64a;
         --preview_has_parent_color: #ccaa00;
@@ -2381,20 +2382,19 @@ async function buildArtistTooltipContent (artist) {
     const otherNames = artist.other_names
         .filter(String)
         .sort()
-        .map((otherName) => (
-            noIndents`
+        .map((otherName) => noIndents/* HTML */`
             <li>
                 <a href="${BOORU}/artists?search[name]=${encodeURIComponent(otherName)}"
                    target="_blank">
                     ${_.escape(otherName.replaceAll("_", " "))}
                 </a>
-            </li>`
-        ))
+            </li>
+        `)
         .join("");
 
     const nextBtnClass = visiblePostsCount <= ARTIST_POST_PREVIEW_LIMIT ? "disabled" : "";
     const lastPage = Math.ceil(visiblePostsCount / ARTIST_POST_PREVIEW_LIMIT);
-    const $content = $(noIndents`
+    const $content = $(noIndents/* HTML */`
         <article class="container" part="container">
             ${GM_getResourceText("settings_icon")}
             <section class="header">
@@ -2468,12 +2468,13 @@ function buildArtistUrlsHtml (artist) {
             const iconUrl = getSiteIconUrl(artistUrl.siteName);
             const iconHtml = iconUrl ? `<img src="${iconUrl}">` : GM_getResourceText("globe_icon");
 
-            return noIndents`
+            return noIndents/* HTML */`
                 <li class="${urlClass}">
                     <a href="${normalizedUrl}" target="_blank">
                         <span class="artist-url-icon">${iconHtml}</span> ${_.escape(normalizedUrl)}
                     </a>
-                </li>`;
+                </li>
+            `;
         })
         .join("")
         .value();
@@ -2643,7 +2644,7 @@ function buildPostPreview (post) {
         ? GM_getResourceText("sound_icon")
         : "";
     const animationIcon = post.media_asset.duration
-        ? noIndents`
+        ? noIndents/* HTML */`
             <div class="post-animation-icon">
                 <span class="post-duration">
                     ${formatDuration(post.media_asset.duration)}
@@ -2651,7 +2652,7 @@ function buildPostPreview (post) {
             </div>
         `
         : "";
-    const $preview = $(noIndents`
+    const $preview = $(noIndents/* HTML */`
         <article itemscope
                  itemtype="http://schema.org/ImageObject"
                  class="${previewClass}"
@@ -2716,30 +2717,36 @@ function showSettings () {
         const value = SETTINGS.get(setting.name);
         switch (setting.type) {
             case "number":
-                return noIndents`
+                return noIndents/* HTML */`
                     <input type="number"
                            min="0"
                            value="${value}"
-                           name="${setting.name}" />`;
+                           name="${setting.name}"
+                    />
+                `;
             case "list": {
                 const options = Object
                     .entries(setting.values)
-                    .map(([val, descr]) => noIndents`
+                    .map(([val, descr]) => noIndents/* HTML */`
                         <option value="${val}" ${val === value ? "selected" : ""}>
                             ${descr}
-                        </option>`)
+                        </option>
+                    `)
                     .join("");
 
-                return noIndents`
+                return noIndents/* HTML */`
                     <select name="${setting.name}">
                         ${options}
-                    </select>`;
+                    </select>
+                `;
             }
             case "boolean":
-                return noIndents`
+                return noIndents/* HTML */`
                     <input type="checkbox"
                            ${value ? "checked" : ""}
-                           name="${setting.name}" />`;
+                           name="${setting.name}"
+                    />
+                `;
             default:
                 // @ts-expect-error - here `type` is `never`
                 console.error(`[TPT]: Unsupported type ${setting.type}`);
@@ -2763,7 +2770,7 @@ function showSettings () {
         return true;
     }
 
-    const styles = `
+    const styles = /* CSS */`
         #ui-settings {
             width: 100vw;
             height: 100vh;
@@ -2805,16 +2812,15 @@ function showSettings () {
             margin: 0 5px;
         }
     `;
-    const $settings = $(noIndents`
+    const $settings = $(noIndents/* HTML */`
         <div id="ui-settings">
             <div class="container">
                 <h2>Translate Pixiv Tags settings</h2>
                 ${SETTINGS_SCHEMA
-                    .map((setting) => (
-                        noIndents`
+                    .map((setting) => noIndents/* HTML */`
                         <div>${setting.descr}:</div>
-                        <div>${settingToInput(setting)}</div>`
-                    ))
+                        <div>${settingToInput(setting)}</div>
+                    `)
                     .join("")
                 }
                 <h2>
@@ -2875,7 +2881,7 @@ function showMessage (msg) {
 
     const $shadowContainer = $("<div id=ex-message>").appendTo("body");
 
-    const styles = `
+    const styles = /* CSS */`
         #ui-message {
             width: 100vw;
             height: 0;
@@ -2927,7 +2933,7 @@ function showMessage (msg) {
             fill: #888;
         }
     `;
-    $messageContainer = $(noIndents`
+    $messageContainer = $(noIndents/* HTML */`
         <div id="ui-message" class="hide">
             <div class="container">
                 Translate Pixiv Tags: <span id="msg"></span>
@@ -3187,14 +3193,15 @@ function initializePixiv () {
         ".tag-list li .tag-value",
     ].join(", "), {
         toTagName: getNormalizedTagName,
-        css: `
+        css: /* CSS */`
             /* Display popular tags as vertical list */
             .tag-list.slash-separated li {
                 display: block;
             }
             .tag-list.slash-separated li + li:before {
                 content: none;
-            }`,
+            }
+        `,
         ruleName: "simple tags",
     });
 
@@ -3210,7 +3217,7 @@ function initializePixiv () {
         predicate: "figcaption li > span > span:first-child",
         toTagName: getNormalizedTagName,
         asyncMode: true,
-        css: `
+        css: /* CSS */`
             /* Prevent adding # to translated tags */
             span.ex-translated-tags a::before { content:none; }
             /* Hide Pixiv's translated tags */
@@ -3218,7 +3225,8 @@ function initializePixiv () {
             .ex-translated-tags + span .gtm-new-work-romaji-tag-event-click,
             .ex-translated-tags + span .gtm-new-work-translate-tag-event-click {
                 display: none;
-            }`,
+            }
+        `,
         ruleName: "artwork tags",
     });
 
@@ -3227,7 +3235,7 @@ function initializePixiv () {
         // eslint-disable-next-line max-len
         predicate: "#root>div>div>div>div>div>div>div>div:nth-last-of-type(2)>div>div:has(>span:first-child)",
         asyncMode: true,
-        css: `
+        css: /* CSS */`
             .ex-translated-tags[rulename='search tag'] {
                 font-size: 20px;
                 font-weight: bold;
@@ -3249,7 +3257,7 @@ function initializePixiv () {
         },
         asyncMode: true,
         classes: "no-brackets tpt-light",
-        css: `
+        css: /* CSS */`
             a[color] {
                 text-shadow: 0 0 5px #0003;
             }
@@ -3268,7 +3276,8 @@ function initializePixiv () {
             }
             a[color] > div > .ex-translated-tags a.ex-translated-tag-category-0:not(#id) {
                 color: #003cb3 !important;
-            }`,
+            }
+        `,
         // Fix bad contrast of tag color over colored bg
         onadded: ($tag) => {
             preventSiteNavigation($tag);
@@ -3289,10 +3298,11 @@ function initializePixiv () {
         tagPosition: TAG_POSITIONS.beforebegin,
         asyncMode: true,
         classes: "no-brackets dark-shadow",
-        css: `
+        css: /* CSS */`
             ex-translated-tags[rulename='popular tag'] {
                 text-shadow: 0 0 3px #000B;
-            }`,
+            }
+        `,
         onadded: preventSiteNavigation,
         ruleName: "popular tag",
     });
@@ -3320,7 +3330,7 @@ function initializePixiv () {
         },
         asyncMode: true,
         onadded: deleteOnUrlChange,
-        css: `
+        css: /* CSS */`
             /* Locate artist tag without triggering native tooltip */
             main>section h2:not(#id),
             main+aside>section>h2:not(#id) {
@@ -3360,7 +3370,8 @@ function initializePixiv () {
             }
             main section h2+button {
                 margin-left: 8px;
-            }`,
+            }
+        `,
         ruleName: "illust artist",
     });
 
@@ -3374,7 +3385,7 @@ function initializePixiv () {
         predicate: "section ul>li>div>div:last-child>div[aria-haspopup]>a",
         tagPosition: TAG_POSITIONS.afterParent,
         asyncMode: true,
-        css: `
+        css: /* CSS */`
             /* Fix artist tag overflowing */
             ul>li>div>div:last-child {
                 flex-direction: column;
@@ -3385,7 +3396,8 @@ function initializePixiv () {
                 max-width: 100%;
                 overflow: hidden;
                 text-overflow: ellipsis;
-            }`,
+            }
+        `,
         ruleName: "artist below illust thumb",
     });
 
@@ -3395,7 +3407,7 @@ function initializePixiv () {
         predicate: "div.dqLunY > h1",
         toProfileUrl: normalizePageUrl,
         asyncMode: true,
-        css: `
+        css: /* CSS */`
             /**
              * Locate the artist tag between the artist name and
              * followers count because there can be "premium" and
@@ -3410,7 +3422,8 @@ function initializePixiv () {
             }
             .dqLunY .ex-artist-tag {
                 grid-row-start: 2;
-            }`,
+            }
+        `,
         ruleName: "artist profile",
     });
 
@@ -3501,14 +3514,15 @@ function initializeNijie () {
     // http://nijie.info/view.php?id=208491
     findAndTranslate("tag", ".tag .tag_name a:first-child", {
         tagPosition: TAG_POSITIONS.beforeend,
-        css: `
+        css: /* CSS */`
             .ex-translated-tags {
                 font-family: Verdana, Helvetica, sans-serif;
             }
             #dojin_left #view-tag .tag {
                 white-space: nowrap;
                 border: 0;
-            }`,
+            }
+        `,
         ruleName: "illust tags",
     });
 
@@ -3522,12 +3536,13 @@ function initializeNijie () {
 function initializeTinami () {
     // http://www.tinami.com/view/979474
     findAndTranslate("tag", ".tag > span > a:nth-child(2)", {
-        css: `
+        css: /* CSS */`
             .ex-translated-tags {
                 font-family: Verdana, Helvetica, sans-serif;
                 float: none !important;
                 display: inline !important;
-            }`,
+            }
+        `,
         ruleName: "illust tags",
     });
 
@@ -3558,26 +3573,28 @@ function initializeNicoSeiga () {
         predicate: ".tag > a, a.tag",
         tagPosition: TAG_POSITIONS.beforeend,
         asyncMode: true,
-        css: `
+        css: /* CSS */`
             /* When authorized */
             .illust_tag .tag {
                 background: #ebebeb;
                 height: auto;
                 margin: 0 10px 5px 0;
-            }`,
+            }
+        `,
         ruleName: "illust tags",
     });
 
     // http://seiga.nicovideo.jp/user/illust/14767435
     findAndTranslate("artist", ".user_info h1 a", {
         classes: "inline",
-        css: `
+        css: /* CSS */`
             .im_head_bar .inner .user ul .user_link .ex-artist-tag a {
                 display: inline-block;
                 border: none;
                 background: none;
                 padding: 0;
-            }`,
+            }
+        `,
         ruleName: "illust artist",
     });
 
@@ -3607,13 +3624,14 @@ function initializeDeviantArt () {
         toProfileUrl: linkInChildren,
         predicate: "h1:has(>a.user-link)",
         asyncMode: true,
-        css: `
+        css: /* CSS */`
             .ex-artist-tag {
                 font-weight: bold;
             }
             .ex-artist-tag[rulename='artist profile'] {
                 margin-top: -10px;
-            }`,
+            }
+        `,
         ruleName: "artist profile",
     });
 
@@ -3627,13 +3645,14 @@ function initializeDeviantArt () {
         asyncMode: true,
         onadded: deleteOnUrlChange,
         classes: "inline",
-        css: `
+        css: /* CSS */`
             .ex-artist-tag[rulename='illust artist'] {
                 margin-left: -0.5em;
             }
             .ex-artist-tag[rulename='illust artist'] + button {
                 margin-left: 1em;
-            }`,
+            }
+        `,
         ruleName: "illust artist",
     });
 
@@ -3648,11 +3667,12 @@ function initializeDeviantArt () {
     findAndTranslate("tag", "span", {
         predicate: "a[href^='https://www.deviantart.com/tag/'] > span:first-child",
         asyncMode: true,
-        css: `
+        css: /* CSS */`
             /* fix cropped long tags */
             a[href^='https://www.deviantart.com/tag/'] {
                 max-width: initial;
-            }`,
+            }
+        `,
         ruleName: "tags",
     });
 }
@@ -3755,12 +3775,13 @@ function initializeTwitter () {
         toProfileUrl: linkInChildren,
         asyncMode: true,
         classes: "inline",
-        css: `
+        css: /* CSS */`
             /* "in this photo", people in sidebar */
             [data-testid='UserCell'] .ex-artist-tag {
                 display: block;
                 margin-left: 0;
-            }`,
+            }
+        `,
         ruleName: "tweet/comment author",
     });
 
@@ -3770,11 +3791,11 @@ function initializeTwitter () {
         toProfileUrl: (el) => `https://twitter.com/${el.textContent?.slice(1)}`,
         asyncMode: true,
         classes: "inline",
-        css: `
+        css: /* CSS */`
             [data-testid=User-Name] [tabindex]:not([role]) {
                 flex-direction: row;
             }
-            `,
+        `,
         ruleName: "quoted tweet author",
     });
 
@@ -3822,10 +3843,11 @@ function initializeArtStation () {
         predicate: ".user-info > h1",
         toProfileUrl: toFullURL,
         asyncMode: true,
-        css: `
+        css: /* CSS */`
             .ex-artist-tag[rulename='artist profile'] {
                 margin: -8px 0 2px;
-            }`,
+            }
+        `,
         ruleName: "artist profile",
         // The artist name is removed when the profile page is a bit scrolled
         onadded: ($tag) => {
@@ -3860,11 +3882,12 @@ function initializeArtStation () {
         requiredAttributes: "href",
         predicate: (el) => el.matches(".hover-card-name > a:first-child"),
         asyncMode: true,
-        css: `
+        css: /* CSS */`
             .ex-artist-tag[rulename='artist popup'] {
                 font-size: 12pt;
                 margin-top: -10px;
-            }`,
+            }
+        `,
         ruleName: "artist popup",
     });
 
@@ -3886,7 +3909,7 @@ function initializeArtStation () {
     // https://dylan-kowalski.artstation.com/
     findAndTranslate("artist", ".site-title a", {
         toProfileUrl: toFullURL,
-        css: `
+        css: /* CSS */`
             .ex-artist-tag[rulename='personal sites'] {
                 font-size: 12pt;
                 line-height: 100%;
@@ -3894,7 +3917,8 @@ function initializeArtStation () {
             }
             .ex-artist-tag[rulename='personal sites'] a {
                 font-size: 12pt;
-            }`,
+            }
+        `,
         ruleName: "personal sites",
     });
 }
@@ -3939,23 +3963,25 @@ function initializeSauceNAO () {
     findAndTranslate("artistByName", ".resulttitle .target", {
         tagPosition: TAG_POSITIONS.beforebegin,
         classes: "inline",
-        css: `
+        css: /* CSS */`
             .ex-artist-tag + .target {
                 display: none;
-            }`,
+            }
+        `,
         ruleName: "artist by name",
     });
 
     findAndTranslate("tag", ".resultcontentcolumn .target", {
         tagPosition: TAG_POSITIONS.beforebegin,
         classes: "no-brackets",
-        css: `
+        css: /* CSS */`
             .ex-translated-tags {
                 margin: 0;
             }
             .ex-translated-tags + .target {
                 display: none;
-            }`,
+            }
+        `,
         ruleName: "tags",
     });
 }
@@ -4117,7 +4143,7 @@ function initializePixivFanbox () {
             ruleName: "find creator index pixiv",
         }),
         ruleName: "find creator index",
-        css: `
+        css: /* CSS */`
             div[class^=Creator__Name] {
                 margin: -6px;
             }
@@ -4145,7 +4171,7 @@ function initializePixivFanbox () {
             ruleName: "supported pixiv",
         }),
         tagPosition: TAG_POSITIONS.beforeend,
-        css: `
+        css: /* CSS */`
             div[class^=PlanOnlyUserInfo__UserName]:has(.ex-artist-tag) {
                 line-height: 20px !important;
             }
@@ -4186,7 +4212,7 @@ function initializePixivFanbox () {
         toTagName: (el) => el.previousSibling?.textContent ?? null,
         asyncMode: true,
         classes: "inline",
-        css: `
+        css: /* CSS */`
             /* fix multiline text */
             div[class^=TagPage__TagTitle] {
                 display: block;
@@ -4194,7 +4220,8 @@ function initializePixivFanbox () {
             div[class^=TagPage__Count] {
                 display: inline-block;
                 vertical-align: middle;
-            }`,
+            }
+        `,
         ruleName: "search tag fanbox",
     });
 }
@@ -4223,11 +4250,12 @@ function initializeMisskey () {
     findAndTranslate("artist", ".xpJo5", {
         toProfileUrl: getNormalizedDecentralizedSocNetUrl,
         asyncMode: true,
-        css: `
+        css: /* CSS */`
             .ex-artist-tag[rulename='artist header'] {
                 font-size: .8em;
                 font-weight: 400;
-            }`,
+            }
+        `,
         ruleName: "artist header",
     });
 
@@ -4301,7 +4329,7 @@ function initializeFantia () {
             getTagContainer: ($elem) => $elem.parent(".module-author").next(".module-author>a"),
         },
         asyncMode: true,
-        css: `
+        css: /* CSS */`
             .module-author {
                 display: flex;
                 align-items: center;
@@ -4317,7 +4345,8 @@ function initializeFantia () {
             .module-author .ex-artist-tag a {
                 position: relative;
                 z-index: 1000;
-            }`,
+            }
+        `,
         ruleName: "artist card",
     });
 
@@ -4327,7 +4356,7 @@ function initializeFantia () {
         predicate: "a[href*='tag=']:not([target='_blank'])",
         tagPosition: TAG_POSITIONS.beforeend,
         asyncMode: true,
-        css: `
+        css: /* CSS */`
             .active > a {
                 filter: brightness(1.2);
             }
