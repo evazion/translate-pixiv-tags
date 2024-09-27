@@ -2235,10 +2235,12 @@ const ARTIST_TOOLTIP_CSS = /* CSS */`
         left: 0;
         color: white;
         background-color: rgba(0,0,0,0.7);
-        border-radius: .25rem;
-        line-height: 1.2;
-        padding: 0.125rem 0.2rem;
-        margin: 0.125rem;
+        border-radius: 4px;
+        font-size: 11px;
+        font-family: "Arial", "Helvetica", sans-serif;
+        line-height: 1em;
+        padding: 2px 4px;
+        margin: 2px;
         display: flex;
         align-items: center;
         gap: 0.5ch;
@@ -2250,12 +2252,12 @@ const ARTIST_TOOLTIP_CSS = /* CSS */`
     }
     article.post-preview .post-icon * {
         height: 1em;
+        line-height: 1em;
         fill: currentColor;
         vertical-align: middle;
     }
     article.post-preview .post-icon .animation-icon {
         font-weight: bold;
-        margin-bottom: -1px;
     }
     article.post-preview .post-icon .ai-generated {
         color: red;
@@ -2264,6 +2266,8 @@ const ARTIST_TOOLTIP_CSS = /* CSS */`
     }
     article.post-preview .post-icon .ai-assisted {
         color: orange;
+        margin-bottom: -1px;
+        margin-left: -1px;
     }
 
     div.post-pager {
