@@ -1001,6 +1001,31 @@ function capitalize (string) {
     return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
 }
 
+/**
+ * @param {string} s1
+ * @param {string} s2
+ */
+function naturalCompare (s1, s2) {
+    const parts1 = s1.split(/(\d+)/);
+    const parts2 = s2.split(/(\d+)/);
+
+    for (let i = 0; i < Math.min(parts1.length, parts2.length); i++) {
+        const elem1 = Number.parseInt(parts1[i], 10) || parts1[i];
+        const elem2 = Number.parseInt(parts2[i], 10) || parts2[i];
+
+        // eslint-disable-next-line no-continue
+        if (elem1 === elem2) continue;
+
+        if (typeof elem1 === "number" && typeof elem2 === "number") {
+            return elem1 - elem2;
+        }
+
+        return elem1.toString().localeCompare(elem2.toString());
+    }
+
+    return parts1.length - parts2.length;
+}
+
 // https://github.com/danbooru/danbooru/blob/963f34d7dfb8b4cbe78961503f072fe0662b0961/app/models/artist_url.rb#L97
 /* spell-checker: disable */
 const SITE_ORDER = [
@@ -2486,7 +2511,8 @@ function buildArtistUrlsHtml (artist) {
         .chain()
         .uniq("url")
         .map((artistUrl) => ({ ...artistUrl, siteName: getSiteName(artistUrl.url) }))
-        .sortBy("url")
+        // @ts-expect-error - incorrect definition in library
+        .sort((u1, u2) => naturalCompare(u1.url, u2.url))
         .sortBy((artistUrl) => isSecondaryUrl(artistUrl.url))
         .sortBy((artistUrl) => getSiteDisplayDomain(artistUrl.url))
         .sortBy((artistUrl) => getSitePriority(artistUrl.siteName))
