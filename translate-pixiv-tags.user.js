@@ -2468,7 +2468,10 @@ async function buildArtistTooltipContent (artist) {
             </section>
         </article>
     `);
-    $content.find(".post-list").append(...posts.map(buildPostPreview));
+    $content.find(".post-list")
+        // prevent width change on posts pagination
+        .css("width", `${Math.min(visiblePostsCount, ARTIST_POST_PREVIEW_LIMIT, 3) * 194 - 8}px`)
+        .append(...posts.map(buildPostPreview));
     $content.find(".settings-icon").click(showSettings);
     $content.find(".btn").click(loadNextPage);
     return $content;
