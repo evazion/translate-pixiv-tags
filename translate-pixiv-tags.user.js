@@ -3152,7 +3152,7 @@ function initializePixiv () {
         asyncMode: true,
         classes: "no-brackets dark-shadow",
         css: /* CSS */`
-            ex-translated-tags[rulename='popular tag'] {
+            .ex-translated-tags[rulename='popular tag'] {
                 text-shadow: 0 0 3px #000B;
             }
         `,
@@ -3557,7 +3557,7 @@ function initializeTwitter () {
         chooseBackgroundColorScheme($(body)).theme
     ));
 
-    GM_addStyle(`
+    GM_addStyle(/* CSS */`
         .ex-artist-tag {
             font-family: system-ui, -apple-system, BlinkMacSystemFont,
                 "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
@@ -3777,9 +3777,6 @@ function initializeArtStation () {
 }
 
 function initializeSauceNAO () {
-    GM_addStyle(`
-    `);
-
     $(".resulttitle, .resultcontentcolumn")
         .contents()
         .filter((i, el) => el.nodeType === 3) // Get text nodes
@@ -3844,7 +3841,7 @@ function initializeMastodon () {
         body.classList.contains("theme-default") ? "dark" : "light"
     ));
 
-    GM_addStyle(`
+    GM_addStyle(/* CSS */`
         .ex-artist-tag {
             line-height: 100%;
         }
@@ -3916,7 +3913,7 @@ function initializeTweetDeck () {
         body.dataset.nightmode === "true" ? "dark" : "light"
     ));
 
-    GM_addStyle(`
+    GM_addStyle(/* CSS */`
         .tweet .ex-artist-tag {
             flex-grow: 100;
         }
