@@ -4639,6 +4639,7 @@ function initializeBluesky () {
         .replace(/[\s\u202A-\u202C]*$/, "")}`;
 
     // Hashtag in post
+    // https://bsky.app/profile/yitsunemelody.bsky.social/post/3l6y6kk5t6t26
     findAndTranslate("tag", "button", {
         asyncMode: true,
         predicate: "button[id^=radix]",
@@ -4666,6 +4667,16 @@ function initializeBluesky () {
         classes: "inline",
         toProfileUrl,
         ruleName: "artist post feed",
+    });
+
+    // Artist tag in feed
+    // https://bsky.app
+    // https://bsky.app/profile/ixy.bsky.social
+    findAndTranslate("artist", "div", {
+        asyncMode: true,
+        predicate: "div[style*=avatarHover] div+a > div > :nth-child(2)",
+        toProfileUrl,
+        ruleName: "artist popup",
     });
 
     // Artist tag in thread root
