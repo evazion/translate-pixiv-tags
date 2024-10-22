@@ -4349,6 +4349,7 @@ function initializeBluesky () {
     // https://bsky.app/profile/ixy.bsky.social
     findAndTranslate("artist", "div", {
         asyncMode: true,
+        // eslint-disable-next-line max-len
         predicate: "div[data-testid='profileView'] > :first-child > :first-child > :first-child > :nth-child(2) > :nth-child(2) > div:nth-child(2)",
         tagPosition: TAG_POSITIONS.afterend,
         toProfileUrl,
@@ -4360,6 +4361,7 @@ function initializeBluesky () {
     // https://bsky.app/profile/ixy.bsky.social
     findAndTranslate("artist", "span", {
         asyncMode: true,
+        // eslint-disable-next-line max-len
         predicate: "div[data-testid^='feedItem-by-'] > :first-child > :nth-child(2) > :nth-child(2) > :first-child > :first-child > :first-child > :first-child > a:nth-child(2) > span:first-child",
         tagPosition: TAG_POSITIONS.afterend,
         classes: "inline",
@@ -4381,6 +4383,7 @@ function initializeBluesky () {
     // https://bsky.app/profile/ixy.bsky.social/post/3l6up3iiokn2i
     findAndTranslate("artist", "div", {
         asyncMode: true,
+        // eslint-disable-next-line max-len
         predicate: "div[data-testid^='postThreadItem-by-'] > :first-child > :nth-child(2) > :nth-child(2) > div:first-child",
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
@@ -4392,6 +4395,7 @@ function initializeBluesky () {
     // https://bsky.app/profile/kanikamadayo.bsky.social/post/3l6pnkjfnhq2b
     findAndTranslate("artist", "span", {
         asyncMode: true,
+        // eslint-disable-next-line max-len
         predicate: "div[data-testid^='postThreadItem-by-'] > :nth-child(2) > :nth-child(2) > :nth-child(1) > :nth-child(1) > :nth-child(1) > :nth-child(1) > :nth-child(2) > span",
         tagPosition: TAG_POSITIONS.afterend,
         classes: "inline",
