@@ -1651,6 +1651,7 @@ const NORMALIZE_PROFILE_URL = {
     "bcy.net": {
         path: /^\/u\/\d+$/,
     },
+    "bsky.app": {},
     ".deviantart.com": {
         path: /^\/[\w-]+$/,
         normalize (url) {
