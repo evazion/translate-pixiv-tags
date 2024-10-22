@@ -31,6 +31,7 @@
 // @match        *://fantia.jp/*
 // @match        *://ci-en.net/*
 // @match        *://ci-en.dlsite.com/*
+// @match        *://bsky.app/*
 // @grant        GM_getResourceText
 // @grant        GM_getResourceURL
 // @grant        GM_xmlhttpRequest
@@ -4632,6 +4633,64 @@ function initializeCiEn () {
     });
 }
 
+function initializeBluesky () {
+    const toProfileUrl = (/** @type {HTMLElement} */ el) => `https://bsky.app/profile/${(el.textContent ?? "")
+        .replace(/^[\s\u202A-\u202C]*@/, "")
+        .replace(/[\s\u202A-\u202C]*$/, "")}`;
+
+    // Hashtag in post
+    findAndTranslate("tag", "button", {
+        asyncMode: true,
+        predicate: "button[id^=radix]",
+        tagPosition: TAG_POSITIONS.afterParent,
+        ruleName: "tag post",
+    });
+
+    // Artist tag in header
+    // https://bsky.app/profile/ixy.bsky.social
+    findAndTranslate("artist", "div", {
+        asyncMode: true,
+        predicate: "div[data-testid='profileView'] > :first-child > :first-child > :first-child > :nth-child(2) > :nth-child(2) > div:nth-child(2)",
+        tagPosition: TAG_POSITIONS.afterend,
+        toProfileUrl,
+        ruleName: "artist profile",
+    });
+
+    // Artist tag in feed
+    // https://bsky.app
+    // https://bsky.app/profile/ixy.bsky.social
+    findAndTranslate("artist", "span", {
+        asyncMode: true,
+        predicate: "div[data-testid^='feedItem-by-'] > :first-child > :nth-child(2) > :nth-child(2) > :first-child > :first-child > :first-child > :first-child > a:nth-child(2) > span:first-child",
+        tagPosition: TAG_POSITIONS.afterend,
+        classes: "inline",
+        toProfileUrl,
+        ruleName: "artist post feed",
+    });
+
+    // Artist tag in thread root
+    // https://bsky.app/profile/ixy.bsky.social/post/3l6up3iiokn2i
+    findAndTranslate("artist", "div", {
+        asyncMode: true,
+        predicate: "div[data-testid^='postThreadItem-by-'] > :first-child > :nth-child(2) > :nth-child(2) > div:first-child",
+        tagPosition: TAG_POSITIONS.beforeend,
+        classes: "inline",
+        toProfileUrl,
+        ruleName: "artist post thread root",
+    });
+
+    // Artist tag in thread reply
+    // https://bsky.app/profile/kanikamadayo.bsky.social/post/3l6pnkjfnhq2b
+    findAndTranslate("artist", "span", {
+        asyncMode: true,
+        predicate: "div[data-testid^='postThreadItem-by-'] > :nth-child(2) > :nth-child(2) > :nth-child(1) > :nth-child(1) > :nth-child(1) > :nth-child(1) > :nth-child(2) > span",
+        tagPosition: TAG_POSITIONS.afterend,
+        classes: "inline",
+        toProfileUrl,
+        ruleName: "artist post thread reply",
+    });
+}
+
 function initialize () {
     GM_jQuery_setup();
     GM_addStyle(PROGRAM_CSS);
@@ -4667,6 +4726,7 @@ function initialize () {
         case "skeb.jp":                initializeSkeb();          break;
         case "ci-en.net":
         case "ci-en.dlsite.com":       initializeCiEn();          break;
+        case "bsky.app":               initializeBluesky();       break;
         default:
             if (window.location.host.endsWith("artstation.com")) {
                 initializeArtStation();
