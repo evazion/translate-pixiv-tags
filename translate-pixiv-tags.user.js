@@ -56,6 +56,7 @@
 // @connect      donmai.us
 // @connect      donmai.moe
 // @connect      raw.githubusercontent.com
+// @connect      icons.duckduckgo.com
 // @noframes
 // ==/UserScript==
 
@@ -1075,12 +1076,35 @@ function getSiteDisplayDomain (siteUrl) {
 
 const SITE_ICON_FOLDER = "https://raw.githubusercontent.com/danbooru/danbooru/22e1b4d3bf0a8776dbac282f4e3a83d62facc537/public/images/";
 
-/** @param {string} siteName */
-function getSiteIconUrl (siteName) {
-    if (SITE_RULES.every((site) => site.name !== siteName)) return null;
+/**
+ * Try to resolve the site icon
+ * @param {string} siteName Site name in SITE_RULES
+ * @param {string} url Site url
+ * @returns {Promise<string|null>}
+ */
+function getSiteIconUrl (siteName, url) {
+    if (SITE_RULES.every((site) => site.name !== siteName)) {
+        return new Promise((resolve) => {
+            GM.xmlHttpRequest({
+                method: "GET",
+                url: `https://icons.duckduckgo.com/ip3/${new URL(url).hostname}.ico`,
+                responseType: "blob",
+                onload: (xhr) => {
+                    // for unresolved icons the response is 404 + fallback icon
+                    if (xhr.status === 200) {
+                        resolve(window.URL.createObjectURL(xhr.response));
+                    } else {
+                        resolve(null);
+                    }
+                },
+            });
+        });
+    }
     const fileName = siteName.toLowerCase().replaceAll(/[^\w.]/g, "-");
     return getImage(`${SITE_ICON_FOLDER}${fileName}-logo.png`);
 }
+
+const getSiteIconUrlMemoized = _.memoize(getSiteIconUrl, memoizeKey);
 
 /**
  * @param {string} siteUrl
@@ -1873,7 +1897,10 @@ const ARTIST_TOOLTIP_CSS = /* CSS */`
         text-decoration: underline;
         text-decoration-style: dotted;
     }
-
+    .artist-url-icon {
+        display: inline-block;
+        width: 1.5em;
+    }
     .artist-url-icon * {
         width: 1.5em;
         fill: currentColor;
@@ -2295,19 +2322,21 @@ function buildArtistUrls (artist) {
         .map((artistUrl) => {
             const normalizedUrl = artistUrl.url.replace(/\/$/, "");
             const urlClass = artistUrl.is_active ? "artist-url-active" : "artist-url-inactive";
-            const iconUrl = getSiteIconUrl(artistUrl.siteName);
-            const iconHtml = iconUrl ? `<img>` : GM_getResourceText("globe_icon");
+            const iconUrl = getSiteIconUrlMemoized(artistUrl.siteName, artistUrl.url);
 
             const item = $(noIndents/* HTML */`
                 <li class="${urlClass}">
                     <a href="${normalizedUrl}" target="_blank">
-                        <span class="artist-url-icon">${iconHtml}</span> ${_.escape(normalizedUrl)}
+                        <span class="artist-url-icon"></span> ${_.escape(normalizedUrl)}
                     </a>
                 </li>
             `);
 
             iconUrl?.then((url) => {
-                /** @type {HTMLImageElement} */(item.find("img")[0]).src = url;
+                item.find(".artist-url-icon").append(
+                    // we have to insert globe_icon as is because it's svg and we style it
+                    url ? `<img src="${url}">` : GM_getResourceText("globe_icon"),
+                );
             });
             return item;
         })
