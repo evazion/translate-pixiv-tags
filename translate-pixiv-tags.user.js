@@ -1677,7 +1677,7 @@ function addDanbooruArtist ($target, rawArtist, options) {
     classes += artist.is_banned ? " ex-artist-tag ex-banned-artist-tag" : " ex-artist-tag";
 
     const $duplicates = findTag($target)
-        .filter((i, el) => el.textContent?.trim() === artist.escapedName);
+        .filter((i, el) => el.textContent?.trim() === artist.prettyName);
     if ($duplicates.length > 0) {
         return;
     }
