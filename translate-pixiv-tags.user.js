@@ -4118,6 +4118,7 @@ function initializeMastodon () {
         predicate: ".hashtag-bar a[href^='/tags/']",
         ruleName: "tags bar",
         asyncMode: true,
+        tagPosition: TAG_POSITIONS.beforeend,
     });
 }
 
