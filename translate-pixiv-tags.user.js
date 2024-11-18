@@ -1541,6 +1541,58 @@ async function makeRequest (method, url, data) {
  * @prop {(url:URL) => string} [normalize] Url normalizer
  */
 
+/**
+ * Converts URLs to the same format used by the URL column on Danbooru
+ * @param {string} targetUrl
+ * @param {Record<string, UrlNormalizer>} normalizers
+ * @param {number} [depth]
+ * @returns {{ url:string, error:string }}
+ */
+function normalizeURL (targetUrl, normalizers, depth = 0) {
+    if (depth > 10) {
+        return {
+            url: targetUrl,
+            error: `Recursive URL normalization: ${targetUrl}`,
+        };
+    }
+    const url = new URL(targetUrl);
+    if (url.protocol !== "https:") url.protocol = "https:";
+    let host = url.hostname;
+    if (!(host in normalizers)) {
+        host = ".".concat(host.split(".").slice(-2).join("."));
+    }
+    if (!(host in normalizers)) {
+        return {
+            url: targetUrl,
+            error: `Unsupported domain: ${host}`,
+        };
+    }
+
+    const { path, params, normalize } = normalizers[host];
+    if (path && !path.test(url.pathname) || params && !params.test(url.search)) {
+        if (!normalize) {
+            return {
+                url: targetUrl,
+                error: `Normalization isn't implemented: ${targetUrl}`,
+            };
+        }
+        // Normalize and validate the url without infinite loop
+        const normalizedUrl = normalize(url);
+        if (normalizedUrl === targetUrl) {
+            return {
+                url: normalizedUrl,
+                error: `URL normalized to itself: ${targetUrl}`.trim(),
+            };
+        }
+        return normalizeURL(normalizedUrl, normalizers, depth + 1);
+    }
+    if (url.pathname.endsWith("/")) url.pathname = url.pathname.slice(0, -1);
+    return {
+        url: url.toString(),
+        error: "",
+    };
+}
+
 /** @type {Record<string, UrlNormalizer>} */
 const NORMALIZE_PROFILE_URL = {
     ".artstation.com": {
@@ -1636,41 +1688,715 @@ const NORMALIZE_PROFILE_URL = {
 /**
  * Converts URLs to the same format used by the URL column on Danbooru
  * @param {string} profileUrl
- * @param {number} [depth]
  * @returns {string}
  */
-function normalizeProfileURL (profileUrl, depth = 0) {
-    if (depth > 10) {
-        console.error("[TPT]: Recursive URL normalization:", profileUrl);
-        return profileUrl;
+function normalizeProfileURL (profileUrl) {
+    const { url, error } = normalizeURL(profileUrl.toLowerCase(), NORMALIZE_PROFILE_URL);
+    if (error) {
+        console.error("[TPT]:", error);
     }
-    const url = new URL(profileUrl.toLowerCase());
-    if (url.protocol !== "https:") url.protocol = "https:";
-    let host = url.hostname;
-    if (!(host in NORMALIZE_PROFILE_URL)) {
-        host = ".".concat(host.split(".").slice(-2).join("."));
-    }
-    if (!(host in NORMALIZE_PROFILE_URL)) {
-        console.warn("[TPT]: Unsupported domain:", host);
-        return profileUrl;
-    }
+    return url;
+}
 
-    const { path, params, normalize } = NORMALIZE_PROFILE_URL[host];
-    if (path && !path.test(url.pathname) || params && !params.test(url.search)) {
-        if (!normalize) {
-            console.error("[TPT]: Normalization isn't implemented:", profileUrl);
-            return profileUrl;
+/** @typedef {string|RegExp|[string[]]|[string|string[]|RegExp, string]} RCCond */
+/** @template {RCCond} C @typedef {C extends Readonly<[any, string]> ? C[1] : never} RCKey */
+// eslint-disable-next-line max-len
+/** @template {RCCond} C @typedef {C extends Readonly<[any, string]> ? C[0] extends `*` ? string[] : C[0] extends RegExp ? RegExpMatchArray : string : never} RCProp */
+// eslint-disable-next-line max-len
+/** @template {RCCond[]} C @typedef {Readonly<{[K in C[number] as RCKey<K>]: RCProp<K>}>} RCMatch */
+// eslint-disable-next-line max-len
+/** @template C @template M @template R @typedef {[C] | [C, (m:M)=>R] | [C, (m:M)=>boolean, (m:M)=>R]} RCCaseParams */
+// eslint-disable-next-line max-len
+/** @typedef {<const C extends RCCond[], R extends Record<string, any> = RCMatch<C>> (...args: RCCaseParams<C, RCMatch<C>, R>) => (array:string[])=>R|null} RCCaseFn */
+// For some reason contextually typed function fails to infer the R type, so cannot type the fn directly. Probably https://github.com/microsoft/TypeScript/issues/58580
+/**
+ * A single case for rubyArraySwitch.
+ * The first param - pattern of the string array: `Array<pattern|[pattern, name]>` where
+ * `pattern` is `"_"` (anything), `"**"` (any number of any items), string or
+ * string array (exact match) or RegExp, and `name` is name for the saving the match.
+ * The second optional param - extra check for the matching.
+ * The last optional param - converter of matched data.
+ * @type {RCCaseFn}
+ */
+// eslint-disable-next-line sonarjs/cognitive-complexity
+function rubyArrayCase (checks, fn1, fn2) {
+    const afterCheck = fn2 ? fn1 : null;
+    const convert = fn2 ?? fn1;
+    return (array) => {
+        /** @type {any} */
+        const matches = {};
+        let i = 0;
+        // eslint-disable-next-line no-labels, no-restricted-syntax
+        mainLoop: for (let j = 0; j < checks.length; j++) {
+            const check = checks[j];
+            const [pattern, prop] = Array.isArray(check) ? check : [check];
+            if (i >= array.length && check !== "**") {
+                return null;
+            }
+            if (pattern instanceof RegExp) {
+                const match = pattern.exec(array[i]);
+                if (!match) return null;
+                if (prop) matches[prop] = match;
+            } else if (Array.isArray(pattern)) {
+                if (pattern.includes(array[i])) {
+                    if (prop) matches[prop] = array[i];
+                } else {
+                    return null;
+                }
+            } else {
+                switch (pattern) {
+                    case "**": {
+                        const restChecks = checks.slice(j + 1);
+                        for (let ii = array.length; ii > i; ii--) {
+                            const res = rubyArrayCase(restChecks)(array.slice(ii));
+                            if (res) {
+                                if (prop) matches[prop] = array.slice(ii);
+                                Object.assign(matches, res);
+                                i = array.length - 1;
+                                // eslint-disable-next-line no-labels
+                                break mainLoop;
+                            }
+                        }
+                        if (prop) matches[prop] = [];
+                        break;
+                    }
+                    case "_":
+                        if (prop) matches[prop] = array[i];
+                        break;
+                    case array[i]:
+                        if (prop) matches[prop] = array[i];
+                        break;
+                    default:
+                        return null;
+                }
+            }
+            i += 1;
         }
-        // Normalize and validate the url without infinite loop
-        const res = normalizeProfileURL(normalize(url), depth + 1);
-        if (res === profileUrl) {
-            console.error("[TPT]: URL normalized to itself:", profileUrl);
-        }
-        return res;
+        if (i < array.length - 1) return null;
+        if (afterCheck && !afterCheck(matches)) return null;
+        return convert ? convert(matches) : matches;
+    };
+}
+
+// https://stackoverflow.com/questions/65750673/collapsing-a-discriminated-union-derive-an-umbrella-type-with-all-possible-key
+// eslint-disable-next-line max-len
+/** @template U @typedef {(U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never} UnionToIntersection */
+/** @template T @typedef {T & { [str: string]: undefined; }} Indexable */
+/** @template T @typedef {{ [K in keyof T]: undefined }} UndefinedValues */
+/** @template T @typedef {keyof UnionToIntersection<UndefinedValues<T>>} AllUnionKeys */
+/** @template T @typedef {{ [K in AllUnionKeys<T> & string]: Indexable<T>[K] }} CollapseUnion */
+
+/**
+ * Ruby-like implementation of case-in for arrays
+ * @template {Array<(arr: string[]) => any>} C
+ * @param {string[]} array - the strings to match
+ * @param {C} cases - rubyArrayCase's
+ * @returns {Partial<CollapseUnion<Exclude<ReturnType<C[number]>, null>>>}
+ */
+function rubyArraySwitch (array, ...cases) {
+    for (const rubyCase of cases) {
+        const res = rubyCase(array);
+        if (res !== null) return res;
     }
-    let link = url.toString();
-    if (link.endsWith("/")) link = link.slice(0, -1);
-    return link;
+    // @ts-ignore
+    return {};
+}
+
+/**
+ * Split url into parts
+ * @param {URL} url
+ */
+function splitUrl (url) {
+    const pathSegments = url.pathname.split("/").filter(Boolean);
+    const {
+        subdomain, domain,
+    } = /** @type {import("psl").ParsedDomain} */(psl.parse(url.hostname));
+    return {
+        subdomain: subdomain ?? "",
+        domain: domain ?? "",
+        pathSegments,
+    };
+}
+
+/**
+ * Based on `page_url` methods in https://github.com/danbooru/danbooru/tree/master/app/logical/source/url
+ * @satisfies {Record<string, UrlNormalizer["normalize"]>}
+ */
+const SOURCE_NORMALIZER = {
+    deviantArt (url) {
+        const { subdomain, domain, pathSegments } = splitUrl(url);
+        const { id, filename } = rubyArraySwitch(
+            [domain, ...pathSegments],
+            rubyArrayCase(["deviantart.net", "**", ["_", "filename"]]),
+            rubyArrayCase(["deviantart.com", "download", ["_", "id"], "**"]),
+            rubyArrayCase(["deviantart.com", [["deviation", "view"]], ["_", "id"]]),
+            rubyArrayCase(
+                ["deviantart.com", ["_", "user"], "art", [/^(?:([\w-]+)-)?(\d+)$/i, "reg"]],
+                (m) => ({ ...m, id: m.reg[2] }),
+            ),
+            rubyArrayCase(
+                ["deviantart.com", "art", [/^([\w-]+)-(\d+)$/i, "reg"]],
+                () => subdomain !== "www",
+                (m) => ({ ...m, id: m.reg[2] }),
+            ),
+            rubyArrayCase(
+                ["deviantart.com", [["view.php", "view-full.php"]]],
+                () => !!url.searchParams.get("id")?.match(/^\d+$/),
+                () => ({ id: url.searchParams.get("id") }),
+            ),
+        );
+
+        let workId = id ?? 0;
+        if (filename) {
+            const name = filename.replace(/\.\w+$/, "");
+            const regexps = [
+                /^.+_by_.+[_-]d([\da-z]+)(?:-\w+)?$/i,
+                /^[\da-f]{32}-d([\da-z]+)$/,
+                /^d([\da-z]{6})-h{8}(?:-h{4}){3}-h{12}/,
+            ];
+            for (const reg of regexps) {
+                const match = reg.exec(name);
+                if (match) {
+                    workId = Number.parseInt(match[1], 36);
+                    break;
+                }
+            }
+        }
+
+        if (workId) return `https://www.deviantart.com/deviation/${workId}`;
+        return url.toString();
+    },
+    fandom (url) {
+        /** @type {Record<string, string|undefined>} */
+        const WIKI_NAMES = {
+            // "lang/database_name": subdomain
+            /* spell-checker: disable */
+            "/adventuretimewithfinnandjake": "adventuretime",
+            "/age-of-ishtaria": "ishtaria",
+            "/atelierseries": "atelier",
+            "/b-dapedia": "bdaman",
+            "/blackbullet2": "blackbullet",
+            "/blacksurvival_gamepedia_en": "blacksurvival",
+            "/capcomdatabase": "capcom",
+            "/dragalialost_gamepedia_en": "dragalialost",
+            "/dragonauttheresonance": "dragonaut",
+            "/dungeon-ni-deai-o-motomeru": "danmachi",
+            "/dynastywarriors": "koei",
+            "/fault-milestone8968": "fault-series",
+            "/genjitsushugisha": "genkoku",
+            "/gen-impact": "genshin-impact",
+            "/gensin-impact": "genshin-impact",
+            "/grimm-notes-jp": "grimms-notes-jp",
+            "/guilty-gear": "guiltygear",
+            "/harvestmoonrunefactory": "therunefactory",
+            "/honkaiimpact3_gamepedia_en": "honkaiimpact3",
+            "/isekai-maou-to-shoukan-shoujo-dorei-majutstu": "isekai-maou",
+            "/kagura": "senrankagura",
+            "/langrisser_gamepedia_en": "langrisser",
+            "/littlewitch": "little-witch-academia",
+            "/madannooutovanadis": "madan",
+            "/magiarecord-en": "magireco",
+            "/magic-school-lussid": "sid-story",
+            "/mahousenseinegima": "negima",
+            "/masterofeternity_gamepedia_en": "masterofeternity",
+            "/ninehourspersonsdoors": "zeroescape",
+            "/onigiri-en": "onigiri",
+            "/p__": "hero",
+            "/ritualofthenight": "bloodstained",
+            "/rockman_x_dive": "rockman-x-dive",
+            "/romancingsaga": "saga",
+            "/shirocolle": "shiropro",
+            "/silent": "silenthill",
+            "/strikewitches": "worldwitches",
+            "/sword-art-online": "swordartonline",
+            "ru/sword-art-online": "sword-art-online",
+            "es/sao": "swordartonline",
+            "/senkizesshousymphogear": "symphogear",
+            "/talesofseries-the-tales-of": "tales-of",
+            "/tensei-shitara-slime-datta-ke": "tensura",
+            "/the-dreath-mage-who-doesnt-want-a-fourth-time": "death-mage",
+            "/to-aru-majutsu-no-index": "toarumajutsunoindex",
+            "/utawareru": "utawarerumono",
+            "/yorukuni": "nightsofazure",
+            "/youkoso-jitsuryoku-shijou-shugi-no-kyoushitsu-e": "you-zitsu",
+            "/zoe": "zoneoftheenders",
+            /* spell-checker: enable */
+        };
+
+        const { pathSegments } = splitUrl(url);
+
+        if (pathSegments[0]?.match(/^__cb\d+$/)) pathSegments.shift();
+        const { wikiName, prefix, file } = rubyArraySwitch(
+            pathSegments,
+            rubyArrayCase(
+                // unresolvable case
+                [[/^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/, "imageUuid"], "**"],
+            ),
+            rubyArrayCase(
+                [["_", "wikiName"], "images", /^[\da-f]$/, /^[\da-f]{2}$/, ["_", "file"], "**"],
+                (match) => ({
+                    ...match,
+                    prefix: url.searchParams.get("path-prefix"),
+                }),
+            ),
+            rubyArrayCase(
+                // eslint-disable-next-line max-len
+                [["_", "wikiName"], ["_", "prefix"], "images", /^[\da-f]$/, /^[\da-f]{2}$/, ["_", "file"], "**"],
+            ),
+            rubyArrayCase(
+                // eslint-disable-next-line max-len
+                [["_", "wikiName"], "images", "thumb", /^[\da-f]$/, /^[\da-f]{2}$/, ["_", "file"], "**"],
+                (match) => ({
+                    ...match,
+                    prefix: url.searchParams.get("path-prefix"),
+                }),
+            ),
+            rubyArrayCase(
+                // eslint-disable-next-line max-len
+                [["_", "wikiName"], ["_", "prefix"], "images", "thumb", /^[\da-f]$/, /^[\da-f]{2}$/, ["_", "file"], "**"],
+            ),
+        );
+
+        const lang = prefix === "en" || !prefix?.match(/^\w{2,3}(-\w{2,3})?$/) ? "" : prefix;
+        const subdomain = WIKI_NAMES[`${lang}/${wikiName}`] ?? wikiName;
+        const site = wikiName ? (lang ? `https://${subdomain}.fandom.com/${lang}` : `https://${subdomain}.fandom.com`) : null;
+        if (site && file) return `${site}/wiki/File:${file}`;
+        return url.toString();
+    },
+    fantia (url) {
+        const { pathSegments } = splitUrl(url);
+        const { postId, productId } = rubyArraySwitch(
+            pathSegments,
+            rubyArrayCase(
+                // eslint-disable-next-line max-len
+                ["uploads", ["_", "type"], [["file", "image"]], ["_", "id"], [/(\w+_)?([\w-]+\.\w+)/, "ref"]],
+                (m) => {
+                    switch (m.type) {
+                        case "post": return { postId: m.id };
+                        case "product": return { productId: m.id };
+                        default: return {};
+                    }
+                },
+            ),
+            rubyArrayCase(
+                ["posts", ["_", "postId"], "album_image"],
+                () => url.searchParams.has("query"),
+                (m) => m,
+            ),
+            rubyArrayCase(
+                ["posts", [/\d+/, "id"], "**"],
+                (m) => ({ postId: m.id[0] }),
+            ),
+            rubyArrayCase(
+                ["products", [/\d+/, "id"], "**"],
+                (m) => ({ productId: m.id[0] }),
+            ),
+        );
+
+        if (postId) return `https://fantia.jp/posts/${postId}`;
+        if (productId) return `https://fantia.jp/products/${productId}`;
+        return url.toString();
+    },
+    hentaiFoundry (url) {
+        const { subdomain, pathSegments } = splitUrl(url);
+
+        const { workId, username } = rubyArraySwitch(
+            [subdomain, ...pathSegments],
+            rubyArrayCase(
+                ["pictures", "_", ["_", "username"], [/^\d+$/, "workId"], ["_", "filename"]],
+                (m) => ({ ...m, workId: m.workId[0] }),
+            ),
+            rubyArrayCase(
+                ["pictures", "_", ["_", "username"], [/^(\d+)\.\w+$/, "filename"]],
+                (m) => ({ ...m, workId: m.filename[1] }),
+            ),
+            rubyArrayCase(
+                ["_", "piccies", "user", ["_", "username"], [/^\d+$/, "workId"], "**"],
+                (m) => ({ ...m, workId: m.workId[0] }),
+            ),
+            rubyArrayCase(
+                ["_", [/^pic\w*-(\d+)/, "filename"]],
+                (m) => ({ workId: m.filename[1] }),
+            ),
+            rubyArrayCase(
+                ["thumbs", "thumb.php"],
+                () => url.searchParams.has("pid"),
+                () => ({ workId: url.searchParams.get("pid") }),
+            ),
+        );
+
+        if (username && workId) {
+            return `https://www.hentai-foundry.com/pictures/user/${username}/${workId}`;
+        }
+        if (workId) return `https://www.hentai-foundry.com/pic-${workId}`;
+        return url.toString();
+    },
+    imgur (url) {
+        const { pathSegments } = splitUrl(url);
+        const { albumId, imageId } = rubyArraySwitch(
+            pathSegments,
+            rubyArrayCase(
+                [[/^\w+\.(jpeg|jpg|png|gif|gifv|webp|avif|webm|mp4)$/i, "file"]],
+                (m) => ({ imageId: m.file[0].match(/^(\w{7}|\w{5})/)?.[1] }),
+            ),
+            rubyArrayCase(
+                ["download", ["_", "imageId"], "**"],
+            ),
+            rubyArrayCase(
+                [[["gallery", "a"]], ["_", "file"], "**"],
+                (m) => ({ albumId: m.file.split("-").at(-1) }),
+            ),
+            rubyArrayCase(
+                ["t", "_", ["_", "albumId"]],
+            ),
+            rubyArrayCase(
+                [[/\w{5,7}$/i, "ending"]],
+                (m) => ({ imageId: m.ending[0] }),
+            ),
+        );
+
+        if (albumId) return `https://imgur.com/a/${albumId}`;
+        if (imageId) return `https://imgur.com/${imageId}`;
+        return url.toString();
+    },
+    newGrounds (url) {
+        const { pathSegments } = splitUrl(url);
+        const { username, title, videoId } = rubyArraySwitch(
+            [url.hostname, ...pathSegments],
+            rubyArrayCase(
+                ["www.newgrounds.com", "art", "view", ["_", "username"], ["_", "title"]],
+            ),
+            rubyArrayCase(
+                ["www.newgrounds.com", "portal", [["view", "video"]], ["_", "videoId"]],
+            ),
+            rubyArrayCase(
+                // eslint-disable-next-line max-len
+                ["art.ngfiles.com", [["medium_views", "images"]], "_", [/^(\d+)_(\d+)_([^_]+)_(.*)\.([\da-f]{32})\.\w+$/, "reg"]],
+                () => ({}), // images with hash cannot be resolved
+            ),
+            rubyArrayCase(
+                ["art.ngfiles.com", "images", "_", [/^(\d+)_([^_]+)_(.*)\.\w+$/, "reg"]],
+                (m) => ({
+                    username: m.reg[2],
+                    title: m.reg[3],
+                }),
+            ),
+        );
+
+        if (username && title) {
+            return `https://www.newgrounds.com/art/view/${username}/${title}`;
+        }
+        if (videoId) return `https://www.newgrounds.com/portal/view/${videoId}`;
+        return url.toString();
+    },
+    nijie (url) {
+        const { subdomain, domain, pathSegments } = splitUrl(url);
+        // eslint-disable-next-line prefer-const
+        let { workId, filename } = rubyArraySwitch(
+            [domain, ...pathSegments],
+            rubyArrayCase(
+                ["nijie.info", [["view.php", "view_popup.php"]]],
+                () => url.searchParams.has("id"),
+                () => ({ workId: url.searchParams.get("id") }),
+            ),
+            rubyArrayCase(
+                // eslint-disable-next-line max-len
+                ["_", /^\d{2}$/, "nijie", /^\d{2}$/, /^\d{2}$/, ["_", "userId"], "illust", ["_", "filename"]],
+                () => subdomain.startsWith("pic"),
+                (m) => m,
+            ),
+            rubyArrayCase(
+                ["**", "nijie_picture", "**", ["_", "filename"]],
+                () => subdomain.startsWith("pic"),
+                (m) => m,
+            ),
+        );
+
+        if (!workId && filename) {
+            ({ workId } = rubyArraySwitch(
+                filename.replace(/\.\w+$/, "").split("_"),
+                rubyArrayCase(
+                    [[/^\d+$/, "workId"], /^\d+$/, [/^\d+$/, "userId"], [/^\d{14}$/, "time"]],
+                    (m) => m.workId[0] !== "0",
+                    (m) => ({ workId: m.workId[0] }),
+                ),
+                rubyArrayCase(
+                    [[/^\d+$/, "workId"], [/^\d+$/, "userId"], [/^\d{14}$/, "time"], /^\d+$/],
+                    (m) => ({ workId: m.workId[0] }),
+                ),
+                rubyArrayCase(
+                    [[/^\d+$/, "workId"], /^\d+$/, /^[\da-f]+$/, /^[\da-f]+$/],
+                    (m) => m.workId[0] !== "0",
+                    (m) => ({ workId: m.workId[0] }),
+                ),
+            ));
+        }
+
+        if (workId) return `https://nijie.info/view.php?id=${workId}`;
+        return url.toString();
+    },
+    patreon (url) {
+        const { pathSegments } = splitUrl(url);
+        const { postId } = rubyArraySwitch(
+            pathSegments,
+            rubyArrayCase(["_", "patreon-media", "p", "post", ["_", "postId"], "**"]),
+        );
+
+        if (postId) return `https://www.patreon.com/posts/${postId}`;
+        return url.toString();
+    },
+    pixiv (url) {
+        const { subdomain, domain, pathSegments } = splitUrl(url);
+        const isImageUrl = url.hostname === "i.pximg.net"
+            || url.hostname === "i-f.pximg.net"
+            || /^(i\d+|img\d+)\.pixiv\.net$/.test(url.hostname);
+        let match = rubyArraySwitch(
+            [subdomain, domain, ...pathSegments],
+            rubyArrayCase(
+                // eslint-disable-next-line max-len
+                ["**", [["img-original", "img-master", "img-zip-ugoira", "img-inf", "custom-thumb", "novel-cover-original", "novel-cover-master"], "imageType"], "img", ["_", "year"], ["_", "month"], ["_", "day"], ["_", "hour"], ["_", "min"], ["_", "sec"], ["_", "filename"]],
+                () => isImageUrl,
+                (m) => m,
+            ),
+            rubyArrayCase(
+                ["**", "img", ["_", "username"], ["_", "filename"]],
+                () => isImageUrl,
+                (m) => m,
+            ),
+            rubyArrayCase(
+                ["_", "pixiv.net", "**", "artwork", ["_", "workId"]],
+            ),
+            rubyArrayCase(
+                ["_", "pixiv.net", "novel", "show.php"],
+                () => url.searchParams.has("id"),
+                () => ({ novelId: url.searchParams.get("id") }),
+            ),
+            rubyArrayCase(
+                ["embed", "pixiv.net", "novel.php"],
+                () => url.searchParams.has("id"),
+                () => ({ novelId: url.searchParams.get("id") }),
+            ),
+            rubyArrayCase(
+                ["_", "pixiv.net", "novel", "series", [/^\d+$/, "novelSeriesId"]],
+                (m) => ({ novelSeriesId: m.novelSeriesId[0] }),
+            ),
+            rubyArrayCase(
+                ["_", "pixiv.net", "i", ["_", "workId"]],
+            ),
+            rubyArrayCase(
+                ["_", "pixiv.net", "member_illust.php"],
+                () => url.searchParams.has("illust_id"),
+                () => ({ workId: url.searchParams.get("illust_id") }),
+            ),
+        );
+
+        if (match.filename) {
+            match = {
+                ...match,
+                ...rubyArraySwitch(
+                    match.filename.replace(/\.\w+$/, "").split("_"),
+                    rubyArrayCase(
+                        [[/^\d+$/, "workId"], /^p\d+$/, "**"],
+                        (m) => ({ workId: m.workId[0] }),
+                    ),
+                    rubyArrayCase(
+                        [[/^\d+$/, "workId"], "big", /^p\d+$/],
+                        (m) => ({ workId: m.workId[0] }),
+                    ),
+                    rubyArrayCase(
+                        [[/^(?:ci)?(\d+)$/, "novelId"], /^[\da-f]{32}$/, "**"],
+                        (m) => ({ novelId: m.novelId[1] }),
+                    ),
+                    rubyArrayCase(
+                        [[/^sci(\d+)$/, "novelSeriesId"], /^[\da-f]{32}$/, "**"],
+                        (m) => ({ novelSeriesId: m.novelSeriesId[1] }),
+                    ),
+                    rubyArrayCase(
+                        [[/^\d+$/, "workId"], "**"],
+                        (m) => ({ workId: m.workId[0] }),
+                    ),
+                ),
+            };
+        }
+
+        if (match.workId) return `https://www.pixiv.net/artworks/${match.workId}`;
+        if (match.novelId) return `https://www.pixiv.net/novel/show.php?id=${match.novelId}`;
+        if (match.novelSeriesId) return `https://www.pixiv.net/novel/series/${match.novelSeriesId}`;
+        return url.toString();
+    },
+    weibo (url) {
+        const { subdomain, domain, pathSegments } = splitUrl(url);
+
+        const { imgBase62Id, imgLongId, userShortId } = rubyArraySwitch(
+            [subdomain, domain, ...pathSegments],
+            rubyArrayCase(
+                ["tw", "weibo.com", /^\w+$/, [/^\d+$/, "imgLongId"]],
+            ),
+            rubyArrayCase(
+                // eslint-disable-next-line max-len
+                ["_", [["weibo.com", "weibo.cn"]], [/^\d+$/, "userShortId"], [/^\w+$/, "imgBase62Id"]],
+            ),
+            rubyArrayCase(
+                // eslint-disable-next-line max-len
+                ["photo", "weibo.com", [/^\d+$/, "userShortId"], "_", "_", "_", [/^\d+$/, "imgLongId"], "**"],
+            ),
+            rubyArrayCase(
+                ["_", [["weibo.com", "weibo.cn"]], "detail", [/^\d+$/, "imgLongId"]],
+            ),
+            rubyArrayCase(
+                ["share.api", "weibo.cn", "share", [/^(\d+),(\d+)/, "img"]],
+                (m) => ({ imgLongId: m.img[2] }),
+            ),
+            rubyArrayCase(
+                ["m", "weibo.cn", "status", [/^\w+$/, "imgBase62Id"]],
+            ),
+        );
+
+        if (imgBase62Id && userShortId) return `https://www.weibo.com/${userShortId}/${imgBase62Id}`;
+        if (imgLongId) return `https://m.weibo.cn/detail/${imgLongId}`;
+        if (imgBase62Id) return `https://m.weibo.cn/status/${imgBase62Id}`;
+
+        return url.toString();
+    },
+    zerochan (url) {
+        const { pathSegments } = splitUrl(url);
+        const { workId } = rubyArraySwitch(
+            pathSegments,
+            rubyArrayCase(
+                [[/^(full|\d+)$/, "size"], /\d{2}/, /\d{2}/, [/(\d+)\.(jpg|png|gif)$/, "file"]],
+                (m) => ({ workId: m.file[1] }),
+            ),
+            rubyArrayCase(
+                [[/^(.*?)\.(full|\d+)\.(\d+)\.(jpg|png|gif)$/, "file"]],
+                (m) => ({ workId: m.file[3] }),
+            ),
+            rubyArrayCase(
+                ["full", [/^\d+$/, "workId"]],
+            ),
+            rubyArrayCase(
+                [[/^\d+$/, "reg"]],
+                (m) => ({ workId: m.reg[0] }),
+            ),
+        );
+
+        if (workId) return `https://www.zerochan.net/${workId}#full`;
+
+        return url.toString();
+    },
+};
+
+/**
+ * @type {Record<string, UrlNormalizer>}
+ */
+const NORMALIZE_SOURCE_URL = {
+    "art.ngfiles.com": {
+        path: /^x$/,
+        normalize: SOURCE_NORMALIZER.newGrounds,
+    },
+    "www.deviantart.com": {
+        path: /(^\/[\w-_]+\/art\/)|(^\/deviation\/)/,
+        normalize: SOURCE_NORMALIZER.deviantArt,
+    },
+    ".deviantart.com": {
+        path: /^x$/,
+        normalize: SOURCE_NORMALIZER.deviantArt,
+    },
+    ".deviantart.net": {
+        path: /^x$/,
+        normalize: SOURCE_NORMALIZER.deviantArt,
+    },
+    "fantia.jp": {
+        path: /^\/(posts|products)\/\d+$/,
+        normalize: SOURCE_NORMALIZER.fantia,
+    },
+    ".fantia.jp": {
+        path: /^x$/,
+        normalize: SOURCE_NORMALIZER.fantia,
+    },
+    "imgur.com": {
+        path: /^(\/a)?\/\w+$/,
+        params: /^$/,
+        normalize: SOURCE_NORMALIZER.imgur,
+    },
+    ".imgur.com": {
+        path: /^x$/,
+        normalize: SOURCE_NORMALIZER.imgur,
+    },
+    ".nijie.info": {
+        path: /^\/view\.php$/,
+        normalize: SOURCE_NORMALIZER.nijie,
+    },
+    ".nijie.net": {
+        path: /^x$/,
+        normalize: SOURCE_NORMALIZER.nijie,
+    },
+    ".nocookie.net": {
+        path: /^x$/,
+        normalize: SOURCE_NORMALIZER.fandom,
+    },
+    "pictures.hentai-foundry.com": {
+        path: /^x$/,
+        normalize: SOURCE_NORMALIZER.hentaiFoundry,
+    },
+    "thumbs.hentai-foundry.com": {
+        path: /^x$/,
+        normalize: SOURCE_NORMALIZER.hentaiFoundry,
+    },
+    ".patreonusercontent.com": {
+        path: /^x$/,
+        normalize: SOURCE_NORMALIZER.patreon,
+    },
+    "www.pixiv.net": {
+        path: /^(\/en)?\/(artworks\/\d+|novel\/show.php|novel\/series\/\d+)$/,
+        params: /^(\?id=\d+)?$/,
+        normalize: SOURCE_NORMALIZER.pixiv,
+    },
+    ".pixiv.net": {
+        path: /^x$/, // Just invalidate any path
+        normalize: SOURCE_NORMALIZER.pixiv,
+    },
+    ".pximg.net": {
+        path: /^x$/, // Just invalidate any path
+        normalize: SOURCE_NORMALIZER.pixiv,
+    },
+    ".sinaimg.cn": {
+        path: /^x$/,
+        normalize: SOURCE_NORMALIZER.weibo,
+    },
+    ".weibo.cn": {
+        path: /^\/(detail\/\d+|status\/\w+)$/,
+        normalize: SOURCE_NORMALIZER.weibo,
+    },
+    "www.weibo.com": {
+        path: /^\/\d+\/\w+$/,
+        params: /^$/,
+        normalize: SOURCE_NORMALIZER.weibo,
+    },
+    ".weibo.com": {
+        path: /^x$/,
+        normalize: SOURCE_NORMALIZER.weibo,
+    },
+    ".weibocdn.com": {
+        path: /^x$/,
+        normalize: SOURCE_NORMALIZER.weibo,
+    },
+    ".zerochan.net": {
+        path: /^\/\d+(#full)?$/,
+        normalize: SOURCE_NORMALIZER.zerochan,
+    },
+};
+
+/**
+ * Converts URLs to the same format used by the URL column on Danbooru
+ * @param {string} sourceUrl
+ * @returns {string}
+ */
+function normalizeSourceURL (sourceUrl) {
+    const { url, error } = normalizeURL(sourceUrl, NORMALIZE_SOURCE_URL);
+    if (error && !error.startsWith("Unsupported domain:")) {
+        console.warn("[TPT]:", error);
+    }
+    return url;
 }
 
 /** @typedef {{name:string, prettyName:string, category:number}} TranslatedTag */
@@ -2654,6 +3380,42 @@ function getPostPreview (post) {
 }
 
 /**
+ * Get icons for a post
+ * @param {ResponsePosts} post The post data
+ */
+function buildPostIcons (post) {
+    const hasSound = /\bsound\b/.test(post.tag_string_meta);
+    const soundIcon = hasSound ? GM_getResourceText("sound_icon") : "";
+    const animationIcon = post.media_asset.duration
+        ? noIndents/* HTML */`
+            <div class="post-icon animation-icon"
+                 title="Animated post ${hasSound ? "with a sound" : ""}"
+            >
+                <span class="post-duration">
+                    ${formatDuration(post.media_asset.duration)}
+                </span>
+                ${soundIcon}
+            </div>
+        `
+        : "";
+
+    const aiIcon = /\bai-generated\b/.test(post.tag_string_meta)
+        ? /* HTML */`
+            <div class="post-icon ai-icon" title="AI generated image">
+                    <span class="ai-generated">AI</span>
+            </div>
+        `
+        : (/\bai-assisted\b/.test(post.tag_string_meta)
+            ? /* HTML */`
+                <div class="post-icon ai-icon" title="AI assisted image">
+                    <span class="ai-assisted">+AI</span>
+                </div>
+            `
+            : "");
+    return animationIcon + aiIcon;
+}
+
+/**
  * Build the post preview
  * @param {ResponsePosts} post The post data
  */
@@ -2683,39 +3445,10 @@ function buildPostPreview (post) {
 
     const preview = getPostPreview(post);
 
-    const domain = /^https?:\/\//.test(post.source)
-        ? `<a href="${_.escape(post.source)}">${getSiteDisplayDomain(post.source)}</a>`
+    const sourceUrl = /^https?:\/\//.test(post.source) ? normalizeSourceURL(post.source) : null;
+    const domain = sourceUrl
+        ? `<a href="${_.escape(sourceUrl)}" target="_blank">${getSiteDisplayDomain(sourceUrl)}</a>`
         : `<span title="${_.escape(post.source)}">NON-WEB</span>`;
-
-    const soundIcon = /\bsound\b/.test(post.tag_string_meta)
-        ? GM_getResourceText("sound_icon")
-        : "";
-    const animationIcon = post.media_asset.duration
-        ? noIndents/* HTML */`
-            <div class="post-icon animation-icon"
-                 title="Animated post ${soundIcon ? "with a sound" : ""}"
-            >
-                <span class="post-duration">
-                    ${formatDuration(post.media_asset.duration)}
-                </span>
-                ${soundIcon}
-            </div>
-        `
-        : "";
-
-    const aiIcon = /\bai-generated\b/.test(post.tag_string_meta)
-        ? /* HTML */`
-            <div class="post-icon ai-icon" title="AI generated image">
-                    <span class="ai-generated">AI</span>
-            </div>
-        `
-        : (/\bai-assisted\b/.test(post.tag_string_meta)
-            ? /* HTML */`
-                <div class="post-icon ai-icon" title="AI assisted image">
-                    <span class="ai-assisted">+AI</span>
-                </div>
-            `
-            : "");
 
     const $preview = $(noIndents/* HTML */`
         <article itemscope
@@ -2723,8 +3456,7 @@ function buildPostPreview (post) {
                  class="${previewClass}"
                  ${dataAttributes} >
             <a class="post-link" href="${BOORU}/posts/${post.id}" target="_blank">
-                ${animationIcon}
-                ${aiIcon}
+                ${buildPostIcons(post)}
                 <img width="${preview.width}"
                      height="${preview.height}"
                      src="${preview.url}"
