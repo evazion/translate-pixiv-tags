@@ -1536,6 +1536,7 @@ async function makeRequest (method, url, data) {
 /**
  * Checks whether the url is normalized and optionally normalizes
  * @typedef {object} UrlNormalizer
+ * @prop {false} [valid] Mark all domain's urls as requiring normalization
  * @prop {RegExp} [path] Test for normalized url path
  * @prop {RegExp} [params] Test for normalized url search params
  * @prop {(url:URL) => string} [normalize] Url normalizer
@@ -1568,8 +1569,10 @@ function normalizeURL (targetUrl, normalizers, depth = 0) {
         };
     }
 
-    const { path, params, normalize } = normalizers[host];
-    if (path && !path.test(url.pathname) || params && !params.test(url.search)) {
+    const {
+        valid, path, params, normalize,
+    } = normalizers[host];
+    if (!valid || path && !path.test(url.pathname) || params && !params.test(url.search)) {
         if (!normalize) {
             return {
                 url: targetUrl,
@@ -1654,13 +1657,13 @@ const NORMALIZE_PROFILE_URL = {
         path: /^\/[\w-]+|\/intent\/user$/,
     },
     "mobile.twitter.com": {
-        path: /^x$/, // Just invalidate any path
+        valid: false,
         normalize (url) {
             return `https://twitter.com${url.pathname}`;
         },
     },
     "x.com": {
-        path: /^x$/, // Just invalidate any path
+        valid: false,
         normalize (url) {
             return `https://twitter.com${url.pathname}`;
         },
@@ -2290,7 +2293,7 @@ const SOURCE_NORMALIZER = {
  */
 const NORMALIZE_SOURCE_URL = {
     "art.ngfiles.com": {
-        path: /^x$/,
+        valid: false,
         normalize: SOURCE_NORMALIZER.newGrounds,
     },
     "www.deviantart.com": {
@@ -2298,11 +2301,11 @@ const NORMALIZE_SOURCE_URL = {
         normalize: SOURCE_NORMALIZER.deviantArt,
     },
     ".deviantart.com": {
-        path: /^x$/,
+        valid: false,
         normalize: SOURCE_NORMALIZER.deviantArt,
     },
     ".deviantart.net": {
-        path: /^x$/,
+        valid: false,
         normalize: SOURCE_NORMALIZER.deviantArt,
     },
     "fantia.jp": {
@@ -2310,16 +2313,16 @@ const NORMALIZE_SOURCE_URL = {
         normalize: SOURCE_NORMALIZER.fantia,
     },
     ".fantia.jp": {
-        path: /^x$/,
+        valid: false,
         normalize: SOURCE_NORMALIZER.fantia,
     },
     "imgur.com": {
         path: /^(\/a)?\/\w+$/,
-        params: /^$/,
+        params: /^$/, // no params
         normalize: SOURCE_NORMALIZER.imgur,
     },
     ".imgur.com": {
-        path: /^x$/,
+        valid: false,
         normalize: SOURCE_NORMALIZER.imgur,
     },
     ".nijie.info": {
@@ -2327,23 +2330,23 @@ const NORMALIZE_SOURCE_URL = {
         normalize: SOURCE_NORMALIZER.nijie,
     },
     ".nijie.net": {
-        path: /^x$/,
+        valid: false,
         normalize: SOURCE_NORMALIZER.nijie,
     },
     ".nocookie.net": {
-        path: /^x$/,
+        valid: false,
         normalize: SOURCE_NORMALIZER.fandom,
     },
     "pictures.hentai-foundry.com": {
-        path: /^x$/,
+        valid: false,
         normalize: SOURCE_NORMALIZER.hentaiFoundry,
     },
     "thumbs.hentai-foundry.com": {
-        path: /^x$/,
+        valid: false,
         normalize: SOURCE_NORMALIZER.hentaiFoundry,
     },
     ".patreonusercontent.com": {
-        path: /^x$/,
+        valid: false,
         normalize: SOURCE_NORMALIZER.patreon,
     },
     "www.pixiv.net": {
@@ -2352,15 +2355,15 @@ const NORMALIZE_SOURCE_URL = {
         normalize: SOURCE_NORMALIZER.pixiv,
     },
     ".pixiv.net": {
-        path: /^x$/, // Just invalidate any path
+        valid: false,
         normalize: SOURCE_NORMALIZER.pixiv,
     },
     ".pximg.net": {
-        path: /^x$/, // Just invalidate any path
+        valid: false,
         normalize: SOURCE_NORMALIZER.pixiv,
     },
     ".sinaimg.cn": {
-        path: /^x$/,
+        valid: false,
         normalize: SOURCE_NORMALIZER.weibo,
     },
     ".weibo.cn": {
@@ -2369,15 +2372,15 @@ const NORMALIZE_SOURCE_URL = {
     },
     "www.weibo.com": {
         path: /^\/\d+\/\w+$/,
-        params: /^$/,
+        params: /^$/, // no params
         normalize: SOURCE_NORMALIZER.weibo,
     },
     ".weibo.com": {
-        path: /^x$/,
+        valid: false,
         normalize: SOURCE_NORMALIZER.weibo,
     },
     ".weibocdn.com": {
-        path: /^x$/,
+        valid: false,
         normalize: SOURCE_NORMALIZER.weibo,
     },
     ".zerochan.net": {
