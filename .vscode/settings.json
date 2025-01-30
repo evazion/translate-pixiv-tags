@@ -3,7 +3,9 @@
         "artstation",
         "baraag",
         "Betabooru",
+        "Bluesky",
         "booru",
+        "bsky",
         "Danbooru",
         "descr",
         "Devian",
@@ -14,7 +16,10 @@
         "fanclub",
         "fanclubs",
         "fantia",
+        "gifv",
         "Hentai",
+        "imgur",
+        "inkbunny",
         "itemscope",
         "itemtype",
         "medibang",
@@ -28,7 +33,9 @@
         "Oklch",
         "onadded",
         "pawoo",
+        "piccies",
         "pixiv",
+        "referrerpolicy",
         "Roboto",
         "romaji",
         "rulename",
@@ -37,8 +44,11 @@
         "Segoe",
         "seiga",
         "skeb",
+        "sonarjs",
         "tinami",
         "tweetdeck",
-        "Verdana"
+        "Verdana",
+        "weibo",
+        "zerochan"
     ]
 }
