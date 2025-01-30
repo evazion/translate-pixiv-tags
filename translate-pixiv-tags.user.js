@@ -3287,7 +3287,6 @@ function initializePixiv () {
             /* Prevent adding # to translated tags */
             span.ex-translated-tags a::before { content:none; }
             /* Hide Pixiv's translated tags */
-            .ex-translated-tags + div,
             .ex-translated-tags + span .gtm-new-work-romaji-tag-event-click,
             .ex-translated-tags + span .gtm-new-work-translate-tag-event-click {
                 display: none;
@@ -3324,6 +3323,14 @@ function initializePixiv () {
         asyncMode: true,
         classes: "no-brackets tpt-light",
         css: /* CSS */`
+            /* Hide Pixiv's translated tags */
+            .ex-translated-tags + div:not(:last-child) {
+                display: none;
+            }
+            .ex-translated-tags + div:last-child {
+                font-weight: normal;
+                font-size: 10px;
+            }
             a[color] {
                 text-shadow: 0 0 5px #0003;
             }
