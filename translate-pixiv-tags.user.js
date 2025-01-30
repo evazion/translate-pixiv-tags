@@ -4549,10 +4549,9 @@ function initializeBluesky () {
 
     // Hashtag in post
     // https://bsky.app/profile/yitsunemelody.bsky.social/post/3l6y6kk5t6t26
-    findAndTranslate("tag", "button", {
+    findAndTranslate("tag", "a", {
         asyncMode: true,
-        predicate: "button[id^=radix]",
-        tagPosition: TAG_POSITIONS.afterParent,
+        predicate: "a[id^=radix]",
         ruleName: "tag post",
     });
 
@@ -4567,17 +4566,16 @@ function initializeBluesky () {
         ruleName: "artist profile",
     });
 
-    // Artist tag in feed
+    // Post/reply author
     // https://bsky.app
     // https://bsky.app/profile/ixy.bsky.social
-    findAndTranslate("artist", "span", {
+    // https://bsky.app/profile/kanikamadayo.bsky.social/post/3l6pnkjfnhq2b
+    findAndTranslate("artist", "a", {
         asyncMode: true,
-        // eslint-disable-next-line max-len
-        predicate: "div[data-testid^='feedItem-by-'] > :first-child > :nth-child(2) > :nth-child(2) > :first-child > :first-child > :first-child > :first-child > a:nth-child(2) > span:first-child",
-        tagPosition: TAG_POSITIONS.afterend,
+        predicate: "a[href^='/profile/'][aria-label]+a[href^='/profile/']",
         classes: "inline",
         toProfileUrl,
-        ruleName: "artist post feed",
+        ruleName: "artist post",
     });
 
     // Artist tag in feed
@@ -4585,7 +4583,7 @@ function initializeBluesky () {
     // https://bsky.app/profile/ixy.bsky.social
     findAndTranslate("artist", "div", {
         asyncMode: true,
-        predicate: "div[style*=avatarHover] div+a > div > :nth-child(2)",
+        predicate: "main~div[style*='position: absolute'] div+a > div > :nth-child(2)",
         toProfileUrl,
         ruleName: "artist popup",
     });
@@ -4602,16 +4600,32 @@ function initializeBluesky () {
         ruleName: "artist post thread root",
     });
 
-    // Artist tag in thread reply
-    // https://bsky.app/profile/kanikamadayo.bsky.social/post/3l6pnkjfnhq2b
-    findAndTranslate("artist", "span", {
+    // Artist tag in search autocomplete
+    findAndTranslate("artist", "div", {
         asyncMode: true,
         // eslint-disable-next-line max-len
-        predicate: "div[data-testid^='postThreadItem-by-'] > :nth-child(2) > :nth-child(2) > :nth-child(1) > :nth-child(1) > :nth-child(1) > :nth-child(1) > :nth-child(2) > span",
-        tagPosition: TAG_POSITIONS.afterend,
-        classes: "inline",
+        predicate: "div[data-testid^='searchAutoCompleteResult-'] > :first-child > :nth-child(2) > :nth-child(2)",
         toProfileUrl,
-        ruleName: "artist post thread reply",
+        ruleName: "artist search autocomplete",
+    });
+
+    // Artist tag in people search results
+    findAndTranslate("artist", "div", {
+        asyncMode: true,
+        // eslint-disable-next-line max-len
+        predicate: "div[style*='display: flex'] div[data-testid='searchScreen'] > :nth-child(3) > :first-child > :nth-child(4) a > :first-child > :nth-child(2) > :nth-child(2)",
+        toProfileUrl,
+        ruleName: "people search result",
+    });
+
+    // Artist tag in followers and following
+    // https://bsky.app/profile/emistations.bsky.social/follows
+    findAndTranslate("artist", "div", {
+        asyncMode: true,
+        // eslint-disable-next-line max-len
+        predicate: "div[style*='display: flex'] div[data-testid='profileFollow'] a > :first-child > :nth-child(2) > :nth-child(2)",
+        toProfileUrl,
+        ruleName: "people search result",
     });
 }
 
