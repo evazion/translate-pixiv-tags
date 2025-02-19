@@ -1572,7 +1572,7 @@ function normalizeURL (targetUrl, normalizers, depth = 0) {
     const {
         valid, path, params, normalize,
     } = normalizers[host];
-    if (!valid || path && !path.test(url.pathname) || params && !params.test(url.search)) {
+    if (valid === false || path && !path.test(url.pathname) || params && !params.test(url.search)) {
         if (!normalize) {
             return {
                 url: targetUrl,
