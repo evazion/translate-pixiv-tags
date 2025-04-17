@@ -239,6 +239,7 @@ const DOMAIN_USES_CSP = [
     "bcy.net",
     "pawoo.net",
     "x.com",
+    "baraag.net",
 ].includes(window.location.host);
 
 // The maximum size of a URL before using a POST request.
@@ -1589,9 +1590,10 @@ function normalizeURL (targetUrl, normalizers, depth = 0) {
         }
         return normalizeURL(normalizedUrl, normalizers, depth + 1);
     }
-    if (url.pathname.endsWith("/")) url.pathname = url.pathname.slice(0, -1);
+    let normalizedUrl = url.toString();
+    if (normalizedUrl.endsWith("/")) normalizedUrl = normalizedUrl.slice(0, -1);
     return {
-        url: url.toString(),
+        url: normalizedUrl,
         error: "",
     };
 }
@@ -4007,7 +4009,7 @@ function initializePixiv () {
     });
 
     // https://dic.pixiv.net/a/東方
-    findAndTranslate("tag", "#content_title #article-name", {
+    findAndTranslate("tag", "#article-content-header #article-name", {
         tagPosition: TAG_POSITIONS.beforeend,
         toTagName: getNormalizedTagName,
         ruleName: "wiki tag",
@@ -4033,13 +4035,14 @@ function initializePixiv () {
     // Main tag on search pages: https://www.pixiv.net/en/tags/%E6%9D%B1%E6%96%B9project/artworks
     findAndTranslate("tag", "div", {
         // eslint-disable-next-line max-len
-        predicate: "#root>div>div>div>div>div>div>div>div:nth-last-of-type(2)>div>div:has(>span:first-child)",
+        predicate: "#__next>div>div>div>div>div>div>div:nth-last-of-type(2)>div>div:has(>span:first-child)",
         asyncMode: true,
         css: /* CSS */`
             .ex-translated-tags[rulename='search tag'] {
                 font-size: 20px;
                 font-weight: bold;
                 align-self: center;
+                & + div { display: none; }
             }`,
         ruleName: "search tag",
     });
@@ -4109,6 +4112,7 @@ function initializePixiv () {
         css: /* CSS */`
             .ex-translated-tags[rulename='popular tag'] {
                 text-shadow: 0 0 3px #000B;
+                & + div { display: none }
             }
         `,
         onadded: preventSiteNavigation,
@@ -4190,20 +4194,20 @@ function initializePixiv () {
     // Posts of followed artists: https://www.pixiv.net/bookmark_new_illust.php
     findAndTranslate("artist", "a", {
         // eslint-disable-next-line max-len
-        predicate: "section ul>li>div>div:last-child>div[aria-haspopup]>a",
+        predicate: "section ul>*>div>div:last-child>div[aria-haspopup]>a",
         tagPosition: TAG_POSITIONS.afterParent,
         asyncMode: true,
         css: /* CSS */`
-            /* Fix artist tag overflowing */
-            ul>li>div>div:last-child {
-                flex-direction: column;
-                align-items: flex-start;
-            }
             .ex-artist-tag[rulename='artist below illust thumb'] {
                 margin-left: 6px;
                 max-width: 100%;
                 overflow: hidden;
                 text-overflow: ellipsis;
+                /* Fix artist tag overflowing */
+                ul>*>div>div:last-child:has(>&) {
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
             }
         `,
         ruleName: "artist below illust thumb",
@@ -4212,7 +4216,7 @@ function initializePixiv () {
     // Artist profile pages: https://www.pixiv.net/en/users/29310, https://www.pixiv.net/en/users/104471/illustrations
     const normalizePageUrl = () => `https://www.pixiv.net/en/users/${safeMatchMemoized(window.location.pathname, /\d+/)}`;
     findAndTranslate("artist", "h1", {
-        predicate: "div.dqLunY > h1",
+        predicate: "div.ivOZtr > h1",
         toProfileUrl: normalizePageUrl,
         asyncMode: true,
         css: /* CSS */`
@@ -4221,15 +4225,15 @@ function initializePixiv () {
              * followers count because there can be "premium" and
              * "accepting requests" labels to the right of the artist name
              */
-            div.dqLunY {
+            div.ivOZtr {
                 display: grid;
                 grid-gap: 4px;
                 grid-auto-rows: 16px;
                 grid-template-columns: auto auto 1fr;
                 justify-items: start;
-            }
-            .dqLunY .ex-artist-tag {
-                grid-row-start: 2;
+                .ex-artist-tag {
+                    grid-row-start: 2;
+                }
             }
         `,
         ruleName: "artist profile",
@@ -4274,6 +4278,11 @@ function initializePixiv () {
         tagPosition: TAG_POSITIONS.afterend,
         asyncMode: true,
         ruleName: "recommended artist",
+        css: /* CSS */`
+            .ex-artist-tag[rulename="recommended artist"] {
+                line-height: 0;
+            }
+        `,
     });
 
     // Winners of a contest
@@ -4342,7 +4351,7 @@ function initializeNijie () {
 }
 
 function initializeTinami () {
-    // http://www.tinami.com/view/979474
+    // http://www.tinami.com/view/1165789
     findAndTranslate("tag", ".tag > span > a:nth-child(2)", {
         css: /* CSS */`
             .ex-translated-tags {
@@ -5038,7 +5047,8 @@ function initializeMisskey () {
     // https://misskey.art/tags/ブルアカ
     // https://misskey.design/tags/ブルアカ
     findAndTranslate("tag", "a, div", {
-        predicate: "a[href^='/tags/'], main>:first-child>:first-child :not(button)>div>i+div",
+        // eslint-disable-next-line max-len
+        predicate: "a[href^='/tags/'], :is(main, ._pageContainer)>:first-child>:first-child :not(button)>div>i+div",
         asyncMode: true,
         toTagName: getNormalizedHashtagName,
         ruleName: "tags",
@@ -5298,7 +5308,7 @@ function initializeBluesky () {
     });
 
     // Artist tag in header
-    // https://bsky.app/profile/ixy.bsky.social
+    // https://bsky.app/profile/iktd13.bsky.social
     findAndTranslate("artist", "div", {
         asyncMode: true,
         // eslint-disable-next-line max-len
@@ -5310,7 +5320,7 @@ function initializeBluesky () {
 
     // Post/reply author
     // https://bsky.app
-    // https://bsky.app/profile/ixy.bsky.social
+    // https://bsky.app/profile/iktd13.bsky.social
     // https://bsky.app/profile/kanikamadayo.bsky.social/post/3l6pnkjfnhq2b
     findAndTranslate("artist", "a", {
         asyncMode: true,
@@ -5322,7 +5332,7 @@ function initializeBluesky () {
 
     // Artist tag in feed
     // https://bsky.app
-    // https://bsky.app/profile/ixy.bsky.social
+    // https://bsky.app/profile/iktd13.bsky.social
     findAndTranslate("artist", "div", {
         asyncMode: true,
         predicate: "main~div[style*='position: absolute'] div+a > div > :nth-child(2)",
@@ -5346,7 +5356,7 @@ function initializeBluesky () {
     findAndTranslate("artist", "div", {
         asyncMode: true,
         // eslint-disable-next-line max-len
-        predicate: "div[data-testid^='searchAutoCompleteResult-'] > :first-child > :nth-child(2) > :nth-child(2)",
+        predicate: "a[data-testid^='searchAutoCompleteResult-'] > :first-child > :nth-child(2) > :nth-child(2)",
         toProfileUrl,
         ruleName: "artist search autocomplete",
     });
@@ -5365,7 +5375,7 @@ function initializeBluesky () {
     findAndTranslate("artist", "div", {
         asyncMode: true,
         // eslint-disable-next-line max-len
-        predicate: "div[style*='display: flex'] div[data-testid='profileFollow'] a > :first-child > :nth-child(2) > :nth-child(2)",
+        predicate: "div[style*='display: flex'] div:is([data-testid='profileFollowsScreen'], [data-testid='profileFollowersScreen']) a > :first-child > :nth-child(2) > :nth-child(2)",
         toProfileUrl,
         ruleName: "people search result",
     });
