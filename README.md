@@ -2,22 +2,26 @@
 
 A userscript that translates tags and artist names on
 [Pixiv](https://www.pixiv.net) to their corresponding Danbooru tags. Also works on
-[ArtStation](https://www.artstation.com/),
+[ArtStation](https://www.artstation.com),
+[Baraag](https://baraag.net),
+[BlueSky](https://bsky.app),
+[Ci-En](https://ci-en.net),
 [DeviantArt](https://www.deviantart.com),
+[Fanbox](https://fanbox.cc),
 [Fantia](https://fantia.jp),
 [Hentai-Foundry](https://www.hentai-foundry.com),
-[NicoSeiga](https://seiga.nicovideo.jp),
-[Nijie](https://nijie.info),
-[Misskey.io](https://misskey.io),
 [Misskey.art](https://misskey.art),
 [Misskey.design](https://misskey.design),
+[Misskey.io](https://misskey.io),
+[NicoSeiga](https://seiga.nicovideo.jp),
+[Nijie](https://nijie.info),
 [Pawoo](https://pawoo.net/about),
-[pixivFANBOX](https://fanbox.pixiv.net),
 [SauceNAO](https://saucenao.com/),
 [Skeb](https://skeb.jp),
 [Tinami](https://www.tinami.com),
 [TweetDeck](https://tweetdeck.twitter.com),
-and [Twitter](https://twitter.com).
+[Twitter](https://twitter.com),
+and [Weibo](www.weibo.com).
 
 # Installation
 
