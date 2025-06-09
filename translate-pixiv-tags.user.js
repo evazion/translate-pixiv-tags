@@ -31,6 +31,7 @@
 // @match        *://twitter.com/*
 // @match        *://mobile.twitter.com/*
 // @match        *://tweetdeck.twitter.com/*
+// @match        *://m.weibo.cn/*
 // @match        *://www.weibo.com/*
 // @match        *://x.com/*
 // @grant        GM_getResourceText
@@ -5458,7 +5459,7 @@ function initializeWeibo () {
     });
 
     // post comment
-    // https://www.weibo.com/7500749495/Pl4xVusNr
+    // https://www.weibo.com/7500749495/Pg5a5oHtp
     findAndTranslate("artist", "a[usercard][to]", {
         asyncMode: true,
         predicate: "#scroller a",
@@ -5484,6 +5485,84 @@ function initializeWeibo () {
         onadded: preventSiteNavigation,
         css: /* CSS */`[rulename="sidebar user"] { font-size: 13px }`,
         ruleName: "sidebar user",
+    });
+}
+
+function initializeWeiboMobile () {
+    const url = (/** @type {string} */ id) => (id ? `https://www.weibo.com/u/${id}` : "");
+
+    // Profile page
+    // https://m.weibo.cn/u/7500749495
+    findAndTranslate("artist", "span.txt-shadow", {
+        asyncMode: true,
+        predicate: ".profile-cover .mod-fil-n span",
+        toProfileUrl: () => url(safeMatchMemoized(window.location.pathname, /\d+/)),
+        classes: "inline txt-shadow",
+        ruleName: "artist profile",
+    });
+
+    // feed post
+    // https://m.weibo.cn/u/7500749495
+    findAndTranslate("artist", "h3", {
+        asyncMode: true,
+        predicate: "a:not([href]) > h3",
+        toProfileUrl: (el) => {
+            let node = el.parentElement;
+            let id;
+            // eslint-disable-next-line no-underscore-dangle, max-len, no-cond-assign
+            while (node && !(id = /** @type {any} */ (node).__vue__?._data?.carddata?.mblog?.user?.id)) {
+                node = node.parentElement;
+            }
+            if (!node || !id) return null;
+            return url(id);
+        },
+        tagPosition: TAG_POSITIONS.beforeend,
+        classes: "inline",
+        onadded: preventSiteNavigation,
+        ruleName: "feed post",
+    });
+
+    // post page
+    // https://m.weibo.cn/detail/5138330935886987
+    findAndTranslate("artist", "h3", {
+        asyncMode: true,
+        predicate: "[href^='/profile/'] > h3",
+        toProfileUrl: (el) => url(
+            safeMatchMemoized(/** @type {HTMLAnchorElement} */ (el.parentElement).href, /\d+/),
+        ),
+        tagPosition: TAG_POSITIONS.beforeend,
+        classes: "inline",
+        onadded: preventSiteNavigation,
+        ruleName: "post author",
+    });
+
+    // post tag
+    // https://m.weibo.cn/detail/5138330935886987
+    findAndTranslate("tag", "a[href][data-hide]", {
+        asyncMode: true,
+        predicate: "[href*='/search?']",
+        toTagName: (el) => el.textContent?.slice(1, -1) || "",
+        classes: "inline",
+        ruleName: "post tag",
+    });
+
+    // post commenter
+    // https://m.weibo.cn/detail/5138330935886987
+    findAndTranslate("artist", "h4", {
+        asyncMode: true,
+        predicate: ".comment-content .card-main h4",
+        toProfileUrl: (el) => {
+            let node = el.parentElement;
+            let id;
+            // eslint-disable-next-line no-underscore-dangle, max-len, no-cond-assign
+            while (node && !(id = /** @type {any} */ (node).__vue__?._props?.item?.user?.id)) {
+                node = node.parentElement;
+            }
+            if (!node || !id) return null;
+            return url(id);
+        },
+        classes: "inline",
+        ruleName: "post commenter",
     });
 }
 
@@ -5521,13 +5600,16 @@ function initialize () {
         case "twitter.com":
         case "mobile.twitter.com":      initializeTwitter();        break;
         case "tweetdeck.twitter.com":   initializeTweetDeck();      break;
-        case "www.weibo.com":               initializeWeibo();          break;
+        case "www.weibo.com":           initializeWeibo();          break;
+        case "m.weibo.cn":              initializeWeiboMobile();    break;
         case "x.com":                   initializeTwitter();        break;
         default:
             if (window.location.host.endsWith("artstation.com")) {
                 initializeArtStation();
             } else if (window.location.host.endsWith("fanbox.cc")) {
                 initializePixivFanbox();
+            } else {
+                console.warn("[TPT]: Unsupported domain", window.location.host);
             }
     }
 
