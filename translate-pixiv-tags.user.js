@@ -8,30 +8,31 @@
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
 // @updateURL    https://github.com/evazion/translate-pixiv-tags/raw/master/translate-pixiv-tags.user.js
 // @downloadURL  https://github.com/evazion/translate-pixiv-tags/raw/master/translate-pixiv-tags.user.js
-// @match        *://www.pixiv.net/*
-// @match        *://dic.pixiv.net/*
-// @match        *://nijie.info/*
-// @match        *://seiga.nicovideo.jp/*
-// @match        *://www.tinami.com/*
-// @match        *://*.deviantart.com/*
-// @match        *://*.hentai-foundry.com/*
-// @match        *://twitter.com/*
-// @match        *://x.com/*
-// @match        *://mobile.twitter.com/*
-// @match        *://tweetdeck.twitter.com/*
 // @match        *://*.artstation.com/*
-// @match        *://saucenao.com/*
-// @match        *://pawoo.net/*
 // @match        *://baraag.net/*
-// @match        *://*.fanbox.cc/*
-// @match        *://misskey.io/*
-// @match        *://misskey.art/*
-// @match        *://misskey.design/*
-// @match        *://skeb.jp/*
-// @match        *://fantia.jp/*
+// @match        *://bsky.app/*
 // @match        *://ci-en.net/*
 // @match        *://ci-en.dlsite.com/*
-// @match        *://bsky.app/*
+// @match        *://*.deviantart.com/*
+// @match        *://*.fanbox.cc/*
+// @match        *://fantia.jp/*
+// @match        *://*.hentai-foundry.com/*
+// @match        *://misskey.art/*
+// @match        *://misskey.design/*
+// @match        *://misskey.io/*
+// @match        *://nijie.info/*
+// @match        *://pawoo.net/*
+// @match        *://dic.pixiv.net/*
+// @match        *://www.pixiv.net/*
+// @match        *://saucenao.com/*
+// @match        *://seiga.nicovideo.jp/*
+// @match        *://skeb.jp/*
+// @match        *://www.tinami.com/*
+// @match        *://twitter.com/*
+// @match        *://mobile.twitter.com/*
+// @match        *://tweetdeck.twitter.com/*
+// @match        *://www.weibo.com/*
+// @match        *://x.com/*
 // @grant        GM_getResourceText
 // @grant        GM_getResourceURL
 // @grant        GM_xmlhttpRequest
@@ -1607,10 +1608,16 @@ const NORMALIZE_PROFILE_URL = {
             return `https://www.artstation.com/${username}`;
         },
     },
+    "baraag.net": {
+        path: /^\/@[\w-]+$/,
+    },
     "bcy.net": {
         path: /^\/u\/\d+$/,
     },
     "bsky.app": {},
+    "ci-en.net": {
+        path: /^\/creator\/\d+$/,
+    },
     ".deviantart.com": {
         path: /^\/[\w-]+$/,
         normalize (url) {
@@ -1619,6 +1626,9 @@ const NORMALIZE_PROFILE_URL = {
         },
     },
     ".fanbox.cc": { path: /^\/$/ },
+    "fantia.jp": {
+        path: /^\/(\w+|fanclubs\/\d+)$/,
+    },
     "www.hentai-foundry.com": {
         path: /^\/user\/[\w-]+$/,
         normalize (url) {
@@ -1627,6 +1637,15 @@ const NORMALIZE_PROFILE_URL = {
         },
     },
     "medibang.com": {},
+    "misskey.art": {
+        path: /^\/@\w+$/,
+    },
+    "misskey.design": {
+        path: /^\/@\w+$/,
+    },
+    "misskey.io": {
+        path: /^\/@\w+$/,
+    },
     "seiga.nicovideo.jp": {
         path: /^\/user\/illust\/\d+$/,
     },
@@ -1640,9 +1659,6 @@ const NORMALIZE_PROFILE_URL = {
     "pawoo.net": {
         path: /^\/@[\w-]+$/,
     },
-    "baraag.net": {
-        path: /^\/@[\w-]+$/,
-    },
     "www.pixiv.net": {
         path: /^\/users\/\d+$/,
         normalize (url) {
@@ -1651,6 +1667,9 @@ const NORMALIZE_PROFILE_URL = {
                 : safeMatchMemoized(url.pathname, /(?:\/en)?\/users\/(\d+)/, 1);
             return `https://www.pixiv.net/users/${userId}`;
         },
+    },
+    "skeb.jp": {
+        path: /^\/@\w+$/,
     },
     "www.tinami.com": {
         path: /^\/creator\/profile\/\d+$/,
@@ -1669,24 +1688,6 @@ const NORMALIZE_PROFILE_URL = {
         normalize (url) {
             return `https://twitter.com${url.pathname}`;
         },
-    },
-    "misskey.io": {
-        path: /^\/@\w+$/,
-    },
-    "misskey.art": {
-        path: /^\/@\w+$/,
-    },
-    "misskey.design": {
-        path: /^\/@\w+$/,
-    },
-    "fantia.jp": {
-        path: /^\/(\w+|fanclubs\/\d+)$/,
-    },
-    "skeb.jp": {
-        path: /^\/@\w+$/,
-    },
-    "ci-en.net": {
-        path: /^\/creator\/\d+$/,
     },
 };
 
@@ -5395,29 +5396,28 @@ function initialize () {
     debuglog(`set ${theme} theme mode`);
 
     switch (window.location.host) {
-        case "www.pixiv.net":          initializePixiv();         break;
-        case "dic.pixiv.net":          initializePixiv();         break;
-        case "nijie.info":             initializeNijie();         break;
-        case "seiga.nicovideo.jp":     initializeNicoSeiga();     break;
-        case "www.tinami.com":         initializeTinami();        break;
-        case "www.hentai-foundry.com": initializeHentaiFoundry(); break;
-        case "x.com":
-        case "twitter.com":
-        case "mobile.twitter.com":     initializeTwitter();       break;
-        case "tweetdeck.twitter.com":  initializeTweetDeck();     break;
-        case "saucenao.com":           initializeSauceNAO();      break;
-        case "pawoo.net":
-        case "baraag.net":             initializeMastodon();      break;
-        case "www.deviantart.com":     initializeDeviantArt();    break;
-        case "www.artstation.com":     initializeArtStation();    break;
-        case "misskey.io":
-        case "misskey.art":
-        case "misskey.design":         initializeMisskey();       break;
-        case "fantia.jp":              initializeFantia();        break;
-        case "skeb.jp":                initializeSkeb();          break;
+        case "baraag.net":              initializeMastodon();       break;
+        case "bsky.app":                initializeBluesky();        break;
         case "ci-en.net":
-        case "ci-en.dlsite.com":       initializeCiEn();          break;
-        case "bsky.app":               initializeBluesky();       break;
+        case "ci-en.dlsite.com":        initializeCiEn();           break;
+        case "www.deviantart.com":      initializeDeviantArt();     break;
+        case "fantia.jp":               initializeFantia();         break;
+        case "www.hentai-foundry.com":  initializeHentaiFoundry();  break;
+        case "misskey.art":
+        case "misskey.design":
+        case "misskey.io":              initializeMisskey();        break;
+        case "nijie.info":              initializeNijie();          break;
+        case "pawoo.net":               initializeMastodon();       break;
+        case "dic.pixiv.net":
+        case "www.pixiv.net":           initializePixiv();          break;
+        case "saucenao.com":            initializeSauceNAO();       break;
+        case "seiga.nicovideo.jp":      initializeNicoSeiga();      break;
+        case "skeb.jp":                 initializeSkeb();           break;
+        case "www.tinami.com":          initializeTinami();         break;
+        case "twitter.com":
+        case "mobile.twitter.com":      initializeTwitter();        break;
+        case "tweetdeck.twitter.com":   initializeTweetDeck();      break;
+        case "x.com":                   initializeTwitter();        break;
         default:
             if (window.location.host.endsWith("artstation.com")) {
                 initializeArtStation();
