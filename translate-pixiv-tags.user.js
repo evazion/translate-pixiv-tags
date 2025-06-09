@@ -4012,6 +4012,7 @@ function initializePixiv () {
     findAndTranslate("tag", "#article-content-header #article-name", {
         tagPosition: TAG_POSITIONS.beforeend,
         toTagName: getNormalizedTagName,
+        classes: "tpt-light",
         ruleName: "wiki tag",
     });
 
@@ -4216,7 +4217,7 @@ function initializePixiv () {
     // Artist profile pages: https://www.pixiv.net/en/users/29310, https://www.pixiv.net/en/users/104471/illustrations
     const normalizePageUrl = () => `https://www.pixiv.net/en/users/${safeMatchMemoized(window.location.pathname, /\d+/)}`;
     findAndTranslate("artist", "h1", {
-        predicate: "div.ivOZtr > h1",
+        predicate: () => !!safeMatchMemoized(window.location.pathname, /^(\/en)?\/users\/\d+/),
         toProfileUrl: normalizePageUrl,
         asyncMode: true,
         css: /* CSS */`
@@ -4225,7 +4226,7 @@ function initializePixiv () {
              * followers count because there can be "premium" and
              * "accepting requests" labels to the right of the artist name
              */
-            div.ivOZtr {
+            div:has(> h1 + .ex-artist-tag):not(:has(p)) {
                 display: grid;
                 grid-gap: 4px;
                 grid-auto-rows: 16px;
@@ -4240,16 +4241,16 @@ function initializePixiv () {
     });
 
     // Deleted artist profile: https://www.pixiv.net/en/users/1843825
-    findAndTranslate("artist", "h1", {
-        predicate: "#root>div>div>div>h1",
-        asyncMode: true,
-        // Trigger only on profile page
-        toProfileUrl: () => (safeMatchMemoized(window.location.pathname, /^\/(en\/)?users/)
-            ? normalizePageUrl()
-            : ""),
-        tagPosition: TAG_POSITIONS.beforebegin,
-        ruleName: "deleted artist profile",
-    });
+    // findAndTranslate("artist", "h1", {
+    //     predicate: "#root>div>div>div>h1",
+    //     asyncMode: true,
+    //     // Trigger only on profile page
+    //     toProfileUrl: () => (safeMatchMemoized(window.location.pathname, /^\/(en\/)?users/)
+    //         ? normalizePageUrl()
+    //         : ""),
+    //     tagPosition: TAG_POSITIONS.beforebegin,
+    //     ruleName: "deleted artist profile",
+    // });
 
     // Ranking pages: https://www.pixiv.net/ranking.php?mode=original
     findAndTranslate("artist", "a.user-container.ui-profile-popup", {
@@ -5356,7 +5357,7 @@ function initializeBluesky () {
     findAndTranslate("artist", "div", {
         asyncMode: true,
         // eslint-disable-next-line max-len
-        predicate: "a[data-testid^='searchAutoCompleteResult-'] > :first-child > :nth-child(2) > :nth-child(2)",
+        predicate: "a[data-testid^='searchAutoCompleteResult-'] div:nth-child(2) > div:nth-child(2):not(:has(*))",
         toProfileUrl,
         ruleName: "artist search autocomplete",
     });
@@ -5365,7 +5366,7 @@ function initializeBluesky () {
     findAndTranslate("artist", "div", {
         asyncMode: true,
         // eslint-disable-next-line max-len
-        predicate: "div[style*='display: flex'] div[data-testid='searchScreen'] > :nth-child(3) > :first-child > :nth-child(4) a > :first-child > :nth-child(2) > :nth-child(2)",
+        predicate: "div[style*='display: flex'] a[href^='/profile/'][role='link'] div:nth-child(2) > div:nth-child(2):not(:has(*))",
         toProfileUrl,
         ruleName: "people search result",
     });
