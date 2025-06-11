@@ -1302,12 +1302,12 @@ function isSecondaryUrl (siteUrl) {
         /pixiv\.net\/stacc/i,
         /pixiv\.net\/fanbox/i,
         /twitter\.com\/intent/i,
-        /(?:www|com|dic)\.nicovideo\.jp/i,
+        /(www|com|dic)\.nicovideo\.jp/i,
         /pawoo\.net\/web\/accounts/i,
-        /misskey\.(?:io|art|design)\/users/i,
+        /misskey\.(io|art|design)\/users/i,
         /inkbunny\.net\/user\.php/i,
-        /bsky\.app\/profile\did:/i,
-    ].some((rule) => siteUrl.match(rule));
+        /bsky\.app\/profile\/did:/i,
+    ].some((rule) => rule.test(siteUrl));
 }
 
 /**
