@@ -2546,10 +2546,11 @@ async function translateArtistByURL (element, profileUrl, options) {
 
     let filteredArtists = artists;
     if (artists.length > 1) {
-        filteredArtists = artists.filter(artist => {
-            return (artist.urls.some(urlObj => normalizedUrl === urlObj.url.toLowerCase() && urlObj.is_active));
-        });
-        
+        const urlLower = normalizedUrl.toLowerCase();
+        filteredArtists = artists.filter((artist) => artist.urls.some(
+            (urlObj) => urlLower === urlObj.url.toLowerCase() && urlObj.is_active,
+        ));
+
         if (filteredArtists.length === 0) {
             filteredArtists = artists;
         }
