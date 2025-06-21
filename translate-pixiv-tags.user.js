@@ -2547,7 +2547,7 @@ async function translateArtistByURL (element, profileUrl, options) {
     let filteredArtists = artists;
     if (artists.length > 1) {
         filteredArtists = artists.filter(artist => {
-            return artist.urls.some(urlObj => urlObj.is_active);
+            return (artist.urls.some(urlObj => normalizedUrl === urlObj.url.toLowerCase() && urlObj.is_active));
         });
         
         if (filteredArtists.length === 0) {
