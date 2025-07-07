@@ -50,7 +50,7 @@
 // @require      https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.0.8/dist/floating-ui.dom.umd.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore.js
 // @require      https://github.com/evazion/translate-pixiv-tags/raw/lib-20221207/lib/tooltip.js
-// @require      https://github.com/evazion/translate-pixiv-tags/raw/lib-20240111/lib/jquery-gm-shim.js
+// @require      https://github.com/evazion/translate-pixiv-tags/raw/lib-20250707/lib/jquery-gm-shim.js
 // @resource     danbooru_icon https://github.com/evazion/translate-pixiv-tags/raw/resource-20190903/resource/danbooru-icon.ico
 // @resource     settings_icon https://github.com/evazion/translate-pixiv-tags/raw/resource-20190903/resource/settings-icon.svg
 // @resource     globe_icon https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/svgs/solid/globe.svg
