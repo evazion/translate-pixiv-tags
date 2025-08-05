@@ -34,6 +34,7 @@
 // @match        *://m.weibo.cn/*
 // @match        *://www.weibo.com/*
 // @match        *://x.com/*
+// @match        *://www.xiaohongshu.com/*
 // @grant        GM_getResourceText
 // @grant        GM_getResourceURL
 // @grant        GM_xmlhttpRequest
@@ -1697,6 +1698,12 @@ const NORMALIZE_PROFILE_URL = {
         valid: false,
         normalize (url) {
             return `https://twitter.com${url.pathname}`;
+        },
+    },
+    "www.xiaohongshu.com": {
+        valid: false,
+        normalize (url) {
+            return `https://www.xiaohongshu.com${url.pathname}`;
         },
     },
 };
@@ -5578,6 +5585,42 @@ function initializeWeiboMobile () {
     });
 }
 
+function initializeXiaohongshu() {
+    // Tags in post
+    findAndTranslate("tag", "a.tag", {
+        asyncMode: true,
+        predicate: ".note-text a.tag",
+        tagPosition: TAG_POSITIONS.beforeend,
+        ruleName: "tag note",
+    });
+
+    // Artist tag in post preview
+    findAndTranslate("artist", "span.name", {
+        asyncMode: true,
+        predicate: ".note-item .author span.name",
+        tagPosition: TAG_POSITIONS.beforeend,
+        ruleName: "artist note card",
+    });
+
+    // Artist tag in post
+    findAndTranslate("artist", "span.username", {
+        asyncMode: true,
+        predicate: ".note-container .author-container span.username",
+        tagPosition: TAG_POSITIONS.beforeend,
+        ruleName: "artist note",
+    });
+
+    // Artist tag in profile
+    findAndTranslate("artist", "div.user-name", {
+        asyncMode: true,
+        predicate: ".user div.user-name",
+        toProfileUrl: (el) => window.location.href,
+        tagPosition: TAG_POSITIONS.beforeend,
+        ruleName: "artist profile",
+    });
+}
+
+
 function initialize () {
     GM_jQuery_setup();
     GM_addStyle(PROGRAM_CSS);
@@ -5615,6 +5658,7 @@ function initialize () {
         case "www.weibo.com":           initializeWeibo();          break;
         case "m.weibo.cn":              initializeWeiboMobile();    break;
         case "x.com":                   initializeTwitter();        break;
+        case "www.xiaohongshu.com":     initializeXiaohongshu();    break;
         default:
             if (window.location.host.endsWith("artstation.com")) {
                 initializeArtStation();
