@@ -5627,7 +5627,7 @@ function initializeWeiboMobile () {
     });
 }
 
-function initializeXiaohongshu() {
+function initializeXiaohongshu () {
     // Tags in post
     findAndTranslate("tag", "a.tag", {
         asyncMode: true,
@@ -5661,7 +5661,6 @@ function initializeXiaohongshu() {
         ruleName: "artist profile",
     });
 }
-
 
 function initialize () {
     GM_jQuery_setup();
