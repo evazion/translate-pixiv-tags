@@ -4101,7 +4101,7 @@ function initializePixiv () {
     // The index page: https://www.pixiv.net/ https://www.pixiv.net/en/
     // Artist profile: https://www.pixiv.net/en/users/104471/illustrations
     findAndTranslate("tag", "div", {
-        predicate: "a[color]>div>div:last-child",
+        predicate: "a:is([color],[data-ga4-label=colorful_tag])>div>div:last-child",
         tagPosition: {
             insertTag: ($container, $elem) => $container.parent().prepend($elem),
             findTag: ($container) => $container.parent().find(TAG_SELECTOR),
@@ -4114,28 +4114,28 @@ function initializePixiv () {
             .ex-translated-tags + div:not(:last-child) {
                 display: none;
             }
-            .ex-translated-tags + div:last-child {
+            .ex-translated-tags ~ div:last-child {
                 font-weight: normal;
                 font-size: 10px;
             }
-            a[color] {
+            a:is([color],[data-ga4-label=colorful_tag]) {
                 text-shadow: 0 0 5px #0003;
-            }
-            a[color] > div:not(#id) {
-                max-width: initial;
-            }
-            a[color] > div > .ex-translated-tags a {
-                font-weight: bold;
-                text-shadow: 0 0 5px #fff4;
-            }
-            a[color] > div > .ex-translated-tags a.ex-translated-tag-category-5:not(#id) {
-                color: #794906 !important;
-            }
-            a[color] > div > .ex-translated-tags a.ex-translated-tag-category-4:not(#id) {
-                color: #008020 !important;
-            }
-            a[color] > div > .ex-translated-tags a.ex-translated-tag-category-0:not(#id) {
-                color: #003cb3 !important;
+                & > div:not(#id) {
+                    max-width: initial;
+                }
+                & > div > .ex-translated-tags a {
+                    font-weight: bold;
+                    text-shadow: 0 0 5px #fff4;
+                    &.ex-translated-tag-category-5:not(#id) {
+                        color: #794906 !important;
+                    }
+                    &.ex-translated-tag-category-4:not(#id) {
+                        color: #008020 !important;
+                    }
+                    &.ex-translated-tag-category-0:not(#id) {
+                        color: #003cb3 !important;
+                    }
+                }
             }
         `,
         // Fix bad contrast of tag color over colored bg
@@ -4144,7 +4144,7 @@ function initializePixiv () {
             const [category] = $tag.find("a").prop("className").match(/\d/) ?? [];
             const hue = [230, 5, 0, 300, 110, 50][category];
             $tag.closest("section,ul")
-                .find("a[color]:not([style])")
+                .find("a:is([color],[data-ga4-label=colorful_tag]):not([style])")
                 .css("background-color", () => `hsl(${Math.random() * 40 + 150}, 35%, 65%)`);
             $tag.closest("a")
                 .css("background-color", `hsl(${hue + Math.random() * 40 - 20}, 35%, 65%)`);
@@ -4154,29 +4154,35 @@ function initializePixiv () {
 
     // Popular tags on the index page: https://www.pixiv.net/ https://www.pixiv.net/en/
     findAndTranslate("tag", "div", {
-        predicate: "a.gtm-toppage-tag-popular-tag-illustration>div>div:first-child>div:only-child",
+        predicate: "a[data-ga4-label=trend_tag_thumbnail]>div>div>div>div:first-child",
         tagPosition: TAG_POSITIONS.beforebegin,
         asyncMode: true,
         classes: "no-brackets dark-shadow",
         css: /* CSS */`
-            .ex-translated-tags[rulename='popular tag'] {
-                text-shadow: 0 0 3px #000B;
+            .ex-translated-tags[rulename='trending tag'] {
+                text-shadow: 0 0 3px #000B, 0 0 1px #0008;
                 & + div { display: none }
             }
         `,
         onadded: preventSiteNavigation,
-        ruleName: "popular tag",
+        ruleName: "trending tag",
     });
 
-    // Tag of recommended posts on index page: https://www.pixiv.net/ https://www.pixiv.net/en/
-    findAndTranslate("tag", "h2", {
-        predicate: "section > div > div > h2",
-        toTagName: (el) => (el.textContent?.includes("#")
-            ? el.textContent.slice(el.textContent.indexOf("#") + 1).replaceAll(" ", "_")
-            : null),
-        tagPosition: TAG_POSITIONS.beforeend,
+    // Ranking of artists on the index page: https://www.pixiv.net/ https://www.pixiv.net/en/
+    findAndTranslate("artist", "a", {
+        // eslint-disable-next-line max-len
+        predicate: "[data-ga4-label=ranking_link]+div>div>div:first-child>div:last-child>div>a:last-child",
+        requiredAttributes: "href",
+        tagPosition: TAG_POSITIONS.afterend,
         asyncMode: true,
-        ruleName: "tag of recommended posts",
+        classes: "inline pointer-events-auto",
+        css: /* CSS */`
+            .ex-artist-tag[rulename='ranking artist of day'] {
+                text-shadow: 0 0 3px #000;
+            }
+        `,
+        ruleName: "ranking artist of day",
+        onadded: deleteOnUrlChange,
     });
 
     // Illust author aside https://www.pixiv.net/en/artworks/66475847
@@ -4243,7 +4249,7 @@ function initializePixiv () {
     // Posts of followed artists: https://www.pixiv.net/bookmark_new_illust.php
     findAndTranslate("artist", "a", {
         // eslint-disable-next-line max-len
-        predicate: "section ul>*>div>div:last-child>div[aria-haspopup]>a",
+        predicate: "section :is(ul>*>div,ul>*>div>div)>div:last-child>div[aria-haspopup]>a:last-child",
         tagPosition: TAG_POSITIONS.afterParent,
         asyncMode: true,
         css: /* CSS */`
@@ -4265,7 +4271,7 @@ function initializePixiv () {
     // Artist profile pages: https://www.pixiv.net/en/users/29310, https://www.pixiv.net/en/users/104471/illustrations
     const normalizePageUrl = () => `https://www.pixiv.net/en/users/${safeMatchMemoized(window.location.pathname, /\d+/)}`;
     findAndTranslate("artist", "h1", {
-        predicate: () => !!safeMatchMemoized(window.location.pathname, /^(\/en)?\/users\/\d+/),
+        predicate: (el) => !!safeMatchMemoized(window.location.pathname, /^(\/en)?\/users\/\d+/),
         toProfileUrl: normalizePageUrl,
         asyncMode: true,
         css: /* CSS */`
@@ -4274,7 +4280,7 @@ function initializePixiv () {
              * followers count because there can be "premium" and
              * "accepting requests" labels to the right of the artist name
              */
-            div:has(> h1 + .ex-artist-tag):not(:has(p)) {
+            #__next div:has(> h1 + .ex-artist-tag):not(:has(p)) {
                 display: grid;
                 grid-gap: 4px;
                 grid-auto-rows: 16px;
@@ -4282,6 +4288,22 @@ function initializePixiv () {
                 justify-items: start;
                 .ex-artist-tag {
                     grid-row-start: 2;
+                }
+            }
+            form div:has(> h1 + .ex-artist-tag) {
+                flex-direction: column;
+                h1 {
+                    display: contents;
+                    > :last-child {
+                        order: 1
+                    }
+                }
+                .ex-artist-tag {
+                    translate: 0 -10px;
+                }
+                button {
+                    order: -1;
+                    align-self: flex-end;
                 }
             }
         `,
@@ -4323,12 +4345,26 @@ function initializePixiv () {
     // Section of recommended artists on the index page:
     // https://www.pixiv.net/ https://www.pixiv.net/en/
     findAndTranslate("artist", "a", {
-        predicate: "section ul>div>div>div:last-child>a+div>a:first-child",
+        predicate: "[data-ga4-label=home_recommend]>div>div>div>[aria-haspopup]>div>a+div>a",
         tagPosition: TAG_POSITIONS.afterend,
         asyncMode: true,
         ruleName: "recommended artist",
         css: /* CSS */`
             .ex-artist-tag[rulename="recommended artist"] {
+                line-height: 0;
+            }
+        `,
+    });
+
+    // Sidebar of recommended artists on the index page:
+    // https://www.pixiv.net/ https://www.pixiv.net/en/
+    findAndTranslate("artist", "a", {
+        predicate: "section>div>div>.sticky [aria-haspopup]>a:fist-child+div>a",
+        tagPosition: TAG_POSITIONS.afterend,
+        asyncMode: true,
+        ruleName: "recommended artist sidebar",
+        css: /* CSS */`
+            .ex-artist-tag[rulename="recommended artist sidebar"] {
                 line-height: 0;
             }
         `,
@@ -4349,18 +4385,6 @@ function initializePixiv () {
         classes: "inline",
         asyncMode: true,
         ruleName: "contest participant",
-    });
-
-    // Booth items of artist you follow on the index page:
-    // https://www.pixiv.net/ https://www.pixiv.net/en/
-    findAndTranslate("artist", "div", {
-        // eslint-disable-next-line max-len
-        predicate: "a.gtm-toppage-thumbnail-illustration-booth-following + div>div:has(>div[title]>a)",
-        tagPosition: TAG_POSITIONS.afterend,
-        classes: "inline",
-        toProfileUrl: linkInChildren,
-        asyncMode: true,
-        ruleName: "booth item artist",
     });
 }
 
