@@ -5418,7 +5418,7 @@ function initializeBluesky () {
     findAndTranslate("artist", "div", {
         asyncMode: true,
         // eslint-disable-next-line max-len
-        predicate: "div[data-testid^='postThreadItem-by-'] > :first-child > :nth-child(2) > :nth-child(2) > div:first-child",
+        predicate: "div[data-testid^='postThreadItem-by-'] > :first-child > a > :first-child > :first-child > :first-child > :last-child",
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
         toProfileUrl,
