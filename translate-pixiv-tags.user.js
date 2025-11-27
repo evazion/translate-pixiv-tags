@@ -3824,6 +3824,9 @@ function watchSiteTheme (elem, attr, themeExtractor) {
     updateTheme();
 }
 
+/** @type {Array<[Query, (el: Node) => void]>} */
+const mutationObserverQueries = [];
+
 /**
  * @typedef {object} TranslationOptions
  * @prop {"tag" | "artist" | "artistByName"} mode Method of translating
@@ -3875,7 +3878,7 @@ function findAndTranslate (mode, selector, options) {
     };
 
     const canTranslate = (typeof fullOptions.predicate === "string")
-        ? (/** @type {HTMLElement} */el) => $(el).is(/** @type {string} */(fullOptions.predicate))
+        ? (/** @type {HTMLElement} */el) => el.matches(/** @type {string} */(fullOptions.predicate))
         : fullOptions.predicate ?? (() => true);
 
     const { translate, getData } = {
@@ -3915,16 +3918,31 @@ function findAndTranslate (mode, selector, options) {
     /** @type {Query} */
     const query = { element: /** @type {string} */(selector) };
     if (fullOptions.requiredAttributes) query.elementAttributes = fullOptions.requiredAttributes;
+    mutationObserverQueries.push([query, tryToTranslate]);
+}
+
+/**
+ * Share MutationSummary (and the underling MutationObserver) between all the queries (rules)
+ */
+// eslint-disable-next-line sonarjs/cognitive-complexity
+function startFindAndTranslate () {
+    if (mutationObserverQueries.length === 0) return;
     new MutationSummary({
         rootNode: document.body,
-        queries: [query],
-        callback: ([summary]) => {
-            let elements = summary.added;
-            if (summary.attributeChanged) {
-                elements = [...elements, ...Object.values(summary.attributeChanged).flat(1)];
+        queries: mutationObserverQueries.map((arr) => arr[0]),
+        callback: (summaries) => {
+            // eslint-disable-next-line unicorn/no-for-loop
+            for (let i = 0; i < summaries.length; i++) {
+                const translate = mutationObserverQueries[i][1];
+                const summary = summaries[i];
+                for (const elem of summary.added) translate(elem);
+
+                if (summary.attributeChanged) {
+                    for (const elements of Object.values(summary.attributeChanged)) {
+                        for (const elem of elements) translate(elem);
+                    }
+                }
             }
-            // eslint-disable-next-line unicorn/no-array-for-each
-            elements.forEach(tryToTranslate);
         },
     });
 }
@@ -5668,6 +5686,7 @@ function initialize () {
                 console.warn("[TPT]: Unsupported domain", window.location.host);
             }
     }
+    startFindAndTranslate();
 
     // Check for new network requests every half-second
     setInterval(intervalNetworkHandler, REQUEST_INTERVAL);
