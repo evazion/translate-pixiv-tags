@@ -4650,7 +4650,7 @@ function initializeTwitter () {
 
     // Deleted channel https://twitter.com/6o2_iii
     findAndTranslate("artist", "span.r-qvutc0", {
-        predicate: ".r-135wba7.r-3s2u2q span.r-1vr29t4 > .r-qvutc0:not(:empty)",
+        predicate: `[data-testid="emptyState"] div.r-1vr29t4 > .r-qvutc0:not(:empty)`,
         toProfileUrl: URLfromLocation,
         classes: "inline",
         asyncMode: true,
