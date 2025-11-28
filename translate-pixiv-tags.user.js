@@ -4359,7 +4359,7 @@ function initializePixiv () {
     // Sidebar of recommended artists on the index page:
     // https://www.pixiv.net/ https://www.pixiv.net/en/
     findAndTranslate("artist", "a", {
-        predicate: "section>div>div>.sticky [aria-haspopup]>a:fist-child+div>a",
+        predicate: "section>div>div>.sticky [aria-haspopup]>a:first-child+div>a",
         tagPosition: TAG_POSITIONS.afterend,
         asyncMode: true,
         ruleName: "recommended artist sidebar",
