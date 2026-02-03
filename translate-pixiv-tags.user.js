@@ -1262,7 +1262,7 @@ function getSiteDisplayDomain (siteUrl) {
     return domain || tld || hostname;
 }
 
-const SITE_ICON_FOLDER = "https://raw.githubusercontent.com/danbooru/danbooru/22e1b4d3bf0a8776dbac282f4e3a83d62facc537/public/images/";
+const SITE_ICON_FOLDER = "https://raw.githubusercontent.com/danbooru/danbooru/b142b04c8a6ceebcdca517fc1c69aa41cc7983b2/public/images/";
 
 /**
  * Try to resolve the site icon
@@ -1302,7 +1302,7 @@ function isSecondaryUrl (siteUrl) {
     return [
         /pixiv\.net\/stacc/i,
         /pixiv\.net\/fanbox/i,
-        /twitter\.com\/intent/i,
+        /x\.com\/intent/i,
         /(www|com|dic)\.nicovideo\.jp/i,
         /pawoo\.net\/web\/accounts/i,
         /misskey\.(io|art|design)\/users/i,
@@ -4839,10 +4839,11 @@ function initializeSauceNAO () {
         ruleName: "artist by link",
         toProfileUrl: (el) => {
             const a = /** @type {HTMLAnchorElement} */(el);
-            if (!a.href.startsWith("https://twitter.com/")) return a.href;
+            // SauceNAO uses old twitter urls, which may change in the future
+            if (!a.href.startsWith("https://twitter.com/") && !a.href.startsWith("https://x.com/")) return a.href;
             return [
-                `https://twitter.com/${a.textContent?.slice(1)}`,
-                `https://twitter.com/intent/user?user_id=${a.href.match(/\d+/)?.[0]}`,
+                `https://x.com/${a.textContent?.slice(1)}`,
+                `https://x.com/intent/user?user_id=${a.href.match(/\d+/)?.[0]}`,
             ];
         },
     });
@@ -5693,12 +5694,12 @@ function initialize () {
         case "seiga.nicovideo.jp":      initializeNicoSeiga();      break;
         case "skeb.jp":                 initializeSkeb();           break;
         case "www.tinami.com":          initializeTinami();         break;
+        case "x.com":
         case "twitter.com":
         case "mobile.twitter.com":      initializeTwitter();        break;
         case "tweetdeck.twitter.com":   initializeTweetDeck();      break;
         case "www.weibo.com":           initializeWeibo();          break;
         case "m.weibo.cn":              initializeWeiboMobile();    break;
-        case "x.com":                   initializeTwitter();        break;
         case "www.xiaohongshu.com":     initializeXiaohongshu();    break;
         default:
             if (window.location.host.endsWith("artstation.com")) {
