@@ -1302,7 +1302,7 @@ function isSecondaryUrl (siteUrl) {
     return [
         /pixiv\.net\/stacc/i,
         /pixiv\.net\/fanbox/i,
-        /x\.com\/intent/i,
+        /x\.com\/i\/user/i,
         /(www|com|dic)\.nicovideo\.jp/i,
         /pawoo\.net\/web\/accounts/i,
         /misskey\.(io|art|design)\/users/i,
@@ -1698,7 +1698,7 @@ const NORMALIZE_PROFILE_URL = {
         },
     },
     "x.com": {
-        path: /^\/[\w-]+|\/intent\/user$/,
+        path: /^\/[\w-]+|\/i\/user\/\d+$/,
     },
     "www.xiaohongshu.com": {
         valid: false,
@@ -4843,7 +4843,7 @@ function initializeSauceNAO () {
             if (!a.href.startsWith("https://twitter.com/") && !a.href.startsWith("https://x.com/")) return a.href;
             return [
                 `https://x.com/${a.textContent?.slice(1)}`,
-                `https://x.com/intent/user?user_id=${a.href.match(/\d+/)?.[0]}`,
+                `https://x.com/i/user/${a.href.match(/\d+/)?.[0]}`,
             ];
         },
     });
