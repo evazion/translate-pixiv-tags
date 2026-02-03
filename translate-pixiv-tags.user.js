@@ -883,7 +883,7 @@ const SITE_RULES = [
 
     // TwitPic must be before twitter
     { name: "TwitPic", hostname: "twitpic.com" },
-    { name: "Twitter", domain: "twitter.com" },
+    { name: "Twitter", domain: "x.com" },
     { name: "Twitter", domain: "t.co" },
 
     { name: "About Me", domain: "about.me" },
@@ -1677,12 +1677,15 @@ const NORMALIZE_PROFILE_URL = {
         path: /^\/creator\/profile\/\d+$/,
     },
     "twitter.com": {
-        path: /^\/[\w-]+|\/intent\/user$/,
+        valid: false,
+        normalize (url) {
+            return `https://x.com${url.pathname}`;
+        },
     },
     "mobile.twitter.com": {
         valid: false,
         normalize (url) {
-            return `https://twitter.com${url.pathname}`;
+            return `https://x.com${url.pathname}`;
         },
     },
     "www.weibo.com": {
@@ -1695,10 +1698,7 @@ const NORMALIZE_PROFILE_URL = {
         },
     },
     "x.com": {
-        valid: false,
-        normalize (url) {
-            return `https://twitter.com${url.pathname}`;
-        },
+        path: /^\/[\w-]+|\/intent\/user$/,
     },
     "www.xiaohongshu.com": {
         valid: false,
@@ -3978,7 +3978,7 @@ function linkInChildren (el) {
     return $(el).find("a").prop("href");
 }
 
-/* https://twitter.com/search?q=%23ガルパン版深夜のお絵描き60分一本勝負 */
+/* https://x.com/search?q=%23ガルパン版深夜のお絵描き60分一本勝負 */
 /* #艦これ版深夜のお絵描き60分一本勝負 search query for TweetDeck */
 const COMMON_HASHTAG_REGEXPS = [
     /生誕祭\d*$/,
@@ -4601,7 +4601,7 @@ function initializeTwitter () {
         }
     `);
 
-    // Tags https://twitter.com/mugosatomi/status/1173231575959363584
+    // Tags https://x.com/mugosatomi/status/1173231575959363584
     findAndTranslate("tag", "a[role='link']", {
         predicate: "a[href^='/hashtag/']",
         asyncMode: true,
@@ -4609,9 +4609,9 @@ function initializeTwitter () {
         ruleName: "tags",
     });
 
-    // Floating name of a channel https://twitter.com/mugosatomi
+    // Floating name of a channel https://x.com/mugosatomi
     const URLfromLocation = () => (
-        `https://twitter.com${safeMatchMemoized(window.location.pathname, /\/\w+/)}`
+        `https://x.com${safeMatchMemoized(window.location.pathname, /\/\w+/)}`
     );
     const channelNameSelector = "div[data-testid='primaryColumn']>div>:first-child h2>div>div>div";
     // On switching to a channel from another channel, Twitter updates only text nodes
@@ -4648,7 +4648,7 @@ function initializeTwitter () {
         callback: ([summary]) => summary.added.forEach(watchForChanges),
     });
 
-    // Deleted channel https://twitter.com/6o2_iii
+    // Deleted channel https://x.com/6o2_iii
     findAndTranslate("artist", "span.r-qvutc0", {
         predicate: `[data-testid="emptyState"] div.r-1vr29t4 > .r-qvutc0:not(:empty)`,
         toProfileUrl: URLfromLocation,
@@ -4658,8 +4658,8 @@ function initializeTwitter () {
     });
 
     // Tweet, expanded tweet, comment authors, "in this photo", people in sidebar
-    // https://twitter.com/mugosatomi/status/1173231575959363584
-    // https://twitter.com/Merryweatherey/status/1029008151411023872/media_tags
+    // https://x.com/mugosatomi/status/1173231575959363584
+    // https://x.com/Merryweatherey/status/1029008151411023872/media_tags
     findAndTranslate("artist", "div.r-1wbh5a2.r-18u37iz", {
         predicate: `div:has(>div>a.r-1wbh5a2[tabindex])`,
         toProfileUrl: linkInChildren,
@@ -4675,10 +4675,10 @@ function initializeTwitter () {
         ruleName: "tweet/comment author",
     });
 
-    // Quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
+    // Quoted tweets https://x.com/Murata_Range/status/1108340994557140997
     findAndTranslate("artist", "div.r-1wvb978", {
         predicate: "[data-testid=User-Name] [tabindex]:not([role]) > div",
-        toProfileUrl: (el) => `https://twitter.com/${el.textContent?.slice(1)}`,
+        toProfileUrl: (el) => `https://x.com/${el.textContent?.slice(1)}`,
         asyncMode: true,
         classes: "inline",
         css: /* CSS */`
