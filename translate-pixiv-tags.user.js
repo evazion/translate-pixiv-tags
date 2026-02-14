@@ -5398,7 +5398,7 @@ function initializeBluesky () {
     // https://bsky.app/profile/kanikamadayo.bsky.social/post/3l6pnkjfnhq2b
     findAndTranslate("artist", "a", {
         asyncMode: true,
-        predicate: "a[href^='/profile/'][aria-label]+a[href^='/profile/']",
+        predicate: "a[href^='/profile/'][aria-label]+a[href^='/profile/']:not(:has(*))",
         classes: "inline",
         toProfileUrl,
         ruleName: "artist post",
