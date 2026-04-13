@@ -1,39 +1,46 @@
 {
-  "name": "translate-pixiv-tags",
-  "version": "0.0.0",
-  "description": "A userscript that translates tags and artist names on multiple image hosting sites to their corresponding Danbooru tags.",
-  "main": "translate-pixiv-tags.user.js",
-  "directories": {
-    "lib": "lib"
-  },
-  "dependencies": {
-    "eslint": "^8.55.0",
-    "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-plugin-import": "^2.18.2",
-    "eslint-plugin-sonarjs": "^0.23.0",
-    "eslint-plugin-unicorn": "^49.0.0",
-    "jquery": "^3.2.1",
-    "mutation-summary": "^0.0.0",
-    "qtip2": "^3.0.3",
-    "underscore": "^1.12.1"
-  },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/evazion/translate-pixiv-tags.git"
-  },
-  "author": "evazion",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/evazion/translate-pixiv-tags/issues"
-  },
-  "homepage": "https://github.com/evazion/translate-pixiv-tags#readme",
-  "devDependencies": {
-    "@types/jquery": "^3.2.1",
-    "@types/psl": "^1.1.3",
-    "@types/tampermonkey": "^5.0.2",
-    "@types/underscore": "1.11"
-  }
+    "name": "translate-pixiv-tags",
+    "version": "0.0.0",
+    "description": "A userscript that translates tags and artist names on multiple image hosting sites to their corresponding Danbooru tags.",
+    "dependencies": {
+        "@floating-ui/dom": "^1.7.4",
+        "@fortawesome/fontawesome-free": "^7.1.0",
+        "@lit-labs/rollup-plugin-minify-html-literals": "^0.1.1",
+        "floating-ui": "^5.2.8",
+        "jquery": "^3.2.1",
+        "lit": "^3.3.2",
+        "mutation-summary": "^1.0.0",
+        "psl": "^1.15.0",
+        "underscore": "^1.13.7"
+    },
+    "scripts": {
+        "dev": "vite",
+        "build": "tsc && vite build",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/evazion/translate-pixiv-tags.git"
+    },
+    "author": "evazion",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/evazion/translate-pixiv-tags/issues"
+    },
+    "homepage": "https://github.com/evazion/translate-pixiv-tags#readme",
+    "devDependencies": {
+        "@types/jquery": "^3.2.1",
+        "@types/psl": "^1.1.3",
+        "@types/tampermonkey": "^5.0.5",
+        "@types/underscore": "1.11",
+        "@typescript-eslint/parser": "^8.56.1",
+        "eslint": "^8.55.0",
+        "eslint-config-airbnb-base": "^15.0.0",
+        "eslint-plugin-import": "^2.18.2",
+        "eslint-plugin-sonarjs": "^0.23.0",
+        "eslint-plugin-unicorn": "^49.0.0",
+        "typescript": "^5.9.3",
+        "vite": "^7.0.0",
+        "vite-plugin-monkey": "^7.0.0"
+    }
 }

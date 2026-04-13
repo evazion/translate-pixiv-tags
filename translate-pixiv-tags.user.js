@@ -63,6 +63,8 @@
 // @noframes
 // ==/UserScript==
 
+export {};
+
 /* spell-checker: enable */
 // cSpell:ignoreRegExp [-\.#]\w+
 
@@ -71,7 +73,7 @@
 // @ts-expect-error - it has no exports or import but types are get correctly
 /** @typedef {import("./node_modules/mutation-summary/src/mutation-summary")} */
 
-"use strict";
+("use strict");
 
 /**
  * @template {string} N, T
@@ -82,7 +84,7 @@
  * | SettingT<"boolean", boolean>
  * | SettingT<"list", string> & { values: Record<string, string> }
  * } Setting
-*/
+ */
 /**
  * @template {Setting} S
  * @typedef {S["type"] extends "boolean" ? boolean
@@ -93,30 +95,32 @@
  */
 
 /** @satisfies {Setting[]} */
-const SETTINGS_SCHEMA = /** @type {const} */([
+const SETTINGS_SCHEMA = /** @type {const} */ ([
     {
         name: "booru",
         defValue: "https://danbooru.donmai.us",
         descr: "Danbooru subdomain for sending requests",
         type: "list",
         values: {
-            "https://danbooru.donmai.us":   "Danbooru",
-            "https://safebooru.donmai.us":  "Safebooru",
-            "https://betabooru.donmai.us":  "Betabooru",
-            "https://donmai.moe":           "Donmai.moe",
+            "https://danbooru.donmai.us": "Danbooru",
+            "https://safebooru.donmai.us": "Safebooru",
+            "https://betabooru.donmai.us": "Betabooru",
+            "https://donmai.moe": "Donmai.moe",
         },
-    }, {
+    },
+    {
         name: "cache_lifetime",
         defValue: 60 * 5,
-        descr:
-            "The amount of time in seconds to cache data from Danbooru before querying again",
+        descr: "The amount of time in seconds to cache data from Danbooru before querying again",
         type: "number",
-    }, {
+    },
+    {
         name: "preview_limit",
         defValue: 3,
         descr: "The number of recent posts to show in artist tooltips",
         type: "number",
-    }, {
+    },
+    {
         name: "show_preview_rating",
         defValue: "s",
         descr: "The upper level of rating for preview (higher ratings will be blurred)",
@@ -127,22 +131,26 @@ const SETTINGS_SCHEMA = /** @type {const} */([
             q: "Questionable",
             e: "Explicit", // eslint-disable-line id-blacklist
         },
-    }, {
+    },
+    {
         name: "show_deleted",
         defValue: true,
         descr: "Check to show deleted posts, uncheck to hide",
         type: "boolean",
-    }, {
+    },
+    {
         name: "show_settings",
         defValue: true,
         descr: "Show the settings button in the script manager menu",
         type: "boolean",
-    }, {
+    },
+    {
         name: "debug",
         defValue: false,
         descr: "Print debug messages in console",
         type: "boolean",
-    }, {
+    },
+    {
         name: "display_network_errors",
         defValue: true,
         descr: "Display a message when a request error occurs",
@@ -165,16 +173,19 @@ const SETTINGS = {
      * @param {string} settingName
      * @param {any} value
      */
-    isValid (settingName, value) {
+    isValid(settingName, value) {
         const setting = SETTINGS_SCHEMA.find((s) => s.name === settingName);
         if (!setting) {
             console.error(`[TPT]: No setting ${settingName}`);
             return false;
         }
         switch (setting.type) {
-            case "number": return Number.isInteger(value) && value > 0;
-            case "list": return value in setting.values;
-            case "boolean": return typeof value === "boolean";
+            case "number":
+                return Number.isInteger(value) && value > 0;
+            case "list":
+                return value in setting.values;
+            case "boolean":
+                return typeof value === "boolean";
             default:
                 // @ts-expect-error - here `type` is `never`
                 console.error(`[TPT]: Unsupported type ${setting.type}`);
@@ -186,7 +197,7 @@ const SETTINGS = {
      * @param {N} settingName
      * @returns {GetSettingType<N>}
      */
-    get (settingName) {
+    get(settingName) {
         const setting = SETTINGS_SCHEMA.find((s) => s.name === settingName);
         if (!setting) {
             console.error(`[TPT]: No setting ${settingName}`);
@@ -195,7 +206,7 @@ const SETTINGS = {
         const value = GM_getValue(settingName);
         if (value === undefined || !this.isValid(settingName, value)) {
             GM_setValue(settingName, setting.defValue);
-            return /** @type {GetSettingType<N>} */(setting.defValue);
+            return /** @type {GetSettingType<N>} */ (setting.defValue);
         }
         return value;
     },
@@ -204,7 +215,7 @@ const SETTINGS = {
      * @param {N} settingName
      * @param {GetSettingType<N>} value
      */
-    set (settingName, value) {
+    set(settingName, value) {
         const setting = SETTINGS_SCHEMA.find((s) => s.name === settingName);
         if (!setting) {
             console.error(`[TPT]: No setting ${settingName}`);
@@ -237,13 +248,9 @@ const DEBUG = SETTINGS.get("debug");
 const DISPLAY_NETWORK_ERRORS = SETTINGS.get("display_network_errors");
 
 // Domains where images outside of whitelist are blocked
-const DOMAIN_USES_CSP = [
-    "twitter.com",
-    "bcy.net",
-    "pawoo.net",
-    "x.com",
-    "baraag.net",
-].includes(window.location.host);
+const DOMAIN_USES_CSP = ["twitter.com", "bcy.net", "pawoo.net", "x.com", "baraag.net"].includes(
+    window.location.host,
+);
 
 // The maximum size of a URL before using a POST request.
 // The actual limit is 8154, but setting it lower accounts for the rest of the URL as well.
@@ -295,7 +302,7 @@ const TAG_POSITIONS = {
     },
 };
 
-const PROGRAM_CSS = /* CSS */`
+const PROGRAM_CSS = /* CSS */ `
 :root, .tpt-light, .tpt-auto {
     --tpt-artist: #c00004;
     --tpt-cat-0: #0075f8;
@@ -398,7 +405,7 @@ const PROGRAM_CSS = /* CSS */`
 }
 `;
 
-const TOOLTIP_CSS = /* CSS */`
+const TOOLTIP_CSS = /* CSS */ `
 .loading-data, .loading-data a {
     cursor: wait;
 }
@@ -462,7 +469,7 @@ const addTooltip = tooltipGenerator({
 });
 
 /** @type {{expires_in:number} | {}} */
-const CACHE_PARAM = (CACHE_LIFETIME ? { expires_in: CACHE_LIFETIME } : {});
+const CACHE_PARAM = CACHE_LIFETIME ? { expires_in: CACHE_LIFETIME } : {};
 // Setting this to the maximum since batches could return more than the amount being queried
 const API_LIMIT = 1000;
 
@@ -561,7 +568,7 @@ const API_LIMIT = 1000;
 /**
  * @template {RequestName} N
  * @typedef {N extends "count" ? ResponseCount : ResponseEntity<N>[]} DBResponse
-*/
+ */
 /**
  * @template {RequestName} N
  * @typedef {object} RequestPromise
@@ -587,18 +594,13 @@ const REQUEST_DATA_MATCHERS = {
      * @param {string[]} data
      * @param {string} item
      */
-    array: (data, item) => data
-        .map((it) => it.toLowerCase())
-        .includes(item.toLowerCase()),
+    array: (data, item) => data.map((it) => it.toLowerCase()).includes(item.toLowerCase()),
     /**
      * Case-insensitive looking in string-array
      * @param {string} data
      * @param {string} item
      */
-    string_list: (data, item) => data
-        .toLowerCase()
-        .split(" ")
-        .includes(item.toLowerCase()),
+    string_list: (data, item) => data.toLowerCase().split(" ").includes(item.toLowerCase()),
 };
 
 /** @type {{ [N in RequestName]: RequestDefinition<DBResponse<N>> }} */
@@ -606,7 +608,7 @@ const NETWORK_REQUEST_DICT = {
     wiki: {
         url: "/wiki_pages",
         fields: "title,other_names,tag[category]",
-        params (otherNamesList) {
+        params(otherNamesList) {
             return {
                 search: {
                     other_names_include_any_lower_array: otherNamesList,
@@ -615,14 +617,14 @@ const NETWORK_REQUEST_DICT = {
                 only: this.fields,
             };
         },
-        matches (data, item) {
+        matches(data, item) {
             return REQUEST_DATA_MATCHERS.array(data.other_names, item);
         },
     },
     artist: {
         url: "/artists",
         fields: "id,name,is_banned,other_names,urls[url,is_active]",
-        params (nameList) {
+        params(nameList) {
             return {
                 search: {
                     name_lower_comma: nameList.join(","),
@@ -631,14 +633,14 @@ const NETWORK_REQUEST_DICT = {
                 only: this.fields,
             };
         },
-        matches (data, item) {
+        matches(data, item) {
             return REQUEST_DATA_MATCHERS.string(data.name, item);
         },
     },
     tag: {
         url: "/tags",
         fields: "name,category,post_count",
-        params (nameList) {
+        params(nameList) {
             return {
                 search: {
                     name_lower_comma: nameList.join(","),
@@ -647,14 +649,14 @@ const NETWORK_REQUEST_DICT = {
             };
         },
         filter: (items) => items.filter((item) => item.post_count > 0),
-        matches (data, item) {
+        matches(data, item) {
             return REQUEST_DATA_MATCHERS.string(data.name, item);
         },
     },
     alias: {
         url: "/tag_aliases",
         fields: "antecedent_name,consequent_tag[name,category,post_count]",
-        params (nameList) {
+        params(nameList) {
             return {
                 search: {
                     antecedent_name_lower_comma: nameList.join(","),
@@ -662,14 +664,14 @@ const NETWORK_REQUEST_DICT = {
                 only: this.fields,
             };
         },
-        matches (data, item) {
+        matches(data, item) {
             return REQUEST_DATA_MATCHERS.string(data.antecedent_name, item);
         },
     },
     url: {
         url: "/artists",
         fields: "id,name,is_deleted,is_banned,other_names,urls[url,is_active]",
-        params (urlList) {
+        params(urlList) {
             return {
                 search: {
                     url_matches: urlList,
@@ -678,8 +680,11 @@ const NETWORK_REQUEST_DICT = {
             };
         },
         filter: (artists) => artists.filter((artist) => !artist.is_deleted),
-        matches (data, item) {
-            return REQUEST_DATA_MATCHERS.array(data.urls.map((url) => url.url), item);
+        matches(data, item) {
+            return REQUEST_DATA_MATCHERS.array(
+                data.urls.map((url) => url.url),
+                item,
+            );
         },
     },
     // This can only be used as a single use and not as part a group
@@ -703,7 +708,7 @@ const NETWORK_REQUEST_DICT = {
             "tag_string_artist",
             "tag_string_meta",
         ].join(","),
-        params (tagList) {
+        params(tagList) {
             const [tag, page] = tagList[0].split(" ");
             return {
                 // As this is called immediately and as a single use, only pass the first tag
@@ -712,7 +717,7 @@ const NETWORK_REQUEST_DICT = {
                 only: this.fields,
             };
         },
-        matches (data, item) {
+        matches(data, item) {
             return REQUEST_DATA_MATCHERS.string_list(data.tag_string_artist, item.split(" ")[0]);
         },
         limit: ARTIST_POST_PREVIEW_LIMIT,
@@ -728,7 +733,7 @@ const NETWORK_REQUEST_DICT = {
 const debuglog = DEBUG ? console.log.bind(console, "[TPT]:") : () => {};
 
 /** @param {object[]} args */
-function memoizeKey (...args) {
+function memoizeKey(...args) {
     const paramHash = Object.fromEntries(args.entries());
     return $.param(paramHash);
 }
@@ -738,14 +743,11 @@ function memoizeKey (...args) {
  * @param {TemplateStringsArray} strings
  * @param {(string|number)[]} values
  */
-function noIndents (strings, ...values) {
+function noIndents(strings, ...values) {
     // Remove all spaces before/after a tag and leave one in other cases
-    const compactStrings = strings.map((str) => (
-        str.replaceAll(
-            /(>)?\n *(<)?/g,
-            (s, lt, gt) => (lt && gt ? lt + gt : ((lt || gt) ?? " ")),
-        )
-    ));
+    const compactStrings = strings.map((str) =>
+        str.replaceAll(/(>)?\n *(<)?/g, (s, lt, gt) => (lt && gt ? lt + gt : ((lt || gt) ?? " "))),
+    );
 
     const res = Array.from({ length: values.length * 2 + 1 });
     // eslint-disable-next-line unicorn/no-for-loop
@@ -768,7 +770,7 @@ const matchMemoized = _.memoize((string, regex) => string.match(regex), memoizeK
  * @param {number} [group=0]
  * @param {string} [defaultValue=""]
  */
-function safeMatchMemoized (string, regex, group = 0, defaultValue = "") {
+function safeMatchMemoized(string, regex, group = 0, defaultValue = "") {
     const match = matchMemoized(string ?? "", regex);
     if (match) {
         return match[group];
@@ -777,7 +779,7 @@ function safeMatchMemoized (string, regex, group = 0, defaultValue = "") {
 }
 
 /** @param {string} string */
-function capitalize (string) {
+function capitalize(string) {
     return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
 }
 
@@ -785,7 +787,7 @@ function capitalize (string) {
  * @param {string} s1
  * @param {string} s2
  */
-function naturalCompare (s1, s2) {
+function naturalCompare(s1, s2) {
     const parts1 = s1.split(/(\d+)/);
     const parts2 = s2.split(/(\d+)/);
 
@@ -1234,35 +1236,37 @@ const SITE_RULES = [
 /* spell-checker: enable */
 
 /** @param {string} siteName */
-function getSitePriority (siteName) {
+function getSitePriority(siteName) {
     const priority = SITE_ORDER.indexOf(siteName);
     return priority < 0 ? 1000 : priority;
 }
 
 /** @param {string} siteUrl */
-function getSiteName (siteUrl) {
+function getSiteName(siteUrl) {
     const { hostname, pathname } = new URL(siteUrl);
     const { domain, sld, tld } = /** @type {import("psl").ParsedDomain} */ (psl.parse(hostname));
 
     const match = SITE_RULES.find(
-        (rule) => (rule.hostname || rule.domain || rule.tld || rule.pathname)
-            && (!rule.hostname || rule.hostname === hostname)
-            && (!rule.domain || rule.domain === domain)
-            && (!rule.tld || rule.tld === tld)
-            && (!rule.pathname || pathname.includes(rule.pathname)),
+        (rule) =>
+            (rule.hostname || rule.domain || rule.tld || rule.pathname) &&
+            (!rule.hostname || rule.hostname === hostname) &&
+            (!rule.domain || rule.domain === domain) &&
+            (!rule.tld || rule.tld === tld) &&
+            (!rule.pathname || pathname.includes(rule.pathname)),
     );
 
     return match ? match.name : capitalize(sld || tld || hostname);
 }
 
 /** @param {string} siteUrl */
-function getSiteDisplayDomain (siteUrl) {
+function getSiteDisplayDomain(siteUrl) {
     const { hostname } = new URL(siteUrl);
     const { domain, tld } = /** @type {import("psl").ParsedDomain} */ (psl.parse(hostname));
     return domain || tld || hostname;
 }
 
-const SITE_ICON_FOLDER = "https://raw.githubusercontent.com/danbooru/danbooru/22e1b4d3bf0a8776dbac282f4e3a83d62facc537/public/images/";
+const SITE_ICON_FOLDER =
+    "https://raw.githubusercontent.com/danbooru/danbooru/22e1b4d3bf0a8776dbac282f4e3a83d62facc537/public/images/";
 
 /**
  * Try to resolve the site icon
@@ -1270,7 +1274,7 @@ const SITE_ICON_FOLDER = "https://raw.githubusercontent.com/danbooru/danbooru/22
  * @param {string} url Site url
  * @returns {Promise<string|null>}
  */
-function getSiteIconUrl (siteName, url) {
+function getSiteIconUrl(siteName, url) {
     if (SITE_RULES.every((site) => site.name !== siteName)) {
         return new Promise((resolve) => {
             GM.xmlHttpRequest({
@@ -1298,7 +1302,7 @@ const getSiteIconUrlMemoized = _.memoize(getSiteIconUrl, memoizeKey);
  * @param {string} siteUrl
  * @see https://github.com/danbooru/danbooru/blob/848c8fa8e9ecfc46e8c9588ab055e7d5cf4f5de0/app/models/artist_url.rb#L75
  */
-function isSecondaryUrl (siteUrl) {
+function isSecondaryUrl(siteUrl) {
     return [
         /pixiv\.net\/stacc/i,
         /pixiv\.net\/fanbox/i,
@@ -1318,8 +1322,8 @@ function isSecondaryUrl (siteUrl) {
  * @param {string} name The `@resource` name
  * @param {boolean} [asBase64] Force base64 format
  */
-function getResourceUrl (name, asBase64 = false) {
-    return /** @type {(name:string, asBlob:boolean)=>string} */(GM_getResourceURL)(
+function getResourceUrl(name, asBase64 = false) {
+    return /** @type {(name:string, asBlob:boolean)=>string} */ (GM_getResourceURL)(
         name,
         !asBase64 && !DOMAIN_USES_CSP,
     );
@@ -1330,7 +1334,7 @@ function getResourceUrl (name, asBase64 = false) {
  * @param {string} imageUrl
  * @returns {Promise<string>}
  */
-function getImage (imageUrl) {
+function getImage(imageUrl) {
     return new Promise((resolve) => {
         GM.xmlHttpRequest({
             method: "GET",
@@ -1349,7 +1353,7 @@ const networkErrors = {};
  * @param {string} domain The domain to check
  * @param {boolean} logError Increase the number of errors
  */
-function tooManyNetworkErrors (domain, logError = false) {
+function tooManyNetworkErrors(domain, logError = false) {
     const data = networkErrors[domain] ?? (networkErrors[domain] = { error: 0 });
 
     if (logError) {
@@ -1380,11 +1384,11 @@ function tooManyNetworkErrors (domain, logError = false) {
  * @param {string} item
  * @returns {RequestPromise<T>["promise"]}
  */
-function queueNetworkRequest (type, item) {
+function queueNetworkRequest(type, item) {
     const request = {
         type,
         item,
-        promise: /** @type {RequestPromise<T>["promise"]} */($.Deferred()),
+        promise: /** @type {RequestPromise<T>["promise"]} */ ($.Deferred()),
     };
     QUEUED_NETWORK_REQUESTS.push(request);
     return request.promise;
@@ -1393,7 +1397,7 @@ function queueNetworkRequest (type, item) {
 /** @type {typeof queueNetworkRequest} */
 const queueNetworkRequestMemoized = _.memoize(queueNetworkRequest, memoizeKey);
 
-function intervalNetworkHandler () {
+function intervalNetworkHandler() {
     if (QUEUED_NETWORK_REQUESTS.length === 0) return;
     if (!navigator.onLine) {
         if (DISPLAY_NETWORK_ERRORS) {
@@ -1403,9 +1407,9 @@ function intervalNetworkHandler () {
     }
     if (tooManyNetworkErrors(new URL(BOORU).hostname)) return;
 
-    const types = /** @template {RequestName} T @type {T[]} */(Object.keys(NETWORK_REQUEST_DICT));
+    const types = /** @template {RequestName} T @type {T[]} */ (Object.keys(NETWORK_REQUEST_DICT));
     for (const type of types) {
-        const requests = QUEUED_NETWORK_REQUESTS.filter((request) => (request.type === type));
+        const requests = QUEUED_NETWORK_REQUESTS.filter((request) => request.type === type);
         if (requests.length <= 0) continue; // eslint-disable-line no-continue
 
         const requestTools = NETWORK_REQUEST_DICT[type];
@@ -1442,7 +1446,7 @@ function intervalNetworkHandler () {
  * @param {RequestPromise<RequestName>[]} requests
  * @param {RequestDefinition<DBResponse<T>>} tools
  */
-async function getLong (url, params, requests, tools) {
+async function getLong(url, params, requests, tools) {
     // Default to GET requests
     let method = "get";
     let finalParams = params;
@@ -1467,13 +1471,15 @@ async function getLong (url, params, requests, tools) {
     /** @type {Set<ResponseEntity<RequestName>>} */
     const unusedResp = new Set(resp);
     for (const request of requests) {
-        const found = /** @type {DBResponse<T>} */ (resp.filter((data) => {
-            if (tools.matches(/** @type {any} */(data), request.item)) {
-                unusedResp.delete(data);
-                return true;
-            }
-            return false;
-        }));
+        const found = /** @type {DBResponse<T>} */ (
+            resp.filter((data) => {
+                if (tools.matches(/** @type {any} */ (data), request.item)) {
+                    unusedResp.delete(data);
+                    return true;
+                }
+                return false;
+            })
+        );
         // Fulfill the promise which returns the results to the function that queued it
         request.promise.resolve(found);
     }
@@ -1487,8 +1493,11 @@ async function getLong (url, params, requests, tools) {
  * @param {string} url
  * @param {UrlParams} data
  */
-async function makeRequest (method, url, data) {
-    const sleepHalfSecond = () => new Promise((resolve) => { setTimeout(resolve, 500); });
+async function makeRequest(method, url, data) {
+    const sleepHalfSecond = () =>
+        new Promise((resolve) => {
+            setTimeout(resolve, 500);
+        });
     const domain = new URL(url).hostname;
     if (tooManyNetworkErrors(domain)) {
         throw new Error(`${domain} had too many network errors`);
@@ -1510,7 +1519,7 @@ async function makeRequest (method, url, data) {
             return resp;
         } catch (error) {
             tooManyNetworkErrors(domain, true);
-            ({ status, statusText } = /** @type {XMLHttpRequest} */(error));
+            ({ status, statusText } = /** @type {XMLHttpRequest} */ (error));
             console.error(
                 "[TPT]: Failed try #",
                 i + 1,
@@ -1526,11 +1535,12 @@ async function makeRequest (method, url, data) {
             await sleepHalfSecond();
         }
     }
-    const errorMsg = (!status || statusText?.startsWith("NetworkError"))
-        ? `Failed to connect to ${domain}`
-        : (status >= 500
-            ? `Bad response from ${domain}: ${status} ${statusText}`
-            : `Invalid response from ${domain}: ${status} ${statusText}`);
+    const errorMsg =
+        !status || statusText?.startsWith("NetworkError")
+            ? `Failed to connect to ${domain}`
+            : status >= 500
+              ? `Bad response from ${domain}: ${status} ${statusText}`
+              : `Invalid response from ${domain}: ${status} ${statusText}`;
     if (DISPLAY_NETWORK_ERRORS) {
         showMessage(errorMsg);
     }
@@ -1553,7 +1563,7 @@ async function makeRequest (method, url, data) {
  * @param {number} [depth]
  * @returns {{ url:string, error:string }}
  */
-function normalizeURL (targetUrl, normalizers, depth = 0) {
+function normalizeURL(targetUrl, normalizers, depth = 0) {
     if (depth > 10) {
         return {
             url: targetUrl,
@@ -1573,10 +1583,12 @@ function normalizeURL (targetUrl, normalizers, depth = 0) {
         };
     }
 
-    const {
-        valid, path, params, normalize,
-    } = normalizers[host];
-    if (valid === false || path && !path.test(url.pathname) || params && !params.test(url.search)) {
+    const { valid, path, params, normalize } = normalizers[host];
+    if (
+        valid === false ||
+        (path && !path.test(url.pathname)) ||
+        (params && !params.test(url.search))
+    ) {
         if (!normalize) {
             return {
                 url: targetUrl,
@@ -1605,7 +1617,7 @@ function normalizeURL (targetUrl, normalizers, depth = 0) {
 const NORMALIZE_PROFILE_URL = {
     ".artstation.com": {
         path: /^\/[\w-]+$/,
-        normalize (url) {
+        normalize(url) {
             const username = safeMatchMemoized(url.hostname, /([\w-]+)\.artstation\.com/, 1);
             return `https://www.artstation.com/${username}`;
         },
@@ -1622,7 +1634,7 @@ const NORMALIZE_PROFILE_URL = {
     },
     ".deviantart.com": {
         path: /^\/[\w-]+$/,
-        normalize (url) {
+        normalize(url) {
             const username = safeMatchMemoized(url.hostname, /([\w-]+)\.deviantart\.com/, 1);
             return `https://www.deviantart.com/${username}`;
         },
@@ -1633,7 +1645,7 @@ const NORMALIZE_PROFILE_URL = {
     },
     "www.hentai-foundry.com": {
         path: /^\/user\/[\w-]+$/,
-        normalize (url) {
+        normalize(url) {
             const username = safeMatchMemoized(url.pathname, /\/user\/([\w-]+)(\/profile)?/, 1);
             return `https://www.hentai-foundry.com/user/${username}`;
         },
@@ -1663,10 +1675,11 @@ const NORMALIZE_PROFILE_URL = {
     },
     "www.pixiv.net": {
         path: /^\/users\/\d+$/,
-        normalize (url) {
-            const userId = url.pathname === "/member.php"
-                ? safeMatchMemoized(url.search, /id=(\d+)/, 1)
-                : safeMatchMemoized(url.pathname, /(?:\/en)?\/users\/(\d+)/, 1);
+        normalize(url) {
+            const userId =
+                url.pathname === "/member.php"
+                    ? safeMatchMemoized(url.search, /id=(\d+)/, 1)
+                    : safeMatchMemoized(url.pathname, /(?:\/en)?\/users\/(\d+)/, 1);
             return `https://www.pixiv.net/users/${userId}`;
         },
     },
@@ -1681,7 +1694,7 @@ const NORMALIZE_PROFILE_URL = {
     },
     "mobile.twitter.com": {
         valid: false,
-        normalize (url) {
+        normalize(url) {
             return `https://twitter.com${url.pathname}`;
         },
     },
@@ -1690,19 +1703,19 @@ const NORMALIZE_PROFILE_URL = {
     },
     ".weibo.com": {
         valid: false,
-        normalize (url) {
+        normalize(url) {
             return `https://www.weibo.com${url.pathname}`;
         },
     },
     "x.com": {
         valid: false,
-        normalize (url) {
+        normalize(url) {
             return `https://twitter.com${url.pathname}`;
         },
     },
     "www.xiaohongshu.com": {
         valid: false,
-        normalize (url) {
+        normalize(url) {
             return `https://www.xiaohongshu.com${url.pathname}`;
         },
     },
@@ -1713,7 +1726,7 @@ const NORMALIZE_PROFILE_URL = {
  * @param {string} profileUrl
  * @returns {string}
  */
-function normalizeProfileURL (profileUrl) {
+function normalizeProfileURL(profileUrl) {
     const { url, error } = normalizeURL(profileUrl.toLowerCase(), NORMALIZE_PROFILE_URL);
     if (error) {
         console.error("[TPT]:", error);
@@ -1742,7 +1755,7 @@ function normalizeProfileURL (profileUrl) {
  * @type {RCCaseFn}
  */
 // eslint-disable-next-line sonarjs/cognitive-complexity
-function rubyArrayCase (checks, fn1, fn2) {
+function rubyArrayCase(checks, fn1, fn2) {
     const afterCheck = fn2 ? fn1 : null;
     const convert = fn2 ?? fn1;
     return (array) => {
@@ -1816,7 +1829,7 @@ function rubyArrayCase (checks, fn1, fn2) {
  * @param {C} cases - rubyArrayCase's
  * @returns {Partial<CollapseUnion<Exclude<ReturnType<C[number]>, null>>>}
  */
-function rubyArraySwitch (array, ...cases) {
+function rubyArraySwitch(array, ...cases) {
     for (const rubyCase of cases) {
         const res = rubyCase(array);
         if (res !== null) return res;
@@ -1829,11 +1842,11 @@ function rubyArraySwitch (array, ...cases) {
  * Split url into parts
  * @param {URL} url
  */
-function splitUrl (url) {
+function splitUrl(url) {
     const pathSegments = url.pathname.split("/").filter(Boolean);
-    const {
-        subdomain, domain,
-    } = /** @type {import("psl").ParsedDomain} */(psl.parse(url.hostname));
+    const { subdomain, domain } = /** @type {import("psl").ParsedDomain} */ (
+        psl.parse(url.hostname)
+    );
     return {
         subdomain: subdomain ?? "",
         domain: domain ?? "",
@@ -1846,7 +1859,7 @@ function splitUrl (url) {
  * @satisfies {Record<string, UrlNormalizer["normalize"]>}
  */
 const SOURCE_NORMALIZER = {
-    deviantArt (url) {
+    deviantArt(url) {
         const { subdomain, domain, pathSegments } = splitUrl(url);
         const { id, filename } = rubyArraySwitch(
             [domain, ...pathSegments],
@@ -1889,7 +1902,7 @@ const SOURCE_NORMALIZER = {
         if (workId) return `https://www.deviantart.com/deviation/${workId}`;
         return url.toString();
     },
-    fandom (url) {
+    fandom(url) {
         /** @type {Record<string, string|undefined>} */
         const WIKI_NAMES = {
             // "lang/database_name": subdomain
@@ -1964,11 +1977,27 @@ const SOURCE_NORMALIZER = {
             ),
             rubyArrayCase(
                 // eslint-disable-next-line max-len
-                [["_", "wikiName"], ["_", "prefix"], "images", /^[\da-f]$/, /^[\da-f]{2}$/, ["_", "file"], "**"],
+                [
+                    ["_", "wikiName"],
+                    ["_", "prefix"],
+                    "images",
+                    /^[\da-f]$/,
+                    /^[\da-f]{2}$/,
+                    ["_", "file"],
+                    "**",
+                ],
             ),
             rubyArrayCase(
                 // eslint-disable-next-line max-len
-                [["_", "wikiName"], "images", "thumb", /^[\da-f]$/, /^[\da-f]{2}$/, ["_", "file"], "**"],
+                [
+                    ["_", "wikiName"],
+                    "images",
+                    "thumb",
+                    /^[\da-f]$/,
+                    /^[\da-f]{2}$/,
+                    ["_", "file"],
+                    "**",
+                ],
                 (match) => ({
                     ...match,
                     prefix: url.searchParams.get("path-prefix"),
@@ -1976,28 +2005,50 @@ const SOURCE_NORMALIZER = {
             ),
             rubyArrayCase(
                 // eslint-disable-next-line max-len
-                [["_", "wikiName"], ["_", "prefix"], "images", "thumb", /^[\da-f]$/, /^[\da-f]{2}$/, ["_", "file"], "**"],
+                [
+                    ["_", "wikiName"],
+                    ["_", "prefix"],
+                    "images",
+                    "thumb",
+                    /^[\da-f]$/,
+                    /^[\da-f]{2}$/,
+                    ["_", "file"],
+                    "**",
+                ],
             ),
         );
 
         const lang = prefix === "en" || !prefix?.match(/^\w{2,3}(-\w{2,3})?$/) ? "" : prefix;
         const subdomain = WIKI_NAMES[`${lang}/${wikiName}`] ?? wikiName;
-        const site = wikiName ? (lang ? `https://${subdomain}.fandom.com/${lang}` : `https://${subdomain}.fandom.com`) : null;
+        const site = wikiName
+            ? lang
+                ? `https://${subdomain}.fandom.com/${lang}`
+                : `https://${subdomain}.fandom.com`
+            : null;
         if (site && file) return `${site}/wiki/File:${file}`;
         return url.toString();
     },
-    fantia (url) {
+    fantia(url) {
         const { pathSegments } = splitUrl(url);
         const { postId, productId } = rubyArraySwitch(
             pathSegments,
             rubyArrayCase(
                 // eslint-disable-next-line max-len
-                ["uploads", ["_", "type"], [["file", "image"]], ["_", "id"], [/(\w+_)?([\w-]+\.\w+)/, "ref"]],
+                [
+                    "uploads",
+                    ["_", "type"],
+                    [["file", "image"]],
+                    ["_", "id"],
+                    [/(\w+_)?([\w-]+\.\w+)/, "ref"],
+                ],
                 (m) => {
                     switch (m.type) {
-                        case "post": return { postId: m.id };
-                        case "product": return { productId: m.id };
-                        default: return {};
+                        case "post":
+                            return { postId: m.id };
+                        case "product":
+                            return { productId: m.id };
+                        default:
+                            return {};
                     }
                 },
             ),
@@ -2006,21 +2057,15 @@ const SOURCE_NORMALIZER = {
                 () => url.searchParams.has("query"),
                 (m) => m,
             ),
-            rubyArrayCase(
-                ["posts", [/\d+/, "id"], "**"],
-                (m) => ({ postId: m.id[0] }),
-            ),
-            rubyArrayCase(
-                ["products", [/\d+/, "id"], "**"],
-                (m) => ({ productId: m.id[0] }),
-            ),
+            rubyArrayCase(["posts", [/\d+/, "id"], "**"], (m) => ({ postId: m.id[0] })),
+            rubyArrayCase(["products", [/\d+/, "id"], "**"], (m) => ({ productId: m.id[0] })),
         );
 
         if (postId) return `https://fantia.jp/posts/${postId}`;
         if (productId) return `https://fantia.jp/products/${productId}`;
         return url.toString();
     },
-    hentaiFoundry (url) {
+    hentaiFoundry(url) {
         const { subdomain, pathSegments } = splitUrl(url);
 
         const { workId, username } = rubyArraySwitch(
@@ -2037,10 +2082,7 @@ const SOURCE_NORMALIZER = {
                 ["_", "piccies", "user", ["_", "username"], [/^\d+$/, "workId"], "**"],
                 (m) => ({ ...m, workId: m.workId[0] }),
             ),
-            rubyArrayCase(
-                ["_", [/^pic\w*-(\d+)/, "filename"]],
-                (m) => ({ workId: m.filename[1] }),
-            ),
+            rubyArrayCase(["_", [/^pic\w*-(\d+)/, "filename"]], (m) => ({ workId: m.filename[1] })),
             rubyArrayCase(
                 ["thumbs", "thumb.php"],
                 () => url.searchParams.has("pid"),
@@ -2054,7 +2096,7 @@ const SOURCE_NORMALIZER = {
         if (workId) return `https://www.hentai-foundry.com/pic-${workId}`;
         return url.toString();
     },
-    imgur (url) {
+    imgur(url) {
         const { pathSegments } = splitUrl(url);
         const { albumId, imageId } = rubyArraySwitch(
             pathSegments,
@@ -2062,39 +2104,32 @@ const SOURCE_NORMALIZER = {
                 [[/^\w+\.(jpeg|jpg|png|gif|gifv|webp|avif|webm|mp4)$/i, "file"]],
                 (m) => ({ imageId: m.file[0].match(/^(\w{7}|\w{5})/)?.[1] }),
             ),
-            rubyArrayCase(
-                ["download", ["_", "imageId"], "**"],
-            ),
-            rubyArrayCase(
-                [[["gallery", "a"]], ["_", "file"], "**"],
-                (m) => ({ albumId: m.file.split("-").at(-1) }),
-            ),
-            rubyArrayCase(
-                ["t", "_", ["_", "albumId"]],
-            ),
-            rubyArrayCase(
-                [[/\w{5,7}$/i, "ending"]],
-                (m) => ({ imageId: m.ending[0] }),
-            ),
+            rubyArrayCase(["download", ["_", "imageId"], "**"]),
+            rubyArrayCase([[["gallery", "a"]], ["_", "file"], "**"], (m) => ({
+                albumId: m.file.split("-").at(-1),
+            })),
+            rubyArrayCase(["t", "_", ["_", "albumId"]]),
+            rubyArrayCase([[/\w{5,7}$/i, "ending"]], (m) => ({ imageId: m.ending[0] })),
         );
 
         if (albumId) return `https://imgur.com/a/${albumId}`;
         if (imageId) return `https://imgur.com/${imageId}`;
         return url.toString();
     },
-    newGrounds (url) {
+    newGrounds(url) {
         const { pathSegments } = splitUrl(url);
         const { username, title, videoId } = rubyArraySwitch(
             [url.hostname, ...pathSegments],
-            rubyArrayCase(
-                ["www.newgrounds.com", "art", "view", ["_", "username"], ["_", "title"]],
-            ),
-            rubyArrayCase(
-                ["www.newgrounds.com", "portal", [["view", "video"]], ["_", "videoId"]],
-            ),
+            rubyArrayCase(["www.newgrounds.com", "art", "view", ["_", "username"], ["_", "title"]]),
+            rubyArrayCase(["www.newgrounds.com", "portal", [["view", "video"]], ["_", "videoId"]]),
             rubyArrayCase(
                 // eslint-disable-next-line max-len
-                ["art.ngfiles.com", [["medium_views", "images"]], "_", [/^(\d+)_(\d+)_([^_]+)_(.*)\.([\da-f]{32})\.\w+$/, "reg"]],
+                [
+                    "art.ngfiles.com",
+                    [["medium_views", "images"]],
+                    "_",
+                    [/^(\d+)_(\d+)_([^_]+)_(.*)\.([\da-f]{32})\.\w+$/, "reg"],
+                ],
                 () => ({}), // images with hash cannot be resolved
             ),
             rubyArrayCase(
@@ -2112,7 +2147,7 @@ const SOURCE_NORMALIZER = {
         if (videoId) return `https://www.newgrounds.com/portal/view/${videoId}`;
         return url.toString();
     },
-    nijie (url) {
+    nijie(url) {
         const { subdomain, domain, pathSegments } = splitUrl(url);
         // eslint-disable-next-line prefer-const
         let { workId, filename } = rubyArraySwitch(
@@ -2124,7 +2159,16 @@ const SOURCE_NORMALIZER = {
             ),
             rubyArrayCase(
                 // eslint-disable-next-line max-len
-                ["_", /^\d{2}$/, "nijie", /^\d{2}$/, /^\d{2}$/, ["_", "userId"], "illust", ["_", "filename"]],
+                [
+                    "_",
+                    /^\d{2}$/,
+                    "nijie",
+                    /^\d{2}$/,
+                    /^\d{2}$/,
+                    ["_", "userId"],
+                    "illust",
+                    ["_", "filename"],
+                ],
                 () => subdomain.startsWith("pic"),
                 (m) => m,
             ),
@@ -2158,7 +2202,7 @@ const SOURCE_NORMALIZER = {
         if (workId) return `https://nijie.info/view.php?id=${workId}`;
         return url.toString();
     },
-    patreon (url) {
+    patreon(url) {
         const { pathSegments } = splitUrl(url);
         const { postId } = rubyArraySwitch(
             pathSegments,
@@ -2168,16 +2212,39 @@ const SOURCE_NORMALIZER = {
         if (postId) return `https://www.patreon.com/posts/${postId}`;
         return url.toString();
     },
-    pixiv (url) {
+    pixiv(url) {
         const { subdomain, domain, pathSegments } = splitUrl(url);
-        const isImageUrl = url.hostname === "i.pximg.net"
-            || url.hostname === "i-f.pximg.net"
-            || /^(i\d+|img\d+)\.pixiv\.net$/.test(url.hostname);
+        const isImageUrl =
+            url.hostname === "i.pximg.net" ||
+            url.hostname === "i-f.pximg.net" ||
+            /^(i\d+|img\d+)\.pixiv\.net$/.test(url.hostname);
         let match = rubyArraySwitch(
             [subdomain, domain, ...pathSegments],
             rubyArrayCase(
                 // eslint-disable-next-line max-len
-                ["**", [["img-original", "img-master", "img-zip-ugoira", "img-inf", "custom-thumb", "novel-cover-original", "novel-cover-master"], "imageType"], "img", ["_", "year"], ["_", "month"], ["_", "day"], ["_", "hour"], ["_", "min"], ["_", "sec"], ["_", "filename"]],
+                [
+                    "**",
+                    [
+                        [
+                            "img-original",
+                            "img-master",
+                            "img-zip-ugoira",
+                            "img-inf",
+                            "custom-thumb",
+                            "novel-cover-original",
+                            "novel-cover-master",
+                        ],
+                        "imageType",
+                    ],
+                    "img",
+                    ["_", "year"],
+                    ["_", "month"],
+                    ["_", "day"],
+                    ["_", "hour"],
+                    ["_", "min"],
+                    ["_", "sec"],
+                    ["_", "filename"],
+                ],
                 () => isImageUrl,
                 (m) => m,
             ),
@@ -2186,9 +2253,7 @@ const SOURCE_NORMALIZER = {
                 () => isImageUrl,
                 (m) => m,
             ),
-            rubyArrayCase(
-                ["_", "pixiv.net", "**", "artwork", ["_", "workId"]],
-            ),
+            rubyArrayCase(["_", "pixiv.net", "**", "artwork", ["_", "workId"]]),
             rubyArrayCase(
                 ["_", "pixiv.net", "novel", "show.php"],
                 () => url.searchParams.has("id"),
@@ -2203,9 +2268,7 @@ const SOURCE_NORMALIZER = {
                 ["_", "pixiv.net", "novel", "series", [/^\d+$/, "novelSeriesId"]],
                 (m) => ({ novelSeriesId: m.novelSeriesId[0] }),
             ),
-            rubyArrayCase(
-                ["_", "pixiv.net", "i", ["_", "workId"]],
-            ),
+            rubyArrayCase(["_", "pixiv.net", "i", ["_", "workId"]]),
             rubyArrayCase(
                 ["_", "pixiv.net", "member_illust.php"],
                 () => url.searchParams.has("illust_id"),
@@ -2218,26 +2281,20 @@ const SOURCE_NORMALIZER = {
                 ...match,
                 ...rubyArraySwitch(
                     match.filename.replace(/\.\w+$/, "").split("_"),
-                    rubyArrayCase(
-                        [[/^\d+$/, "workId"], /^p\d+$/, "**"],
-                        (m) => ({ workId: m.workId[0] }),
-                    ),
-                    rubyArrayCase(
-                        [[/^\d+$/, "workId"], "big", /^p\d+$/],
-                        (m) => ({ workId: m.workId[0] }),
-                    ),
-                    rubyArrayCase(
-                        [[/^(?:ci)?(\d+)$/, "novelId"], /^[\da-f]{32}$/, "**"],
-                        (m) => ({ novelId: m.novelId[1] }),
-                    ),
+                    rubyArrayCase([[/^\d+$/, "workId"], /^p\d+$/, "**"], (m) => ({
+                        workId: m.workId[0],
+                    })),
+                    rubyArrayCase([[/^\d+$/, "workId"], "big", /^p\d+$/], (m) => ({
+                        workId: m.workId[0],
+                    })),
+                    rubyArrayCase([[/^(?:ci)?(\d+)$/, "novelId"], /^[\da-f]{32}$/, "**"], (m) => ({
+                        novelId: m.novelId[1],
+                    })),
                     rubyArrayCase(
                         [[/^sci(\d+)$/, "novelSeriesId"], /^[\da-f]{32}$/, "**"],
                         (m) => ({ novelSeriesId: m.novelSeriesId[1] }),
                     ),
-                    rubyArrayCase(
-                        [[/^\d+$/, "workId"], "**"],
-                        (m) => ({ workId: m.workId[0] }),
-                    ),
+                    rubyArrayCase([[/^\d+$/, "workId"], "**"], (m) => ({ workId: m.workId[0] })),
                 ),
             };
         }
@@ -2247,41 +2304,49 @@ const SOURCE_NORMALIZER = {
         if (match.novelSeriesId) return `https://www.pixiv.net/novel/series/${match.novelSeriesId}`;
         return url.toString();
     },
-    weibo (url) {
+    weibo(url) {
         const { subdomain, domain, pathSegments } = splitUrl(url);
 
         const { imgBase62Id, imgLongId, userShortId } = rubyArraySwitch(
             [subdomain, domain, ...pathSegments],
+            rubyArrayCase(["tw", "weibo.com", /^\w+$/, [/^\d+$/, "imgLongId"]]),
             rubyArrayCase(
-                ["tw", "weibo.com", /^\w+$/, [/^\d+$/, "imgLongId"]],
+                // eslint-disable-next-line max-len
+                [
+                    "_",
+                    [["weibo.com", "weibo.cn"]],
+                    [/^\d+$/, "userShortId"],
+                    [/^\w+$/, "imgBase62Id"],
+                ],
             ),
             rubyArrayCase(
                 // eslint-disable-next-line max-len
-                ["_", [["weibo.com", "weibo.cn"]], [/^\d+$/, "userShortId"], [/^\w+$/, "imgBase62Id"]],
+                [
+                    "photo",
+                    "weibo.com",
+                    [/^\d+$/, "userShortId"],
+                    "_",
+                    "_",
+                    "_",
+                    [/^\d+$/, "imgLongId"],
+                    "**",
+                ],
             ),
-            rubyArrayCase(
-                // eslint-disable-next-line max-len
-                ["photo", "weibo.com", [/^\d+$/, "userShortId"], "_", "_", "_", [/^\d+$/, "imgLongId"], "**"],
-            ),
-            rubyArrayCase(
-                ["_", [["weibo.com", "weibo.cn"]], "detail", [/^\d+$/, "imgLongId"]],
-            ),
-            rubyArrayCase(
-                ["share.api", "weibo.cn", "share", [/^(\d+),(\d+)/, "img"]],
-                (m) => ({ imgLongId: m.img[2] }),
-            ),
-            rubyArrayCase(
-                ["m", "weibo.cn", "status", [/^\w+$/, "imgBase62Id"]],
-            ),
+            rubyArrayCase(["_", [["weibo.com", "weibo.cn"]], "detail", [/^\d+$/, "imgLongId"]]),
+            rubyArrayCase(["share.api", "weibo.cn", "share", [/^(\d+),(\d+)/, "img"]], (m) => ({
+                imgLongId: m.img[2],
+            })),
+            rubyArrayCase(["m", "weibo.cn", "status", [/^\w+$/, "imgBase62Id"]]),
         );
 
-        if (imgBase62Id && userShortId) return `https://www.weibo.com/${userShortId}/${imgBase62Id}`;
+        if (imgBase62Id && userShortId)
+            return `https://www.weibo.com/${userShortId}/${imgBase62Id}`;
         if (imgLongId) return `https://m.weibo.cn/detail/${imgLongId}`;
         if (imgBase62Id) return `https://m.weibo.cn/status/${imgBase62Id}`;
 
         return url.toString();
     },
-    zerochan (url) {
+    zerochan(url) {
         const { pathSegments } = splitUrl(url);
         const { workId } = rubyArraySwitch(
             pathSegments,
@@ -2289,17 +2354,11 @@ const SOURCE_NORMALIZER = {
                 [[/^(full|\d+)$/, "size"], /\d{2}/, /\d{2}/, [/(\d+)\.(jpg|png|gif)$/, "file"]],
                 (m) => ({ workId: m.file[1] }),
             ),
-            rubyArrayCase(
-                [[/^(.*?)\.(full|\d+)\.(\d+)\.(jpg|png|gif)$/, "file"]],
-                (m) => ({ workId: m.file[3] }),
-            ),
-            rubyArrayCase(
-                ["full", [/^\d+$/, "workId"]],
-            ),
-            rubyArrayCase(
-                [[/^\d+$/, "reg"]],
-                (m) => ({ workId: m.reg[0] }),
-            ),
+            rubyArrayCase([[/^(.*?)\.(full|\d+)\.(\d+)\.(jpg|png|gif)$/, "file"]], (m) => ({
+                workId: m.file[3],
+            })),
+            rubyArrayCase(["full", [/^\d+$/, "workId"]]),
+            rubyArrayCase([[/^\d+$/, "reg"]], (m) => ({ workId: m.reg[0] })),
         );
 
         if (workId) return `https://www.zerochan.net/${workId}#full`;
@@ -2414,7 +2473,7 @@ const NORMALIZE_SOURCE_URL = {
  * @param {string} sourceUrl
  * @returns {string}
  */
-function normalizeSourceURL (sourceUrl) {
+function normalizeSourceURL(sourceUrl) {
     const { url, error } = normalizeURL(sourceUrl, NORMALIZE_SOURCE_URL);
     if (error && !error.startsWith("Unsupported domain:")) {
         console.warn("[TPT]:", error);
@@ -2430,14 +2489,10 @@ function normalizeSourceURL (sourceUrl) {
  * @param {string} tagName The tag name to translate
  * @param {TranslationOptionsFull} options Translation options
  */
-async function translateTag (target, tagName, options) {
+async function translateTag(target, tagName, options) {
     if (!tagName) return;
 
-    const normalizedTag = tagName
-        .normalize("NFKC")
-        .replace(/^#/, "")
-        .trim()
-        .replaceAll(/\s/g, "_"); // Wiki other names cannot contain spaces
+    const normalizedTag = tagName.normalize("NFKC").replace(/^#/, "").trim().replaceAll(/\s/g, "_"); // Wiki other names cannot contain spaces
 
     /* Don't search for empty tags. */
     if (normalizedTag.length === 0) {
@@ -2457,7 +2512,7 @@ async function translateTag (target, tagName, options) {
                 prettyName: title.replaceAll("_", " "),
                 category: tag.category,
             }));
-    // `normalizedTag` consists of only ASCII characters except percent, asterisks, and comma
+        // `normalizedTag` consists of only ASCII characters except percent, asterisks, and comma
     } else if (/^[\u0020-\u0024\u0026-\u0029+\u002D-\u007F]+$/.test(normalizedTag)) {
         // The server is already converting the values to
         // lowercase on its end so no need to do it here
@@ -2489,7 +2544,7 @@ const renderedTagsCache = {};
  * @param {TranslatedTag[]} tags Translated tags
  * @param {TranslationOptionsFull} options Translation options
  */
-function addDanbooruTags ($target, tags, options) {
+function addDanbooruTags($target, tags, options) {
     if (tags.length === 0) return;
 
     const {
@@ -2505,23 +2560,29 @@ function addDanbooruTags ($target, tags, options) {
 
     const key = tags.map((tag) => tag.name).join("");
     if (!(key in renderedTagsCache)) {
-        renderedTagsCache[key] = $(noIndents/* HTML */`
+        renderedTagsCache[key] = $(noIndents /* HTML */ `
             <span class="${classes}">
-                ${tags.map((tag) => noIndents/* HTML */`
-                    <a class="ex-translated-tag-category-${tag.category}"
-                       href="${BOORU}/posts?tags=${encodeURIComponent(tag.name)}"
-                       target="_blank">
-                            ${_.escape(tag.prettyName)}
-                    </a>
-                `)
-                .join(", ")}
+                ${tags
+                    .map(
+                        (tag) => noIndents /* HTML */ `
+                            <a
+                                class="ex-translated-tag-category-${tag.category}"
+                                href="${BOORU}/posts?tags=${encodeURIComponent(tag.name)}"
+                                target="_blank"
+                            >
+                                ${_.escape(tag.prettyName)}
+                            </a>
+                        `,
+                    )
+                    .join(", ")}
             </span>
         `);
     }
     const $tagsContainer = renderedTagsCache[key].clone().prop("className", classes);
 
-    const $duplicates = findTag($target)
-        .filter((i, el) => el.textContent?.trim() === $tagsContainer.text().trim());
+    const $duplicates = findTag($target).filter(
+        (i, el) => el.textContent?.trim() === $tagsContainer.text().trim(),
+    );
     if ($duplicates.length > 0) {
         return;
     }
@@ -2538,7 +2599,7 @@ function addDanbooruTags ($target, tags, options) {
  * @param {string} profileUrl The artist's urls to translate
  * @param {TranslationOptionsFull} options Translation options
  */
-async function translateArtistByURL (element, profileUrl, options) {
+async function translateArtistByURL(element, profileUrl, options) {
     if (!profileUrl) return;
 
     const normalizedUrl = normalizeProfileURL(profileUrl);
@@ -2554,9 +2615,9 @@ async function translateArtistByURL (element, profileUrl, options) {
     let filteredArtists = artists;
     if (artists.length > 1) {
         const urlLower = normalizedUrl.toLowerCase();
-        filteredArtists = artists.filter((artist) => artist.urls.some(
-            (urlObj) => urlLower === urlObj.url.toLowerCase() && urlObj.is_active,
-        ));
+        filteredArtists = artists.filter((artist) =>
+            artist.urls.some((urlObj) => urlLower === urlObj.url.toLowerCase() && urlObj.is_active),
+        );
 
         if (filteredArtists.length === 0) {
             filteredArtists = artists;
@@ -2572,7 +2633,7 @@ async function translateArtistByURL (element, profileUrl, options) {
  * @param {string} artistName The artist name
  * @param {TranslationOptionsFull} options Translation options
  */
-async function translateArtistByName (element, artistName, options) {
+async function translateArtistByName(element, artistName, options) {
     if (!artistName) return;
 
     const artists = await queueNetworkRequestMemoized("artist", artistName.replaceAll(" ", "_"));
@@ -2601,7 +2662,7 @@ const renderedArtistsCache = {};
  * @param {ResponseArtist} rawArtist The artist data
  * @param {TranslationOptionsFull} options Translation options
  */
-function addDanbooruArtist ($target, rawArtist, options) {
+function addDanbooruArtist($target, rawArtist, options) {
     const {
         onadded = null,
         tagPosition: {
@@ -2621,16 +2682,20 @@ function addDanbooruArtist ($target, rawArtist, options) {
 
     classes += artist.is_banned ? " ex-artist-tag ex-banned-artist-tag" : " ex-artist-tag";
 
-    const $duplicates = findTag($target)
-        .filter((i, el) => el.textContent?.trim() === artist.prettyName);
+    const $duplicates = findTag($target).filter(
+        (i, el) => el.textContent?.trim() === artist.prettyName,
+    );
     if ($duplicates.length > 0) {
         return;
     }
 
     if (!(artist.id in renderedArtistsCache)) {
-        renderedArtistsCache[artist.id] = $(noIndents/* HTML */`
+        renderedArtistsCache[artist.id] = $(noIndents /* HTML */ `
             <div class="${classes}">
-                <a href="${BOORU}/artists/${artist.id}" target="_blank">
+                <a
+                    href="${BOORU}/artists/${artist.id}"
+                    target="_blank"
+                >
                     ${artist.escapedName}
                 </a>
             </div>
@@ -2639,10 +2704,7 @@ function addDanbooruArtist ($target, rawArtist, options) {
     const $tag = renderedArtistsCache[artist.id].clone().prop("className", classes);
     if (DEBUG) $tag.attr("rulename", ruleName || "");
     insertTag($target, $tag);
-    addTooltip(
-        $tag.find("a")[0],
-        (tip) => buildArtistTooltip(artist, tip),
-    );
+    addTooltip($tag.find("a")[0], (tip) => buildArtistTooltip(artist, tip));
 
     if (onadded) onadded($tag, options);
 }
@@ -2660,7 +2722,7 @@ const makeStyleSheetMemoized = _.memoize((css) => {
  * @param {JQuery} $content The Shadow DOM content
  * @param {string} css The Shadow DOM CSS
  */
-function attachShadow ($target, $content, css) {
+function attachShadow($target, $content, css) {
     // Return if the target already have shadow
     if ($target.prop("shadowRoot")) return;
 
@@ -2671,9 +2733,11 @@ function attachShadow ($target, $content, css) {
             try {
                 shadowRoot.adoptedStyleSheets = [makeStyleSheetMemoized(css)];
                 return;
-            } catch { /* empty */ }
+            } catch {
+                /* empty */
+            }
         }
-        GM_addElement(/** @type {any} */(shadowRoot), "style", { textContent: css });
+        GM_addElement(/** @type {any} */ (shadowRoot), "style", { textContent: css });
     } else {
         $target.empty().append($content, `<style>${css}</style>`);
     }
@@ -2684,18 +2748,22 @@ function attachShadow ($target, $content, css) {
  * @param {JQuery} $element The target element
  * @returns {{ theme:"dark"|"light", adjustedColor:string}}
  */
-function chooseBackgroundColorScheme ($element) {
+function chooseBackgroundColorScheme($element) {
     const TRANSPARENT_COLOR = "rgba(0, 0, 0, 0)";
     // Halfway between white/black in the RGB scheme
     const MIDDLE_LUMINOSITY = 128;
 
     // Get background colors of all parent elements with a nontransparent background color
-    const backgroundColors = _.compact($element.parents().addBack()
-        .get()
-        .map((el) => $(el).css("background-color"))
-        .filter((color) => color !== TRANSPARENT_COLOR)
-        .reverse()
-        .map((color) => color.match(/\d+(\.\d+)?/g)));
+    const backgroundColors = _.compact(
+        $element
+            .parents()
+            .addBack()
+            .get()
+            .map((el) => $(el).css("background-color"))
+            .filter((color) => color !== TRANSPARENT_COLOR)
+            .reverse()
+            .map((color) => color.match(/\d+(\.\d+)?/g)),
+    );
     // Calculate summary color and get RGB channels
     let colorChannels = backgroundColors.shift()?.map(Number) ?? [255, 255, 255];
     for (const channels of backgroundColors) {
@@ -2716,13 +2784,14 @@ function chooseBackgroundColorScheme ($element) {
     const adjustedChannels = colorChannels.map((color) => {
         const colorScale = (color - MIDDLE_LUMINOSITY) / MIDDLE_LUMINOSITY; // To range [-1..+1]
         return Math.round(
-            (Math.abs(colorScale) ** 0.7)            // "Move" value away from 0 which equal to 128
-            * Math.sign(colorScale)                  // Get original sign back
-            * MIDDLE_LUMINOSITY + MIDDLE_LUMINOSITY, // Get back to the RGB range [0..255]
+            Math.abs(colorScale) ** 0.7 * // "Move" value away from 0 which equal to 128
+                Math.sign(colorScale) * // Get original sign back
+                MIDDLE_LUMINOSITY +
+                MIDDLE_LUMINOSITY, // Get back to the RGB range [0..255]
         );
     });
     const adjustedColor = `rgb(${adjustedChannels.join(", ")})`;
-    const theme = (medianLuminosity < MIDDLE_LUMINOSITY ? "dark" : "light");
+    const theme = medianLuminosity < MIDDLE_LUMINOSITY ? "dark" : "light";
     return {
         theme,
         adjustedColor,
@@ -2737,15 +2806,12 @@ const renderedTipsCache = {};
  * @param {TranslatedArtist} artist The artist data
  * @param {TooltipInstance} tip The tooltip instance
  */
-async function buildArtistTooltip (artist, { tooltip, content, target }) {
+async function buildArtistTooltip(artist, { tooltip, content, target }) {
     if (!(artist.name in renderedTipsCache)) {
         renderedTipsCache[artist.name] = buildArtistTooltipContent(artist);
     }
 
-    if (
-        !tooltip.classList.contains("tip-dark")
-        && !tooltip.classList.contains("tip-light")
-    ) {
+    if (!tooltip.classList.contains("tip-dark") && !tooltip.classList.contains("tip-light")) {
         // Select theme and background color based upon the background of surrounding elements
         const { theme, adjustedColor } = chooseBackgroundColorScheme($(target));
         content.classList.add(`tip-content-${theme}`);
@@ -2762,7 +2828,7 @@ async function buildArtistTooltip (artist, { tooltip, content, target }) {
     target.classList.remove("loading-data");
 }
 
-const ARTIST_TOOLTIP_CSS = /* CSS */`
+const ARTIST_TOOLTIP_CSS = /* CSS */ `
     :host {
         --preview_has_children_color: #35c64a;
         --preview_has_parent_color: #ccaa00;
@@ -3158,7 +3224,7 @@ const ARTIST_TOOLTIP_CSS = /* CSS */`
  * Builds artist tooltip content
  * @param {TranslatedArtist} artist The artist data
  */
-async function buildArtistTooltipContent (artist) {
+async function buildArtistTooltipContent(artist) {
     const status = SHOW_DELETED ? "status:any" : "-status:deleted";
     const rating = ["https://safebooru.donmai.us", "https://donmai.moe/"].includes(BOORU)
         ? "rating:g"
@@ -3181,25 +3247,34 @@ async function buildArtistTooltipContent (artist) {
     const otherNames = artist.other_names
         .filter(String)
         .sort()
-        .map((otherName) => noIndents/* HTML */`
-            <li>
-                <a href="${BOORU}/artists?search[name]=${encodeURIComponent(otherName)}"
-                   target="_blank">
-                    ${_.escape(otherName.replaceAll("_", " "))}
-                </a>
-            </li>
-        `)
+        .map(
+            (otherName) => noIndents /* HTML */ `
+                <li>
+                    <a
+                        href="${BOORU}/artists?search[name]=${encodeURIComponent(otherName)}"
+                        target="_blank"
+                    >
+                        ${_.escape(otherName.replaceAll("_", " "))}
+                    </a>
+                </li>
+            `,
+        )
         .join("");
 
     const nextBtnClass = visiblePostsCount <= ARTIST_POST_PREVIEW_LIMIT ? "disabled" : "";
     const lastPage = Math.ceil(visiblePostsCount / ARTIST_POST_PREVIEW_LIMIT);
-    const $content = $(noIndents/* HTML */`
-        <article class="container" part="container">
+    const $content = $(noIndents /* HTML */ `
+        <article
+            class="container"
+            part="container"
+        >
             ${GM_getResourceText("settings_icon")}
             <section class="header">
-                <a class="artist-name tag-category-artist"
-                   href="${BOORU}/artists/${artist.id}"
-                   target="_blank">
+                <a
+                    class="artist-name tag-category-artist"
+                    href="${BOORU}/artists/${artist.id}"
+                    target="_blank"
+                >
                     ${_.escape(artist.prettyName)}
                 </a>
                 <span class="post-count">
@@ -3207,38 +3282,55 @@ async function buildArtistTooltipContent (artist) {
                     ${totalPostsCount === visiblePostsCount ? "" : `(${totalPostsCount})`}
                 </span>
 
-                <ul class="other-names scrollable" part="other-names">
+                <ul
+                    class="other-names scrollable"
+                    part="other-names"
+                >
                     ${otherNames}
                 </ul>
             </section>
             <section class="urls">
                 <h2>
-                    URLs
-                    (<a href="${BOORU}/artists/${artist.id}/edit" target="_blank">edit</a>)
+                    URLs (<a
+                        href="${BOORU}/artists/${artist.id}/edit"
+                        target="_blank"
+                        >edit</a
+                    >)
                 </h2>
-                <ul class="scrollable" part="url-list"></ul>
+                <ul
+                    class="scrollable"
+                    part="url-list"
+                ></ul>
             </section>
             <section class="posts">
                 <h2>
                     Posts
-                    <a href="${BOORU}/posts?tags=${artist.encodedName}+${status}" target="_blank">
+                    <a
+                        href="${BOORU}/posts?tags=${artist.encodedName}+${status}"
+                        target="_blank"
+                    >
                         »
                     </a>
                 </h2>
-                <div class="post-pager"
+                <div
+                    class="post-pager"
                     data-tag="${artist.encodedName}"
                     data-page="1"
                     data-last-page="${lastPage}"
                 >
                     <div class="btn disabled">&lt;</div>
-                    <div class="post-list scrollable" part="post-list"></div>
+                    <div
+                        class="post-list scrollable"
+                        part="post-list"
+                    ></div>
                     <div class="btn ${nextBtnClass}">&gt;</div>
                 </div>
             </section>
         </article>
     `);
     $content.find(".urls ul").append(...buildArtistUrls(artist));
-    $content.find(".post-list")
+    $content
+        .find(".post-list")
         // prevent width change on posts pagination
         .css("width", `${Math.min(visiblePostsCount, ARTIST_POST_PREVIEW_LIMIT, 3) * 194 - 8}px`)
         .append(...posts.map(buildPostPreview));
@@ -3251,7 +3343,7 @@ async function buildArtistTooltipContent (artist) {
  * Format artist urls
  * @param {TranslatedArtist} artist The artist data
  */
-function buildArtistUrls (artist) {
+function buildArtistUrls(artist) {
     const artistUrls = _(artist.urls)
         .chain()
         .uniq("url")
@@ -3269,9 +3361,12 @@ function buildArtistUrls (artist) {
             const urlClass = artistUrl.is_active ? "artist-url-active" : "artist-url-inactive";
             const iconUrl = getSiteIconUrlMemoized(artistUrl.siteName, artistUrl.url);
 
-            const item = $(noIndents/* HTML */`
+            const item = $(noIndents /* HTML */ `
                 <li class="${urlClass}">
-                    <a href="${normalizedUrl}" target="_blank">
+                    <a
+                        href="${normalizedUrl}"
+                        target="_blank"
+                    >
                         <span class="artist-url-icon"></span> ${_.escape(normalizedUrl)}
                     </a>
                 </li>
@@ -3292,25 +3387,31 @@ function buildArtistUrls (artist) {
  * Format time in relative form
  * @param {number|string} time Timestamp
  */
-function timeToAgo (time) {
+function timeToAgo(time) {
     const interval = new Date(Date.now() - new Date(time).getTime());
     if (interval.getTime() < 60_000) return "less than a minute ago";
-    const ranks = [{
-        value: interval.getUTCFullYear() - 1970,
-        unit: "year",
-    }, {
-        value: interval.getUTCMonth(),
-        unit: "month",
-    }, {
-        value: interval.getUTCDate() - 1,
-        unit: "day",
-    }, {
-        value: interval.getUTCHours(),
-        unit: "hour",
-    }, {
-        value: interval.getUTCMinutes(),
-        unit: "minute",
-    }];
+    const ranks = [
+        {
+            value: interval.getUTCFullYear() - 1970,
+            unit: "year",
+        },
+        {
+            value: interval.getUTCMonth(),
+            unit: "month",
+        },
+        {
+            value: interval.getUTCDate() - 1,
+            unit: "day",
+        },
+        {
+            value: interval.getUTCHours(),
+            unit: "hour",
+        },
+        {
+            value: interval.getUTCMinutes(),
+            unit: "minute",
+        },
+    ];
     const rank = ranks.find(({ value }) => value);
     if (rank?.value) {
         return `${rank.value} ${rank.unit}${rank.value > 1 ? "s" : ""} ago`;
@@ -3322,10 +3423,10 @@ function timeToAgo (time) {
  * Format time in MM:SS format
  * @param {number} seconds
  */
-function formatDuration (seconds) {
+function formatDuration(seconds) {
     const sec = Math.round(seconds) || 1;
 
-    const mm = Math.floor(sec / 60 % 60);
+    const mm = Math.floor((sec / 60) % 60);
     const ss = String(sec % 60).padStart(2, "0");
 
     return `${mm}:${ss}`;
@@ -3336,17 +3437,17 @@ function formatDuration (seconds) {
  * @param {number} bytes
  * @see https://stackoverflow.com/questions/15900485
  */
-function formatBytes (bytes) {
+function formatBytes(bytes) {
     const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return `${Number.parseFloat((bytes / (1024 ** i)).toFixed(2))} ${sizes[i]}`;
+    return `${Number.parseFloat((bytes / 1024 ** i).toFixed(2))} ${sizes[i]}`;
 }
 
 /**
  * Format the post tags
  * @param {ResponsePosts} post The post data
  */
-function formatTagString (post) {
+function formatTagString(post) {
     return _([
         post.tag_string_artist,
         post.tag_string_copyright,
@@ -3365,12 +3466,14 @@ function formatTagString (post) {
  * Format the post image info
  * @param {ResponsePosts} post The post data
  */
-function formatImageInfo (post) {
-    if (![
-        post.media_asset.file_size,
-        post.media_asset.image_width,
-        post.media_asset.image_height,
-    ].every(_.isFinite)) {
+function formatImageInfo(post) {
+    if (
+        ![
+            post.media_asset.file_size,
+            post.media_asset.image_width,
+            post.media_asset.image_height,
+        ].every(_.isFinite)
+    ) {
         return "";
     }
     return `${formatBytes(post.media_asset.file_size)}
@@ -3384,7 +3487,7 @@ function formatImageInfo (post) {
  * Extract the post preview info
  * @param {ResponsePosts} post The post data
  */
-function getPostPreview (post) {
+function getPostPreview(post) {
     const hiDpi = window.devicePixelRatio > 1;
     const size = hiDpi ? "360x360" : "180x180";
     const scale = hiDpi ? 0.5 : 1;
@@ -3392,19 +3495,20 @@ function getPostPreview (post) {
 
     const info = previewAsset
         ? {
-            url: previewAsset.url,
-            safeUrl: /** @type {Promise<string>|null} */(null),
-            width: previewAsset.width * scale,
-            height: previewAsset.height * scale,
-        }
+              url: previewAsset.url,
+              safeUrl: /** @type {Promise<string>|null} */ (null),
+              width: previewAsset.width * scale,
+              height: previewAsset.height * scale,
+          }
         : {
-            url: post.media_asset.file_ext === "swf"
-                ? `${BOORU}/images/flash-preview.png`
-                : `https://cdn.donmai.us/images/download-preview.png`,
-            safeUrl: /** @type {Promise<string>|null} */(null),
-            width: 180,
-            height: 180,
-        };
+              url:
+                  post.media_asset.file_ext === "swf"
+                      ? `${BOORU}/images/flash-preview.png`
+                      : `https://cdn.donmai.us/images/download-preview.png`,
+              safeUrl: /** @type {Promise<string>|null} */ (null),
+              width: 180,
+              height: 180,
+          };
 
     if (DOMAIN_USES_CSP) {
         info.safeUrl = getImage(info.url);
@@ -3418,35 +3522,40 @@ function getPostPreview (post) {
  * Get icons for a post
  * @param {ResponsePosts} post The post data
  */
-function buildPostIcons (post) {
+function buildPostIcons(post) {
     const hasSound = /\bsound\b/.test(post.tag_string_meta);
     const soundIcon = hasSound ? GM_getResourceText("sound_icon") : "";
     const animationIcon = post.media_asset.duration
-        ? noIndents/* HTML */`
-            <div class="post-icon animation-icon"
-                 title="Animated post ${hasSound ? "with a sound" : ""}"
-            >
-                <span class="post-duration">
-                    ${formatDuration(post.media_asset.duration)}
-                </span>
-                ${soundIcon}
-            </div>
-        `
+        ? noIndents /* HTML */ `
+              <div
+                  class="post-icon animation-icon"
+                  title="Animated post ${hasSound ? "with a sound" : ""}"
+              >
+                  <span class="post-duration"> ${formatDuration(post.media_asset.duration)} </span>
+                  ${soundIcon}
+              </div>
+          `
         : "";
 
     const aiIcon = /\bai-generated\b/.test(post.tag_string_meta)
-        ? /* HTML */`
-            <div class="post-icon ai-icon" title="AI generated image">
-                    <span class="ai-generated">AI</span>
-            </div>
-        `
-        : (/\bai-assisted\b/.test(post.tag_string_meta)
-            ? /* HTML */`
-                <div class="post-icon ai-icon" title="AI assisted image">
+        ? /* HTML */ `
+              <div
+                  class="post-icon ai-icon"
+                  title="AI generated image"
+              >
+                  <span class="ai-generated">AI</span>
+              </div>
+          `
+        : /\bai-assisted\b/.test(post.tag_string_meta)
+          ? /* HTML */ `
+                <div
+                    class="post-icon ai-icon"
+                    title="AI assisted image"
+                >
                     <span class="ai-assisted">+AI</span>
                 </div>
             `
-            : "");
+          : "";
     return animationIcon + aiIcon;
 }
 
@@ -3454,7 +3563,7 @@ function buildPostIcons (post) {
  * Build the post preview
  * @param {ResponsePosts} post The post data
  */
-function buildPostPreview (post) {
+function buildPostPreview(post) {
     const RATINGS = {
         g: 0,
         s: 1,
@@ -3463,11 +3572,11 @@ function buildPostPreview (post) {
     };
 
     let previewClass = "post-preview";
-    if (post.is_pending)           previewClass += " post-status-pending";
-    if (post.is_flagged)           previewClass += " post-status-flagged";
-    if (post.is_deleted)           previewClass += " post-status-deleted";
-    if (post.is_banned)            previewClass += " post-status-banned";
-    if (post.parent_id)            previewClass += " post-status-has-parent";
+    if (post.is_pending) previewClass += " post-status-pending";
+    if (post.is_flagged) previewClass += " post-status-flagged";
+    if (post.is_deleted) previewClass += " post-status-deleted";
+    if (post.is_banned) previewClass += " post-status-banned";
+    if (post.parent_id) previewClass += " post-status-has-parent";
     if (post.has_visible_children) previewClass += " post-status-has-children";
     if (RATINGS[post.rating] > RATINGS[SHOW_PREVIEW_RATING]) {
         previewClass += " blur-post";
@@ -3485,19 +3594,27 @@ function buildPostPreview (post) {
         ? `<a href="${_.escape(sourceUrl)}" target="_blank">${getSiteDisplayDomain(sourceUrl)}</a>`
         : `<span title="${_.escape(post.source)}">NON-WEB</span>`;
 
-    const $preview = $(noIndents/* HTML */`
-        <article itemscope
-                 itemtype="http://schema.org/ImageObject"
-                 class="${previewClass}"
-                 ${dataAttributes} >
-            <a class="post-link" href="${BOORU}/posts/${post.id}" target="_blank">
+    const $preview = $(noIndents /* HTML */ `
+        <article
+            itemscope
+            itemtype="http://schema.org/ImageObject"
+            class="${previewClass}"
+            ${dataAttributes}
+        >
+            <a
+                class="post-link"
+                href="${BOORU}/posts/${post.id}"
+                target="_blank"
+            >
                 ${buildPostIcons(post)}
-                <img width="${preview.width}"
-                     height="${preview.height}"
-                     src="${preview.url}"
-                     title="${formatTagString(post)}"
-                     referrerpolicy="origin"
-                     part="post-preview rating-${post.rating}">
+                <img
+                    width="${preview.width}"
+                    height="${preview.height}"
+                    src="${preview.url}"
+                    title="${formatTagString(post)}"
+                    referrerpolicy="origin"
+                    part="post-preview rating-${post.rating}"
+                />
             </a>
             <p>${formatImageInfo(post)}</p>
             <p>${domain}, rating:${post.rating.toUpperCase()}</p>
@@ -3516,7 +3633,7 @@ function buildPostPreview (post) {
  * Load a neighbor page of posts
  * @param {JQuery.Event} ev Event of pressing the button
  */
-async function loadNextPage (ev) {
+async function loadNextPage(ev) {
     const $btn = $(ev.target);
     const $container = $btn.parent();
     if ($container.is(".loading")) return;
@@ -3538,46 +3655,55 @@ async function loadNextPage (ev) {
     intervalNetworkHandler();
     const posts = await waitPosts;
     $container.removeClass("loading");
-    $container.find(".post-list").empty().append(...posts.map(buildPostPreview));
+    $container
+        .find(".post-list")
+        .empty()
+        .append(...posts.map(buildPostPreview));
 }
 
-function showSettings () {
+function showSettings() {
     /**
      * Generate input for a setting
      * @param {typeof SETTINGS_SCHEMA[number]} setting
      */
-    function settingToInput (setting) {
+    function settingToInput(setting) {
         const value = SETTINGS.get(setting.name);
         switch (setting.type) {
             case "number":
-                return noIndents/* HTML */`
-                    <input type="number"
-                           min="0"
-                           value="${value}"
-                           name="${setting.name}"
+                return noIndents /* HTML */ `
+                    <input
+                        type="number"
+                        min="0"
+                        value="${value}"
+                        name="${setting.name}"
                     />
                 `;
             case "list": {
-                const options = Object
-                    .entries(setting.values)
-                    .map(([val, descr]) => noIndents/* HTML */`
-                        <option value="${val}" ${val === value ? "selected" : ""}>
-                            ${descr}
-                        </option>
-                    `)
+                const options = Object.entries(setting.values)
+                    .map(
+                        ([val, descr]) => noIndents /* HTML */ `
+                            <option
+                                value="${val}"
+                                ${val === value ? "selected" : ""}
+                            >
+                                ${descr}
+                            </option>
+                        `,
+                    )
                     .join("");
 
-                return noIndents/* HTML */`
+                return noIndents /* HTML */ `
                     <select name="${setting.name}">
                         ${options}
                     </select>
                 `;
             }
             case "boolean":
-                return noIndents/* HTML */`
-                    <input type="checkbox"
-                           ${value ? "checked" : ""}
-                           name="${setting.name}"
+                return noIndents /* HTML */ `
+                    <input
+                        type="checkbox"
+                        ${value ? "checked" : ""}
+                        name="${setting.name}"
                     />
                 `;
             default:
@@ -3589,13 +3715,13 @@ function showSettings () {
 
     const $shadowContainer = $("<div id=ex-settings>").appendTo("body");
 
-    function closeSettings () {
+    function closeSettings() {
         $shadowContainer.remove();
         $(document).off("keydown", closeSettingsOnEscape);
     }
 
     /** @param {JQuery.Event} ev */
-    function closeSettingsOnEscape (ev) {
+    function closeSettingsOnEscape(ev) {
         if (ev.key === "Escape" && !ev.altKey && !ev.ctrlKey && !ev.shiftKey) {
             closeSettings();
             return false;
@@ -3603,7 +3729,7 @@ function showSettings () {
         return true;
     }
 
-    const styles = /* CSS */`
+    const styles = /* CSS */ `
         #ui-settings {
             width: 100vw;
             height: 100vh;
@@ -3645,23 +3771,28 @@ function showSettings () {
             margin: 0 5px;
         }
     `;
-    const $settings = $(noIndents/* HTML */`
+    const $settings = $(noIndents /* HTML */ `
         <div id="ui-settings">
             <div class="container">
                 <h2>Translate Pixiv Tags settings</h2>
-                ${SETTINGS_SCHEMA
-                    .map((setting) => noIndents/* HTML */`
+                ${SETTINGS_SCHEMA.map(
+                    (setting) => noIndents /* HTML */ `
                         <div>${setting.descr}:</div>
                         <div>${settingToInput(setting)}</div>
-                    `)
-                    .join("")
-                }
+                    `,
+                ).join("")}
                 <h2>
-                    <input class="cancel" type="button" value="Cancel" />
-                    <input class="refresh-page"
-                           type="button"
-                           value="Refresh page to apply changes"
-                           disabled />
+                    <input
+                        class="cancel"
+                        type="button"
+                        value="Cancel"
+                    />
+                    <input
+                        class="refresh-page"
+                        type="button"
+                        value="Refresh page to apply changes"
+                        disabled
+                    />
                 </h2>
             </div>
         </div>
@@ -3670,18 +3801,18 @@ function showSettings () {
     $settings.click((ev) => {
         if ($(ev.target).is("#ui-settings")) closeSettings();
     });
-    $settings.find("input[type='number'], input[type='checkbox'], select").change((ev) => (
-        $settings.find(".refresh-page").removeAttr("disabled")
-    ));
+    $settings
+        .find("input[type='number'], input[type='checkbox'], select")
+        .change((ev) => $settings.find(".refresh-page").removeAttr("disabled"));
     $settings.find(".refresh-page").click((ev) => {
         $settings.find("input[type='number'], input[type='checkbox'], select").each((i, el) => {
             const $input = $(el);
             let value = null;
             if ($input.is("select")) {
                 value = $input.val();
-            } else if (/** @type {string} */($input.prop("type")) === "number") {
+            } else if (/** @type {string} */ ($input.prop("type")) === "number") {
                 value = Number($input.val());
-            } else if (/** @type {string} */($input.prop("type")) === "checkbox") {
+            } else if (/** @type {string} */ ($input.prop("type")) === "checkbox") {
                 value = $input.prop("checked");
             } else {
                 return;
@@ -3704,7 +3835,7 @@ function showSettings () {
 let $messageContainer;
 
 /** @param {string} msg */
-function showMessage (msg) {
+function showMessage(msg) {
     if ($messageContainer) {
         if ($messageContainer.find("#msg").text() === msg) return;
         $messageContainer.toggleClass("hide", !msg).find("#msg").text(msg);
@@ -3714,7 +3845,7 @@ function showMessage (msg) {
 
     const $shadowContainer = $("<div id=ex-message>").appendTo("body");
 
-    const styles = /* CSS */`
+    const styles = /* CSS */ `
         #ui-message {
             width: 100vw;
             height: 0;
@@ -3766,11 +3897,18 @@ function showMessage (msg) {
             fill: #888;
         }
     `;
-    $messageContainer = $(noIndents/* HTML */`
-        <div id="ui-message" class="hide">
+    $messageContainer = $(noIndents /* HTML */ `
+        <div
+            id="ui-message"
+            class="hide"
+        >
             <div class="container">
                 Translate Pixiv Tags: <span id="msg"></span>
-                <input class="close" type="button" value="Close" />
+                <input
+                    class="close"
+                    type="button"
+                    value="Close"
+                />
                 ${GM_getResourceText("settings_icon")}
             </div>
         </div>
@@ -3804,23 +3942,21 @@ function showMessage (msg) {
  * @param {string} attr The attribute name with the theme info
  * @param {(el:HTMLElement) => string} themeExtractor Theme getter
  */
-function watchSiteTheme (elem, attr, themeExtractor) {
+function watchSiteTheme(elem, attr, themeExtractor) {
     /** @type {string} */
     let theme;
-    function updateTheme () {
+    function updateTheme() {
         const newTheme = themeExtractor(elem);
         if (newTheme === theme) return;
         theme = newTheme;
-        $(":root").removeClass("tpt-dark tpt-light tpt-auto")
-            .addClass(`tpt-${theme}`);
+        $(":root").removeClass("tpt-dark tpt-light tpt-auto").addClass(`tpt-${theme}`);
         debuglog(`theme changed to ${theme}`);
     }
 
     // eslint-disable-next-line unicorn/no-array-for-each
-    new MutationObserver((mutations) => mutations.forEach(updateTheme))
-        .observe(elem, {
-            attributeFilter: [attr],
-        });
+    new MutationObserver((mutations) => mutations.forEach(updateTheme)).observe(elem, {
+        attributeFilter: [attr],
+    });
     updateTheme();
 }
 
@@ -3860,13 +3996,15 @@ const mutationObserverQueries = [];
  *  : Omit<TranslationOptions, "mode"|"toProfileUrl">
  * } [options] Extra options for translating
  */
-function findAndTranslate (mode, selector, options) {
+function findAndTranslate(mode, selector, options) {
     /** @type {TranslationOptionsFull} */
     const fullOptions = {
         asyncMode: false,
         requiredAttributes: null,
         predicate: null,
-        toProfileUrl: /** @type {(el:HTMLElement)=>any} */((el) => $(el).closest("a").prop("href")),
+        toProfileUrl: /** @type {(el:HTMLElement)=>any} */ (
+            (el) => $(el).closest("a").prop("href")
+        ),
         toTagName: (el) => el.textContent,
         tagPosition: TAG_POSITIONS.afterend,
         classes: "",
@@ -3877,9 +4015,11 @@ function findAndTranslate (mode, selector, options) {
         ...options,
     };
 
-    const canTranslate = (typeof fullOptions.predicate === "string")
-        ? (/** @type {HTMLElement} */el) => el.matches(/** @type {string} */(fullOptions.predicate))
-        : fullOptions.predicate ?? (() => true);
+    const canTranslate =
+        typeof fullOptions.predicate === "string"
+            ? (/** @type {HTMLElement} */ el) =>
+                  el.matches(/** @type {string} */ (fullOptions.predicate))
+            : (fullOptions.predicate ?? (() => true));
 
     const { translate, getData } = {
         artist: {
@@ -3916,7 +4056,7 @@ function findAndTranslate (mode, selector, options) {
     if (!fullOptions.asyncMode) return;
 
     /** @type {Query} */
-    const query = { element: /** @type {string} */(selector) };
+    const query = { element: /** @type {string} */ (selector) };
     if (fullOptions.requiredAttributes) query.elementAttributes = fullOptions.requiredAttributes;
     mutationObserverQueries.push([query, tryToTranslate]);
 }
@@ -3925,7 +4065,7 @@ function findAndTranslate (mode, selector, options) {
  * Share MutationSummary (and the underling MutationObserver) between all the queries (rules)
  */
 // eslint-disable-next-line sonarjs/cognitive-complexity
-function startFindAndTranslate () {
+function startFindAndTranslate() {
     if (mutationObserverQueries.length === 0) return;
     new MutationSummary({
         rootNode: document.body,
@@ -3952,7 +4092,7 @@ function startFindAndTranslate () {
  * @param {JQuery} $tag The tag to remove
  * @param {TranslationOptionsFull} options Translation options
  */
-function deleteOnUrlChange ($tag, options) {
+function deleteOnUrlChange($tag, options) {
     const $container = options.tagPosition.getTagContainer($tag);
     const watcher = new MutationObserver((mutations) => {
         if (mutations.some((mutation) => mutation.attributeName === "href")) {
@@ -3974,7 +4114,7 @@ const preventSiteNavigation = ($el) => $el.click((ev) => ev.stopPropagation());
  * @param {HTMLElement} el The parent element
  * @returns {string}
  */
-function linkInChildren (el) {
+function linkInChildren(el) {
     return $(el).find("a").prop("href");
 }
 
@@ -4018,17 +4158,21 @@ const getNormalizedDecentralizedSocNetUrl = (el) => {
     const fullName = el.textContent?.trim() ?? "";
 
     // eslint-disable-next-line max-len
-    const [, name, host = window.location.host] = matchMemoized(fullName, /^@(\w+)(?:@([\w.-]+))?$/) || [];
+    const [, name, host = window.location.host] =
+        matchMemoized(fullName, /^@(\w+)(?:@([\w.-]+))?$/) || [];
 
     return name ? `https://${host}/@${name}` : null;
 };
 
-function initializePixiv () {
+function initializePixiv() {
     watchSiteTheme(document.documentElement, "data-theme", (html) => {
         switch (html.dataset.theme) {
-            case "dark": return "dark";
-            case "default": return "light";
-            default: return "auto";
+            case "dark":
+                return "dark";
+            case "default":
+                return "light";
+            default:
+                return "auto";
         }
     });
 
@@ -4036,15 +4180,18 @@ function initializePixiv () {
     /** @param {HTMLElement} el */
     const getNormalizedTagName = (el) => el.textContent?.replace(/\d+users入り$/, "") ?? null;
 
-    findAndTranslate("tag", [
-        // https://www.pixiv.net/bookmark_add.php?type=illust&illust_id=123456
-        ".work-tags-container .tag",
-        // https://www.pixiv.net/tags.php
-        // https://www.pixiv.net/novel/tags.php
-        ".tag-list li .tag-value",
-    ].join(", "), {
-        toTagName: getNormalizedTagName,
-        css: /* CSS */`
+    findAndTranslate(
+        "tag",
+        [
+            // https://www.pixiv.net/bookmark_add.php?type=illust&illust_id=123456
+            ".work-tags-container .tag",
+            // https://www.pixiv.net/tags.php
+            // https://www.pixiv.net/novel/tags.php
+            ".tag-list li .tag-value",
+        ].join(", "),
+        {
+            toTagName: getNormalizedTagName,
+            css: /* CSS */ `
             /* Display popular tags as vertical list */
             .tag-list.slash-separated li {
                 display: block;
@@ -4053,8 +4200,9 @@ function initializePixiv () {
                 content: none;
             }
         `,
-        ruleName: "simple tags",
-    });
+            ruleName: "simple tags",
+        },
+    );
 
     // https://dic.pixiv.net/a/東方
     findAndTranslate("tag", "#article-content-header #article-name", {
@@ -4069,7 +4217,7 @@ function initializePixiv () {
         predicate: "figcaption li > span > span:first-child",
         toTagName: getNormalizedTagName,
         asyncMode: true,
-        css: /* CSS */`
+        css: /* CSS */ `
             /* Prevent adding # to translated tags */
             span.ex-translated-tags a::before { content:none; }
             /* Hide Pixiv's translated tags */
@@ -4084,9 +4232,10 @@ function initializePixiv () {
     // Main tag on search pages: https://www.pixiv.net/en/tags/%E6%9D%B1%E6%96%B9project/artworks
     findAndTranslate("tag", "div", {
         // eslint-disable-next-line max-len
-        predicate: "#__next>div>div>div>div>div>div>div:nth-last-of-type(2)>div>div:has(>span:first-child)",
+        predicate:
+            "#__next>div>div>div>div>div>div>div:nth-last-of-type(2)>div>div:has(>span:first-child)",
         asyncMode: true,
-        css: /* CSS */`
+        css: /* CSS */ `
             .ex-translated-tags[rulename='search tag'] {
                 font-size: 20px;
                 font-weight: bold;
@@ -4109,7 +4258,7 @@ function initializePixiv () {
         },
         asyncMode: true,
         classes: "no-brackets tpt-light",
-        css: /* CSS */`
+        css: /* CSS */ `
             /* Hide Pixiv's translated tags */
             .ex-translated-tags + div:not(:last-child) {
                 display: none;
@@ -4146,8 +4295,10 @@ function initializePixiv () {
             $tag.closest("section,ul")
                 .find("a:is([color],[data-ga4-label=colorful_tag]):not([style])")
                 .css("background-color", () => `hsl(${Math.random() * 40 + 150}, 35%, 65%)`);
-            $tag.closest("a")
-                .css("background-color", `hsl(${hue + Math.random() * 40 - 20}, 35%, 65%)`);
+            $tag.closest("a").css(
+                "background-color",
+                `hsl(${hue + Math.random() * 40 - 20}, 35%, 65%)`,
+            );
         },
         ruleName: "related tag",
     });
@@ -4158,7 +4309,7 @@ function initializePixiv () {
         tagPosition: TAG_POSITIONS.beforebegin,
         asyncMode: true,
         classes: "no-brackets dark-shadow",
-        css: /* CSS */`
+        css: /* CSS */ `
             .ex-translated-tags[rulename='trending tag'] {
                 text-shadow: 0 0 3px #000B, 0 0 1px #0008;
                 & + div { display: none }
@@ -4171,12 +4322,13 @@ function initializePixiv () {
     // Ranking of artists on the index page: https://www.pixiv.net/ https://www.pixiv.net/en/
     findAndTranslate("artist", "a", {
         // eslint-disable-next-line max-len
-        predicate: "[data-ga4-label=ranking_link]+div>div>div:first-child>div:last-child>div>a:last-child",
+        predicate:
+            "[data-ga4-label=ranking_link]+div>div>div:first-child>div:last-child>div>a:last-child",
         requiredAttributes: "href",
         tagPosition: TAG_POSITIONS.afterend,
         asyncMode: true,
         classes: "inline pointer-events-auto",
-        css: /* CSS */`
+        css: /* CSS */ `
             .ex-artist-tag[rulename='ranking artist of day'] {
                 text-shadow: 0 0 3px #000;
             }
@@ -4197,7 +4349,7 @@ function initializePixiv () {
         },
         asyncMode: true,
         onadded: deleteOnUrlChange,
-        css: /* CSS */`
+        css: /* CSS */ `
             /* Locate artist tag without triggering native tooltip */
             main>section h2:not(#id),
             main+aside>section>h2:not(#id) {
@@ -4249,10 +4401,11 @@ function initializePixiv () {
     // Posts of followed artists: https://www.pixiv.net/bookmark_new_illust.php
     findAndTranslate("artist", "a", {
         // eslint-disable-next-line max-len
-        predicate: "section :is(ul>*>div,ul>*>div>div)>div:last-child>div[aria-haspopup]>a:last-child",
+        predicate:
+            "section :is(ul>*>div,ul>*>div>div)>div:last-child>div[aria-haspopup]>a:last-child",
         tagPosition: TAG_POSITIONS.afterParent,
         asyncMode: true,
-        css: /* CSS */`
+        css: /* CSS */ `
             .ex-artist-tag[rulename='artist below illust thumb'] {
                 margin-left: 6px;
                 max-width: 100%;
@@ -4269,12 +4422,13 @@ function initializePixiv () {
     });
 
     // Artist profile pages: https://www.pixiv.net/en/users/29310, https://www.pixiv.net/en/users/104471/illustrations
-    const normalizePageUrl = () => `https://www.pixiv.net/en/users/${safeMatchMemoized(window.location.pathname, /\d+/)}`;
+    const normalizePageUrl = () =>
+        `https://www.pixiv.net/en/users/${safeMatchMemoized(window.location.pathname, /\d+/)}`;
     findAndTranslate("artist", "h1", {
         predicate: (el) => !!safeMatchMemoized(window.location.pathname, /^(\/en)?\/users\/\d+/),
         toProfileUrl: normalizePageUrl,
         asyncMode: true,
-        css: /* CSS */`
+        css: /* CSS */ `
             /**
              * Locate the artist tag between the artist name and
              * followers count because there can be "premium" and
@@ -4349,7 +4503,7 @@ function initializePixiv () {
         tagPosition: TAG_POSITIONS.afterend,
         asyncMode: true,
         ruleName: "recommended artist",
-        css: /* CSS */`
+        css: /* CSS */ `
             .ex-artist-tag[rulename="recommended artist"] {
                 line-height: 0;
             }
@@ -4363,7 +4517,7 @@ function initializePixiv () {
         tagPosition: TAG_POSITIONS.afterend,
         asyncMode: true,
         ruleName: "recommended artist sidebar",
-        css: /* CSS */`
+        css: /* CSS */ `
             .ex-artist-tag[rulename="recommended artist sidebar"] {
                 line-height: 0;
             }
@@ -4388,7 +4542,7 @@ function initializePixiv () {
     });
 }
 
-function initializeNijie () {
+function initializeNijie() {
     // http://nijie.info/view.php?id=208491
     findAndTranslate("artist", "#pro .user_icon .name, .popup_member > a, #login_illust_detail a", {
         classes: "inline",
@@ -4404,7 +4558,7 @@ function initializeNijie () {
     // http://nijie.info/view.php?id=208491
     findAndTranslate("tag", ".tag .tag_name a:first-child", {
         tagPosition: TAG_POSITIONS.beforeend,
-        css: /* CSS */`
+        css: /* CSS */ `
             .ex-translated-tags {
                 font-family: Verdana, Helvetica, sans-serif;
             }
@@ -4423,10 +4577,10 @@ function initializeNijie () {
     });
 }
 
-function initializeTinami () {
+function initializeTinami() {
     // http://www.tinami.com/view/1165789
     findAndTranslate("tag", ".tag > span > a:nth-child(2)", {
-        css: /* CSS */`
+        css: /* CSS */ `
             .ex-translated-tags {
                 font-family: Verdana, Helvetica, sans-serif;
                 float: none !important;
@@ -4451,7 +4605,7 @@ function initializeTinami () {
     });
 }
 
-function initializeNicoSeiga () {
+function initializeNicoSeiga() {
     // http://seiga.nicovideo.jp/tag/艦これ
     findAndTranslate("tag", "h1:has(.icon_tag_big)", {
         tagPosition: TAG_POSITIONS.beforeend,
@@ -4463,7 +4617,7 @@ function initializeNicoSeiga () {
         predicate: ".tag > a, a.tag",
         tagPosition: TAG_POSITIONS.beforeend,
         asyncMode: true,
-        css: /* CSS */`
+        css: /* CSS */ `
             /* When authorized */
             .illust_tag .tag {
                 background: #ebebeb;
@@ -4477,7 +4631,7 @@ function initializeNicoSeiga () {
     // http://seiga.nicovideo.jp/user/illust/14767435
     findAndTranslate("artist", ".user_info h1 a", {
         classes: "inline",
-        css: /* CSS */`
+        css: /* CSS */ `
             .im_head_bar .inner .user ul .user_link .ex-artist-tag a {
                 display: inline-block;
                 border: none;
@@ -4503,10 +4657,10 @@ function initializeNicoSeiga () {
     });
 }
 
-function initializeDeviantArt () {
-    watchSiteTheme(document.body, "class", (body) => (
-        body.classList.contains("theme-dark") ? "dark" : "light"
-    ));
+function initializeDeviantArt() {
+    watchSiteTheme(document.body, "class", (body) =>
+        body.classList.contains("theme-dark") ? "dark" : "light",
+    );
 
     // Profile page
     // https://www.deviantart.com/adsouto
@@ -4514,7 +4668,7 @@ function initializeDeviantArt () {
         toProfileUrl: linkInChildren,
         predicate: "h1:has(>a.user-link)",
         asyncMode: true,
-        css: /* CSS */`
+        css: /* CSS */ `
             .ex-artist-tag {
                 font-weight: bold;
             }
@@ -4528,14 +4682,14 @@ function initializeDeviantArt () {
     // Post page
     // https://www.deviantart.com/koyorin/art/Ruby-570526828
     findAndTranslate("artist", "a.user-link", {
-        toProfileUrl: (a) => /** @type {HTMLAnchorElement} */(a).href.replace("/gallery", ""),
+        toProfileUrl: (a) => /** @type {HTMLAnchorElement} */ (a).href.replace("/gallery", ""),
         predicate: "main>*>:nth-child(3) :nth-child(2) > a.user-link:not(:has(img))",
         requiredAttributes: "href",
         tagPosition: TAG_POSITIONS.afterParent,
         asyncMode: true,
         onadded: deleteOnUrlChange,
         classes: "inline",
-        css: /* CSS */`
+        css: /* CSS */ `
             .ex-artist-tag[rulename='illust artist'] {
                 margin-left: -0.5em;
             }
@@ -4557,7 +4711,7 @@ function initializeDeviantArt () {
     findAndTranslate("tag", "span", {
         predicate: "a[href^='https://www.deviantart.com/tag/'] > span:first-child",
         asyncMode: true,
-        css: /* CSS */`
+        css: /* CSS */ `
             /* fix cropped long tags */
             a[href^='https://www.deviantart.com/tag/'] {
                 max-width: initial;
@@ -4567,7 +4721,7 @@ function initializeDeviantArt () {
     });
 }
 
-function initializeHentaiFoundry () {
+function initializeHentaiFoundry() {
     // Posts on https://www.hentai-foundry.com/user/DrGraevling/profile
     findAndTranslate("artist", ".galleryViewTable .thumb_square > a:nth-child(4)", {
         classes: "inline",
@@ -4589,12 +4743,10 @@ function initializeHentaiFoundry () {
     });
 }
 
-function initializeTwitter () {
-    watchSiteTheme(document.body, "style", (body) => (
-        chooseBackgroundColorScheme($(body)).theme
-    ));
+function initializeTwitter() {
+    watchSiteTheme(document.body, "style", (body) => chooseBackgroundColorScheme($(body)).theme);
 
-    GM_addStyle(/* CSS */`
+    GM_addStyle(/* CSS */ `
         .ex-artist-tag {
             font-family: system-ui, -apple-system, BlinkMacSystemFont,
                 "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
@@ -4610,9 +4762,8 @@ function initializeTwitter () {
     });
 
     // Floating name of a channel https://twitter.com/mugosatomi
-    const URLfromLocation = () => (
-        `https://twitter.com${safeMatchMemoized(window.location.pathname, /\/\w+/)}`
-    );
+    const URLfromLocation = () =>
+        `https://twitter.com${safeMatchMemoized(window.location.pathname, /\/\w+/)}`;
     const channelNameSelector = "div[data-testid='primaryColumn']>div>:first-child h2>div>div>div";
     // On switching to a channel from another channel, Twitter updates only text nodes
     // so, for correct work, it's required to watch for
@@ -4665,7 +4816,7 @@ function initializeTwitter () {
         toProfileUrl: linkInChildren,
         asyncMode: true,
         classes: "inline",
-        css: /* CSS */`
+        css: /* CSS */ `
             /* "in this photo", people in sidebar */
             [data-testid='UserCell'] .ex-artist-tag {
                 display: block;
@@ -4681,7 +4832,7 @@ function initializeTwitter () {
         toProfileUrl: (el) => `https://twitter.com/${el.textContent?.slice(1)}`,
         asyncMode: true,
         classes: "inline",
-        css: /* CSS */`
+        css: /* CSS */ `
             [data-testid=User-Name] [tabindex]:not([role]) {
                 flex-direction: row;
             }
@@ -4698,7 +4849,7 @@ function initializeTwitter () {
     });
 }
 
-function initializeArtStation () {
+function initializeArtStation() {
     /** @param {string|null} ref */
     const getArtistName = (ref) => {
         if (!ref) return "";
@@ -4716,9 +4867,9 @@ function initializeArtStation () {
     };
 
     /** @param {HTMLElement} el */
-    function toFullURL (el) {
-        let artistName = getArtistName(el.getAttribute("href"))
-             || getArtistName(window.location.href);
+    function toFullURL(el) {
+        let artistName =
+            getArtistName(el.getAttribute("href")) || getArtistName(window.location.href);
         if (artistName === "artwork") artistName = "";
         if (!artistName) {
             return "";
@@ -4733,7 +4884,7 @@ function initializeArtStation () {
         predicate: ".user-info > h1",
         toProfileUrl: toFullURL,
         asyncMode: true,
-        css: /* CSS */`
+        css: /* CSS */ `
             .ex-artist-tag[rulename='artist profile'] {
                 margin: -8px 0 2px;
             }
@@ -4772,7 +4923,7 @@ function initializeArtStation () {
         requiredAttributes: "href",
         predicate: (el) => el.matches(".hover-card-name > a:first-child"),
         asyncMode: true,
-        css: /* CSS */`
+        css: /* CSS */ `
             .ex-artist-tag[rulename='artist popup'] {
                 font-size: 12pt;
                 margin-top: -10px;
@@ -4799,7 +4950,7 @@ function initializeArtStation () {
     // https://dylan-kowalski.artstation.com/
     findAndTranslate("artist", ".site-title a", {
         toProfileUrl: toFullURL,
-        css: /* CSS */`
+        css: /* CSS */ `
             .ex-artist-tag[rulename='personal sites'] {
                 font-size: 12pt;
                 line-height: 100%;
@@ -4813,11 +4964,11 @@ function initializeArtStation () {
     });
 }
 
-function initializeSauceNAO () {
+function initializeSauceNAO() {
     $(".resulttitle, .resultcontentcolumn")
         .contents()
         .filter((i, el) => el.nodeType === 3) // Get text nodes
-        .replaceWith(function fn () {
+        .replaceWith(function fn() {
             return $(this)
                 .text()
                 .split(", ")
@@ -4829,28 +4980,32 @@ function initializeSauceNAO () {
     // http://saucenao.com/search.php?db=999&url=https%3A%2F%2Fraikou4.donmai.us%2Fpreview%2Fad%2F90%2Fad90ad1cc3407f03955f22b427d21707.jpg
     // https://saucenao.com/search.php?db=999&url=http%3A%2F%2Fmedibangpaint.com%2Fwp-content%2Fuploads%2F2015%2F05%2Fgallerylist-04.jpg
     // https://saucenao.com/search.php?db=999&url=http%3A%2F%2Fpastyle.net%2FPLFG-0001_MelangelicTone%2Fimage%2Fartwork_MelangelicTone.jpg
-    findAndTranslate("artist", [
-        "strong:contains('Member:')+a",
-        "strong:contains('Author:')+a",
-        "strong:contains('Twitter:')+a",
-        "strong:contains('User ID:')+a",
-    ].join(","), {
-        classes: "inline",
-        ruleName: "artist by link",
-        toProfileUrl: (el) => {
-            const a = /** @type {HTMLAnchorElement} */(el);
-            if (!a.href.startsWith("https://twitter.com/")) return a.href;
-            return [
-                `https://twitter.com/${a.textContent?.slice(1)}`,
-                `https://twitter.com/intent/user?user_id=${a.href.match(/\d+/)?.[0]}`,
-            ];
+    findAndTranslate(
+        "artist",
+        [
+            "strong:contains('Member:')+a",
+            "strong:contains('Author:')+a",
+            "strong:contains('Twitter:')+a",
+            "strong:contains('User ID:')+a",
+        ].join(","),
+        {
+            classes: "inline",
+            ruleName: "artist by link",
+            toProfileUrl: (el) => {
+                const a = /** @type {HTMLAnchorElement} */ (el);
+                if (!a.href.startsWith("https://twitter.com/")) return a.href;
+                return [
+                    `https://twitter.com/${a.textContent?.slice(1)}`,
+                    `https://twitter.com/intent/user?user_id=${a.href.match(/\d+/)?.[0]}`,
+                ];
+            },
         },
-    });
+    );
 
     findAndTranslate("artistByName", ".resulttitle .target", {
         tagPosition: TAG_POSITIONS.beforebegin,
         classes: "inline",
-        css: /* CSS */`
+        css: /* CSS */ `
             .ex-artist-tag + .target {
                 display: none;
             }
@@ -4861,7 +5016,7 @@ function initializeSauceNAO () {
     findAndTranslate("tag", ".resultcontentcolumn .target", {
         tagPosition: TAG_POSITIONS.beforebegin,
         classes: "no-brackets",
-        css: /* CSS */`
+        css: /* CSS */ `
             .ex-translated-tags {
                 margin: 0;
             }
@@ -4873,12 +5028,12 @@ function initializeSauceNAO () {
     });
 }
 
-function initializeMastodon () {
-    watchSiteTheme(document.body, "class", (body) => (
-        body.classList.contains("theme-default") ? "dark" : "light"
-    ));
+function initializeMastodon() {
+    watchSiteTheme(document.body, "class", (body) =>
+        body.classList.contains("theme-default") ? "dark" : "light",
+    );
 
-    GM_addStyle(/* CSS */`
+    GM_addStyle(/* CSS */ `
         .ex-artist-tag {
             line-height: 100%;
         }
@@ -4946,12 +5101,12 @@ function initializeMastodon () {
     });
 }
 
-function initializeTweetDeck () {
-    watchSiteTheme(document.body, "data-nightmode", (body) => (
-        body.dataset.nightmode === "true" ? "dark" : "light"
-    ));
+function initializeTweetDeck() {
+    watchSiteTheme(document.body, "data-nightmode", (body) =>
+        body.dataset.nightmode === "true" ? "dark" : "light",
+    );
 
-    GM_addStyle(/* CSS */`
+    GM_addStyle(/* CSS */ `
         .tweet .ex-artist-tag {
             flex-grow: 100;
         }
@@ -4980,12 +5135,13 @@ function initializeTweetDeck () {
     });
 }
 
-function initializePixivFanbox () {
+function initializePixivFanbox() {
     /** @param {string} userNick */
     const getPixivLink = async (userNick) => {
         // Use direct query
-        const resp = await fetch(`https://api.fanbox.cc/creator.get?creatorId=${userNick}`)
-            .then((r) => r.json());
+        const resp = await fetch(`https://api.fanbox.cc/creator.get?creatorId=${userNick}`).then(
+            (r) => r.json(),
+        );
         return `https://www.pixiv.net/users/${resp.body.user.userId}`;
     };
     const getPixivLinkMemoized = _.memoize(getPixivLink);
@@ -4996,15 +5152,17 @@ function initializePixivFanbox () {
      */
     const addPixivTranslation = (options, el) => {
         const url = new URL(el.closest("a")?.href ?? window.location.href);
-        const userNick = url.host === "www.fanbox.cc"
-            ? url.pathname.match(/[\w-]+/)?.[0]
-            : url.host.match(/[\w-]+/)?.[0];
+        const userNick =
+            url.host === "www.fanbox.cc"
+                ? url.pathname.match(/[\w-]+/)?.[0]
+                : url.host.match(/[\w-]+/)?.[0];
         if (!userNick) return null;
-        getPixivLinkMemoized(userNick)
-            .then((pixivLink) => findAndTranslate("artist", el, {
+        getPixivLinkMemoized(userNick).then((pixivLink) =>
+            findAndTranslate("artist", el, {
                 ...options,
                 toProfileUrl: () => pixivLink,
-            }));
+            }),
+        );
         // Allow to translate artist by fanbox link
         return url.origin;
     };
@@ -5031,7 +5189,7 @@ function initializePixivFanbox () {
             ruleName: "find creator index pixiv",
         }),
         ruleName: "find creator index",
-        css: /* CSS */`
+        css: /* CSS */ `
             div[class^=Creator__Name] {
                 margin: -6px;
             }
@@ -5059,7 +5217,7 @@ function initializePixivFanbox () {
             ruleName: "supported pixiv",
         }),
         tagPosition: TAG_POSITIONS.beforeend,
-        css: /* CSS */`
+        css: /* CSS */ `
             div[class^=PlanOnlyUserInfo__UserName]:has(.ex-artist-tag) {
                 line-height: 20px !important;
             }
@@ -5100,7 +5258,7 @@ function initializePixivFanbox () {
         toTagName: (el) => el.previousSibling?.textContent ?? null,
         asyncMode: true,
         classes: "inline",
-        css: /* CSS */`
+        css: /* CSS */ `
             /* fix multiline text */
             div[class^=TagPage__TagTitle] {
                 display: block;
@@ -5114,14 +5272,15 @@ function initializePixivFanbox () {
     });
 }
 
-function initializeMisskey () {
+function initializeMisskey() {
     // Hashtags
     // https://misskey.io/tags/ブルアカ
     // https://misskey.art/tags/ブルアカ
     // https://misskey.design/tags/ブルアカ
     findAndTranslate("tag", "a, div", {
         // eslint-disable-next-line max-len
-        predicate: "a[href^='/tags/'], :is(main, ._pageContainer)>:first-child>:first-child :not(button)>div>i+div",
+        predicate:
+            "a[href^='/tags/'], :is(main, ._pageContainer)>:first-child>:first-child :not(button)>div>i+div",
         asyncMode: true,
         toTagName: getNormalizedHashtagName,
         ruleName: "tags",
@@ -5139,7 +5298,7 @@ function initializeMisskey () {
     findAndTranslate("artist", ".xpJo5", {
         toProfileUrl: getNormalizedDecentralizedSocNetUrl,
         asyncMode: true,
-        css: /* CSS */`
+        css: /* CSS */ `
             .ex-artist-tag[rulename='artist header'] {
                 font-size: .8em;
                 font-weight: 400;
@@ -5193,7 +5352,7 @@ function initializeMisskey () {
     });
 }
 
-function initializeFantia () {
+function initializeFantia() {
     // Artist name on profile/work page
     // https://fantia.jp/fanclubs/15340
     // https://fantia.jp/posts/2032060
@@ -5208,9 +5367,8 @@ function initializeFantia () {
     // Artist name on work cards
     // https://fantia.jp/ (投稿, 商品, コミッション tabs)
     findAndTranslate("artist", "a", {
-        predicate: (el) => (
-            el.matches(".module-author > a:first-of-type") && !!el.getAttribute("href")
-        ),
+        predicate: (el) =>
+            el.matches(".module-author > a:first-of-type") && !!el.getAttribute("href"),
         requiredAttributes: "href",
         tagPosition: {
             insertTag: ($container, $elem) => $container.prev().append($elem),
@@ -5218,7 +5376,7 @@ function initializeFantia () {
             getTagContainer: ($elem) => $elem.parent(".module-author").next(".module-author>a"),
         },
         asyncMode: true,
-        css: /* CSS */`
+        css: /* CSS */ `
             .module-author {
                 display: flex;
                 align-items: center;
@@ -5245,7 +5403,7 @@ function initializeFantia () {
         predicate: "a[href*='tag=']:not([target='_blank'])",
         tagPosition: TAG_POSITIONS.beforeend,
         asyncMode: true,
-        css: /* CSS */`
+        css: /* CSS */ `
             .active > a {
                 filter: brightness(1.2);
             }
@@ -5258,7 +5416,7 @@ function initializeFantia () {
     });
 }
 
-function initializeSkeb () {
+function initializeSkeb() {
     // Artist name on profile page
     // https://skeb.jp/@coconeeeco
     findAndTranslate("artist", "div.title", {
@@ -5289,9 +5447,9 @@ function initializeSkeb () {
     });
 }
 
-function initializeCiEn () {
+function initializeCiEn() {
     const getNormalizedUrl = (/** @type {HTMLElement} */ el) => {
-        const a = /** @type {HTMLAnchorElement} */(el);
+        const a = /** @type {HTMLAnchorElement} */ (el);
         return `https://ci-en.net/creator/${safeMatchMemoized(a.href, /\/creator\/(\d+)/, 1)}`;
     };
 
@@ -5367,10 +5525,11 @@ function initializeCiEn () {
     });
 }
 
-function initializeBluesky () {
-    const toProfileUrl = (/** @type {HTMLElement} */ el) => `https://bsky.app/profile/${(el.textContent ?? "")
-        .replace(/^[\s\u202A-\u202C]*@/, "")
-        .replace(/[\s\u202A-\u202C]*$/, "")}`;
+function initializeBluesky() {
+    const toProfileUrl = (/** @type {HTMLElement} */ el) =>
+        `https://bsky.app/profile/${(el.textContent ?? "")
+            .replace(/^[\s\u202A-\u202C]*@/, "")
+            .replace(/[\s\u202A-\u202C]*$/, "")}`;
 
     // Hashtag in post
     // https://bsky.app/profile/yitsunemelody.bsky.social/post/3l6y6kk5t6t26
@@ -5385,7 +5544,8 @@ function initializeBluesky () {
     findAndTranslate("artist", "div", {
         asyncMode: true,
         // eslint-disable-next-line max-len
-        predicate: "div[data-testid='profileView'] > :first-child > :first-child > :first-child > :nth-child(2) > :nth-child(2) > div:nth-child(2)",
+        predicate:
+            "div[data-testid='profileView'] > :first-child > :first-child > :first-child > :nth-child(2) > :nth-child(2) > div:nth-child(2)",
         tagPosition: TAG_POSITIONS.afterend,
         toProfileUrl,
         ruleName: "artist profile",
@@ -5397,7 +5557,7 @@ function initializeBluesky () {
     // https://bsky.app/profile/kanikamadayo.bsky.social/post/3l6pnkjfnhq2b
     findAndTranslate("artist", "a", {
         asyncMode: true,
-        predicate: "a[href^='/profile/'][aria-label]+a[href^='/profile/']",
+        predicate: "a[href^='/profile/'][aria-label]+a[href^='/profile/']:has(:not(*))",
         classes: "inline",
         toProfileUrl,
         ruleName: "artist post",
@@ -5418,7 +5578,8 @@ function initializeBluesky () {
     findAndTranslate("artist", "div", {
         asyncMode: true,
         // eslint-disable-next-line max-len
-        predicate: "div[data-testid^='postThreadItem-by-'] > :first-child > a > :first-child > :first-child > :first-child > :last-child",
+        predicate:
+            "div[data-testid^='postThreadItem-by-'] > :first-child > a > :first-child > :first-child > :first-child > :last-child",
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
         toProfileUrl,
@@ -5429,7 +5590,8 @@ function initializeBluesky () {
     findAndTranslate("artist", "div", {
         asyncMode: true,
         // eslint-disable-next-line max-len
-        predicate: "a[data-testid^='searchAutoCompleteResult-'] div:nth-child(2) > div:nth-child(2):not(:has(*))",
+        predicate:
+            "a[data-testid^='searchAutoCompleteResult-'] div:nth-child(2) > div:nth-child(2):not(:has(*))",
         toProfileUrl,
         ruleName: "artist search autocomplete",
     });
@@ -5438,7 +5600,8 @@ function initializeBluesky () {
     findAndTranslate("artist", "div", {
         asyncMode: true,
         // eslint-disable-next-line max-len
-        predicate: "div[style*='display: flex'] a[href^='/profile/'][role='link'] div:nth-child(2) > div:nth-child(2):not(:has(*))",
+        predicate:
+            "div[style*='display: flex'] a[href^='/profile/'][role='link'] div:nth-child(2) > div:nth-child(2):not(:has(*))",
         toProfileUrl,
         ruleName: "people search result",
     });
@@ -5448,18 +5611,22 @@ function initializeBluesky () {
     findAndTranslate("artist", "div", {
         asyncMode: true,
         // eslint-disable-next-line max-len
-        predicate: "div[style*='display: flex'] div:is([data-testid='profileFollowsScreen'], [data-testid='profileFollowersScreen']) a > :first-child > :nth-child(2) > :nth-child(2)",
+        predicate:
+            "div[style*='display: flex'] div:is([data-testid='profileFollowsScreen'], [data-testid='profileFollowersScreen']) a > :first-child > :nth-child(2) > :nth-child(2)",
         toProfileUrl,
         ruleName: "people search result",
     });
 }
 
-function initializeWeibo () {
+function initializeWeibo() {
     watchSiteTheme(document.documentElement, "data-theme", (html) => {
         switch (html.dataset.theme) {
-            case "dark": return "dark";
-            case "light": return "light";
-            default: return "auto";
+            case "dark":
+                return "dark";
+            case "light":
+                return "light";
+            default:
+                return "auto";
         }
     });
 
@@ -5470,12 +5637,14 @@ function initializeWeibo () {
     findAndTranslate("artist", "div", {
         asyncMode: true,
         predicate: "div[class^='ProfileHeader_name_']",
-        toProfileUrl: (el) => url(safeMatchMemoized(
-            $(el).parent().parent().nextAll("a")
-                .prop("href"),
-            /to_uid=(\d+)/,
-            1,
-        )),
+        toProfileUrl: (el) =>
+            url(
+                safeMatchMemoized(
+                    $(el).parent().parent().nextAll("a").prop("href"),
+                    /to_uid=(\d+)/,
+                    1,
+                ),
+            ),
         classes: "inline",
         ruleName: "artist profile",
     });
@@ -5494,14 +5663,11 @@ function initializeWeibo () {
     findAndTranslate("artist", "a", {
         asyncMode: true,
         predicate: "article header a[href^='/n/']",
-        toProfileUrl: (el) => url(safeMatchMemoized(
-            $(el).parent().next().find("a")
-                .prop("href"),
-            /\d+/,
-        )),
+        toProfileUrl: (el) =>
+            url(safeMatchMemoized($(el).parent().next().find("a").prop("href"), /\d+/)),
         classes: "inline",
         ruleName: "artist re-post",
-        css: /* CSS */`[rulename="artist re-post"] { margin-right: 1ch }`,
+        css: /* CSS */ `[rulename="artist re-post"] { margin-right: 1ch }`,
     });
 
     // user popup
@@ -5509,13 +5675,16 @@ function initializeWeibo () {
     findAndTranslate("artist", "a", {
         asyncMode: true,
         predicate: ".popcard > :first-child > :first-child a[class*='PopCard_']",
-        toProfileUrl: (el) => url(safeMatchMemoized(
-            $(el).parents(".popcard").find("a[href^='/u/page/follow/']").prop("href"),
-            /\d+/,
-        )),
+        toProfileUrl: (el) =>
+            url(
+                safeMatchMemoized(
+                    $(el).parents(".popcard").find("a[href^='/u/page/follow/']").prop("href"),
+                    /\d+/,
+                ),
+            ),
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
-        css: /* CSS */`[rulename="artist popup"] { text-shadow: 0 0 5px black }`,
+        css: /* CSS */ `[rulename="artist popup"] { text-shadow: 0 0 5px black }`,
         ruleName: "artist popup",
     });
 
@@ -5544,12 +5713,12 @@ function initializeWeibo () {
         asyncMode: true,
         predicate: ".wbpro-side[page='profileRecom'] a + div > a:first-child",
         onadded: preventSiteNavigation,
-        css: /* CSS */`[rulename="sidebar user"] { font-size: 13px }`,
+        css: /* CSS */ `[rulename="sidebar user"] { font-size: 13px }`,
         ruleName: "sidebar user",
     });
 }
 
-function initializeWeiboMobile () {
+function initializeWeiboMobile() {
     const url = (/** @type {string} */ id) => (id ? `https://www.weibo.com/u/${id}` : "");
 
     // Profile page
@@ -5571,7 +5740,10 @@ function initializeWeiboMobile () {
             let node = el.parentElement;
             let id;
             // eslint-disable-next-line no-underscore-dangle, max-len, no-cond-assign
-            while (node && !(id = /** @type {any} */ (node).__vue__?._data?.carddata?.mblog?.user?.id)) {
+            while (
+                node &&
+                !(id = /** @type {any} */ (node).__vue__?._data?.carddata?.mblog?.user?.id)
+            ) {
                 node = node.parentElement;
             }
             if (!node || !id) return null;
@@ -5588,9 +5760,8 @@ function initializeWeiboMobile () {
     findAndTranslate("artist", "h3", {
         asyncMode: true,
         predicate: "[href^='/profile/'] > h3",
-        toProfileUrl: (el) => url(
-            safeMatchMemoized(/** @type {HTMLAnchorElement} */ (el.parentElement).href, /\d+/),
-        ),
+        toProfileUrl: (el) =>
+            url(safeMatchMemoized(/** @type {HTMLAnchorElement} */ (el.parentElement).href, /\d+/)),
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
         onadded: preventSiteNavigation,
@@ -5627,7 +5798,7 @@ function initializeWeiboMobile () {
     });
 }
 
-function initializeXiaohongshu () {
+function initializeXiaohongshu() {
     // Tags in post
     findAndTranslate("tag", "a.tag", {
         asyncMode: true,
@@ -5662,7 +5833,7 @@ function initializeXiaohongshu () {
     });
 }
 
-function initialize () {
+function initialize() {
     GM_jQuery_setup();
     GM_addStyle(PROGRAM_CSS);
     GM_addStyle(TOOLTIP_CSS);
@@ -5675,31 +5846,71 @@ function initialize () {
     debuglog(`set ${theme} theme mode`);
 
     switch (window.location.host) {
-        case "baraag.net":              initializeMastodon();       break;
-        case "bsky.app":                initializeBluesky();        break;
+        case "baraag.net":
+            initializeMastodon();
+            break;
+        case "bsky.app":
+            initializeBluesky();
+            break;
         case "ci-en.net":
-        case "ci-en.dlsite.com":        initializeCiEn();           break;
-        case "www.deviantart.com":      initializeDeviantArt();     break;
-        case "fantia.jp":               initializeFantia();         break;
-        case "www.hentai-foundry.com":  initializeHentaiFoundry();  break;
+        case "ci-en.dlsite.com":
+            initializeCiEn();
+            break;
+        case "www.deviantart.com":
+            initializeDeviantArt();
+            break;
+        case "fantia.jp":
+            initializeFantia();
+            break;
+        case "www.hentai-foundry.com":
+            initializeHentaiFoundry();
+            break;
         case "misskey.art":
         case "misskey.design":
-        case "misskey.io":              initializeMisskey();        break;
-        case "nijie.info":              initializeNijie();          break;
-        case "pawoo.net":               initializeMastodon();       break;
+        case "misskey.io":
+            initializeMisskey();
+            break;
+        case "nijie.info":
+            initializeNijie();
+            break;
+        case "pawoo.net":
+            initializeMastodon();
+            break;
         case "dic.pixiv.net":
-        case "www.pixiv.net":           initializePixiv();          break;
-        case "saucenao.com":            initializeSauceNAO();       break;
-        case "seiga.nicovideo.jp":      initializeNicoSeiga();      break;
-        case "skeb.jp":                 initializeSkeb();           break;
-        case "www.tinami.com":          initializeTinami();         break;
+        case "www.pixiv.net":
+            initializePixiv();
+            break;
+        case "saucenao.com":
+            initializeSauceNAO();
+            break;
+        case "seiga.nicovideo.jp":
+            initializeNicoSeiga();
+            break;
+        case "skeb.jp":
+            initializeSkeb();
+            break;
+        case "www.tinami.com":
+            initializeTinami();
+            break;
         case "twitter.com":
-        case "mobile.twitter.com":      initializeTwitter();        break;
-        case "tweetdeck.twitter.com":   initializeTweetDeck();      break;
-        case "www.weibo.com":           initializeWeibo();          break;
-        case "m.weibo.cn":              initializeWeiboMobile();    break;
-        case "x.com":                   initializeTwitter();        break;
-        case "www.xiaohongshu.com":     initializeXiaohongshu();    break;
+        case "mobile.twitter.com":
+            initializeTwitter();
+            break;
+        case "tweetdeck.twitter.com":
+            initializeTweetDeck();
+            break;
+        case "www.weibo.com":
+            initializeWeibo();
+            break;
+        case "m.weibo.cn":
+            initializeWeiboMobile();
+            break;
+        case "x.com":
+            initializeTwitter();
+            break;
+        case "www.xiaohongshu.com":
+            initializeXiaohongshu();
+            break;
         default:
             if (window.location.host.endsWith("artstation.com")) {
                 initializeArtStation();

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" height="16" width="16">
+	<defs>
+		<linearGradient id="a" gradientTransform="rotate(85)">
+			<stop offset="49%" stop-color="#ba9570"/>
+			<stop offset="67%" stop-color="#a4815f"/>
+		</linearGradient>
+	</defs>
+	<g stroke="#000">
+		<path d="M1.5 14.5V4.2l2.8-2.7h10.2v10.3l-2.8 2.7z" fill="url(#a)"/>
+		<path d="M1.5 4.5h10v10" fill="none"/>
+		<path d="m14.5 1.5-3 3"/>
+	</g>
+</svg>
