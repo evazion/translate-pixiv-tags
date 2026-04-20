@@ -7,7 +7,7 @@
     "lib": "lib"
   },
   "dependencies": {
-    "eslint": "^8.55.0",
+    "eslint": "^9.26.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.18.2",
     "eslint-plugin-sonarjs": "^0.23.0",
