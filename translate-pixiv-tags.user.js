@@ -35,6 +35,7 @@
 // @match        *://www.weibo.com/*
 // @match        *://x.com/*
 // @match        *://www.xiaohongshu.com/*
+// @match        *://www.rednote.com/*
 // @grant        GM_getResourceText
 // @grant        GM_getResourceURL
 // @grant        GM_xmlhttpRequest
@@ -1701,6 +1702,12 @@ const NORMALIZE_PROFILE_URL = {
         path: /^\/[\w-]+|\/i\/user\/\d+$/,
     },
     "www.xiaohongshu.com": {
+        valid: false,
+        normalize (url) {
+            return `https://www.xiaohongshu.com${url.pathname}`;
+        },
+    },
+    "www.rednote.com": {
         valid: false,
         normalize (url) {
             return `https://www.xiaohongshu.com${url.pathname}`;
@@ -5641,9 +5648,9 @@ function initializeXiaohongshu () {
     });
 
     // Artist tag in post preview
-    findAndTranslate("artist", "span.name", {
+    findAndTranslate("artist", ".name", {
         asyncMode: true,
-        predicate: ".note-item .author span.name",
+        predicate: ".note-item .author .name",
         tagPosition: TAG_POSITIONS.beforeend,
         ruleName: "artist note card",
     });
@@ -5703,6 +5710,7 @@ function initialize () {
         case "tweetdeck.twitter.com":   initializeTweetDeck();      break;
         case "www.weibo.com":           initializeWeibo();          break;
         case "m.weibo.cn":              initializeWeiboMobile();    break;
+        case "www.rednote.com":
         case "www.xiaohongshu.com":     initializeXiaohongshu();    break;
         default:
             if (window.location.host.endsWith("artstation.com")) {
