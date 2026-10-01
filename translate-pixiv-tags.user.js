@@ -4621,10 +4621,40 @@ function initializeTwitter () {
         ruleName: "tags",
     });
 
-    // Floating name of a channel https://x.com/mugosatomi
-    const URLfromLocation = () => (
-        `https://x.com${safeMatchMemoized(window.location.pathname, /\/\w+/)}`
+    // Artists who changed their username are still findable by the intent URL
+    /** @param {string|null|undefined} userId */
+    const intentUrl = (userId) => (userId ? [`https://x.com/i/user/${userId}`] : []);
+
+    // User ID from the profile's schema, only if it belongs to the current page
+    /** @param {string} screenName */
+    const userIdFromSchema = (screenName) => {
+        try {
+            const { mainEntity } = JSON.parse($("script[data-testid='UserProfileSchema-test']").text());
+            if (mainEntity?.additionalName?.toLowerCase() === screenName.toLowerCase()) {
+                return String(mainEntity.identifier);
+            }
+        } catch {}
+        return null;
+    };
+
+    // User ID from the follow button of a user cell or a hover card
+    /** @param {HTMLElement} el */
+    const userIdFromFollowButton = (el) => safeMatchMemoized(
+        $(el)
+            .closest("[data-testid='UserCell'], [data-testid='HoverCard']")
+            .find("[data-testid$='-follow'], [data-testid$='-unfollow']")
+            .attr("data-testid") ?? "",
+        /^\d+/,
     );
+
+    // Floating name of a channel https://x.com/mugosatomi
+    const URLfromLocation = () => {
+        const screenName = safeMatchMemoized(window.location.pathname, /\w+/);
+        return [
+            `https://x.com/${screenName}`,
+            ...intentUrl(userIdFromSchema(screenName)),
+        ];
+    };
     const channelNameSelector = "div[data-testid='primaryColumn']>div>:first-child h2>div>div>div";
     // On switching to a channel from another channel, Twitter updates only text nodes
     // so, for correct work, it's required to watch for
@@ -4659,6 +4689,20 @@ function initializeTwitter () {
         // eslint-disable-next-line unicorn/no-array-for-each
         callback: ([summary]) => summary.added.forEach(watchForChanges),
     });
+    // The profile schema is added to <head> after the channel name is rendered,
+    // so translate the channel name again once the schema is available
+    let lastSchema = "";
+    new MutationObserver(() => {
+        const schema = $("script[data-testid='UserProfileSchema-test']").text();
+        if (schema === lastSchema) return;
+        lastSchema = schema;
+        if (!schema) return;
+        $(channelNameSelector).not(TAG_SELECTOR).each((i, elem) => findAndTranslate("artist", elem, {
+            toProfileUrl: URLfromLocation,
+            classes: "inline",
+            ruleName: "channel header 3",
+        }));
+    }).observe(document.head, { childList: true, subtree: true, characterData: true });
 
     // Deleted channel https://x.com/6o2_iii
     findAndTranslate("artist", "span.r-qvutc0", {
@@ -4674,7 +4718,7 @@ function initializeTwitter () {
     // https://x.com/Merryweatherey/status/1029008151411023872/media_tags
     findAndTranslate("artist", "div.r-1wbh5a2.r-18u37iz", {
         predicate: `div:has(>div>a.r-1wbh5a2[tabindex])`,
-        toProfileUrl: linkInChildren,
+        toProfileUrl: (el) => [linkInChildren(el), ...intentUrl(userIdFromFollowButton(el))],
         asyncMode: true,
         classes: "inline",
         css: /* CSS */`
@@ -4704,6 +4748,10 @@ function initializeTwitter () {
     // User card info
     findAndTranslate("artist", "a", {
         predicate: "div.r-nsbfu8 a + div a",
+        toProfileUrl: (el) => [
+            /** @type {HTMLAnchorElement} */(el).href,
+            ...intentUrl(userIdFromFollowButton(el)),
+        ],
         tagPosition: TAG_POSITIONS.afterParent,
         asyncMode: true,
         ruleName: "artist popup",
