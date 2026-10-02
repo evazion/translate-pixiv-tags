@@ -4608,24 +4608,46 @@ const TWITTER_USER_IDS = new Map();
 // User IDs are mostly not in the DOM, so collect them from the API responses.
 // Has to be set up before Twitter sends its first requests.
 function hookTwitterApi () {
-    const { open } = XMLHttpRequest.prototype;
-    XMLHttpRequest.prototype.open = function hookedOpen (...args) {
-        if (String(args[1]).includes("/graphql/")) {
-            this.addEventListener("load", () => {
-                if (this.status !== 200 || typeof this.response !== "string") return;
-                try {
-                    JSON.parse(this.response, (key, value) => {
-                        const screenName = value?.core?.screen_name ?? value?.legacy?.screen_name;
-                        if (value?.__typename === "User" && value.rest_id && screenName) {
-                            TWITTER_USER_IDS.set(screenName.toLowerCase(), value.rest_id);
-                        }
-                        return value;
-                    });
-                } catch {}
-            });
-        }
-        return open.apply(this, args);
+    // Runs in the page context, as the userscript can be sandboxed from the page's XHR.
+    // Can't use anything from the userscript, so the found users are sent back via an event.
+    const pageHook = () => {
+        document.documentElement.dataset.tptHooked = "";
+        const { open } = XMLHttpRequest.prototype;
+        XMLHttpRequest.prototype.open = function hookedOpen (...args) {
+            if (String(args[1]).includes("/graphql/")) {
+                this.addEventListener("load", () => {
+                    if (this.status !== 200 || typeof this.response !== "string") return;
+                    /** @type {Record<string, string>} */
+                    const users = {};
+                    try {
+                        JSON.parse(this.response, (key, value) => {
+                            const screenName = value?.core?.screen_name ?? value?.legacy?.screen_name;
+                            if (value?.__typename === "User" && value.rest_id && screenName) {
+                                users[screenName.toLowerCase()] = value.rest_id;
+                            }
+                            return value;
+                        });
+                    } catch {}
+                    if (Object.keys(users).length === 0) return;
+                    document.dispatchEvent(new CustomEvent("tpt-twitter-users", {
+                        detail: JSON.stringify(users),
+                    }));
+                });
+            }
+            return open.apply(this, args);
+        };
     };
+
+    document.addEventListener("tpt-twitter-users", (ev) => {
+        const users = JSON.parse(/** @type {CustomEvent} */(ev).detail);
+        for (const [screenName, id] of Object.entries(users)) TWITTER_USER_IDS.set(screenName, id);
+    });
+    // GM_addElement isn't blocked by the site's CSP
+    try {
+        GM_addElement(document.documentElement, "script", { textContent: `(${pageHook})()` })?.remove();
+    } catch {}
+    // If the script still didn't run, hope the userscript isn't sandboxed
+    if (!("tptHooked" in document.documentElement.dataset)) pageHook();
 }
 
 function initializeTwitter () {
