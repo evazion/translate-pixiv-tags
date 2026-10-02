@@ -5839,9 +5839,8 @@ function initialize () {
 // Program execution start
 //------------------------
 
-if (["x.com", "twitter.com", "mobile.twitter.com"].includes(window.location.host)) {
-    hookTwitterApi();
-}
+// Not in initializeTwitter, as Twitter's async scripts may send requests before DOMContentLoaded
+if (window.location.host === "x.com") hookTwitterApi();
 
 if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initialize);
