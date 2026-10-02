@@ -4619,14 +4619,18 @@ function hookTwitterApi () {
                     if (this.status !== 200 || typeof this.response !== "string") return;
                     /** @type {Record<string, string>} */
                     const users = {};
+                    // Not using a JSON.parse reviver, as other scripts may override JSON.parse without it
+                    /** @param {any} value */
+                    const findUsers = (value) => {
+                        if (!value || typeof value !== "object") return;
+                        const screenName = value.core?.screen_name ?? value.legacy?.screen_name;
+                        if (value.__typename === "User" && value.rest_id && screenName) {
+                            users[screenName.toLowerCase()] = value.rest_id;
+                        }
+                        for (const child of Object.values(value)) findUsers(child);
+                    };
                     try {
-                        JSON.parse(this.response, (key, value) => {
-                            const screenName = value?.core?.screen_name ?? value?.legacy?.screen_name;
-                            if (value?.__typename === "User" && value.rest_id && screenName) {
-                                users[screenName.toLowerCase()] = value.rest_id;
-                            }
-                            return value;
-                        });
+                        findUsers(JSON.parse(this.response));
                     } catch {}
                     if (Object.keys(users).length === 0) return;
                     document.dispatchEvent(new CustomEvent("tpt-twitter-users", {
