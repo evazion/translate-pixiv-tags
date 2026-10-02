@@ -62,6 +62,7 @@
 // @connect      raw.githubusercontent.com
 // @connect      icons.duckduckgo.com
 // @noframes
+// @run-at       document-start
 // ==/UserScript==
 
 /* spell-checker: enable */
@@ -4601,6 +4602,32 @@ function initializeHentaiFoundry () {
     });
 }
 
+/** @type {Map<string, string>} Twitter user IDs by lowercased screen name */
+const TWITTER_USER_IDS = new Map();
+
+// User IDs are mostly not in the DOM, so collect them from the API responses.
+// Has to be set up before Twitter sends its first requests.
+function hookTwitterApi () {
+    const { open } = XMLHttpRequest.prototype;
+    XMLHttpRequest.prototype.open = function hookedOpen (...args) {
+        if (String(args[1]).includes("/graphql/")) {
+            this.addEventListener("load", () => {
+                if (this.status !== 200 || typeof this.response !== "string") return;
+                try {
+                    JSON.parse(this.response, (key, value) => {
+                        const screenName = value?.core?.screen_name ?? value?.legacy?.screen_name;
+                        if (value?.__typename === "User" && value.rest_id && screenName) {
+                            TWITTER_USER_IDS.set(screenName.toLowerCase(), value.rest_id);
+                        }
+                        return value;
+                    });
+                } catch {}
+            });
+        }
+        return open.apply(this, args);
+    };
+}
+
 function initializeTwitter () {
     watchSiteTheme(document.body, "style", (body) => (
         chooseBackgroundColorScheme($(body)).theme
@@ -4622,8 +4649,16 @@ function initializeTwitter () {
     });
 
     // Artists who changed their username are still findable by the intent URL
-    /** @param {string|null|undefined} userId */
-    const intentUrl = (userId) => (userId ? [`https://x.com/i/user/${userId}`] : []);
+    /**
+     * @param {string|undefined} profileUrl
+     * @param {string|null} [userId] The user ID found in the DOM
+     */
+    const withIntentUrl = (profileUrl, userId) => {
+        if (!profileUrl) return null;
+        const screenName = safeMatchMemoized(profileUrl, /\/(\w+)$/, 1).toLowerCase();
+        const id = userId || TWITTER_USER_IDS.get(screenName);
+        return id ? [profileUrl, `https://x.com/i/user/${id}`] : profileUrl;
+    };
 
     // User ID from the profile's schema, only if it belongs to the current page
     /** @param {string} screenName */
@@ -4650,10 +4685,7 @@ function initializeTwitter () {
     // Floating name of a channel https://x.com/mugosatomi
     const URLfromLocation = () => {
         const screenName = safeMatchMemoized(window.location.pathname, /\w+/);
-        return [
-            `https://x.com/${screenName}`,
-            ...intentUrl(userIdFromSchema(screenName)),
-        ];
+        return withIntentUrl(`https://x.com/${screenName}`, userIdFromSchema(screenName));
     };
     const channelNameSelector = "div[data-testid='primaryColumn']>div>:first-child h2>div>div>div";
     // On switching to a channel from another channel, Twitter updates only text nodes
@@ -4718,7 +4750,7 @@ function initializeTwitter () {
     // https://x.com/Merryweatherey/status/1029008151411023872/media_tags
     findAndTranslate("artist", "div.r-1wbh5a2.r-18u37iz", {
         predicate: `div:has(>div>a.r-1wbh5a2[tabindex])`,
-        toProfileUrl: (el) => [linkInChildren(el), ...intentUrl(userIdFromFollowButton(el))],
+        toProfileUrl: (el) => withIntentUrl(linkInChildren(el), userIdFromFollowButton(el)),
         asyncMode: true,
         classes: "inline",
         css: /* CSS */`
@@ -4734,7 +4766,7 @@ function initializeTwitter () {
     // Quoted tweets https://x.com/Murata_Range/status/1108340994557140997
     findAndTranslate("artist", "div.r-1wvb978", {
         predicate: "[data-testid=User-Name] [tabindex]:not([role]) > div",
-        toProfileUrl: (el) => `https://x.com/${el.textContent?.slice(1)}`,
+        toProfileUrl: (el) => withIntentUrl(`https://x.com/${el.textContent?.slice(1)}`),
         asyncMode: true,
         classes: "inline",
         css: /* CSS */`
@@ -4748,10 +4780,10 @@ function initializeTwitter () {
     // User card info
     findAndTranslate("artist", "a", {
         predicate: "div.r-nsbfu8 a + div a",
-        toProfileUrl: (el) => [
+        toProfileUrl: (el) => withIntentUrl(
             /** @type {HTMLAnchorElement} */(el).href,
-            ...intentUrl(userIdFromFollowButton(el)),
-        ],
+            userIdFromFollowButton(el),
+        ),
         tagPosition: TAG_POSITIONS.afterParent,
         asyncMode: true,
         ruleName: "artist popup",
@@ -5781,4 +5813,12 @@ function initialize () {
 // Program execution start
 //------------------------
 
-initialize();
+if (["x.com", "twitter.com", "mobile.twitter.com"].includes(window.location.host)) {
+    hookTwitterApi();
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initialize);
+} else {
+    initialize();
+}
