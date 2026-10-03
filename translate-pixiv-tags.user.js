@@ -4714,6 +4714,21 @@ function initializeTwitter () {
         return withIntentUrl(`https://x.com/${screenName}`, userIdFromSchema(screenName));
     };
     const channelNameSelector = "div[data-testid='primaryColumn']>div>:first-child h2>div>div>div";
+    /** @param {HTMLElement} elem */
+    const translateChannelName = (elem) => {
+        TAG_POSITIONS.afterend.findTag($(elem)).remove();
+        const channel = () => safeMatchMemoized(window.location.pathname, /\w+/);
+        const currentChannel = channel();
+        findAndTranslate("artist", elem, {
+            toProfileUrl: URLfromLocation,
+            classes: "inline",
+            ruleName: "channel header",
+            // The response may arrive after switching to another channel
+            onadded: ($tag) => {
+                if (channel() !== currentChannel) $tag.remove();
+            },
+        });
+    };
     // On switching to a channel from another channel, Twitter updates only text nodes
     // so, for correct work, it's required to watch for
     // the channel name regardless whether it was translated
@@ -4723,22 +4738,11 @@ function initializeTwitter () {
         if (!elem.matches(channelNameSelector) || elem.matches(TAG_SELECTOR)) {
             return;
         }
-        findAndTranslate("artist", elem, {
-            toProfileUrl: URLfromLocation,
-            classes: "inline",
-            ruleName: "channel header 1",
-        });
+        translateChannelName(elem);
         new MutationSummary({
             rootNode: elem,
             queries: [{ characterData: true }],
-            callback: () => {
-                TAG_POSITIONS.afterend.findTag($(elem)).remove();
-                findAndTranslate("artist", elem, {
-                    toProfileUrl: URLfromLocation,
-                    classes: "inline",
-                    ruleName: "channel header 2",
-                });
-            },
+            callback: () => translateChannelName(elem),
         });
     };
     $(channelNameSelector).each((i, elem) => watchForChanges(elem));
@@ -4755,11 +4759,7 @@ function initializeTwitter () {
         if (schema === lastSchema) return;
         lastSchema = schema;
         if (!schema) return;
-        $(channelNameSelector).not(TAG_SELECTOR).each((i, elem) => findAndTranslate("artist", elem, {
-            toProfileUrl: URLfromLocation,
-            classes: "inline",
-            ruleName: "channel header 3",
-        }));
+        $(channelNameSelector).not(TAG_SELECTOR).each((i, elem) => translateChannelName(elem));
     }).observe(document.head, { childList: true, subtree: true, characterData: true });
 
     // Deleted channel https://x.com/6o2_iii
