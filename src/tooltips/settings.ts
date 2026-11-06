@@ -1,16 +1,10 @@
 import { isEqual } from "underscore";
 import settingsIconRaw from "../resource/settings-icon.svg?raw";
-import {
-    DataSource,
-    Setting,
-    SettingName,
-    SETTINGS,
-    SETTINGS_SCHEMA,
-    SourceAdapter,
-} from "../settings";
-import { chooseBackgroundColorScheme, self } from "../utils";
+import { ADAPTERS, DataSource, Setting, SettingName, SETTINGS, SETTINGS_SCHEMA } from "../settings";
+import { chooseBackgroundColorScheme, console, self } from "../utils";
 import { css, html, LitElement } from "lit";
 import { unsafeSVG } from "lit/directives/unsafe-svg.js";
+import { execAdapters, SourceAdapter, validateAdapter } from "../adapter-loader";
 
 export const settingsIcon = unsafeSVG(settingsIconRaw);
 
@@ -35,38 +29,57 @@ class TptSettings extends LitElement {
                 padding: 20px;
                 display: grid;
                 grid-template-columns: 300px 1fr;
+                align-items: center;
                 grid-gap: 10px;
                 font-size: 12px;
-            }
-            :host(.tip-light) .container {
-                background-color: #fff;
-                color: #222;
-            }
-            :host(.tip-dark) .container {
-                background-color: #222;
-                color: #fff;
-            }
-            .container div:nth-of-type(even) {
-                display: flex;
-                flex-direction: column-reverse;
-            }
-            .container h2 {
-                grid-column: span 2;
-                margin: auto;
+
+                div:nth-of-type(even) {
+                    display: flex;
+                    flex-direction: column-reverse;
+                }
+                :host(.tip-light) & {
+                    background-color: #fff;
+                    color: #222;
+                }
+                :host(.tip-dark) & {
+                    background-color: #222;
+                    color: #fff;
+                }
+                h2,
+                div:has(div),
+                div:has(+ div > div) {
+                    grid-column: span 2;
+                    margin: auto;
+                }
+                div:has(+ div > div) {
+                    font-weight: bold;
+                    font-size: 125%;
+                }
             }
             input[type="button"] {
                 margin: 0 5px;
             }
             .sources-list {
                 display: grid;
-                grid-template-columns: repeat(auto, 7);
+                grid-template-columns: repeat(7, auto);
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.5rem 0.5rem 0;
+                border: 1px solid gray;
                 .add-btn {
                     grid-column: span 3;
                 }
             }
             .adapters-list {
                 display: grid;
-                grid-template-columns: repeat(auto, 3);
+                grid-template-columns: repeat(3, auto);
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.5rem;
+                border: 1px solid gray;
+            }
+            .validate-msg {
+                grid-column: 2 / -1;
             }
         `;
     }
@@ -74,12 +87,17 @@ class TptSettings extends LitElement {
     static get properties() {
         return {
             changed: { state: true },
+            sourceParamError: { state: true },
+            adapterUrlError: { state: true },
         };
     }
 
-    settings: typeof SETTINGS;
-    changed: boolean;
-    changes: { [K in SettingName]?: any };
+    // ensure these aren't declared as native class fields
+    declare settings: typeof SETTINGS;
+    declare changed: boolean;
+    declare changes: Partial<typeof SETTINGS>;
+    declare sourceParamError: string;
+    declare adapterUrlError: string;
     destroy: () => void;
 
     constructor() {
@@ -88,6 +106,7 @@ class TptSettings extends LitElement {
         this.settings = { ...SETTINGS };
         this.changed = false;
         this.changes = {};
+        this.sourceParamError = "";
         this.destroy = destroy;
 
         document.addEventListener("keydown", closeOnEscape);
@@ -106,26 +125,26 @@ class TptSettings extends LitElement {
         }
     }
 
-    connectedCallback(): void {
-        console.log("settings connected");
-    }
-
-    disconnectedCallback(): void {
-        console.log("settings disconnected");
-    }
-
     addChange(name: SettingName, newValue: any) {
         if (name in this.changes && isEqual(this.settings[name], newValue)) {
-            // @ts-ignore
-            delete this.changes;
+            delete this.changes[name];
         } else {
             this.changes[name] = newValue;
         }
         this.changed = Object.keys(this.changes).length > 0;
     }
 
-    applyChanges() {
+    async applyChanges() {
+        if (this.changes.source_adapters) {
+            const newAdapters = this.changes.source_adapters.filter((adapter) =>
+                SETTINGS.source_adapters.every((a) => a.name !== adapter.name),
+            );
+            await execAdapters(newAdapters);
+        }
         Object.assign(SETTINGS, this.changes);
+        this.settings = { ...SETTINGS };
+        this.changes = {};
+        this.changed = false;
     }
 
     settingToInput(setting: Setting, name: SettingName) {
@@ -145,18 +164,16 @@ class TptSettings extends LitElement {
                     />
                 `;
             case "option": {
-                const options = Object.entries(setting.values)
-                    .map(
-                        ([val, descr]) => html /* HTML */ `
-                            <option
-                                value="${val}"
-                                ${val === value ? "selected" : ""}
-                            >
-                                ${descr}
-                            </option>
-                        `,
-                    )
-                    .join("");
+                const options = Object.entries(setting.values).map(
+                    ([val, descr]) => html /* HTML */ `
+                        <option
+                            value="${val}"
+                            ${val === value ? "selected" : ""}
+                        >
+                            ${descr}
+                        </option>
+                    `,
+                );
 
                 return html /* HTML */ `
                     <select
@@ -174,7 +191,7 @@ class TptSettings extends LitElement {
                 return html /* HTML */ `
                     <input
                         type="checkbox"
-                        ${value ? "checked" : ""}
+                        ?checked="${value}"
                         name="${name}"
                         @change=${(ev: Event) => {
                             const newValue = (ev.currentTarget as HTMLInputElement).checked;
@@ -183,7 +200,7 @@ class TptSettings extends LitElement {
                     />
                 `;
             case "sources": {
-                const list = value as DataSource[];
+                const list = this.changes.data_sources ?? (value as DataSource[]);
                 const rows = list.map(
                     (source, i) => html`
                         <div>${source.adapter}</div>
@@ -224,26 +241,29 @@ class TptSettings extends LitElement {
                         </label>
                         <button
                             @click=${() => {
-                                this.addChange(name, list.toSpliced(i, 1).with(i - 1, list[i]));
+                                this.addChange(
+                                    name,
+                                    list.toSpliced(i - 1, 2, list[i], list[i - 1]),
+                                );
                             }}
-                            ?disabled=${i <= 1 || i >= list.length - 1}
+                            ?disabled=${i <= 0}
                         >
-                            ↑
+                            🠉
                         </button>
                         <button
                             @click=${() => {
-                                this.addChange(name, list.toSpliced(i, 1).with(i - 1, list[i]));
+                                this.addChange(name, list.toSpliced(i, 2, list[i + 1], list[i]));
                             }}
-                            ?disabled=${i <= 0 || i >= list.length - 2}
+                            ?disabled=${i >= list.length - 1}
                         >
-                            ↓
+                            🠟
                         </button>
                         <button
                             @click=${() => {
                                 this.addChange(name, list.toSpliced(i, 1));
                             }}
                         >
-                            ╳
+                            X
                         </button>
                     `,
                 );
@@ -254,17 +274,15 @@ class TptSettings extends LitElement {
                     translateTag: true,
                 };
                 return html`
-                    <h3>${setting.descr}</h3>
                     <div class="sources-list">
                         ${rows}
+
                         <select
                             @change=${(ev: Event) => {
                                 newSource.adapter = (ev.currentTarget as HTMLSelectElement).value;
                             }}
                         >
-                            ${this.settings.source_adapters.map(
-                                ({ name }) => html` <option>${name}</option> `,
-                            )}
+                            ${Object.keys(ADAPTERS).map((name) => html`<option>${name}</option>`)}
                         </select>
                         <input
                             @change=${(ev: Event) => {
@@ -295,23 +313,34 @@ class TptSettings extends LitElement {
                         </label>
                         <button
                             class="add-btn"
-                            @click=${() => {
-                                // TODO validate newSource.param
-                                this.addChange(name, list.concat([newSource]));
+                            @click=${async () => {
+                                const adapter = ADAPTERS[newSource.adapter];
+                                try {
+                                    this.sourceParamError = "checking...";
+                                    await adapter.validateParams(newSource.param);
+                                    this.addChange(name, list.concat([newSource]));
+                                    this.sourceParamError = "";
+                                } catch (ex) {
+                                    this.sourceParamError = (ex as Error).message;
+                                }
                             }}
                         >
                             Add
                         </button>
+
+                        <div class="validate-msg">${this.sourceParamError || null}</div>
                     </div>
                 `;
             }
             case "adapters": {
                 let newAdapterUrl = "";
-                const list = value as SourceAdapter[];
+                const list = this.changes.source_adapters ?? (value as SourceAdapter[]);
                 const rows = list.map(
                     (adapter, i) => html`
-                        <div>${adapter.name}</div>
-                        <div>${adapter.codeUrl}</div>
+                        <div>${adapter.name}:</div>
+                        <div style="${adapter.codeUrl ? "" : "font-style: italic"}">
+                            ${adapter.codeUrl || "built-in"}
+                        </div>
                         <button
                             @click=${() => {
                                 this.addChange(name, list.toSpliced(i, 1));
@@ -320,13 +349,13 @@ class TptSettings extends LitElement {
                                 );
                                 this.addChange("data_sources", sources);
                             }}
+                            ?disabled="${!adapter.codeUrl}"
                         >
-                            ╳
+                            X
                         </button>
                     `,
                 );
                 return html`
-                    <h3>${setting.descr}</h3>
                     <div class="adapters-list">
                         ${rows}
                         <div></div>
@@ -338,20 +367,30 @@ class TptSettings extends LitElement {
                         />
                         <button
                             class="add-btn"
-                            @click=${() => {
-                                // TODO
-                                // const newAdapter = await loadAdapterMeta();
-                                // this.addChange(name, list.concat([newAdapter]));
+                            @click=${async () => {
+                                try {
+                                    this.adapterUrlError = "checking...";
+                                    const newAdapter = await validateAdapter(
+                                        newAdapterUrl,
+                                        list.map((meta) => meta.name),
+                                    );
+                                    this.adapterUrlError = "";
+                                    this.addChange(name, list.concat([newAdapter.meta]));
+                                } catch (ex) {
+                                    this.adapterUrlError = (ex as Error).message;
+                                }
                             }}
                         >
                             Add
                         </button>
+
+                        <div class="validate-msg">${this.adapterUrlError || null}</div>
                     </div>
                 `;
             }
             default:
-                // @ts-expect-error - here `type` is `never`
-                console.error(`[TPT]: Unsupported type ${setting.type}`);
+                // @ts-expect-error - we should never happen here
+                console.error(`Unsupported type ${setting.type}`);
                 return "";
         }
     }
@@ -364,29 +403,29 @@ class TptSettings extends LitElement {
             >
                 <div class="container">
                     <h2>Translate Pixiv Tags settings</h2>
-                    ${Object.entries(SETTINGS_SCHEMA)
-                        .map(
-                            ([name, setting]) => html /* HTML */ `
-                                <div>${setting.descr}:</div>
-                                <div>${this.settingToInput(setting, name as SettingName)}</div>
-                            `,
-                        )
-                        .join("")}
+                    ${(Object.entries(SETTINGS_SCHEMA) as [SettingName, Setting][]).map(
+                        ([name, setting]) =>
+                            name === "booru"
+                                ? null
+                                : html /* HTML */ `
+                                      <div>${setting.descr}:</div>
+                                      <div>${this.settingToInput(setting, name)}</div>
+                                  `,
+                    )}
                     <h2>
                         <input
                             class="cancel"
                             type="button"
-                            value="Cancel"
+                            value="${this.changed ? "Cancel" : "Close"}"
                             @click=${this.destroy}
                         />
                         <input
                             class="refresh-page"
                             type="button"
-                            value="Refresh page to apply changes"
+                            value="Apply changes"
                             ?disabled=${!this.changed}
                             @click=${() => {
                                 this.applyChanges();
-                                this.destroy();
                             }}
                         />
                     </h2>

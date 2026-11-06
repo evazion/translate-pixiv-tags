@@ -14,27 +14,27 @@ export default defineConfig(({ mode }) => ({
         },
     },
     plugins: [
-        minifyHTML({
-            failOnError: true,
-        }),
+        // breaks nesting https://github.com/lit/lit/issues/5207
+        // minifyHTML({
+        //     failOnError: true,
+        // }),
         monkey({
             entry: "src/main.ts",
             build: {
                 fileName: "tpt.user.js",
                 metaFileName: true,
-                autoGrant: false,
             },
             userscript: {
-                name: "Translate Pixiv Tags",
+                name: "TPT",
                 author: "evazion, 7nik, BrokenEagle, hdk5",
                 description:
                     "Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.",
                 homepageURL: "https://github.com/evazion/translate-pixiv-tags",
                 supportURL: "https://github.com/evazion/translate-pixiv-tags/issues",
-                updateURL:
-                    "https://github.com/evazion/translate-pixiv-tags/raw/master/translate-pixiv-tags.meta.js",
-                downloadURL:
-                    "https://github.com/evazion/translate-pixiv-tags/raw/master/translate-pixiv-tags.user.js",
+                // updateURL:
+                //     "https://github.com/evazion/translate-pixiv-tags/raw/master/translate-pixiv-tags.meta.js",
+                // downloadURL:
+                //     "https://github.com/evazion/translate-pixiv-tags/raw/master/translate-pixiv-tags.user.js",
                 noframes: true,
                 match: [
                     "*://*.artstation.com/*",
@@ -65,7 +65,7 @@ export default defineConfig(({ mode }) => ({
                     "*://x.com/*",
                     "*://www.xiaohongshu.com/*",
                 ],
-                connect: ["donmai.us", "raw.githubusercontent.com", "icons.duckduckgo.com"],
+                connect: ["donmai.us", "raw.githubusercontent.com", "icons.duckduckgo.com", "*"],
             },
         }),
     ],

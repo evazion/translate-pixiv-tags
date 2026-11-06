@@ -1,5 +1,5 @@
 import $ from "jquery";
-import { debuglog, matchMemoized } from "../utils";
+import { console, matchMemoized } from "../utils";
 
 export const TAG_SELECTOR = ".tpt-tags, .tpt-artist";
 
@@ -122,9 +122,9 @@ export function watchSiteTheme(
         const newTheme = themeExtractor(elem);
         if (newTheme === theme) return;
         theme = newTheme;
-        document.documentElement.classList.remove("tpt-dark tpt-light tpt-auto");
+        document.documentElement.classList.remove("tpt-dark", "tpt-light", "tpt-auto");
         document.documentElement.classList.add(`tpt-${theme}`);
-        debuglog(`theme changed to ${theme}`);
+        console.log(`theme changed to ${theme}`);
     }
 
     // eslint-disable-next-line unicorn/no-array-for-each

@@ -10,7 +10,7 @@ import {
     type UrlParams,
 } from "../network";
 import { SETTINGS, DOMAIN_USES_CSP } from "../settings";
-import { addCss, debuglog, memoizeKey, naturalCompare, getSafeImageUrl } from "../utils";
+import { addCss, memoizeKey, naturalCompare, getSafeImageUrl, console } from "../utils";
 import { normalizeSourceUrl } from "../normalize-url";
 import {
     FLASH_FILE,
@@ -176,10 +176,10 @@ type DBResponse<N extends RequestName> = N extends "count" ? ResponseCount : Res
 interface RequestPromise<N extends RequestName> {
     type: N;
     item: string;
-    promise: JQuery.Deferred<DBResponse<N>, any, any>;
+    resolve: (data: DBResponse<N>) => void;
 }
 
-const QUEUED_NETWORK_REQUESTS: RequestPromise<RequestName>[] = [];
+type RequestQueue = { q: Array<RequestPromise<RequestName>>; host: string };
 
 const REQUEST_DATA_MATCHERS = {
     /** Case-insensitive comparing strings */
@@ -270,7 +270,8 @@ const NETWORK_REQUEST_DICT: { [N in RequestName]: RequestDefinition<DBResponse<N
         filter: (artists) => artists.filter((artist) => !artist.is_deleted),
         matches(data, item) {
             return REQUEST_DATA_MATCHERS.array(
-                data.urls.map((url) => url.url),
+                // handle some "old" danbooru instances
+                data.urls.map((url) => url.url.replace("https://twitter.com/", "https://x.com/")),
                 item,
             );
         },
@@ -319,42 +320,45 @@ const NETWORK_REQUEST_DICT: { [N in RequestName]: RequestDefinition<DBResponse<N
 };
 
 function queueNetworkRequest<T extends RequestName>(
+    queue: RequestQueue,
     type: T,
     item: string,
-): RequestPromise<T>["promise"] {
-    const request = {
+): Promise<DBResponse<T>> {
+    const { promise, resolve } = Promise.withResolvers();
+    queue.q.push({
         type,
         item,
-        promise: $.Deferred(),
-    };
-    QUEUED_NETWORK_REQUESTS.push(request);
-    return request.promise;
+        resolve,
+    });
+    return promise as Promise<DBResponse<T>>;
 }
 
 const queueNetworkRequestMemoized: typeof queueNetworkRequest = memoize(
     queueNetworkRequest,
-    memoizeKey,
+    (queue, type, item) => memoizeKey(queue.host, type, item),
 );
 
-function intervalNetworkHandler(booru: string) {
-    if (QUEUED_NETWORK_REQUESTS.length === 0) return;
+function intervalNetworkHandler(queueOrig: RequestQueue) {
+    if (queueOrig.q.length === 0) return;
     if (!navigator.onLine) {
         if (SETTINGS.display_network_errors) {
             showMessage("No Internet connection", "");
         }
         return;
     }
-    if (tooManyNetworkErrors(new URL(booru).hostname)) return;
+    if (tooManyNetworkErrors(new URL(queueOrig.host).hostname)) return;
+    const queue = queueOrig.q.slice();
+    queueOrig.q.length = 0;
 
     const types = Object.keys(NETWORK_REQUEST_DICT) as RequestName[];
     for (const type of types) {
-        const requests = QUEUED_NETWORK_REQUESTS.filter((request) => request.type === type);
+        const requests = queue.filter((request) => request.type === type);
         if (requests.length <= 0) continue; // eslint-disable-line no-continue
 
         const requestTools = NETWORK_REQUEST_DICT[type] as RequestDefinition<
             DBResponse<typeof type>
         >;
-        const url = `${booru}${requestTools.url}.json`;
+        const url = `${queueOrig.host}${requestTools.url}.json`;
         const limitParam = { limit: requestTools.limit ?? API_LIMIT };
         if (type === "count") {
             for (const request of requests) {
@@ -362,7 +366,7 @@ function intervalNetworkHandler(booru: string) {
                 const params = Object.assign(typeParam, limitParam, CACHE_PARAM);
                 getLong(url, params, [request], requestTools).catch(() => {
                     // in case of error return the request to the queue
-                    QUEUED_NETWORK_REQUESTS.push(request);
+                    queue.push(request);
                 });
             }
         } else {
@@ -370,12 +374,12 @@ function intervalNetworkHandler(booru: string) {
             const params = Object.assign(typeParam, limitParam, CACHE_PARAM);
             getLong(url, params, requests, requestTools).catch(() => {
                 // in case of error return requests to the queue
-                QUEUED_NETWORK_REQUESTS.push(...requests);
+                queue.push(...requests);
             });
         }
     }
     // Clear the queue once all network requests have been sent
-    QUEUED_NETWORK_REQUESTS.length = 0;
+    queue.length = 0;
 }
 
 async function getLong<T extends RequestName>(
@@ -399,7 +403,7 @@ async function getLong<T extends RequestName>(
 
     if (!Array.isArray(resp)) {
         for (const request of requests) {
-            request.promise.resolve(resp);
+            request.resolve(resp);
         }
         return;
     }
@@ -414,10 +418,10 @@ async function getLong<T extends RequestName>(
             return false;
         }) as DBResponse<T>;
         // Fulfill the promise which returns the results to the function that queued it
-        request.promise.resolve(found);
+        request.resolve(found);
     }
     if (unusedResp.size > 0) {
-        debuglog("Unused results found:", [...unusedResp.values()]);
+        console.log("Unused results found:", [...unusedResp.values()]);
     }
 }
 
@@ -784,12 +788,12 @@ function buildPostPreview(post: ResponsePosts, booru: string) {
  * @param tag The encoded tag for searching
  * @param page The page number to load
  */
-async function loadNextPage(booru: string, tag: string, page: number) {
-    const waitPosts = queueNetworkRequestMemoized("post", `${tag} ${page}`);
+async function loadNextPage(queue: RequestQueue, tag: string, page: number) {
+    const waitPosts = queueNetworkRequestMemoized(queue, "post", `${tag} ${page}`);
     // Process the queue immediately
-    intervalNetworkHandler(booru);
+    intervalNetworkHandler(queue);
     const posts = await waitPosts;
-    return posts.map((post) => buildPostPreview(post, booru));
+    return posts.map((post) => buildPostPreview(post, queue.host));
 }
 
 // #endregion
@@ -801,37 +805,70 @@ type TranslatedArtist = ResponseArtist & {
     encodedName: string;
 };
 
-const renderedTagsCache: Record<string, TemplateResult[]> = {};
-const renderedArtistsCache: Record<string, TemplateResult> = {};
+// separate cache of each instance
+const renderedTagsCache: Record<string, Record<string, TemplateResult[]>> = {};
+const renderedArtistsCache: Record<string, Record<string, TemplateResult>> = {};
 let id = 1;
 
 export default class DanbooruAdapter implements Adapter {
     static name: "Danbooru";
+
+    static async validateParams(booru: string): Promise<void> {
+        booru = new URL(booru).origin;
+
+        const tags: { name: string }[] = await $.getJSON(
+            `${booru}/tags.json?search[order]=count&only=name`,
+        );
+
+        const queue: RequestQueue = { q: [], host: booru };
+        const res = Promise.all(
+            tags.map(({ name }) => queueNetworkRequestMemoized(queue, "tag", name)),
+        );
+        // invoke immediately, plus timer may not be running for this booru
+        intervalNetworkHandler(queue);
+        // TODO better API check???
+        if ((await res).flat().length !== tags.length) {
+            throw new Error(`${booru}/ doesn't seem to be a Danbooru instance`);
+        }
+    }
+
     booru: string;
     id: number;
+    timer: number;
+    queue: RequestQueue;
 
     constructor(booru: string) {
-        this.booru = booru;
         this.id = id++;
+        this.booru = new URL(booru).origin;
+        this.queue = { q: [], host: this.booru };
+
+        renderedTagsCache[this.id] = {};
+        renderedArtistsCache[this.id] = {};
+        // Check for new network requests every half-second
+        this.timer = setInterval(intervalNetworkHandler, REQUEST_INTERVAL, this.queue);
 
         addCss(TAGS_CSS);
 
         getSafeImageUrl(`${booru}/favicon.ico`).then((url) => {
-            addCss(css`
+            // minify-html-literals doesn't support dynamic selectors
+            addCss(/* CSS */ `
                 .tpt-artist .danbooru.db${this.id}::before {
                     background-image: url("${unsafeCSS(url)}");
                 }
             `);
         });
+    }
 
-        // Check for new network requests every half-second
-        setInterval(intervalNetworkHandler, REQUEST_INTERVAL, booru);
+    destroy() {
+        clearInterval(this.timer);
+        delete renderedTagsCache[this.id];
+        delete renderedArtistsCache[this.id];
     }
 
     renderArtist(rawArtist: ResponseArtist) {
         const cacheKey = this.booru + rawArtist.id;
-        if (cacheKey in renderedArtistsCache) {
-            return renderedArtistsCache[cacheKey];
+        if (cacheKey in renderedArtistsCache[this.id]) {
+            return renderedArtistsCache[this.id][cacheKey];
         }
 
         const artist = {
@@ -855,19 +892,23 @@ export default class DanbooruAdapter implements Adapter {
             </a>
         `;
 
-        renderedArtistsCache[cacheKey] = elem;
+        renderedArtistsCache[this.id][cacheKey] = elem;
 
         return elem;
     }
 
     async translateArtistByName(name: string) {
-        const artists = await queueNetworkRequestMemoized("artist", name.replaceAll(" ", "_"));
+        const artists = await queueNetworkRequestMemoized(
+            this.queue,
+            "artist",
+            name.replaceAll(" ", "_"),
+        );
 
         return artists.map((artist) => this.renderArtist(artist));
     }
 
     async translateArtistByUrl(url: string) {
-        const artists = await queueNetworkRequestMemoized("url", url);
+        const artists = await queueNetworkRequestMemoized(this.queue, "url", url);
 
         let filteredArtists = artists;
         if (artists.length > 1) {
@@ -888,14 +929,14 @@ export default class DanbooruAdapter implements Adapter {
 
     async translateTag(tagName: string) {
         const cacheKey = this.booru + tagName;
-        if (cacheKey in renderedTagsCache) {
-            return Promise.resolve(renderedTagsCache[cacheKey]);
+        if (cacheKey in renderedTagsCache[this.id]) {
+            return Promise.resolve(renderedTagsCache[this.id][cacheKey]);
         }
 
-        const wikiPages = await queueNetworkRequestMemoized("wiki", tagName);
+        const wikiPages = await queueNetworkRequestMemoized(this.queue, "wiki", tagName);
 
         let tags: TranslatedTag[] = [];
-        if (wikiPages.length > 0) {
+        if (wikiPages?.length > 0) {
             tags = wikiPages
                 // Ignore wiki pages of non-tags
                 .filter(({ tag }) => tag)
@@ -908,9 +949,9 @@ export default class DanbooruAdapter implements Adapter {
         } else if (/^[\u0020-\u0024\u0026-\u0029+\u002D-\u007F]+$/.test(tagName)) {
             // The server is already converting the values to
             // lowercase on its end so no need to do it here
-            let rawTags = await queueNetworkRequestMemoized("tag", tagName);
+            let rawTags = await queueNetworkRequestMemoized(this.queue, "tag", tagName);
             if (rawTags.length === 0) {
-                const aliases = await queueNetworkRequestMemoized("alias", tagName);
+                const aliases = await queueNetworkRequestMemoized(this.queue, "alias", tagName);
                 rawTags = aliases.map((alias) => alias.consequent_tag);
             }
             tags = rawTags.map((tag) => ({
@@ -931,7 +972,7 @@ export default class DanbooruAdapter implements Adapter {
                 </a>
             `,
         );
-        renderedTagsCache[cacheKey] = elements;
+        renderedTagsCache[this.id][cacheKey] = elements;
         return elements;
     }
 
@@ -941,17 +982,22 @@ export default class DanbooruAdapter implements Adapter {
             ? "rating:g"
             : "";
 
-        const waitPosts = queueNetworkRequestMemoized("post", `${artist.name} 1`);
+        const waitPosts = queueNetworkRequestMemoized(this.queue, "post", `${artist.name} 1`);
         const waitTotalPostCount = queueNetworkRequestMemoized(
+            this.queue,
             "count",
             `${artist.name} status:any`,
         );
         const waitVisiblePostCount = artist.is_banned
             ? Promise.resolve({ counts: { posts: 0 } })
-            : queueNetworkRequestMemoized("count", `${artist.name} ${status} ${rating}`.trim());
+            : queueNetworkRequestMemoized(
+                  this.queue,
+                  "count",
+                  `${artist.name} ${status} ${rating}`.trim(),
+              );
 
         // Process the queue immediately
-        intervalNetworkHandler(this.booru);
+        intervalNetworkHandler(this.queue);
         const [
             { counts: { posts: visiblePostsCount } } = { counts: { posts: 0 } },
             { counts: { posts: totalPostsCount } } = { counts: { posts: 0 } },
@@ -991,7 +1037,7 @@ export default class DanbooruAdapter implements Adapter {
             firstPage: 1,
             lastPage,
             postPreviews: posts.map((post) => buildPostPreview(post, this.booru)),
-            loadNextPage: (page) => loadNextPage(this.booru, artist.name, page),
+            loadNextPage: (page) => loadNextPage(this.queue, artist.name, page),
         };
     }
 }

@@ -79,15 +79,15 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
     // Main tag on search pages: https://www.pixiv.net/en/tags/%E6%9D%B1%E6%96%B9project/artworks
     findAndTranslate("tag", "div", {
         // eslint-disable-next-line max-len
-        predicate:
-            "#__next>div>div>div>div>div>div>div:nth-last-of-type(2)>div>div:has(>span:first-child)",
+        predicate: `[data-ga4-label="keyword_details"] [data-line-limit][title]`,
         asyncMode: true,
+        tagPosition: TAG_POSITIONS.beforeend,
         css: css`
             ARTIST_TAG {
                 font-size: 20px;
                 font-weight: bold;
                 align-self: center;
-                & + div {
+                div:has(> div > &) + div {
                     display: none;
                 }
             }
@@ -100,24 +100,21 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
     // The index page: https://www.pixiv.net/ https://www.pixiv.net/en/
     // Artist profile: https://www.pixiv.net/en/users/104471/illustrations
     findAndTranslate("tag", "div", {
-        predicate: "a:is([color],[data-ga4-label=colorful_tag])>div>div:last-child",
-        tagPosition: {
-            insertTag: ($container, elem) => $container.parent().prepend(elem),
-            findTag: ($container) => $container.parent().find(TAG_SELECTOR),
-            getTagContainer: ($elem) => $elem.nextUntil(":last-child"),
-        },
+        predicate: ":is(a,button):is([color],[data-ga4-label=colorful_tag])>div",
+        tagPosition: TAG_POSITIONS.afterbegin,
+        toTagName: (el) => el.lastElementChild?.textContent ?? null,
         asyncMode: true,
         classes: "no-brackets tpt-light",
         css: css`
             /* Hide Pixiv's translated tags */
-            .tpt-tags + div:not(:last-child) {
+            .tpt-tags + :not(:last-child) {
                 display: none;
             }
             .tpt-tags ~ div:last-child {
                 font-weight: normal;
                 font-size: 10px;
             }
-            a:is([color], [data-ga4-label="colorful_tag"]) {
+            :is(a, button):is([color], [data-ga4-label="colorful_tag"]) {
                 text-shadow: 0 0 5px #0003;
                 & > div:not(#id) {
                     max-width: initial;
@@ -135,12 +132,12 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
             preventSiteNavigation(tag);
             // TODO generalize
             const $tag = $(tag);
-            const [category] = $tag.find("a").prop("className").match(/\d/) ?? [];
+            const [category] = $tag.find("a,button").prop("className").match(/\d/) ?? [];
             const hue = [230, 5, 0, 300, 110, 50][category];
             $tag.closest("section,ul")
                 .find("a:is([color],[data-ga4-label=colorful_tag]):not([style])")
                 .css("background-color", () => `hsl(${Math.random() * 40 + 150}, 35%, 65%)`);
-            $tag.closest("a").css(
+            $tag.closest("a,button").css(
                 "background-color",
                 `hsl(${hue + Math.random() * 40 - 20}, 35%, 65%)`,
             );
@@ -248,8 +245,7 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
     // Thumbs on the index page: https://www.pixiv.net/ https://www.pixiv.net/en/
     // Posts of followed artists: https://www.pixiv.net/bookmark_new_illust.php
     findAndTranslate("artist", "a", {
-        predicate:
-            "section :is(ul>*>div,ul>*>div>div)>div:last-child>div[aria-haspopup]>a:last-child",
+        predicate: `:is([data-ga4-label="thumbnail"]>div, section :is(ul>*>div,ul>*>div>div))>div:last-child>div[aria-haspopup]>a:last-child`,
         tagPosition: TAG_POSITIONS.afterParent,
         asyncMode: true,
         css: css`
@@ -259,7 +255,7 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
                 overflow: hidden;
                 text-overflow: ellipsis;
                 /* Fix artist tag overflowing */
-                ul > * > div > div:last-child:has(> &) {
+                div:has(> &) {
                     flex-direction: column;
                     align-items: flex-start;
                 }
@@ -324,8 +320,10 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
     // });
 
     // Ranking pages: https://www.pixiv.net/ranking.php?mode=original
-    findAndTranslate("artist", "a.user-container.ui-profile-popup", {
+    findAndTranslate("artist", `a[data-ga4-label="user_name_link"]`, {
         asyncMode: true,
+        predicate: `ol a+a`,
+        tagPosition: TAG_POSITIONS.afterParent,
         ruleName: "ranking artist",
     });
 
@@ -343,16 +341,19 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
         ruleName: "artist info old popup",
     });
 
-    // Section of recommended artists on the index page:
+    // The main "posts" on the index page feed:
     // https://www.pixiv.net/ https://www.pixiv.net/en/
     findAndTranslate("artist", "a", {
         predicate: "[data-ga4-label=home_recommend]>div>div>div>[aria-haspopup]>div>a+div>a",
         tagPosition: TAG_POSITIONS.afterend,
         asyncMode: true,
-        ruleName: "recommended artist",
+        ruleName: "index feed",
         css: css`
             ARTIST_TAG {
                 line-height: 0;
+                div:has(> &) {
+                    -webkit-line-clamp: 2;
+                }
             }
         `,
     });
@@ -360,7 +361,7 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
     // Sidebar of recommended artists on the index page:
     // https://www.pixiv.net/ https://www.pixiv.net/en/
     findAndTranslate("artist", "a", {
-        predicate: "section>div>div>.sticky [aria-haspopup]>a:first-child+div>a",
+        predicate: "section>div>div>.sticky [aria-haspopup]>a:first-child+div>a:first-child",
         tagPosition: TAG_POSITIONS.afterend,
         asyncMode: true,
         ruleName: "recommended artist sidebar",

@@ -4,7 +4,14 @@ import { SETTINGS, DOMAIN_USES_CSP } from "./settings";
 import { GM } from "$";
 import { CSSResult } from "lit";
 
-export const debuglog = SETTINGS.debug ? console.log.bind(console, "[TPT]:") : noop;
+const konsole = globalThis.console;
+/** Branded version of the console */
+export const console: Console = {
+    ...konsole,
+    log: SETTINGS.debug ? konsole.log.bind(konsole, "[TPT]:") : noop,
+    warn: konsole.warn.bind(konsole, "[TPT]:"),
+    error: konsole.error.bind(konsole, "[TPT]:"),
+};
 
 export function memoizeKey(...args: object[]) {
     const paramHash = Object.fromEntries(args.entries());
@@ -156,11 +163,16 @@ let sheets: CSSStyleSheet[] = [];
  * Add removable CSS to the page
  * @param css - result of lit's `css`
  */
-export function addCss(css: CSSResult) {
-    const sheet = css.styleSheet;
-    if (!sheet) {
+export function addCss(css: CSSResult | string) {
+    let sheet;
+    if (typeof css === "string") {
+        sheet = new CSSStyleSheet();
+        sheet.replaceSync(css);
+    } else if (!css.styleSheet) {
         console.error("no sheet", css);
         return;
+    } else {
+        sheet = css.styleSheet;
     }
     if (sheets.includes(sheet)) return;
     document.adoptedStyleSheets.push(sheet);

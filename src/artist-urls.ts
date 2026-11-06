@@ -439,7 +439,7 @@ export function getSitePriority(siteName: string) {
 export function getSiteName(siteUrl: string) {
     const { hostname, pathname } = new URL(siteUrl);
     const url = parse(hostname);
-    if ("error" in url) throw new Error(url.error.message + "");
+    if (url.error) throw new Error(url.error.message + "");
 
     const match = SITE_RULES.find(
         (rule) =>
@@ -456,7 +456,7 @@ export function getSiteName(siteUrl: string) {
 export function getSiteDisplayDomain(siteUrl: string) {
     const { hostname } = new URL(siteUrl);
     const url = parse(hostname);
-    if ("error" in url) throw new Error(url.error.message + "");
+    if (url.error) throw new Error(url.error.message + "");
     return url.domain || url.tld || hostname;
 }
 

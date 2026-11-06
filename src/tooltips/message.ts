@@ -14,7 +14,7 @@ class TptMessages extends LitElement {
                 align-items: flex-start;
                 justify-content: center;
                 position: relative;
-                z-index: 3100000;
+                z-index: 3100001;
             }
             .container {
                 font-family: Verdana, Helvetica, sans-serif;

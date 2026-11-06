@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Translate Pixiv Tags
 // @author       evazion, 7nik, BrokenEagle, hdk5
-// @version      20251128113609
+// @version      20260413112736
 // @description  Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.
 // @homepageURL  https://github.com/evazion/translate-pixiv-tags
 // @supportURL   https://github.com/evazion/translate-pixiv-tags/issues
@@ -885,7 +885,7 @@ const SITE_RULES = [
 
     // TwitPic must be before twitter
     { name: "TwitPic", hostname: "twitpic.com" },
-    { name: "Twitter", domain: "twitter.com" },
+    { name: "Twitter", domain: "x.com" },
     { name: "Twitter", domain: "t.co" },
 
     { name: "About Me", domain: "about.me" },
@@ -1266,7 +1266,7 @@ function getSiteDisplayDomain(siteUrl) {
 }
 
 const SITE_ICON_FOLDER =
-    "https://raw.githubusercontent.com/danbooru/danbooru/22e1b4d3bf0a8776dbac282f4e3a83d62facc537/public/images/";
+    "https://raw.githubusercontent.com/danbooru/danbooru/b142b04c8a6ceebcdca517fc1c69aa41cc7983b2/public/images/";
 
 /**
  * Try to resolve the site icon
@@ -1306,7 +1306,7 @@ function isSecondaryUrl(siteUrl) {
     return [
         /pixiv\.net\/stacc/i,
         /pixiv\.net\/fanbox/i,
-        /twitter\.com\/intent/i,
+        /x\.com\/i\/user/i,
         /(www|com|dic)\.nicovideo\.jp/i,
         /pawoo\.net\/web\/accounts/i,
         /misskey\.(io|art|design)\/users/i,
@@ -1690,12 +1690,15 @@ const NORMALIZE_PROFILE_URL = {
         path: /^\/creator\/profile\/\d+$/,
     },
     "twitter.com": {
-        path: /^\/[\w-]+|\/intent\/user$/,
+        valid: false,
+        normalize(url) {
+            return `https://x.com${url.pathname}`;
+        },
     },
     "mobile.twitter.com": {
         valid: false,
         normalize(url) {
-            return `https://twitter.com${url.pathname}`;
+            return `https://x.com${url.pathname}`;
         },
     },
     "www.weibo.com": {
@@ -1708,10 +1711,7 @@ const NORMALIZE_PROFILE_URL = {
         },
     },
     "x.com": {
-        valid: false,
-        normalize(url) {
-            return `https://twitter.com${url.pathname}`;
-        },
+        path: /^\/[\w-]+|\/i\/user\/\d+$/,
     },
     "www.xiaohongshu.com": {
         valid: false,
@@ -4118,7 +4118,7 @@ function linkInChildren(el) {
     return $(el).find("a").prop("href");
 }
 
-/* https://twitter.com/search?q=%23ガルパン版深夜のお絵描き60分一本勝負 */
+/* https://x.com/search?q=%23ガルパン版深夜のお絵描き60分一本勝負 */
 /* #艦これ版深夜のお絵描き60分一本勝負 search query for TweetDeck */
 const COMMON_HASHTAG_REGEXPS = [
     /生誕祭\d*$/,
@@ -4232,15 +4232,15 @@ function initializePixiv() {
     // Main tag on search pages: https://www.pixiv.net/en/tags/%E6%9D%B1%E6%96%B9project/artworks
     findAndTranslate("tag", "div", {
         // eslint-disable-next-line max-len
-        predicate:
-            "#__next>div>div>div>div>div>div>div:nth-last-of-type(2)>div>div:has(>span:first-child)",
+        predicate: `[data-ga4-label="keyword_details"] [data-line-limit][title]`,
         asyncMode: true,
+        tagPosition: TAG_POSITIONS.beforeend,
         css: /* CSS */ `
             .ex-translated-tags[rulename='search tag'] {
                 font-size: 20px;
                 font-weight: bold;
                 align-self: center;
-                & + div { display: none; }
+                div:has(>div>&) + div { display: none; }
             }`,
         ruleName: "search tag",
     });
@@ -4250,24 +4250,21 @@ function initializePixiv() {
     // The index page: https://www.pixiv.net/ https://www.pixiv.net/en/
     // Artist profile: https://www.pixiv.net/en/users/104471/illustrations
     findAndTranslate("tag", "div", {
-        predicate: "a:is([color],[data-ga4-label=colorful_tag])>div>div:last-child",
-        tagPosition: {
-            insertTag: ($container, $elem) => $container.parent().prepend($elem),
-            findTag: ($container) => $container.parent().find(TAG_SELECTOR),
-            getTagContainer: ($elem) => $elem.nextUntil(":last-child"),
-        },
+        predicate: ":is(a,button):is([color],[data-ga4-label=colorful_tag])>div",
+        tagPosition: TAG_POSITIONS.afterbegin,
+        toTagName: (el) => el.lastElementChild?.textContent ?? null,
         asyncMode: true,
         classes: "no-brackets tpt-light",
         css: /* CSS */ `
             /* Hide Pixiv's translated tags */
-            .ex-translated-tags + div:not(:last-child) {
+            .ex-translated-tags + :not(:last-child) {
                 display: none;
             }
             .ex-translated-tags ~ div:last-child {
                 font-weight: normal;
                 font-size: 10px;
             }
-            a:is([color],[data-ga4-label=colorful_tag]) {
+            :is(a,button):is([color],[data-ga4-label=colorful_tag]) {
                 text-shadow: 0 0 5px #0003;
                 & > div:not(#id) {
                     max-width: initial;
@@ -4290,12 +4287,12 @@ function initializePixiv() {
         // Fix bad contrast of tag color over colored bg
         onadded: ($tag) => {
             preventSiteNavigation($tag);
-            const [category] = $tag.find("a").prop("className").match(/\d/) ?? [];
+            const [category] = $tag.find("a,button").prop("className").match(/\d/) ?? [];
             const hue = [230, 5, 0, 300, 110, 50][category];
             $tag.closest("section,ul")
                 .find("a:is([color],[data-ga4-label=colorful_tag]):not([style])")
                 .css("background-color", () => `hsl(${Math.random() * 40 + 150}, 35%, 65%)`);
-            $tag.closest("a").css(
+            $tag.closest("a,button").css(
                 "background-color",
                 `hsl(${hue + Math.random() * 40 - 20}, 35%, 65%)`,
             );
@@ -4401,8 +4398,7 @@ function initializePixiv() {
     // Posts of followed artists: https://www.pixiv.net/bookmark_new_illust.php
     findAndTranslate("artist", "a", {
         // eslint-disable-next-line max-len
-        predicate:
-            "section :is(ul>*>div,ul>*>div>div)>div:last-child>div[aria-haspopup]>a:last-child",
+        predicate: `:is([data-ga4-label="thumbnail"]>div, section :is(ul>*>div,ul>*>div>div))>div:last-child>div[aria-haspopup]>a:last-child`,
         tagPosition: TAG_POSITIONS.afterParent,
         asyncMode: true,
         css: /* CSS */ `
@@ -4412,7 +4408,7 @@ function initializePixiv() {
                 overflow: hidden;
                 text-overflow: ellipsis;
                 /* Fix artist tag overflowing */
-                ul>*>div>div:last-child:has(>&) {
+                div:has(>&) {
                     flex-direction: column;
                     align-items: flex-start;
                 }
@@ -4477,8 +4473,10 @@ function initializePixiv() {
     // });
 
     // Ranking pages: https://www.pixiv.net/ranking.php?mode=original
-    findAndTranslate("artist", "a.user-container.ui-profile-popup", {
+    findAndTranslate("artist", `a[data-ga4-label="user_name_link"]`, {
         asyncMode: true,
+        predicate: `ol a+a`,
+        tagPosition: TAG_POSITIONS.afterParent,
         ruleName: "ranking artist",
     });
 
@@ -4496,16 +4494,19 @@ function initializePixiv() {
         ruleName: "artist info old popup",
     });
 
-    // Section of recommended artists on the index page:
+    // The main "posts" on the index page feed:
     // https://www.pixiv.net/ https://www.pixiv.net/en/
     findAndTranslate("artist", "a", {
         predicate: "[data-ga4-label=home_recommend]>div>div>div>[aria-haspopup]>div>a+div>a",
         tagPosition: TAG_POSITIONS.afterend,
         asyncMode: true,
-        ruleName: "recommended artist",
+        ruleName: "index feed",
         css: /* CSS */ `
-            .ex-artist-tag[rulename="recommended artist"] {
+            .ex-artist-tag[rulename="index feed"] {
                 line-height: 0;
+                div:has(>&) {
+                    -webkit-line-clamp: 2;
+                }
             }
         `,
     });
@@ -4513,7 +4514,7 @@ function initializePixiv() {
     // Sidebar of recommended artists on the index page:
     // https://www.pixiv.net/ https://www.pixiv.net/en/
     findAndTranslate("artist", "a", {
-        predicate: "section>div>div>.sticky [aria-haspopup]>a:first-child+div>a",
+        predicate: "section>div>div>.sticky [aria-haspopup]>a:first-child+div>a:first-child",
         tagPosition: TAG_POSITIONS.afterend,
         asyncMode: true,
         ruleName: "recommended artist sidebar",
@@ -4753,7 +4754,7 @@ function initializeTwitter() {
         }
     `);
 
-    // Tags https://twitter.com/mugosatomi/status/1173231575959363584
+    // Tags https://x.com/mugosatomi/status/1173231575959363584
     findAndTranslate("tag", "a[role='link']", {
         predicate: "a[href^='/hashtag/']",
         asyncMode: true,
@@ -4761,9 +4762,9 @@ function initializeTwitter() {
         ruleName: "tags",
     });
 
-    // Floating name of a channel https://twitter.com/mugosatomi
+    // Floating name of a channel https://x.com/mugosatomi
     const URLfromLocation = () =>
-        `https://twitter.com${safeMatchMemoized(window.location.pathname, /\/\w+/)}`;
+        `https://x.com${safeMatchMemoized(window.location.pathname, /\/\w+/)}`;
     const channelNameSelector = "div[data-testid='primaryColumn']>div>:first-child h2>div>div>div";
     // On switching to a channel from another channel, Twitter updates only text nodes
     // so, for correct work, it's required to watch for
@@ -4799,7 +4800,7 @@ function initializeTwitter() {
         callback: ([summary]) => summary.added.forEach(watchForChanges),
     });
 
-    // Deleted channel https://twitter.com/6o2_iii
+    // Deleted channel https://x.com/6o2_iii
     findAndTranslate("artist", "span.r-qvutc0", {
         predicate: `[data-testid="emptyState"] div.r-1vr29t4 > .r-qvutc0:not(:empty)`,
         toProfileUrl: URLfromLocation,
@@ -4809,8 +4810,8 @@ function initializeTwitter() {
     });
 
     // Tweet, expanded tweet, comment authors, "in this photo", people in sidebar
-    // https://twitter.com/mugosatomi/status/1173231575959363584
-    // https://twitter.com/Merryweatherey/status/1029008151411023872/media_tags
+    // https://x.com/mugosatomi/status/1173231575959363584
+    // https://x.com/Merryweatherey/status/1029008151411023872/media_tags
     findAndTranslate("artist", "div.r-1wbh5a2.r-18u37iz", {
         predicate: `div:has(>div>a.r-1wbh5a2[tabindex])`,
         toProfileUrl: linkInChildren,
@@ -4826,10 +4827,10 @@ function initializeTwitter() {
         ruleName: "tweet/comment author",
     });
 
-    // Quoted tweets https://twitter.com/Murata_Range/status/1108340994557140997
+    // Quoted tweets https://x.com/Murata_Range/status/1108340994557140997
     findAndTranslate("artist", "div.r-1wvb978", {
         predicate: "[data-testid=User-Name] [tabindex]:not([role]) > div",
-        toProfileUrl: (el) => `https://twitter.com/${el.textContent?.slice(1)}`,
+        toProfileUrl: (el) => `https://x.com/${el.textContent?.slice(1)}`,
         asyncMode: true,
         classes: "inline",
         css: /* CSS */ `
@@ -4993,10 +4994,15 @@ function initializeSauceNAO() {
             ruleName: "artist by link",
             toProfileUrl: (el) => {
                 const a = /** @type {HTMLAnchorElement} */ (el);
-                if (!a.href.startsWith("https://twitter.com/")) return a.href;
+                // SauceNAO uses old twitter urls, which may change in the future
+                if (
+                    !a.href.startsWith("https://twitter.com/") &&
+                    !a.href.startsWith("https://x.com/")
+                )
+                    return a.href;
                 return [
-                    `https://twitter.com/${a.textContent?.slice(1)}`,
-                    `https://twitter.com/intent/user?user_id=${a.href.match(/\d+/)?.[0]}`,
+                    `https://x.com/${a.textContent?.slice(1)}`,
+                    `https://x.com/i/user/${a.href.match(/\d+/)?.[0]}`,
                 ];
             },
         },
@@ -5557,7 +5563,7 @@ function initializeBluesky() {
     // https://bsky.app/profile/kanikamadayo.bsky.social/post/3l6pnkjfnhq2b
     findAndTranslate("artist", "a", {
         asyncMode: true,
-        predicate: "a[href^='/profile/'][aria-label]+a[href^='/profile/']:has(:not(*))",
+        predicate: "a[href^='/profile/'][aria-label]+a[href^='/profile/']:not(:has(*))",
         classes: "inline",
         toProfileUrl,
         ruleName: "artist post",
@@ -5892,6 +5898,7 @@ function initialize() {
         case "www.tinami.com":
             initializeTinami();
             break;
+        case "x.com":
         case "twitter.com":
         case "mobile.twitter.com":
             initializeTwitter();
@@ -5904,9 +5911,6 @@ function initialize() {
             break;
         case "m.weibo.cn":
             initializeWeiboMobile();
-            break;
-        case "x.com":
-            initializeTwitter();
             break;
         case "www.xiaohongshu.com":
             initializeXiaohongshu();

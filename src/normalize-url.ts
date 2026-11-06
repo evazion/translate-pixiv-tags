@@ -1,5 +1,5 @@
 import { parse } from "psl";
-import { safeMatchMemoized } from "./utils";
+import { console, safeMatchMemoized } from "./utils";
 
 /** Checks whether the url is normalized and optionally normalizes */
 interface UrlNormalizer {
@@ -18,14 +18,22 @@ function normalizeUrl(
     targetUrl: string,
     normalizers: Record<string, UrlNormalizer>,
     depth: number = 0,
-): { url: string; error: string } {
+): { url: string; error?: string } {
     if (depth > 10) {
         return {
             url: targetUrl,
             error: `Recursive URL normalization: ${targetUrl}`,
         };
     }
-    const url = new URL(targetUrl);
+    let url;
+    try {
+        url = new URL(targetUrl);
+    } catch (ex) {
+        return {
+            url: targetUrl,
+            error: (ex as Error).message,
+        };
+    }
     if (url.protocol !== "https:") url.protocol = "https:";
     let host = url.hostname;
     if (!(host in normalizers)) {
@@ -64,7 +72,6 @@ function normalizeUrl(
     if (normalizedUrl.endsWith("/")) normalizedUrl = normalizedUrl.slice(0, -1);
     return {
         url: normalizedUrl,
-        error: "",
     };
 }
 
@@ -177,11 +184,13 @@ const NORMALIZE_PROFILE_URL: Record<string, UrlNormalizer> = {
     },
 };
 
+// TODO allow normalization to twitter / old pixiv
+
 /** Converts URLs to the same format used by the URL column on Danbooru */
 export function normalizeProfileUrl(profileUrl: string): string {
     const { url, error } = normalizeUrl(profileUrl.toLowerCase(), NORMALIZE_PROFILE_URL);
     if (error) {
-        console.error("[TPT]:", error);
+        console.error(error);
     }
     return url;
 }
@@ -309,7 +318,7 @@ function rubyArraySwitch<C extends Array<(arr: string[]) => any>>(
 function splitUrl(url: URL) {
     const pathSegments = url.pathname.split("/").filter(Boolean);
     const parsed = parse(url.hostname);
-    if ("error" in parsed) throw new Error(parsed.error.message + "");
+    if (parsed.error) throw new Error(parsed.error.message + "");
     return {
         subdomain: parsed.subdomain ?? "",
         domain: parsed.domain ?? "",
@@ -915,7 +924,7 @@ const NORMALIZE_SOURCE_URL: Record<string, UrlNormalizer> = {
 export function normalizeSourceUrl(sourceUrl: string): string {
     const { url, error } = normalizeUrl(sourceUrl, NORMALIZE_SOURCE_URL);
     if (error && !error.startsWith("Unsupported domain:")) {
-        console.warn("[TPT]:", error);
+        console.warn(error);
     }
     return url;
 }

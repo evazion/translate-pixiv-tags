@@ -1,16 +1,11 @@
 import { GM } from "$";
+import { SourceAdapter } from "./adapter-loader";
 
 export type DataSource = {
     adapter: string;
     param: string;
     translateTag: boolean;
     translateArtist: boolean;
-};
-
-export type SourceAdapter = {
-    name: string;
-    codeUrl: string;
-    lastUpdate: number;
 };
 
 type SettingT<N extends string, T> = { defValue: T; descr: string; type: N };
@@ -84,7 +79,7 @@ export const SETTINGS_SCHEMA = {
                 },
                 translateArtist: true,
                 translateTag: true,
-            },
+            } as DataSource,
         ],
         descr: "List of databases used for translating",
         type: "sources",
@@ -95,12 +90,18 @@ export const SETTINGS_SCHEMA = {
                 name: "Danbooru",
                 codeUrl: "",
                 lastUpdate: Number.MAX_SAFE_INTEGER,
-            },
+            } as SourceAdapter,
         ],
         descr: "Available database adapters",
         type: "adapters",
     },
 } satisfies Record<string, Setting>;
+
+// use setter to prevent circular dependencies
+let onChange: () => void;
+export function setOnSettingChange(fn: () => void) {
+    onChange = fn;
+}
 
 type SettingsSchema = typeof SETTINGS_SCHEMA;
 export type SettingName = keyof SettingsSchema;
@@ -115,10 +116,17 @@ const settings = (await GM.getValues(
 
 export const SETTINGS = new Proxy(settings, {
     set(target, prop, value) {
+        console.log("setting", prop, value);
         GM.setValue(prop as string, value);
-        return Reflect.set(target, prop, value);
+        if (Reflect.set(target, prop, value)) {
+            onChange();
+            return true;
+        }
+        return false;
     },
 });
+
+export const ADAPTERS: Record<string, typeof Adapter> = {};
 
 /** Whether the current domain uses CSP which block direct loading of images */
 export const DOMAIN_USES_CSP = [

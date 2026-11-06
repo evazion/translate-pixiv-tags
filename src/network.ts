@@ -2,6 +2,7 @@ import { GM } from "$";
 import $ from "jquery";
 import { SETTINGS } from "./settings";
 import showMessage from "./tooltips/message";
+import { console } from "./utils";
 
 // The maximum size of a URL before using a POST request.
 // The actual limit is 8154, but setting it lower accounts for the rest of the URL as well.
@@ -31,23 +32,18 @@ export function tooManyNetworkErrors(domain: string, logError: boolean = false) 
     const data = networkErrors[domain] ?? (networkErrors[domain] = { error: 0 });
 
     if (logError) {
-        console.log("[TPT]: Total errors:", data.error);
+        console.log("Total errors:", data.error);
         data.error += 1;
     }
     if (data.error < MAX_NETWORK_ERRORS) return false;
     if (logError) {
         if (data.error === MAX_NETWORK_ERRORS) {
             setTimeout(() => {
-                console.log("[TPT]: Errors reset");
+                console.log("Errors reset");
                 data.error = 0;
             }, RETRY_REQUEST_INTERVAL);
         }
-        console.error(
-            "[TPT]: Maximum number of errors exceeded",
-            MAX_NETWORK_ERRORS,
-            "for",
-            domain,
-        );
+        console.error("Maximum number of errors exceeded", MAX_NETWORK_ERRORS, "for", domain);
     }
     return true;
 }
@@ -57,10 +53,10 @@ export type UrlParams = { [k: string]: string | number | boolean | string[] | Ur
 /**
  * @param method
  * @param url
- * @param data
+ * @param params
  */
 // eslint-disable-next-line sonarjs/cognitive-complexity
-export async function makeRequest(method: string, url: string, data: UrlParams) {
+export async function makeRequest(method: string, url: string, params: UrlParams) {
     const domain = new URL(url).hostname;
     const sleep = () =>
         new Promise((resolve) => {
@@ -72,6 +68,12 @@ export async function makeRequest(method: string, url: string, data: UrlParams) 
     let status = -1;
     let statusText = "";
     let errorMsg;
+    let data: string | undefined;
+    if (method.toUpperCase() === "GET") {
+        url = `${url}${url.includes("?") ? "&" : "?"}${$.param(params)}`;
+    } else {
+        data = $.param(params);
+    }
 
     for (let i = 0; i < MAX_NETWORK_RETRIES; i++) {
         try {
@@ -80,7 +82,7 @@ export async function makeRequest(method: string, url: string, data: UrlParams) 
                 url,
                 method,
                 responseType: "json",
-                data: $.param(data),
+                data,
             });
             showMessage("", domain);
             return resp.response;
@@ -88,12 +90,12 @@ export async function makeRequest(method: string, url: string, data: UrlParams) 
             tooManyNetworkErrors(domain, true);
             ({ status, statusText } = error as XMLHttpRequest);
             console.error(
-                "[TPT]: Failed try #",
+                "Failed try #",
                 i + 1,
                 "\nURL:",
                 url,
                 "\nParameters:",
-                data,
+                params,
                 "\nHTTP Error:",
                 status,
                 statusText,

@@ -71,11 +71,19 @@ class Adapter {
     /** Adapter name */
     static name: string;
 
-    constructor(_: any): any;
+    static validateParams(params: string): Promise<void>;
 
-    translateArtistByUrl(url: string, options: TranslationOptionsFull): Promise<Renderable>;
+    constructor(params: string): any;
 
-    translateArtistByName(name: string, options: TranslationOptionsFull): Promise<Renderable>;
+    destroy();
 
-    translateTag(name: string, options: TranslationOptionsFull): Promise<Renderable>;
+    translateArtistByUrl:
+        | ((url: string, options: TranslationOptionsFull) => Promise<Renderable>)
+        | null;
+
+    translateArtistByName:
+        | ((name: string, options: TranslationOptionsFull) => Promise<Renderable>)
+        | null;
+
+    translateTag: ((name: string, options: TranslationOptionsFull) => Promise<Renderable>) | null;
 }

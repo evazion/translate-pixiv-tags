@@ -4,8 +4,8 @@
         "strict": true,
         "strictNullChecks": true,
         "strictFunctionTypes": true,
-        "moduleResolution": "Node",
-        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "module": "preserve",
         "lib": ["ESNext", "DOM"],
         "sourceMap": false,
         "inlineSources": false,
@@ -16,6 +16,7 @@
         "noUnusedParameters": true,
         "noImplicitReturns": true,
         "skipLibCheck": true,
+        "checkJs": true,
         "paths": {
             "jquery": ["./src/types-jquery.d.ts"],
             "@types/jquery": ["./src/types-jquery.d.ts"],
@@ -24,5 +25,5 @@
         }
     },
     "include": ["src"],
-    "exclude": ["dist", "node_modules"]
+    "exclude": ["dist", "node_modules", "src/adapter-server.js"]
 }

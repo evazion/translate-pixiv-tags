@@ -2,8 +2,8 @@ import { IQuery, MutationSummary } from "mutation-summary";
 import $ from "jquery";
 import { css, render } from "lit";
 import { GM } from "$";
-import { SETTINGS } from "./settings";
-import { addCss, chooseBackgroundColorScheme, debuglog, removeAllCss } from "./utils";
+import { ADAPTERS, setOnSettingChange, SETTINGS } from "./settings";
+import { addCss, chooseBackgroundColorScheme, console, removeAllCss } from "./utils";
 import { TAG_POSITIONS, TAG_SELECTOR } from "./sites/shared";
 import initializeMastodon from "./sites/mastodon";
 import initializeBluesky from "./sites/bsky";
@@ -25,10 +25,11 @@ import initializeWeiboMobile from "./sites/weibo-mobile";
 import initializeXiaohongshu from "./sites/xiaohongshu";
 import initializeArtStation from "./sites/artstation";
 import initializeFanbox from "./sites/fanbox";
-import DanbooruAdapter from "./adapters/booru";
 import { normalizeProfileUrl } from "./normalize-url";
 import showSettings from "./tooltips/settings";
 import { getSiteDisplayDomain } from "./artist-urls";
+import DanbooruAdapter from "./adapters/booru";
+import { execAdapters } from "./adapter-loader";
 
 const PROGRAM_CSS = css`
     /* Adapters are expected to define --color for all tags and the icon for artist tag */
@@ -140,9 +141,8 @@ const PROGRAM_CSS = css`
     }
 `;
 
-const adapters: Record<string, typeof Adapter> = {
-    Danbooru: DanbooruAdapter,
-};
+// define here to prevent circular dependency
+ADAPTERS.Danbooru = DanbooruAdapter;
 
 let translators: Adapter[];
 
@@ -228,15 +228,17 @@ async function translate(
     const $duplicates = findTag($target).filter(`[data-original="${key}"]`);
     if ($duplicates.length > 0) return;
 
-    const tags = await Promise.all(translators.map((t) => t[method](param, options))).then((arr) =>
-        arr.flat(),
+    if (translators.every((t) => t[method] === null)) return;
+
+    const tags = await Promise.all(translators.map((t) => t[method]?.(param, options))).then(
+        (arr) => arr.flat(),
     );
 
     if (tags.length === 0) {
         const msg = `${errorMsg} "${param}", rule "${ruleName}"`;
         if (!loggedMisses.has(msg)) {
             loggedMisses.add(msg);
-            debuglog(msg);
+            console.log(msg);
         }
         return;
     }
@@ -265,7 +267,18 @@ async function translate(
 
     insertTag($target, container);
 
-    if (onadded) onadded(container, options);
+    onadded?.(container, options);
+}
+
+function patchCss(css: CSSStyleSheet | CSSStyleRule | undefined, newClass: string) {
+    if (!css) return;
+    for (let len = css.cssRules.length, i = 0; i < len; i++) {
+        const rule = css.cssRules[i] as CSSStyleRule;
+        if (rule.selectorText.includes("ARTIST_TAG")) {
+            rule.selectorText = rule.selectorText.replaceAll("ARTIST_TAG", newClass);
+        }
+        patchCss(rule, newClass);
+    }
 }
 
 const mutationObserverQueries: Array<[IQuery, (el: Node) => void]> = [];
@@ -318,12 +331,7 @@ const findAndTranslate: FindAndTranslate = function findAndTranslate(mode, selec
     };
 
     if (fullOptions.css) {
-        const artistTag = `.tpt-artist[data-rule="${fullOptions.ruleName}"]`;
-        // set internal prop used for lazy stylesheet creation
-        (fullOptions.css as any)._strings = fullOptions.css.cssText.replaceAll(
-            "ARTIST_TAG",
-            artistTag,
-        );
+        patchCss(fullOptions.css.styleSheet, `.tpt-artist[data-rule="${fullOptions.ruleName}"]`);
         addCss(fullOptions.css);
     }
 
@@ -391,54 +399,61 @@ const SITES: Record<string, (fn: FindAndTranslate) => void> = {
     "x.com": initializeTwitter,
     "www.xiaohongshu.com": initializeXiaohongshu,
 };
-// const SITES2: Record<string, (fn: FindAndTranslate) => void> = {
-//     ".artstation.com": initializeArtStation,
-//     ".fanbox.cc": initializeFanbox,
-// };
 
-function initialize() {
+async function initialize() {
+    await execAdapters(SETTINGS.source_adapters);
+
+    let restartScheduled = false;
+    setOnSettingChange(() => {
+        if (restartScheduled) return;
+        Promise.resolve().then(() => {
+            restartScheduled = false;
+            restart();
+        });
+        restartScheduled = true;
+    });
+
     if (SETTINGS.show_settings) {
         GM.registerMenuCommand("Settings", showSettings, "S");
     }
 
     const { theme } = chooseBackgroundColorScheme(document.body);
     document.documentElement.classList.add(`tpt-${theme}`);
-    debuglog(`set ${theme} theme mode`);
+    console.log(`set ${theme} theme mode`);
 }
 
 function start() {
     addCss(PROGRAM_CSS);
 
     translators = SETTINGS.data_sources.map((source) => {
-        const translator = new adapters[source.adapter](source.param);
+        if (!ADAPTERS[source.adapter]) {
+            console.error(`Missing ${source.adapter} adapter!`);
+            return {} as Adapter;
+        }
+        const translator = new ADAPTERS[source.adapter](source.param);
         if (!source.translateArtist) {
-            translator.translateArtistByName = () => Promise.resolve([]);
-            translator.translateArtistByUrl = () => Promise.resolve([]);
+            translator.translateArtistByName = null;
+            translator.translateArtistByUrl = null;
         }
         if (!source.translateTag) {
-            translator.translateTag = () => Promise.resolve([]);
+            translator.translateTag = null;
         }
         return translator;
     });
 
-    const domain = getSiteDisplayDomain(window.location.host);
+    const domain = getSiteDisplayDomain(window.location.origin);
     if (domain in SITES) {
         SITES[domain](findAndTranslate);
     } else {
-        // for (const tld in SITES2) {
-        //     if (host.endsWith(tld)) {
-        //         SITES2[tld](findAndTranslate);
-        //         break;
-        //     }
-        // }
-        console.warn("[TPT]: Unsupported domain", window.location.host);
+        console.warn("Unsupported domain", window.location.host);
     }
     startFindAndTranslate();
 }
 
-export function restart() {
+function restart() {
     mutationObserverQueries.length = 0;
     mutationObserver?.disconnect();
+    translators.forEach((t) => t.destroy());
     $(TAG_SELECTOR).remove();
     removeAllCss();
 
@@ -449,5 +464,5 @@ export function restart() {
 // Program execution start
 //------------------------
 
-initialize();
+await initialize();
 start();

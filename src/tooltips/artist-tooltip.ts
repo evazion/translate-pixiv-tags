@@ -455,6 +455,7 @@ export default function artistTooltip(
 
         target.classList.add("loading-data");
         let tipContent = await renderedTooltipsCache[key];
+        tipContent.className = content.className;
         // For correct work of CORS images must not be cloned at first displaying
         // TODO should it be fixed?
         // if (!tipContent.parentElement) tipContent = tipContent.cloneNode(true) as HTMLElement;
