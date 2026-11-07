@@ -231,7 +231,7 @@ async function translate(
     if (translators.every((t) => t[method] === null)) return;
 
     const tags = await Promise.all(translators.map((t) => t[method]?.(param, options))).then(
-        (arr) => arr.flat(),
+        (arr) => arr.flat().filter(Boolean),
     );
 
     if (tags.length === 0) {
@@ -259,11 +259,23 @@ async function translate(
         }
     }
 
+    // flatten groups + add commas between them
+    const content: Array<Element | string> = [];
+    let first = true;
+    for (const group of groups.values()) {
+        if (first) {
+            first = false;
+        } else {
+            content.push(", ");
+        }
+        content.push(...group);
+    }
+
     const container = document.createElement("div");
     container.className = `${containerClass} ${classes}`;
     container.dataset.original = key;
     container.dataset.rule = ruleName;
-    container.append(...[...groups.values()].flat());
+    container.append(...content);
 
     insertTag($target, container);
 

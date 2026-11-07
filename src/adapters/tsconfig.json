@@ -1,0 +1,7 @@
+{
+    // Separate project for standalone adapter scripts (loaded at runtime via `new Function`),
+    // so the globals from adapter.d.ts don't leak into the main code.
+    "extends": "../../tsconfig.json",
+    "include": ["*.js", "adapter.d.ts", "../types.d.ts", "../vite-env.d.ts"],
+    "exclude": []
+}

@@ -258,7 +258,7 @@ class AnimePictureAdapter {
             (tag) => html`
                 <a
                     class="tpt-tag ap category-${TAG_CSS_TYPE[tag.type]}"
-                    href="${AP_SITE}/posts?tags=${encodeURIComponent(tag.tag)}"
+                    href="${AP_SITE}/posts?search_tag=${encodeURIComponent(tag.tag)}"
                     target="_blank"
                 >
                     ${tag.tag}

@@ -4,7 +4,7 @@ import { ADAPTERS, DataSource, Setting, SettingName, SETTINGS, SETTINGS_SCHEMA }
 import { chooseBackgroundColorScheme, console, self } from "../utils";
 import { css, html, LitElement } from "lit";
 import { unsafeSVG } from "lit/directives/unsafe-svg.js";
-import { execAdapters, SourceAdapter, validateAdapter } from "../adapter-loader";
+import { execAdapters, SourceAdapter, loadAdapter } from "../adapter-loader";
 
 export const settingsIcon = unsafeSVG(settingsIconRaw);
 
@@ -370,7 +370,7 @@ class TptSettings extends LitElement {
                             @click=${async () => {
                                 try {
                                     this.adapterUrlError = "checking...";
-                                    const newAdapter = await validateAdapter(
+                                    const newAdapter = await loadAdapter(
                                         newAdapterUrl,
                                         list.map((meta) => meta.name),
                                     );

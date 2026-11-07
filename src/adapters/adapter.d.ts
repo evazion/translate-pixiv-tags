@@ -1,3 +1,5 @@
+/// <reference path="../types.d.ts" />
+
 export {};
 
 declare global {
