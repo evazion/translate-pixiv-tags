@@ -25,7 +25,7 @@ export const matchMemoized: (string: string, regex: RegExp) => RegExpMatchArray 
 
 /** For safe ways to use regexp in a single line of code */
 export function safeMatchMemoized(
-    string: string,
+    string: string | null | undefined,
     regex: RegExp,
     group: number = 0,
     defaultValue: string = "",
@@ -207,6 +207,7 @@ export async function getSafeImageUrl(url: string) {
             buffer = (Uint8Array.fromBase64 as any)(str);
         } else {
             const len = str.length;
+            // @ts-ignore
             buffer = new Uint8Array(len);
             for (let i = 0; i < len; i++) {
                 buffer[i] = str.fromCharAt(i);

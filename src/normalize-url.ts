@@ -797,6 +797,30 @@ const SOURCE_NORMALIZER = {
 
         return url.toString();
     },
+    xiaohongshu(url) {
+        const { domain, pathSegments } = splitUrl(url);
+        const POST_ID = /^[\da-f]{24}$/;
+
+        const { postId } = rubyArraySwitch(
+            [domain, ...pathSegments],
+            rubyArrayCase(
+                [[["xiaohongshu.com", "rednote.com"]], "explore", [POST_ID, "id"]],
+                (m) => ({ postId: m.id[0] }),
+            ),
+            rubyArrayCase(
+                [[["xiaohongshu.com", "rednote.com"]], "discovery", "item", [POST_ID, "id"]],
+                (m) => ({ postId: m.id[0] }),
+            ),
+            rubyArrayCase(
+                [[["xiaohongshu.com", "rednote.com"]], "user", "profile", POST_ID, [POST_ID, "id"]],
+                (m) => ({ postId: m.id[0] }),
+            ),
+        );
+
+        if (postId) return `https://www.xiaohongshu.com/explore/${postId}`;
+
+        return url.toString();
+    },
     zerochan(url) {
         const { pathSegments } = splitUrl(url);
         const { workId } = rubyArraySwitch(
@@ -893,6 +917,10 @@ const NORMALIZE_SOURCE_URL: Record<string, UrlNormalizer> = {
         valid: false,
         normalize: SOURCE_NORMALIZER.pixiv,
     },
+    ".rednote.com": {
+        valid: false,
+        normalize: SOURCE_NORMALIZER.xiaohongshu,
+    },
     ".sinaimg.cn": {
         valid: false,
         normalize: SOURCE_NORMALIZER.weibo,
@@ -913,6 +941,15 @@ const NORMALIZE_SOURCE_URL: Record<string, UrlNormalizer> = {
     ".weibocdn.com": {
         valid: false,
         normalize: SOURCE_NORMALIZER.weibo,
+    },
+    "www.xiaohongshu.com": {
+        path: /^\/explore\/[\da-f]{24}$/,
+        params: /^$/, // no params
+        normalize: SOURCE_NORMALIZER.xiaohongshu,
+    },
+    ".xiaohongshu.com": {
+        valid: false,
+        normalize: SOURCE_NORMALIZER.xiaohongshu,
     },
     ".zerochan.net": {
         path: /^\/\d+(#full)?$/,

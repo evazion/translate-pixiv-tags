@@ -1,6 +1,9 @@
 import globeRaw from "@fortawesome/fontawesome-free/svgs/solid/globe.svg?raw";
 import soundRaw from "@fortawesome/fontawesome-free/svgs/solid/volume-high.svg?raw";
 import { unsafeSVG } from "lit/directives/unsafe-svg.js";
+import { until } from "lit/directives/until.js";
+import { getImage } from "../network";
+import { DOMAIN_USES_CSP } from "../settings";
 
 export const globeIcon = unsafeSVG(globeRaw);
 export const soundIcon = unsafeSVG(soundRaw);
@@ -67,7 +70,19 @@ export function formatDuration(seconds: number) {
  * @see https://stackoverflow.com/questions/15900485
  */
 export function formatBytes(bytes: number) {
-    const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+    const sizes = ["Bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return `${Number.parseFloat((bytes / 1024 ** i).toFixed(2))} ${sizes[i]}`;
+}
+
+/**
+ * A lit directive to load image safely on domains with strict CSP
+ * @param src - the resource to fetch
+ * @param force - whether the resource requires CORS
+ */
+export function corsSrc(src: string, force?: boolean) {
+    if (DOMAIN_USES_CSP || force) {
+        return until(getImage(src), TRANSPARENT_IMAGE);
+    }
+    return src;
 }

@@ -1,4 +1,3 @@
-import $ from "jquery";
 import { css } from "lit";
 import { TAG_POSITIONS } from "./shared";
 
@@ -43,7 +42,8 @@ export default function initializeNicoSeiga(findAndTranslate: FindAndTranslate) 
     findAndTranslate("artist", "div.lg_txt_illust:has(strong)", {
         classes: "inline",
         tagPosition: TAG_POSITIONS.beforeend,
-        toProfileUrl: () => $("a:has(.pankuzu_suffix)").prop("href"),
+        toProfileUrl: () =>
+            document.querySelector<HTMLAnchorElement>("a:has(.pankuzu_suffix)")?.href ?? null,
         ruleName: "illust artist anon",
     });
 

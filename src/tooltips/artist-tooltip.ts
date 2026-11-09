@@ -300,22 +300,28 @@ class TptArtistTooltipContent extends LitElement implements Partial<ArtistToolti
     declare customCss?: CSSResult;
 
     declare page: number;
+    declare pages: Record<number, Promise<Renderable[]>>;
     declare loadingPage: boolean;
     width: number;
 
     constructor() {
         super();
         this.page = -1;
+        this.pages = {};
         this.loadingPage = false;
         this.width = 0;
     }
 
     protected willUpdate(changedProperties: PropertyValues): void {
         if (!this.width) {
-            this.width = Math.min(this.postPreviews!.length, SETTINGS.preview_limit, 3) * 194 - 8;
+            this.width =
+                Math.min(this.postPreviews?.length || 1, SETTINGS.preview_limit, 3) * 194 - 8;
         }
         if (changedProperties.has("firstPage") && this.page < this.firstPage!) {
             this.page = this.firstPage!;
+            if (!this.pages[this.page]) {
+                this.pages[this.page] = Promise.resolve(this.postPreviews!);
+            }
         }
         if (changedProperties.has("customCss")) {
             while (this.shadowRoot?.adoptedStyleSheets.length! > 1) {
@@ -328,18 +334,34 @@ class TptArtistTooltipContent extends LitElement implements Partial<ArtistToolti
     }
 
     async loadPage(page: number) {
-        if (this.loadingPage || page <= this.firstPage! || page >= this.lastPage!) return;
+        if (
+            this.loadingPage ||
+            !this.loadNextPage ||
+            page < this.firstPage! ||
+            page > this.lastPage!
+        ) {
+            return;
+        }
         this.loadingPage = true;
         try {
-            this.postPreviews = await this.loadNextPage!(page);
+            if (page in this.pages) {
+                this.postPreviews = await this.pages[page];
+            } else {
+                this.postPreviews = await this.loadNextPage(page);
+            }
             this.page = page;
+            // try to preload the next page
+            const nextPage = page + 1;
+            if (!(nextPage in this.pages) && nextPage < this.lastPage!) {
+                this.pages[nextPage] = this.loadNextPage(page);
+            }
         } finally {
             this.loadingPage = false;
         }
     }
 
     render() {
-        return html /* HTML */ `
+        return html`
             <article
                 class="container"
                 part="container"

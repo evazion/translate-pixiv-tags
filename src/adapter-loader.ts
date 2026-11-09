@@ -1,11 +1,30 @@
 import { css, html, unsafeCSS } from "lit";
 import { GM } from "$";
 import { makeRequest } from "./network";
-import { ADAPTERS } from "./settings";
+import { ADAPTERS, adapterCode, SETTINGS } from "./settings";
 import { addCss, console, getSafeImageUrl } from "./utils";
+import artistTooltip from "./tooltips/artist-tooltip";
+import * as adapterShared from "./adapters/shared";
 
 // list of adapter module's arguments, MUST BE in sync with src/adapters/adapter.d.ts
-const ARGS = { addAdapter, addCss, console, css, getSafeImageUrl, html, makeRequest, unsafeCSS };
+const ARGS = {
+    adapterShared,
+    addAdapter,
+    addCss,
+    artistTooltip,
+    console,
+    css,
+    getSafeImageUrl,
+    html,
+    makeRequest,
+    SETTINGS: new Proxy(SETTINGS, {
+        set() {
+            // forbid changing settings
+            return false;
+        },
+    }),
+    unsafeCSS,
+};
 
 const ADAPTER_UPDATE_PERIOD = 24 * 60 * 60 * 1000; // 1 day
 
@@ -84,33 +103,33 @@ export type SourceAdapter = {
 
 const isDevUrl = (url: string) => url.startsWith("http://127.0.0.1:");
 
-export async function execAdapters(metas: SourceAdapter[]) {
-    const codes: Record<string, string> = await GM.getValues<Record<string, string>>(
-        metas.map((i) => `adapter_${i.name}`),
-    ).then((obj) =>
-        // strip prefix from the keys
-        Object.fromEntries(Object.entries(obj).map(([key, code]) => [key.slice(8), code])),
-    );
+export async function execAdapters(adapters: SourceAdapter[]) {
+    const codes = await adapterCode.get(adapters.map((m) => m.name));
 
     const now = Date.now();
-    for (const { name, codeUrl, lastUpdate } of metas) {
-        if (name === "Danbooru") continue;
-        const alwaysUpdateAndRun = isDevUrl(codeUrl);
-        if (codes[name] && !alwaysUpdateAndRun) {
+    for (const adapter of adapters) {
+        if (adapter.name === "Danbooru") continue;
+        const alwaysUpdateAndExec = isDevUrl(adapter.codeUrl);
+        if (codes[adapter.name] && !alwaysUpdateAndExec) {
             try {
-                parseAdapter(codes[name])();
+                parseAdapter(codes[adapter.name])();
             } catch (ex) {
-                console.error(`An error occurred during execution of the adapter "${name}":`, ex);
+                console.error(
+                    `An error occurred during execution of the adapter "${adapter.name}":`,
+                    ex,
+                );
             }
         }
-        if (lastUpdate + ADAPTER_UPDATE_PERIOD < now || alwaysUpdateAndRun) {
-            await updateAdapter(name, codeUrl, !(name in codes) || alwaysUpdateAndRun);
+        const shouldExec = !codes[adapter.name] || alwaysUpdateAndExec;
+        if (adapter.lastUpdate + ADAPTER_UPDATE_PERIOD < now || shouldExec) {
+            await updateAdapter(adapter, shouldExec);
         }
     }
 }
 
 let selfTab: Record<string, string> = {};
-async function updateAdapter(name: string, url: string, exec: boolean) {
+async function updateAdapter(oldAdapter: SourceAdapter, exec: boolean) {
+    const name = oldAdapter.name;
     const lock = Math.random().toString(16).slice(2);
     const key = `updating_adapter_${name}`;
     selfTab[key] = lock;
@@ -123,44 +142,40 @@ async function updateAdapter(name: string, url: string, exec: boolean) {
         }
     }
 
-    let run = false;
+    let hasRun = false;
     try {
-        const newAdapter = await loadAdapter(url, []);
-        const adapters: SourceAdapter[] = await GM.getValue("source_adapters", []);
-        const oldAdapter = adapters.find((a) => a.name === name);
+        const { code, run, meta: newAdapter } = await loadAdapter(oldAdapter.codeUrl, []);
 
         if (exec) {
-            newAdapter.run();
-            run = true;
+            run();
+            hasRun = true;
         }
 
-        if (newAdapter.meta.version === oldAdapter?.version && !isDevUrl(url)) {
+        if (newAdapter.version === oldAdapter.version && !isDevUrl(oldAdapter.codeUrl)) {
             return;
         }
-        if (newAdapter.meta.name !== name) {
-            if (adapters.some((a) => a !== oldAdapter && a.name === newAdapter.meta.name)) {
+        const adapters = SETTINGS.source_adapters;
+        if (newAdapter.name !== name) {
+            if (adapters.some((a) => a !== oldAdapter && a.name === newAdapter.name)) {
                 console.error(
-                    `Adapter "${name}" changed name to "${newAdapter.meta.name}" which is name of another adapter.`,
+                    `Adapter "${name}" changed name to "${newAdapter.name}" which is name of another adapter.`,
                 );
                 return;
             }
         }
 
-        const newAdapters = adapters.map((adapter) =>
-            adapter === oldAdapter ? newAdapter.meta : adapter,
+        SETTINGS.source_adapters = adapters.map((adapter) =>
+            adapter === oldAdapter ? newAdapter : adapter,
         );
-        GM.setValues({
-            source_adapters: newAdapters,
-            [`adapter_${newAdapter.meta.name}`]: newAdapter.code,
-        });
-        if (newAdapter.meta.name !== name) {
-            GM.deleteValue(`adapter_${name}`);
+        adapterCode.set(newAdapter.name, code);
+        if (newAdapter.name !== name) {
+            adapterCode.delete(name);
         }
     } catch (ex) {
         console.error(`Failed to update adapter "${name}":`, ex);
-        if (exec && !run) {
+        if (exec && !hasRun) {
             try {
-                const code: string | undefined = await GM.getValue(`adapter_${name}`);
+                const code = await adapterCode.get(name);
                 if (code) {
                     parseAdapter(code)();
                 }

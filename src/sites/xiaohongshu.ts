@@ -1,5 +1,6 @@
 import { TAG_POSITIONS } from "./shared";
 
+// English site is rednote.com
 export default function initializeXiaohongshu(findAndTranslate: FindAndTranslate) {
     // Tags in post
     findAndTranslate("tag", "a.tag", {

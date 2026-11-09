@@ -2,14 +2,8 @@ import $ from "jquery";
 import { chain, memoize } from "underscore";
 import { css, html, TemplateResult, unsafeCSS } from "lit";
 import { until } from "lit/directives/until.js";
-import {
-    getImage,
-    makeRequest,
-    MAXIMUM_URI_LENGTH,
-    tooManyNetworkErrors,
-    type UrlParams,
-} from "../network";
-import { SETTINGS, DOMAIN_USES_CSP } from "../settings";
+import { makeRequest, MAXIMUM_URI_LENGTH, tooManyNetworkErrors, type UrlParams } from "../network";
+import { SETTINGS } from "../settings";
 import { addCss, memoizeKey, naturalCompare, getSafeImageUrl, console } from "../utils";
 import { normalizeSourceUrl } from "../normalize-url";
 import {
@@ -20,7 +14,7 @@ import {
     FALLBACK_PREVIEW,
     soundIcon,
     timeToAgo,
-    TRANSPARENT_IMAGE,
+    corsSrc,
 } from "./shared";
 import {
     getSiteDisplayDomain,
@@ -32,7 +26,6 @@ import {
 import artistTooltip, { type ArtistTooltipParams } from "../tooltips/artist-tooltip";
 import showMessage from "../tooltips/message";
 
-const CACHE_PARAM = { expires_in: SETTINGS.cache_lifetime };
 // Setting this to the maximum since batches could return more than the amount being queried
 const API_LIMIT = 1000;
 const REQUEST_INTERVAL = 500; // in ms
@@ -338,27 +331,29 @@ const queueNetworkRequestMemoized: typeof queueNetworkRequest = memoize(
     (queue, type, item) => memoizeKey(queue.host, type, item),
 );
 
-function intervalNetworkHandler(queueOrig: RequestQueue) {
-    if (queueOrig.q.length === 0) return;
+function intervalNetworkHandler(queue: RequestQueue) {
+    if (queue.q.length === 0) return;
+    // TODO move to networking
     if (!navigator.onLine) {
         if (SETTINGS.display_network_errors) {
             showMessage("No Internet connection", "");
         }
         return;
     }
-    if (tooManyNetworkErrors(new URL(queueOrig.host).hostname)) return;
-    const queue = queueOrig.q.slice();
-    queueOrig.q.length = 0;
+    // TODO move to networking
+    if (tooManyNetworkErrors(new URL(queue.host).hostname)) return;
+    const allRequests = queue.q.splice(0);
 
+    const CACHE_PARAM = { expires_in: SETTINGS.cache_lifetime };
     const types = Object.keys(NETWORK_REQUEST_DICT) as RequestName[];
     for (const type of types) {
-        const requests = queue.filter((request) => request.type === type);
+        const requests = allRequests.filter((request) => request.type === type);
         if (requests.length <= 0) continue; // eslint-disable-line no-continue
 
         const requestTools = NETWORK_REQUEST_DICT[type] as RequestDefinition<
             DBResponse<typeof type>
         >;
-        const url = `${queueOrig.host}${requestTools.url}.json`;
+        const url = `${queue.host}${requestTools.url}.json`;
         const limitParam = { limit: requestTools.limit ?? API_LIMIT };
         if (type === "count") {
             for (const request of requests) {
@@ -366,7 +361,7 @@ function intervalNetworkHandler(queueOrig: RequestQueue) {
                 const params = Object.assign(typeParam, limitParam, CACHE_PARAM);
                 getLong(url, params, [request], requestTools).catch(() => {
                     // in case of error return the request to the queue
-                    queue.push(request);
+                    queue.q.push(request);
                 });
             }
         } else {
@@ -374,12 +369,10 @@ function intervalNetworkHandler(queueOrig: RequestQueue) {
             const params = Object.assign(typeParam, limitParam, CACHE_PARAM);
             getLong(url, params, requests, requestTools).catch(() => {
                 // in case of error return requests to the queue
-                queue.push(...requests);
+                queue.q.push(...requests);
             });
         }
     }
-    // Clear the queue once all network requests have been sent
-    queue.length = 0;
 }
 
 async function getLong<T extends RequestName>(
@@ -548,10 +541,6 @@ const ARTIST_TOOLTIP_CSS = css`
             var(--preview_banned_color) var(--preview_has_parent_color);
     }
 
-    article.post-preview img {
-        display: block;
-    }
-
     article.post-preview .post-icon .animation-icon {
         font-weight: bold;
     }
@@ -590,7 +579,7 @@ function buildArtistUrls(artist: TranslatedArtist) {
             url ? html`<img src="${url}" />` : globeIcon,
         );
 
-        return html /* HTML */ `
+        return html`
             <li class="${urlClass}">
                 <a
                     href="${normalizedUrl}"
@@ -653,25 +642,17 @@ function getPostPreview(post: ResponsePosts) {
     const scale = hiDpi ? 0.5 : 1;
     const previewAsset = post.media_asset.variants?.find((variant) => variant.type === size);
 
-    const info = previewAsset
+    return previewAsset
         ? {
               url: previewAsset.url,
-              safeUrl: null as Promise<string> | null,
               width: previewAsset.width * scale,
               height: previewAsset.height * scale,
           }
         : {
               url: post.media_asset.file_ext === "swf" ? FLASH_FILE : FALLBACK_PREVIEW,
-              safeUrl: null as Promise<string> | null,
               width: 180,
               height: 180,
           };
-
-    if (DOMAIN_USES_CSP) {
-        info.safeUrl = getImage(info.url);
-        info.url = TRANSPARENT_IMAGE;
-    }
-    return info;
 }
 
 /**
@@ -681,7 +662,7 @@ function getPostPreview(post: ResponsePosts) {
 function buildPostIcons(post: ResponsePosts) {
     const hasSound = /\bsound\b/.test(post.tag_string_meta);
     const animationIcon = post.media_asset.duration
-        ? html /* HTML */ `
+        ? html`
               <div
                   class="post-icon animation-icon"
                   title="Animated post ${hasSound ? "with a sound" : ""}"
@@ -693,7 +674,7 @@ function buildPostIcons(post: ResponsePosts) {
         : "";
 
     const aiIcon = /\bai-generated\b/.test(post.tag_string_meta)
-        ? html /* HTML */ `
+        ? html`
               <div
                   class="post-icon right-icon"
                   title="AI generated image"
@@ -702,7 +683,7 @@ function buildPostIcons(post: ResponsePosts) {
               </div>
           `
         : /\bai-assisted\b/.test(post.tag_string_meta)
-          ? html /* HTML */ `
+          ? html`
                 <div
                     class="post-icon right-icon"
                     title="AI assisted image"
@@ -750,7 +731,7 @@ function buildPostPreview(post: ResponsePosts, booru: string) {
           `
         : html`<span title="${post.source}">NON-WEB</span>`;
 
-    const element = html /* HTML */ `
+    const element = html`
         <article
             itemscope
             itemtype="http://schema.org/ImageObject"
@@ -767,8 +748,9 @@ function buildPostPreview(post: ResponsePosts, booru: string) {
                 <img
                     width="${preview.width}"
                     height="${preview.height}"
-                    src="${until(preview.safeUrl ?? preview.url, preview.url)}"
+                    src="${corsSrc(preview.url)}"
                     title="${formatTagString(post)}"
+                    crossorigin="anonymous"
                     referrerpolicy="origin"
                     part="post-preview rating-${post.rating}"
                 />
@@ -797,6 +779,8 @@ async function loadNextPage(queue: RequestQueue, tag: string, page: number) {
 }
 
 // #endregion
+
+// #region adapter
 
 type TranslatedTag = { name: string; prettyName: string; category: number };
 
@@ -850,7 +834,7 @@ export default class DanbooruAdapter implements Adapter {
         addCss(TAGS_CSS);
 
         getSafeImageUrl(`${booru}/favicon.ico`).then((url) => {
-            // minify-html-literals doesn't support dynamic selectors
+            // minify-html-literals doesn't support dynamic selectors, so plain text
             addCss(/* CSS */ `
                 .tpt-artist .danbooru.db${this.id}::before {
                     background-image: url("${unsafeCSS(url)}");
@@ -877,7 +861,7 @@ export default class DanbooruAdapter implements Adapter {
             encodedName: encodeURIComponent(rawArtist.name),
         };
 
-        const elem = html /* HTML */ `
+        const elem = html`
             <a
                 class="danbooru db${this.id} ${artist.is_banned ? "banned-artist" : ""}"
                 href="${this.booru}/artists/${artist.id}"
@@ -962,7 +946,7 @@ export default class DanbooruAdapter implements Adapter {
         }
 
         const elements = tags.map(
-            (tag) => html /* HTML */ `
+            (tag) => html`
                 <a
                     class="tpt-tag danbooru category-${tag.category}"
                     href="${this.booru}/posts?tags=${encodeURIComponent(tag.name)}"
@@ -1010,7 +994,7 @@ export default class DanbooruAdapter implements Adapter {
             .filter(String)
             .sort()
             .map(
-                (otherName) => html /* HTML */ `
+                (otherName) => html`
                     <li>
                         <a
                             href="${this.booru}/artists?search[name]=${encodeURIComponent(

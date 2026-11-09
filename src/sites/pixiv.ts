@@ -132,8 +132,8 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
             preventSiteNavigation(tag);
             // TODO generalize
             const $tag = $(tag);
-            const [category] = $tag.find("a,button").prop("className").match(/\d/) ?? [];
-            const hue = [230, 5, 0, 300, 110, 50][category];
+            const [category = 2] = $tag.find("a,button")[0]?.className.match(/\d/) ?? [];
+            const hue = [230, 5, 0, 300, 110, 50][+category];
             $tag.closest("section,ul")
                 .find("a:is([color],[data-ga4-label=colorful_tag]):not([style])")
                 .css("background-color", () => `hsl(${Math.random() * 40 + 150}, 35%, 65%)`);
@@ -244,8 +244,9 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
     // Bookmarks: https://www.pixiv.net/en/users/29310/bookmarks/artworks
     // Thumbs on the index page: https://www.pixiv.net/ https://www.pixiv.net/en/
     // Posts of followed artists: https://www.pixiv.net/bookmark_new_illust.php
+    // Posts discovery: https://www.pixiv.net/discovery?mode=safe
     findAndTranslate("artist", "a", {
-        predicate: `:is([data-ga4-label="thumbnail"]>div, section :is(ul>*>div,ul>*>div>div))>div:last-child>div[aria-haspopup]>a:last-child`,
+        predicate: `:is([data-ga4-label="thumbnail"]>div, :is(section, [data-gtm-recommend-zone="discovery"]) :is(ul>*>div,ul>*>div>div))>div:last-child>div[aria-haspopup]>a:last-child`,
         tagPosition: TAG_POSITIONS.afterParent,
         asyncMode: true,
         css: css`
@@ -320,9 +321,10 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
     // });
 
     // Ranking pages: https://www.pixiv.net/ranking.php?mode=original
+    // User discovery: https://www.pixiv.net/discovery/users
     findAndTranslate("artist", `a[data-ga4-label="user_name_link"]`, {
         asyncMode: true,
-        predicate: `ol a+a`,
+        predicate: `ol a+a, ul a+div>div>a`,
         tagPosition: TAG_POSITIONS.afterParent,
         ruleName: "ranking artist",
     });

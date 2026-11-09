@@ -27,7 +27,6 @@ import initializeArtStation from "./sites/artstation";
 import initializeFanbox from "./sites/fanbox";
 import { normalizeProfileUrl } from "./normalize-url";
 import showSettings from "./tooltips/settings";
-import { getSiteDisplayDomain } from "./artist-urls";
 import DanbooruAdapter from "./adapters/booru";
 import { execAdapters } from "./adapter-loader";
 
@@ -271,7 +270,7 @@ async function translate(
         content.push(...group);
     }
 
-    const container = document.createElement("div");
+    const container = document.createElement("span");
     container.className = `${containerClass} ${classes}`;
     container.dataset.original = key;
     container.dataset.rule = ruleName;
@@ -399,6 +398,7 @@ const SITES: Record<string, (fn: FindAndTranslate) => void> = {
     "pawoo.net": initializeMastodon,
     "dic.pixiv.net": initializePixiv,
     "www.pixiv.net": initializePixiv,
+    "www.rednote.com": initializeXiaohongshu,
     "saucenao.com": initializeSauceNAO,
     "seiga.nicovideo.jp": initializeNicoSeiga,
     "skeb.jp": initializeSkeb,
@@ -413,8 +413,6 @@ const SITES: Record<string, (fn: FindAndTranslate) => void> = {
 };
 
 async function initialize() {
-    await execAdapters(SETTINGS.source_adapters);
-
     let restartScheduled = false;
     setOnSettingChange(() => {
         if (restartScheduled) return;
@@ -425,13 +423,17 @@ async function initialize() {
         restartScheduled = true;
     });
 
+    await execAdapters(SETTINGS.source_adapters);
+
     if (SETTINGS.show_settings) {
         GM.registerMenuCommand("Settings", showSettings, "S");
     }
 
     const { theme } = chooseBackgroundColorScheme(document.body);
     document.documentElement.classList.add(`tpt-${theme}`);
-    console.log(`set ${theme} theme mode`);
+    console.log(`Set ${theme} theme mode`);
+
+    start();
 }
 
 function start() {
@@ -453,11 +455,15 @@ function start() {
         return translator;
     });
 
-    const domain = getSiteDisplayDomain(window.location.origin);
+    let domain = window.location.host;
+    if (!(domain in SITES)) {
+        // drop subdomains, for now it is enough
+        domain = domain.split(".").slice(-2).join(".");
+    }
     if (domain in SITES) {
         SITES[domain](findAndTranslate);
     } else {
-        console.warn("Unsupported domain", window.location.host);
+        console.warn(`Unsupported domain ${domain} (${window.location.host})`);
     }
     startFindAndTranslate();
 }
@@ -476,5 +482,8 @@ function restart() {
 // Program execution start
 //------------------------
 
-await initialize();
-start();
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initialize);
+} else {
+    initialize();
+}

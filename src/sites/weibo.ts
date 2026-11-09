@@ -24,11 +24,7 @@ export default function initializeWeibo(findAndTranslate: FindAndTranslate) {
         predicate: "div[class^='ProfileHeader_name_']",
         toProfileUrl: (el) =>
             url(
-                safeMatchMemoized(
-                    $(el).parent().parent().nextAll("a").prop("href"),
-                    /to_uid=(\d+)/,
-                    1,
-                ),
+                safeMatchMemoized($(el).parent().parent().nextAll("a")[0]?.href, /to_uid=(\d+)/, 1),
             ),
         classes: "inline",
         ruleName: "artist profile",
@@ -49,7 +45,7 @@ export default function initializeWeibo(findAndTranslate: FindAndTranslate) {
         asyncMode: true,
         predicate: "article header a[href^='/n/']",
         toProfileUrl: (el) =>
-            url(safeMatchMemoized($(el).parent().next().find("a").prop("href"), /\d+/)),
+            url(safeMatchMemoized($(el).parent().next().find("a")[0]?.href, /\d+/)),
         classes: "inline",
         ruleName: "artist re-post",
         css: css`
@@ -67,7 +63,9 @@ export default function initializeWeibo(findAndTranslate: FindAndTranslate) {
         toProfileUrl: (el) =>
             url(
                 safeMatchMemoized(
-                    $(el).parents(".popcard").find("a[href^='/u/page/follow/']").prop("href"),
+                    $(el)
+                        .parents(".popcard")
+                        .find<HTMLAnchorElement>("a[href^='/u/page/follow/']")[0]?.href,
                     /\d+/,
                 ),
             ),

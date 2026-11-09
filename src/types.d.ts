@@ -39,7 +39,7 @@ interface TranslationOptions {
     /** Extracts the link to the profile from the element, by default - `href` from closest `<a>` */
     toProfileUrl?: (el: HTMLElement) => string | string[] | null;
     /** Extracts the tag name from the element, by default - the element's text */
-    toTagName?: (el: HTMLElement) => string | null;
+    toTagName?: (el: HTMLElement) => string | string[] | null;
     /** Methods for inserting and retrieving the tag element relatively to
      * the matched element, by default it's `afterend` */
     tagPosition?: TagPosition;

@@ -1,6 +1,14 @@
 import { isEqual } from "underscore";
 import settingsIconRaw from "../resource/settings-icon.svg?raw";
-import { ADAPTERS, DataSource, Setting, SettingName, SETTINGS, SETTINGS_SCHEMA } from "../settings";
+import {
+    adapterCode,
+    ADAPTERS,
+    DataSource,
+    Setting,
+    SettingName,
+    SETTINGS,
+    SETTINGS_SCHEMA,
+} from "../settings";
 import { chooseBackgroundColorScheme, console, self } from "../utils";
 import { css, html, LitElement } from "lit";
 import { unsafeSVG } from "lit/directives/unsafe-svg.js";
@@ -136,10 +144,16 @@ class TptSettings extends LitElement {
 
     async applyChanges() {
         if (this.changes.source_adapters) {
-            const newAdapters = this.changes.source_adapters.filter((adapter) =>
+            const addedAdapters = this.changes.source_adapters.filter((adapter) =>
                 SETTINGS.source_adapters.every((a) => a.name !== adapter.name),
             );
-            await execAdapters(newAdapters);
+            await execAdapters(addedAdapters);
+            const removedAdapters = SETTINGS.source_adapters.filter((adapter) =>
+                this.changes.source_adapters!.every((a) => a.name !== adapter.name),
+            );
+            for (const adapter of removedAdapters) {
+                await adapterCode.delete(adapter.name);
+            }
         }
         Object.assign(SETTINGS, this.changes);
         this.settings = { ...SETTINGS };
@@ -151,7 +165,7 @@ class TptSettings extends LitElement {
         const value = this.settings[name];
         switch (setting.type) {
             case "number":
-                return html /* HTML */ `
+                return html`
                     <input
                         type="number"
                         min="0"
@@ -165,7 +179,7 @@ class TptSettings extends LitElement {
                 `;
             case "option": {
                 const options = Object.entries(setting.values).map(
-                    ([val, descr]) => html /* HTML */ `
+                    ([val, descr]) => html`
                         <option
                             value="${val}"
                             ${val === value ? "selected" : ""}
@@ -175,7 +189,7 @@ class TptSettings extends LitElement {
                     `,
                 );
 
-                return html /* HTML */ `
+                return html`
                     <select
                         name="${name}"
                         @change=${(ev: Event) => {
@@ -188,7 +202,7 @@ class TptSettings extends LitElement {
                 `;
             }
             case "boolean":
-                return html /* HTML */ `
+                return html`
                     <input
                         type="checkbox"
                         ?checked="${value}"
@@ -337,7 +351,7 @@ class TptSettings extends LitElement {
                 const list = this.changes.source_adapters ?? (value as SourceAdapter[]);
                 const rows = list.map(
                     (adapter, i) => html`
-                        <div>${adapter.name}:</div>
+                        <div>${adapter.name}@${adapter.version}:</div>
                         <div style="${adapter.codeUrl ? "" : "font-style: italic"}">
                             ${adapter.codeUrl || "built-in"}
                         </div>
@@ -396,7 +410,7 @@ class TptSettings extends LitElement {
     }
 
     protected render() {
-        return html /* HTML */ `
+        return html`
             <div
                 id="ui-settings"
                 @click=${self(this.destroy)}
@@ -407,7 +421,7 @@ class TptSettings extends LitElement {
                         ([name, setting]) =>
                             name === "booru"
                                 ? null
-                                : html /* HTML */ `
+                                : html`
                                       <div>${setting.descr}:</div>
                                       <div>${this.settingToInput(setting, name)}</div>
                                   `,

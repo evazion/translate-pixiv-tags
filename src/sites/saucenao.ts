@@ -5,8 +5,8 @@ import { TAG_POSITIONS } from "./shared";
 export default function initializeSauceNAO(findAndTranslate: FindAndTranslate) {
     $(".resulttitle, .resultcontentcolumn")
         .contents()
-        .filter((_i, el) => el.nodeType === 3) // Get text nodes
-        .replaceWith(function fn() {
+        .filter((_i: number, el: Node) => el.nodeType === 3) // Get text nodes
+        .replaceWith(function fn(this: Node) {
             return $(this)
                 .text()
                 .split(", ")
@@ -18,55 +18,103 @@ export default function initializeSauceNAO(findAndTranslate: FindAndTranslate) {
     // http://saucenao.com/search.php?db=999&url=https%3A%2F%2Fraikou4.donmai.us%2Fpreview%2Fad%2F90%2Fad90ad1cc3407f03955f22b427d21707.jpg
     // https://saucenao.com/search.php?db=999&url=http%3A%2F%2Fmedibangpaint.com%2Fwp-content%2Fuploads%2F2015%2F05%2Fgallerylist-04.jpg
     // https://saucenao.com/search.php?db=999&url=http%3A%2F%2Fpastyle.net%2FPLFG-0001_MelangelicTone%2Fimage%2Fartwork_MelangelicTone.jpg
-    findAndTranslate(
-        "artist",
-        [
-            "strong:contains('Member:')+a",
-            "strong:contains('Author:')+a",
-            "strong:contains('Twitter:')+a",
-            "strong:contains('User ID:')+a",
-        ].join(","),
-        {
-            classes: "inline",
-            ruleName: "artist by link",
-            toProfileUrl: (el) => {
-                const a = el as HTMLAnchorElement;
-                if (
-                    a.href.startsWith("https://twitter.com/") ||
-                    a.href.startsWith("https://x.com/")
-                ) {
-                    return [
-                        `https://x.com/${a.textContent?.slice(1)}`,
-                        `https://x.com/i/user/${a.href.match(/\d+/)?.[0]}`,
-                    ];
-                }
-                return a.href;
-            },
-        },
-    );
-
-    findAndTranslate("artistByName", ".resulttitle .target", {
-        tagPosition: TAG_POSITIONS.beforebegin,
+    findAndTranslate("artist", "a", {
+        predicate: (el) =>
+            $(el).is(
+                [
+                    "strong:contains('Member:')+a",
+                    "strong:contains('Author:')+a",
+                    "strong:contains('Twitter:')+a",
+                    "strong:contains('User ID:')+a",
+                ].join(","),
+            ),
         classes: "inline",
+        ruleName: "artist by link",
+        asyncMode: true,
+        toProfileUrl: (el) => {
+            const a = el as HTMLAnchorElement;
+            if (a.href.startsWith("https://twitter.com/") || a.href.startsWith("https://x.com/")) {
+                return [
+                    `https://x.com/${a.textContent?.slice(1)}`,
+                    `https://x.com/i/user/${a.href.match(/\d+/)?.[0]}`,
+                ];
+            }
+            return a.href;
+        },
+    });
+
+    function getFollowingText(el: HTMLElement) {
+        const node = el.nextSibling;
+        // if not a text node
+        if (!node || node.nodeType !== 3) return null;
+        return node.textContent?.trim() ? node.textContent.split(",") : null;
+    }
+
+    function cleanUpFollowingText(el: HTMLElement) {
+        const node = el.nextSibling;
+        // if not a text node
+        if (!node || node.nodeType !== 3) return;
+        node.textContent =
+            node.textContent
+                ?.replace(el.textContent.trim(), "")
+                .replace(/(, ){2,}/, ", ")
+                .replace(/^, |, $/, "") ?? "";
+    }
+
+    findAndTranslate("artistByName", "strong", {
+        predicate: ".resulttitle strong",
+        tagPosition: TAG_POSITIONS.afterend,
+        toTagName: getFollowingText,
+        onadded: cleanUpFollowingText,
+        asyncMode: true,
+        classes: "inline comma",
         css: css`
-            ARTIST_TAG + .target {
+            .ex-artist-tag + .target {
                 display: none;
+            }
+            .ex-artist-tag.comma::after {
+                content: ", ";
             }
         `,
         ruleName: "artist by name",
     });
 
-    findAndTranslate("tag", ".resultcontentcolumn .target", {
-        tagPosition: TAG_POSITIONS.beforebegin,
-        classes: "no-brackets",
+    findAndTranslate("tag", "strong", {
+        predicate: ".resultcontentcolumn strong",
+        tagPosition: TAG_POSITIONS.afterend,
+        toTagName: getFollowingText,
+        onadded: cleanUpFollowingText,
+        asyncMode: true,
+        classes: "no-brackets comma",
         css: css`
-            .tpt-tags {
+            .ex-translated-tags {
                 margin: 0;
             }
-            .tpt-tags + .target {
+            .ex-translated-tags + .target {
+                display: none;
+            }
+            .ex-translated-tags.comma::after {
+                content: ", ";
+            }
+        `,
+        ruleName: "tags strong",
+    });
+
+    findAndTranslate("tag", "br", {
+        predicate: ".resultcontentcolumn br",
+        tagPosition: TAG_POSITIONS.afterend,
+        toTagName: getFollowingText,
+        onadded: (el) => el.nextSibling?.remove(),
+        asyncMode: true,
+        classes: "no-brackets",
+        css: css`
+            .ex-translated-tags {
+                margin: 0;
+            }
+            .ex-translated-tags + .target {
                 display: none;
             }
         `,
-        ruleName: "tags",
+        ruleName: "tags br",
     });
 }

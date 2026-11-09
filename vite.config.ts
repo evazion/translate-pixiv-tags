@@ -6,12 +6,12 @@ import monkey from "vite-plugin-monkey";
 export default defineConfig(({ mode }) => ({
     build: {
         minify: mode === "production",
-        terserOptions: {
-            mangle: {
-                // do not minify top-level variable names
-                toplevel: false,
-            },
-        },
+        // terserOptions: {
+        //     mangle: {
+        //         // do not minify top-level variable names
+        //         toplevel: false,
+        //     },
+        // },
     },
     plugins: [
         {
@@ -35,10 +35,9 @@ export default defineConfig(({ mode }) => ({
                 },
             },
         },
-        // breaks nesting https://github.com/lit/lit/issues/5207
-        // minifyHTML({
-        //     failOnError: true,
-        // }),
+        minifyHTML({
+            failOnError: true,
+        }),
         monkey({
             entry: "src/main.ts",
             build: {
@@ -48,15 +47,19 @@ export default defineConfig(({ mode }) => ({
             userscript: {
                 name: "TPT",
                 author: "evazion, 7nik, BrokenEagle, hdk5",
+                version: `${new Date().toISOString().replaceAll(/[^\d]/g, "")}`,
                 description:
+                    // TODO update
                     "Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.",
                 homepageURL: "https://github.com/evazion/translate-pixiv-tags",
                 supportURL: "https://github.com/evazion/translate-pixiv-tags/issues",
+                // TODO enable back
                 // updateURL:
                 //     "https://github.com/evazion/translate-pixiv-tags/raw/master/translate-pixiv-tags.meta.js",
                 // downloadURL:
                 //     "https://github.com/evazion/translate-pixiv-tags/raw/master/translate-pixiv-tags.user.js",
                 noframes: true,
+                "run-at": "document-start",
                 match: [
                     "*://*.artstation.com/*",
                     "*://baraag.net/*",
@@ -74,6 +77,7 @@ export default defineConfig(({ mode }) => ({
                     "*://pawoo.net/*",
                     "*://dic.pixiv.net/*",
                     "*://www.pixiv.net/*",
+                    "*://www.rednote.com/*",
                     "*://saucenao.com/*",
                     "*://seiga.nicovideo.jp/*",
                     "*://skeb.jp/*",

@@ -88,6 +88,7 @@ export const SETTINGS_SCHEMA = {
         defValue: [
             {
                 name: "Danbooru",
+                version: "build-in",
                 codeUrl: "",
                 lastUpdate: Number.MAX_SAFE_INTEGER,
             } as SourceAdapter,
@@ -116,10 +117,10 @@ const settings = (await GM.getValues(
 
 export const SETTINGS = new Proxy(settings, {
     set(target, prop, value) {
-        console.log("setting", prop, value);
+        console.log("Setting change", prop, value);
         GM.setValue(prop as string, value);
         if (Reflect.set(target, prop, value)) {
-            onChange();
+            onChange?.();
             return true;
         }
         return false;
@@ -136,3 +137,33 @@ export const DOMAIN_USES_CSP = [
     "twitter.com",
     "x.com",
 ].includes(window.location.host);
+
+const ADAPTER_CODE_PREFIX = "adapter_";
+
+async function getAdapterCode(name: string): Promise<string | null>;
+async function getAdapterCode(names: string[]): Promise<Record<string, string>>;
+async function getAdapterCode(
+    names: string | string[],
+): Promise<string | null | Record<string, string>> {
+    if (typeof names === "string") {
+        return GM.getValue(ADAPTER_CODE_PREFIX + names, null as string | null);
+    }
+
+    const codeMap = await GM.getValues<Record<string, string>>(
+        names.map((name) => ADAPTER_CODE_PREFIX + name),
+    );
+    // strip prefix from the keys
+    return Object.fromEntries(
+        Object.entries(codeMap).map(([key, code]) => [key.slice(ADAPTER_CODE_PREFIX.length), code]),
+    );
+}
+
+export const adapterCode = {
+    get: getAdapterCode,
+    async set(name: string, code: string) {
+        await GM.setValue(ADAPTER_CODE_PREFIX + name, code);
+    },
+    async delete(name: string) {
+        await GM.deleteValue(ADAPTER_CODE_PREFIX + name);
+    },
+};

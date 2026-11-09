@@ -1,19 +1,17 @@
-/* eslint-disable class-methods-use-this */
 // @tpt-adapter
 // @name Anime-Pictures
-// @version 1.0.1
+// @version 26.11.09-4
 
-/* eslint-disable no-undef */
+/* eslint-disable no-undef, class-methods-use-this */
 
 /**
  * @import { TemplateResult } from "lit"
- * @import {} from "./adapter"
+ * @import { ArtistTooltipParams } from "./adapter"
  */
-
-console.log("ap");
 
 const AP_SITE = "https://anime-pictures.net";
 const AP_API = "https://api.anime-pictures.net";
+const AP_IMAGES = `https://opreviews.anime-pictures.net`;
 
 const TAGS_CSS = css`
     :root,
@@ -78,6 +76,13 @@ const TAG_CSS_TYPE = {
     7: "gen",
 };
 
+const POST_STATUS = {
+    new: 0,
+    public: 1,
+    banned: 2,
+    pre: 3,
+};
+
 /**
  * @typedef {object} APTag
  * @prop {number} id
@@ -91,6 +96,238 @@ const TAG_CSS_TYPE = {
  * @prop {number|null} alias
  * @prop {number|null} parent
  */
+
+/**
+ * Reduced type
+ * @typedef {object} APPost
+ * @prop {number} id
+ * @prop {string} md5
+ * @prop {number} width
+ * @prop {number} height
+ * @prop {0|1|2|3} erotics - g/s/q/e
+ * @prop {0|1|2|3|4} status
+ * @prop {number} size - filesize
+ * @prop {string} ext - file extension with dot
+ * @prop {string} pubtime
+ */
+
+// #region tooltip
+
+const ARTIST_TOOLTIP_CSS = css`
+    :host(*) {
+        color: #000;
+    }
+    a:link,
+    a:visited,
+    a:hover {
+        color: #676767;
+        text-decoration: none;
+    }
+    a:hover {
+        text-decoration: underline;
+    }
+    a.tag-category-artist,
+    a.tag-category-artist:hover {
+        color: darkorange;
+    }
+    :host(.tip-content-dark) {
+        color: #ddd;
+    }
+    :host(.tip-content-dark) a:link,
+    :host(.tip-content-dark) a:visited,
+    :host(.tip-content-dark) a:hover {
+        color: darkorange;
+        text-decoration: none;
+    }
+    :host(.tip-content-dark) a.tag-category-artist,
+    :host(.tip-content-dark) a.tag-category-artist:hover {
+        color: darkorange;
+    }
+    .erotic-1 {
+        color: #f0f;
+    }
+    .erotic-2 {
+        color: #f90;
+    }
+    .erotic-3 {
+        color: red;
+    }
+`;
+
+/**
+ * Builds artist tooltip content
+ * @param {APTag} artist The artist data
+ * @returns {Promise<ArtistTooltipParams>}
+ */
+async function buildArtistTooltip(artist) {
+    const encodedName = encodeURIComponent(artist.tag).replaceAll("%20", " ");
+    const {
+        posts,
+        posts_count: postsCount,
+        max_pages: lastPage,
+    } = await makeRequest("GET", `${AP_API}/api/v3/posts`, {
+        page: 0,
+        search_tag: artist.tag,
+        posts_per_page: SETTINGS.preview_limit,
+    });
+
+    const otherNames = /** @type {string[]} */ ([artist.tag_ru, artist.tag_jp])
+        .filter(Boolean)
+        .sort()
+        .map(
+            (otherName) => html`
+                <li>
+                    <a
+                        href="${AP_SITE}/posts?page=0&search_tag=${encodeURIComponent(otherName)}"
+                        target="_blank"
+                    >
+                        ${otherName}
+                    </a>
+                </li>
+            `,
+        )
+        .join("");
+
+    return {
+        artistName: artist.tag,
+        artistPageUrl: `${AP_SITE}/posts?search_tag=${encodedName}`,
+        artistEditUrl: `${AP_SITE}/tags?search_text=${encodedName}`,
+        artistPostsUrl: `${AP_SITE}/posts?search_tag=${encodedName}`,
+        artistUrls: buildArtistUrls(artist),
+        postCount: postsCount,
+        otherNames,
+        firstPage: 0,
+        lastPage,
+        postPreviews: posts.map(buildPostPreview),
+        loadNextPage: (page) => loadNextPage(artist.tag, page),
+    };
+}
+
+/**
+ * Format artist urls
+ * @param {APTag} artist The artist data
+ */
+function buildArtistUrls(artist) {
+    return artist.description_en
+        .split(/\n|\r/)
+        .filter(Boolean)
+        .map((line) => {
+            const regexp = /(?:\[url=)?(https?:\/\/[^\s\]]*[^\s"(),.;<>\]{}])(?:](.*?)\[\/url])?/gi;
+            /** @type {Renderable[]} */
+            const items = [];
+
+            /** @type {RegExpExecArray|null} */
+            let match;
+            let start = 0;
+            // eslint-disable-next-line no-cond-assign
+            while ((match = regexp.exec(line))) {
+                items.push(
+                    // bare text
+                    line.slice(start, match.index),
+                    html`
+                        <a
+                            href="${match[1]}"
+                            target="_blank"
+                            >${match[2] ?? match[1]}</a
+                        >
+                    `,
+                );
+                start = regexp.lastIndex;
+            }
+
+            return html`<div class="artist-url-active">${items}</div>`;
+        });
+}
+
+/**
+ * Load a neighbor page of posts
+ * @param {string} tag - the tag to browse
+ * @param {number} page - the browsed page
+ */
+async function loadNextPage(tag, page) {
+    const { posts } = await makeRequest("GET", `${AP_API}/api/v3/posts`, {
+        page,
+        search_tag: tag,
+        posts_per_page: SETTINGS.preview_limit,
+    });
+    return posts.map(buildPostPreview);
+}
+
+/**
+ * @param {APPost} post
+ * @param {"sp"|"cp"|"bp"} size
+ */
+function genPreviewUrlAvif(post, size) {
+    const folder = post.md5.slice(0, 3);
+    return `${AP_IMAGES}/${folder}/${post.md5}_${size}.avif`;
+}
+
+/**
+ * Extract the post preview info
+ * @param {APPost} post The post data
+ */
+function getPostPreview(post) {
+    const scale = 180 / Math.max(post.width, post.height);
+
+    return {
+        url: genPreviewUrlAvif(post, "cp"),
+        width: post.width * scale,
+        height: post.height * scale,
+    };
+}
+
+/**
+ * Build the post preview
+ * @param {APPost} post The post data
+ */
+function buildPostPreview(post) {
+    const erotic = ["no erotic", "light erotic", "erotic", "hard erotic"][post.erotics];
+    const maxErotic = /** @type {number!} */ (
+        {
+            g: 0,
+            s: 1,
+            q: 2,
+            e: 3, // eslint-disable-line id-blacklist
+        }[SETTINGS.show_preview_rating]
+    );
+    let previewClass = "post-preview";
+    if (post.status === POST_STATUS.new) previewClass += " post-status-pending";
+    if (post.status === POST_STATUS.banned) previewClass += " post-status-banned";
+    if (post.erotics > maxErotic) {
+        previewClass += " blur-post";
+    }
+
+    const preview = getPostPreview(post);
+
+    return html`
+        <article
+            itemscope
+            itemtype="http://schema.org/ImageObject"
+            class="${previewClass}"
+        >
+            <a
+                class="post-link"
+                href="${AP_SITE}/posts/${post.id}"
+                target="_blank"
+            >
+                <img
+                    width="${preview.width}"
+                    height="${preview.height}"
+                    src="${adapterShared.corsSrc(preview.url, true)}"
+                    crossorigin="anonymous"
+                    referrerpolicy="origin"
+                    part="post-preview rating-${"gsqe"[post.erotics]}"
+                />
+            </a>
+            <p>${adapterShared.formatBytes(post.size)} ${post.ext}, ${post.width}x${post.height}</p>
+            <p><span class="erotic-${post.erotics}">${erotic}</span></p>
+            <p>${adapterShared.timeToAgo(post.pubtime)}</p>
+        </article>
+    `;
+}
+
+// #endregion
+// #region adapter
 
 /** @param {APTag} tag */
 function dealiasTag(tag) {
@@ -231,6 +468,11 @@ class AnimePictureAdapter {
                 class="ap"
                 href="${AP_SITE}/posts?search_tag=${artist.tag}"
                 target="_blank"
+                ${artistTooltip(
+                    `AP:${artist.tag}`,
+                    () => buildArtistTooltip(artist),
+                    ARTIST_TOOLTIP_CSS,
+                )}
             >
                 ${artist.tag}
             </a>
@@ -252,7 +494,7 @@ class AnimePictureAdapter {
             return renderedTagsCache[cacheKey];
         }
 
-        const tags = await findTagByName(name, TAG_TYPE.author);
+        const tags = await findTagByName(name);
 
         const elements = tags.map(
             (tag) => html`

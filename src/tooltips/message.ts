@@ -91,7 +91,7 @@ class TptMessages extends LitElement {
     }
 
     render() {
-        return html /* HTML */ `
+        return html`
             <div
                 id="ui-message"
                 class="${Object.values(this.messages).every((v) => !v) ? "hide" : ""}"
