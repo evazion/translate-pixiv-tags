@@ -353,7 +353,11 @@ class TptArtistTooltipContent extends LitElement implements Partial<ArtistToolti
             // try to preload the next page
             const nextPage = page + 1;
             if (!(nextPage in this.pages) && nextPage < this.lastPage!) {
-                this.pages[nextPage] = this.loadNextPage(page);
+                this.pages[nextPage] = this.loadNextPage(nextPage).catch(() => {
+                    // do not keep failed pages
+                    delete this.pages[nextPage];
+                    return [];
+                });
             }
         } finally {
             this.loadingPage = false;

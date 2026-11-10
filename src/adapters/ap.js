@@ -171,8 +171,8 @@ async function buildArtistTooltip(artist) {
         posts_per_page: SETTINGS.preview_limit,
     });
 
-    const otherNames = /** @type {string[]} */ ([artist.tag_ru, artist.tag_jp])
-        .filter(Boolean)
+    const otherNames = [artist.tag_ru, artist.tag_jp]
+        .filter((name) => name !== null)
         .sort()
         .map(
             (otherName) => html`
@@ -185,8 +185,7 @@ async function buildArtistTooltip(artist) {
                     </a>
                 </li>
             `,
-        )
-        .join("");
+        );
 
     return {
         artistName: artist.tag,

@@ -95,6 +95,7 @@ class TptSettings extends LitElement {
     static get properties() {
         return {
             changed: { state: true },
+            changes: { state: true },
             sourceParamError: { state: true },
             adapterUrlError: { state: true },
         };
@@ -134,12 +135,14 @@ class TptSettings extends LitElement {
     }
 
     addChange(name: SettingName, newValue: any) {
-        if (name in this.changes && isEqual(this.settings[name], newValue)) {
-            delete this.changes[name];
+        const changes = { ...this.changes };
+        if (isEqual(this.settings[name], newValue)) {
+            delete changes[name];
         } else {
-            this.changes[name] = newValue;
+            changes[name] = newValue;
         }
-        this.changed = Object.keys(this.changes).length > 0;
+        this.changes = changes;
+        this.changed = Object.keys(changes).length > 0;
     }
 
     async applyChanges() {
@@ -220,17 +223,17 @@ class TptSettings extends LitElement {
                         <div>${source.adapter}</div>
                         <input
                             placeholder="https://example.com/"
-                            value="${source.param}"
+                            .value=${source.param}
                             @change=${(ev: Event) => {
                                 const s = { ...source };
-                                s.adapter = (ev.currentTarget as HTMLInputElement).value;
+                                s.param = (ev.currentTarget as HTMLInputElement).value;
                                 this.addChange(name, list.with(i, s));
                             }}
                         />
                         <label>
                             <input
                                 type="checkbox"
-                                ?checked="${source.translateArtist}"
+                                .checked=${source.translateArtist}
                                 @change=${(ev: Event) => {
                                     const s = { ...source };
                                     s.translateArtist = (
@@ -244,7 +247,7 @@ class TptSettings extends LitElement {
                         <label>
                             <input
                                 type="checkbox"
-                                ?checked="${source.translateTag}"
+                                .checked=${source.translateTag}
                                 @change=${(ev: Event) => {
                                     const s = { ...source };
                                     s.translateTag = (ev.currentTarget as HTMLInputElement).checked;
@@ -284,8 +287,8 @@ class TptSettings extends LitElement {
                 const newSource = {
                     adapter: "Danbooru",
                     param: "",
-                    translateArtist: true,
-                    translateTag: true,
+                    translateArtist: false,
+                    translateTag: false,
                 };
                 return html`
                     <div class="sources-list">
@@ -358,9 +361,9 @@ class TptSettings extends LitElement {
                         <button
                             @click=${() => {
                                 this.addChange(name, list.toSpliced(i, 1));
-                                const sources = this.settings.data_sources.filter(
-                                    (s) => s.adapter !== adapter.name,
-                                );
+                                const sources = (
+                                    this.changes.data_sources ?? this.settings.data_sources
+                                ).filter((s) => s.adapter !== adapter.name);
                                 this.addChange("data_sources", sources);
                             }}
                             ?disabled="${!adapter.codeUrl}"
@@ -431,7 +434,7 @@ class TptSettings extends LitElement {
                             class="cancel"
                             type="button"
                             value="${this.changed ? "Cancel" : "Close"}"
-                            @click=${this.destroy}
+                            @click=${() => this.destroy()}
                         />
                         <input
                             class="refresh-page"

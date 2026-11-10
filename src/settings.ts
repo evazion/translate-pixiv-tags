@@ -103,6 +103,7 @@ let onChange: () => void;
 export function setOnSettingChange(fn: () => void) {
     onChange = fn;
 }
+let deferredOnChange: Promise<any> | null = null;
 
 type SettingsSchema = typeof SETTINGS_SCHEMA;
 export type SettingName = keyof SettingsSchema;
@@ -120,7 +121,14 @@ export const SETTINGS = new Proxy(settings, {
         console.log("Setting change", prop, value);
         GM.setValue(prop as string, value);
         if (Reflect.set(target, prop, value)) {
-            onChange?.();
+            // adapter changes should not restart app
+            if (prop !== "source_adapters") {
+                // prevent calling multiple times in row
+                deferredOnChange ??= Promise.resolve().then(() => {
+                    onChange?.();
+                    deferredOnChange = null;
+                });
+            }
             return true;
         }
         return false;

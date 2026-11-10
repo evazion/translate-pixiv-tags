@@ -37,6 +37,10 @@ export default defineConfig(({ mode }) => ({
         },
         minifyHTML({
             failOnError: true,
+            options: {
+                // breaks nesting https://github.com/lit/lit/issues/5207
+                shouldMinifyCSS: () => false,
+            },
         }),
         monkey({
             entry: "src/main.ts",
