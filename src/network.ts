@@ -32,14 +32,14 @@ export function tooManyNetworkErrors(domain: string, logError: boolean = false) 
     const data = networkErrors[domain] ?? (networkErrors[domain] = { error: 0 });
 
     if (logError) {
-        console.log("Total errors:", data.error);
+        console.info("Total errors:", data.error);
         data.error += 1;
     }
     if (data.error < MAX_NETWORK_ERRORS) return false;
     if (logError) {
         if (data.error === MAX_NETWORK_ERRORS) {
             setTimeout(() => {
-                console.log("Errors reset");
+                console.info("Errors reset");
                 data.error = 0;
             }, RETRY_REQUEST_INTERVAL);
         }

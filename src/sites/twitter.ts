@@ -2,7 +2,7 @@ import $ from "jquery";
 import { GM } from "$";
 import { css } from "lit";
 import { MutationSummary } from "mutation-summary";
-import { addCss, chooseBackgroundColorScheme, safeMatchMemoized } from "../utils";
+import { addCss, chooseBackgroundColorScheme, safeMatch } from "../utils";
 import {
     getNormalizedHashtagName,
     linkInChildren,
@@ -99,7 +99,7 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
     // Artists who changed their username are still findable by the intent URL
     const withIntentUrl = (profileUrl: string, userId?: string | null) => {
         if (!profileUrl) return null;
-        const screenName = safeMatchMemoized(profileUrl, /\/(\w+)$/, 1).toLowerCase();
+        const screenName = safeMatch(profileUrl, /\/(\w+)$/, 1).toLowerCase();
         const id = userId || TWITTER_USER_IDS.get(screenName);
         return id ? [profileUrl, `https://x.com/i/user/${id}`] : profileUrl;
     };
@@ -119,7 +119,7 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
 
     // User ID from the follow button of a user cell or a hover card
     const userIdFromFollowButton = (el: HTMLElement) =>
-        safeMatchMemoized(
+        safeMatch(
             $(el)
                 .closest("[data-testid='UserCell'], [data-testid='HoverCard']")
                 .find("[data-testid$='-follow'], [data-testid$='-unfollow']")[0]?.dataset.testid ??
@@ -129,15 +129,16 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
 
     // Floating name of a channel https://x.com/mugosatomi
     const URLfromLocation = () => {
-        const screenName = safeMatchMemoized(window.location.pathname, /\w+/);
+        const screenName = safeMatch(window.location.pathname, /\w+/);
         return withIntentUrl(`https://x.com/${screenName}`, userIdFromSchema(screenName));
     };
     const channelNameSelector = "div[data-testid='primaryColumn']>div>:first-child h2>div>div>div";
     const translateChannelName = (elem: HTMLElement) => {
         TAG_POSITIONS.afterend.findTag($(elem)).remove();
-        const channel = () => safeMatchMemoized(window.location.pathname, /\w+/);
+        const channel = () => safeMatch(window.location.pathname, /\w+/);
         const currentChannel = channel();
         findAndTranslate("artist", elem, {
+            requiredAttributes: "#text",
             toProfileUrl: URLfromLocation,
             classes: "inline",
             ruleName: "channel header",
@@ -203,6 +204,10 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
             [data-testid="UserCell"] ARTIST_TAG {
                 display: block;
                 margin-left: 0;
+            }
+            /* prevent overlaying twitter handle and pub.time with the tag */
+            div:has(> ARTIST_TAG) {
+                flex-shrink: 0;
             }
         `,
         ruleName: "tweet/comment author",

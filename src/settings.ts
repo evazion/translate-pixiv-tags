@@ -14,7 +14,8 @@ export type Setting =
     | SettingT<"boolean", boolean>
     | (SettingT<"option", string> & { values: Record<string, string> })
     | SettingT<"sources", DataSource[]>
-    | SettingT<"adapters", SourceAdapter[]>;
+    | SettingT<"adapters", SourceAdapter[]>
+    | SettingT<"string", string>;
 
 export const SETTINGS_SCHEMA = {
     // TODO remove
@@ -96,6 +97,11 @@ export const SETTINGS_SCHEMA = {
         descr: "Available database adapters",
         type: "adapters",
     },
+    custom_css: {
+        defValue: "",
+        descr: "Custom CSS applied to the page and the TPT's windows",
+        type: "string",
+    },
 } satisfies Record<string, Setting>;
 
 // use setter to prevent circular dependencies
@@ -103,7 +109,6 @@ let onChange: () => void;
 export function setOnSettingChange(fn: () => void) {
     onChange = fn;
 }
-let deferredOnChange: Promise<any> | null = null;
 
 type SettingsSchema = typeof SETTINGS_SCHEMA;
 export type SettingName = keyof SettingsSchema;
@@ -116,18 +121,21 @@ const settings = (await GM.getValues(
     [K in keyof SettingsSchema]: SettingsSchema[K] extends SettingT<string, infer T> ? T : never;
 };
 
+/** Stylesheet with the user's custom CSS, shared by the page and all the script's windows */
+export const customCssSheet = new CSSStyleSheet();
+customCssSheet.replaceSync(settings.custom_css);
+
 export const SETTINGS = new Proxy(settings, {
     set(target, prop, value) {
         console.log("Setting change", prop, value);
         GM.setValue(prop as string, value);
         if (Reflect.set(target, prop, value)) {
-            // adapter changes should not restart app
-            if (prop !== "source_adapters") {
-                // prevent calling multiple times in row
-                deferredOnChange ??= Promise.resolve().then(() => {
-                    onChange?.();
-                    deferredOnChange = null;
-                });
+            // the sheet is adopted everywhere, so it applies live
+            if (prop === "custom_css") {
+                customCssSheet.replaceSync(value);
+                // adapter and css changes should not restart app
+            } else if (prop !== "source_adapters") {
+                onChange?.();
             }
             return true;
         }
@@ -166,7 +174,7 @@ async function getAdapterCode(
     );
 }
 
-export const adapterCode = {
+export const adapterCodes = {
     get: getAdapterCode,
     async set(name: string, code: string) {
         await GM.setValue(ADAPTER_CODE_PREFIX + name, code);

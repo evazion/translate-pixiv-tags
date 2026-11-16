@@ -1,6 +1,6 @@
 import $ from "jquery";
 import { chain, memoize } from "underscore";
-import { css, html, TemplateResult, unsafeCSS } from "lit";
+import { css, html, unsafeCSS } from "lit";
 import { until } from "lit/directives/until.js";
 import { makeRequest, MAXIMUM_URI_LENGTH, tooManyNetworkErrors, type UrlParams } from "../network";
 import { SETTINGS } from "../settings";
@@ -25,6 +25,7 @@ import {
 } from "../artist-urls";
 import artistTooltip, { type ArtistTooltipParams } from "../tooltips/artist-tooltip";
 import showMessage from "../tooltips/message";
+import { GM } from "$";
 
 // Setting this to the maximum since batches could return more than the amount being queried
 const API_LIMIT = 1000;
@@ -326,6 +327,7 @@ function queueNetworkRequest<T extends RequestName>(
     return promise as Promise<DBResponse<T>>;
 }
 
+// TODO replace with caching in storage
 const queueNetworkRequestMemoized: typeof queueNetworkRequest = memoize(
     queueNetworkRequest,
     (queue, type, item) => memoizeKey(queue.host, type, item),
@@ -364,6 +366,26 @@ function intervalNetworkHandler(queue: RequestQueue) {
                     queue.q.push(request);
                 });
             }
+        } else if (type === "url") {
+            // TODO remove me
+            const size = requests.length;
+            GM.getValue("max_urls_at_once", 0).then((s) => {
+                if (s < size) {
+                    GM.setValue("max_urls_at_once", size);
+                    console.log("new urls number record:", size);
+                }
+            });
+
+            while (requests.length) {
+                // TODO generalize
+                const batch = requests.splice(0, 10);
+                const typeParam = requestTools.params(batch.map((request) => request.item));
+                const params = Object.assign(typeParam, limitParam, CACHE_PARAM);
+                getLong(url, params, batch, requestTools).catch(() => {
+                    // in case of error return requests to the queue
+                    queue.q.push(...batch);
+                });
+            }
         } else {
             const typeParam = requestTools.params(requests.map((request) => request.item));
             const params = Object.assign(typeParam, limitParam, CACHE_PARAM);
@@ -384,6 +406,7 @@ async function getLong<T extends RequestName>(
     // Default to GET requests
     let method = "get";
     let finalParams = params;
+    // TODO fix me
     if ($.param(params).length > MAXIMUM_URI_LENGTH) {
         // Use POST requests only when needed
         finalParams = Object.assign(finalParams, { _method: "get" });
@@ -414,7 +437,7 @@ async function getLong<T extends RequestName>(
         request.resolve(found);
     }
     if (unusedResp.size > 0) {
-        console.log("Unused results found:", [...unusedResp.values()]);
+        console.warn("Unused results found:", [...unusedResp.values()]);
     }
 }
 
@@ -790,8 +813,8 @@ type TranslatedArtist = ResponseArtist & {
 };
 
 // separate cache of each instance
-const renderedTagsCache: Record<string, Record<string, TemplateResult[]>> = {};
-const renderedArtistsCache: Record<string, Record<string, TemplateResult>> = {};
+const renderedTagsCache: Record<string, Record<string, TranslationResult>> = {};
+const renderedArtistsCache: Record<string, Record<string, TranslatedItem>> = {};
 let id = 1;
 
 export default class DanbooruAdapter implements Adapter {
@@ -850,6 +873,7 @@ export default class DanbooruAdapter implements Adapter {
     }
 
     renderArtist(rawArtist: ResponseArtist) {
+        const prettyName = rawArtist.name.replaceAll("_", " ");
         const cacheKey = this.booru + rawArtist.id;
         if (cacheKey in renderedArtistsCache[this.id]) {
             return renderedArtistsCache[this.id][cacheKey];
@@ -857,7 +881,7 @@ export default class DanbooruAdapter implements Adapter {
 
         const artist = {
             ...rawArtist,
-            prettyName: rawArtist.name.replaceAll("_", " "),
+            prettyName,
             encodedName: encodeURIComponent(rawArtist.name),
         };
 
@@ -876,9 +900,7 @@ export default class DanbooruAdapter implements Adapter {
             </a>
         `;
 
-        renderedArtistsCache[this.id][cacheKey] = elem;
-
-        return elem;
+        return (renderedArtistsCache[this.id][cacheKey] = [prettyName, elem]);
     }
 
     async translateArtistByName(name: string) {
@@ -945,8 +967,9 @@ export default class DanbooruAdapter implements Adapter {
             }));
         }
 
-        const elements = tags.map(
-            (tag) => html`
+        const elements: TranslationResult = tags.map((tag) => [
+            tag.prettyName,
+            html`
                 <a
                     class="tpt-tag danbooru category-${tag.category}"
                     href="${this.booru}/posts?tags=${encodeURIComponent(tag.name)}"
@@ -955,7 +978,7 @@ export default class DanbooruAdapter implements Adapter {
                     ${tag.prettyName}
                 </a>
             `,
-        );
+        ]);
         renderedTagsCache[this.id][cacheKey] = elements;
         return elements;
     }

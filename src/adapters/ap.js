@@ -1,6 +1,6 @@
 // @tpt-adapter
 // @name Anime-Pictures
-// @version 26.11.09-4
+// @version 26.11.12
 
 /* eslint-disable no-undef, class-methods-use-this */
 
@@ -380,11 +380,11 @@ function containsUrl(descr, url) {
 }
 
 /**
- * @type {Record<string, TemplateResult[]>}
+ * @type {Record<string, TranslationResult>}
  */
 const renderedTagsCache = {};
 /**
- * @type {Record<string, TemplateResult>}
+ * @type {Record<string, TranslatedItem>}
  */
 const renderedArtistsCache = {};
 
@@ -427,7 +427,7 @@ class AnimePictureAdapter {
     }
     /**
      * @param {string} rawUrl
-     * @returns {Promise<Renderable>}
+     * @returns {Promise<TranslationResult>}
      */
 
     async translateArtistByUrl(rawUrl) {
@@ -445,7 +445,7 @@ class AnimePictureAdapter {
 
     /**
      * @param {string} name
-     * @returns {Promise<Renderable>}
+     * @returns {Promise<TranslationResult>}
      */
     async translateArtistByName(name) {
         const artists = await findTagByName(name, TAG_TYPE.author);
@@ -454,7 +454,7 @@ class AnimePictureAdapter {
 
     /**
      * @param {APTag} artist
-     * @returns {TemplateResult}
+     * @returns {TranslatedItem}
      */
     renderArtist(artist) {
         const cacheKey = artist.id;
@@ -472,19 +472,17 @@ class AnimePictureAdapter {
                     () => buildArtistTooltip(artist),
                     ARTIST_TOOLTIP_CSS,
                 )}
+                >${artist.tag}</a
             >
-                ${artist.tag}
-            </a>
         `;
 
-        renderedArtistsCache[cacheKey] = elem;
-
-        return elem;
+        // eslint-disable-next-line no-return-assign
+        return (renderedArtistsCache[cacheKey] = [artist.tag, elem]);
     }
 
     /**
      * @param {string} rawName
-     * @returns {Promise<Renderable>}
+     * @returns {Promise<TranslationResult>}
      */
     async translateTag(rawName) {
         const name = rawName.replaceAll("_", " ");
@@ -495,17 +493,18 @@ class AnimePictureAdapter {
 
         const tags = await findTagByName(name);
 
-        const elements = tags.map(
-            (tag) => html`
+        /** @type {TranslationResult} */
+        const elements = tags.map((tag) => [
+            tag.tag,
+            html`
                 <a
                     class="tpt-tag ap category-${TAG_CSS_TYPE[tag.type]}"
                     href="${AP_SITE}/posts?search_tag=${encodeURIComponent(tag.tag)}"
                     target="_blank"
+                    >${tag.tag}</a
                 >
-                    ${tag.tag}
-                </a>
             `,
-        );
+        ]);
         renderedTagsCache[cacheKey] = elements;
         return elements;
     }

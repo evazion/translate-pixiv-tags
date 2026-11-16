@@ -2,7 +2,7 @@ import { GM } from "$";
 import { memoize } from "underscore";
 import { capitalize, memoizeKey } from "./utils";
 import { getImage } from "./network";
-import { parse } from "psl";
+import { parse } from "psl"; // TODO try replace with tldts-icann
 
 // https://github.com/danbooru/danbooru/blob/69dc86865679f8affc31547b57c3af6c5406a827/app/models/artist_url.rb#L97
 /* spell-checker: disable */

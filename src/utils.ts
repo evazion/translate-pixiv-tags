@@ -1,6 +1,6 @@
 import $ from "jquery";
-import { memoize, noop } from "underscore";
-import { SETTINGS, DOMAIN_USES_CSP } from "./settings";
+import { memoize } from "underscore";
+import { SETTINGS, DOMAIN_USES_CSP, customCssSheet } from "./settings";
 import { GM } from "$";
 import { CSSResult } from "lit";
 
@@ -8,7 +8,8 @@ const konsole = globalThis.console;
 /** Branded version of the console */
 export const console: Console = {
     ...konsole,
-    log: SETTINGS.debug ? konsole.log.bind(konsole, "[TPT]:") : noop,
+    log: (...args) => SETTINGS.debug && konsole.log("[TPT]:", ...args),
+    info: (...args) => SETTINGS.debug && konsole.info("[TPT]:", ...args),
     warn: konsole.warn.bind(konsole, "[TPT]:"),
     error: konsole.error.bind(konsole, "[TPT]:"),
 };
@@ -18,23 +19,31 @@ export function memoizeKey(...args: object[]) {
     return $.param(paramHash);
 }
 
-export const matchMemoized: (string: string, regex: RegExp) => RegExpMatchArray | null = memoize(
+/** Memoized matching the RegExp */
+export const match: (string: string, regex: RegExp) => RegExpMatchArray | null = memoize(
     (string, regex) => string.match(regex),
     memoizeKey,
 );
 
-/** For safe ways to use regexp in a single line of code */
-export function safeMatchMemoized(
+/**
+ * Memoized matching the RegExp that returns matched group or fallback
+ * @param string - text to match
+ * @param regex - the RegExp
+ * @param group - which group return, default - 0 (entire match)
+ * @param fallbackValue - value to return when no match or no group, default `""`
+ * @returns
+ */
+export function safeMatch(
     string: string | null | undefined,
     regex: RegExp,
     group: number = 0,
-    defaultValue: string = "",
+    fallbackValue: string = "",
 ) {
-    const match = matchMemoized(string ?? "", regex);
-    if (match) {
-        return match[group];
+    const matches = match(string ?? "", regex);
+    if (matches) {
+        return matches[group] ?? fallbackValue;
     }
-    return defaultValue;
+    return fallbackValue;
 }
 
 export function capitalize(string: string) {
@@ -115,39 +124,6 @@ export function chooseBackgroundColorScheme(element: Element): {
     };
 }
 
-const makeStyleSheetMemoized: (css: string) => CSSStyleSheet = memoize((css) => {
-    const sheet = new CSSStyleSheet();
-    sheet.replaceSync(css);
-    return sheet;
-});
-
-/**
- * Universal method to add a content as Shadow DOM
- * @param $target Container for the Shadow DOM
- * @param $content The Shadow DOM content
- * @param css The Shadow DOM CSS
- */
-export function attachShadow($target: JQuery, $content: JQuery, css: string) {
-    // Return if the target already have shadow
-    if ($target.prop("shadowRoot")) return;
-
-    if (typeof document.body.attachShadow === "function") {
-        const shadowRoot = $target.get(0)!.attachShadow({ mode: "open" });
-        $(shadowRoot).append($content);
-        if ("adoptedStyleSheets" in shadowRoot) {
-            try {
-                shadowRoot.adoptedStyleSheets = [makeStyleSheetMemoized(css)];
-                return;
-            } catch {
-                /* empty */
-            }
-        }
-        GM.addElement(shadowRoot as any, "style", { textContent: css });
-    } else {
-        $target.empty().append($content, `<style>${css}</style>`);
-    }
-}
-
 /**
  * Run the handler only when it is triggered for the current element
  */
@@ -163,9 +139,11 @@ let sheets: CSSStyleSheet[] = [];
  * Add removable CSS to the page
  * @param css - result of lit's `css`
  */
-export function addCss(css: CSSResult | string) {
+export function addCss(css: CSSResult | CSSStyleSheet | string) {
     let sheet;
-    if (typeof css === "string") {
+    if (css instanceof CSSStyleSheet) {
+        sheet = css;
+    } else if (typeof css === "string") {
         sheet = new CSSStyleSheet();
         sheet.replaceSync(css);
     } else if (!css.styleSheet) {
@@ -175,8 +153,82 @@ export function addCss(css: CSSResult | string) {
         sheet = css.styleSheet;
     }
     if (sheets.includes(sheet)) return;
-    document.adoptedStyleSheets.push(sheet);
+    const adopted = document.adoptedStyleSheets;
+    // keep the custom CSS last so it overrides the script's CSS
+    const customIndex = adopted.indexOf(customCssSheet);
+    if (sheet !== customCssSheet && customIndex >= 0) {
+        document.adoptedStyleSheets = adopted.toSpliced(customIndex, 0, sheet);
+    } else {
+        adopted.push(sheet);
+    }
     sheets.push(sheet);
+}
+
+/**
+ * Validates CSS: checks that brackets, quotes and comments are closed
+ * and every top-level rule is parsed by the browser
+ * @param css - the CSS to check
+ * @returns error message or empty string if CSS is valid
+ */
+export function validateCss(css: string): string {
+    const chunks: string[] = [];
+    let depth = 0;
+    let start = 0;
+    let quote = "";
+    for (let i = 0; i < css.length; i++) {
+        const ch = css[i];
+        if (quote) {
+            if (ch === "\\") i++;
+            else if (ch === quote) quote = "";
+            else if (ch === "\n") return `Unclosed string at line ${lineOf(css, i)}`;
+        } else if (ch === "/" && css[i + 1] === "*") {
+            const end = css.indexOf("*/", i + 2);
+            if (end < 0) return `Unclosed comment at line ${lineOf(css, i)}`;
+            i = end + 1;
+        } else if (ch === '"' || ch === "'") {
+            quote = ch;
+        } else if (ch === "{") {
+            depth++;
+        } else if (ch === "}") {
+            if (--depth < 0) return `Unexpected "}" at line ${lineOf(css, i)}`;
+            if (depth === 0) {
+                chunks.push(css.slice(start, i + 1));
+                start = i + 1;
+            }
+        } else if (ch === ";" && depth === 0) {
+            // statement at-rules like @import
+            chunks.push(css.slice(start, i + 1));
+            start = i + 1;
+        }
+    }
+    if (quote) return "Unclosed string";
+    if (depth > 0) return 'Missing "}"';
+    if (
+        css
+            .slice(start)
+            .replace(/\/\*[^]*?\*\//g, "")
+            .trim()
+    ) {
+        return "Unfinished rule at the end";
+    }
+
+    const sheet = new CSSStyleSheet();
+    for (const chunk of chunks) {
+        sheet.replaceSync(chunk);
+        if (sheet.cssRules.length === 0 && chunk.replace(/\/\*[^]*?\*\//g, "").trim()) {
+            const rule = chunk
+                .replace(/\/\*[^]*?\*\//g, "")
+                .trim()
+                .split("{")[0]
+                .trim();
+            return `Invalid rule: ${rule.length > 50 ? `${rule.slice(0, 50)}…` : rule}`;
+        }
+    }
+    return "";
+}
+
+function lineOf(text: string, index: number) {
+    return text.slice(0, index).split("\n").length;
 }
 
 /**

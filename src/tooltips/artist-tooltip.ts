@@ -1,4 +1,4 @@
-import { SETTINGS } from "../settings";
+import { customCssSheet, SETTINGS } from "../settings";
 import { chooseBackgroundColorScheme } from "../utils";
 import showSettings, { settingsIcon } from "./settings";
 import { tooltip } from "./shared";
@@ -249,24 +249,24 @@ export type ArtistTooltipParams = {
     /** Url to edit the artist */
     artistEditUrl: string;
     /** Artist urls */
-    artistUrls: Renderable;
+    artistUrls: RenderableChunk;
     /** Artist posts count */
     postCount: Renderable;
     /** Other artist's names */
-    otherNames: Renderable;
+    otherNames: RenderableChunk;
     /** The first page of posts */
     firstPage: number;
     /** The last page of posts */
     lastPage: number;
     /** Post previews of the first page */
-    postPreviews: Renderable[];
+    postPreviews: RenderableChunk;
     /** Event handler for loading another posts page */
     loadNextPage: (page: number) => Promise<Renderable[]>;
 };
 
 class TptArtistTooltipContent extends LitElement implements Partial<ArtistTooltipParams> {
     static get styles() {
-        return ARTIST_TOOLTIP_CSS;
+        return [ARTIST_TOOLTIP_CSS, customCssSheet];
     }
 
     static properties = {
@@ -323,13 +323,16 @@ class TptArtistTooltipContent extends LitElement implements Partial<ArtistToolti
                 this.pages[this.page] = Promise.resolve(this.postPreviews!);
             }
         }
-        if (changedProperties.has("customCss")) {
-            while (this.shadowRoot?.adoptedStyleSheets.length! > 1) {
-                this.shadowRoot!.adoptedStyleSheets.pop();
+        if (changedProperties.has("customCss") && this.shadowRoot) {
+            const prev = changedProperties.get("customCss") as CSSResult | undefined;
+            const sheets = this.shadowRoot!.adoptedStyleSheets.filter(
+                (sheet) => sheet !== prev?.styleSheet,
+            );
+            // insert the adapter's CSS before the user's custom CSS
+            if (this.customCss?.styleSheet) {
+                sheets.splice(sheets.indexOf(customCssSheet), 0, this.customCss.styleSheet);
             }
-            if (this.customCss) {
-                this.shadowRoot?.adoptedStyleSheets.push(this.customCss.styleSheet!);
-            }
+            this.shadowRoot!.adoptedStyleSheets = sheets;
         }
     }
 
@@ -367,6 +370,7 @@ class TptArtistTooltipContent extends LitElement implements Partial<ArtistToolti
     render() {
         return html`
             <article
+                id="tpt-artist-tooltip"
                 class="container"
                 part="container"
             >

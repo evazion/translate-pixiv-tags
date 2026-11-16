@@ -1,4 +1,4 @@
-import { safeMatchMemoized } from "../utils";
+import { safeMatch } from "../utils";
 import { preventSiteNavigation, TAG_POSITIONS } from "./shared";
 
 export default function initializeWeiboMobile(findAndTranslate: FindAndTranslate) {
@@ -8,8 +8,8 @@ export default function initializeWeiboMobile(findAndTranslate: FindAndTranslate
     // https://m.weibo.cn/u/7500749495
     findAndTranslate("artist", "span.txt-shadow", {
         asyncMode: true,
-        predicate: ".profile-cover .mod-fil-n span",
-        toProfileUrl: () => url(safeMatchMemoized(window.location.pathname, /\d+/)),
+        predicate: ".profile-cover .mod-fil-n span:first-child",
+        toProfileUrl: () => url(safeMatch(window.location.pathname, /\d+/)),
         classes: "inline txt-shadow",
         ruleName: "artist profile",
     });
@@ -40,8 +40,7 @@ export default function initializeWeiboMobile(findAndTranslate: FindAndTranslate
     findAndTranslate("artist", "h3", {
         asyncMode: true,
         predicate: "[href^='/profile/'] > h3",
-        toProfileUrl: (el) =>
-            url(safeMatchMemoized((el.parentElement as HTMLAnchorElement).href, /\d+/)),
+        toProfileUrl: (el) => url(safeMatch((el.parentElement as HTMLAnchorElement).href, /\d+/)),
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
         onadded: preventSiteNavigation,

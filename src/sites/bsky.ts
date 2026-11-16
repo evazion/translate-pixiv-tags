@@ -1,3 +1,4 @@
+import { css } from "lit";
 import { TAG_POSITIONS } from "./shared";
 
 export default function initializeBluesky(findAndTranslate: FindAndTranslate) {
@@ -35,6 +36,12 @@ export default function initializeBluesky(findAndTranslate: FindAndTranslate) {
         classes: "inline",
         toProfileUrl,
         ruleName: "artist post",
+        css: css`
+            /* allow for profile name get cropped */
+            a:first-child:has(~ ARTIST_TAG) {
+                flex-shrink: 1 !important;
+            }
+        `,
     });
 
     // Artist tag in feed

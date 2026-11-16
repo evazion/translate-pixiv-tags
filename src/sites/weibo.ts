@@ -1,6 +1,6 @@
 import $ from "jquery";
 import { css } from "lit";
-import { safeMatchMemoized } from "../utils";
+import { safeMatch } from "../utils";
 import { preventSiteNavigation, TAG_POSITIONS, watchSiteTheme } from "./shared";
 
 export default function initializeWeibo(findAndTranslate: FindAndTranslate) {
@@ -21,11 +21,9 @@ export default function initializeWeibo(findAndTranslate: FindAndTranslate) {
     // https://www.weibo.com/u/7500749495
     findAndTranslate("artist", "div", {
         asyncMode: true,
-        predicate: "div[class^='ProfileHeader_name_']",
+        predicate: "div[iconclickable='false'] + div>div>:not(:has(*))",
         toProfileUrl: (el) =>
-            url(
-                safeMatchMemoized($(el).parent().parent().nextAll("a")[0]?.href, /to_uid=(\d+)/, 1),
-            ),
+            url(safeMatch($(el).parent().parent().nextAll("a")[0]?.href, /to_uid=(\d+)/, 1)),
         classes: "inline",
         ruleName: "artist profile",
     });
@@ -34,7 +32,7 @@ export default function initializeWeibo(findAndTranslate: FindAndTranslate) {
     // https://www.weibo.com/u/7500749495
     findAndTranslate("artist", "a", {
         asyncMode: true,
-        predicate: "article header a[href^='/u/']:not([aria-label])",
+        predicate: "article header a[usercard][href*='/u/']:not([aria-label])",
         classes: "inline",
         ruleName: "artist post",
     });
@@ -43,9 +41,8 @@ export default function initializeWeibo(findAndTranslate: FindAndTranslate) {
     // https://www.weibo.com/u/7500749495
     findAndTranslate("artist", "a", {
         asyncMode: true,
-        predicate: "article header a[href^='/n/']",
-        toProfileUrl: (el) =>
-            url(safeMatchMemoized($(el).parent().next().find("a")[0]?.href, /\d+/)),
+        predicate: "article header a[href*='/n/']",
+        toProfileUrl: (el) => url(safeMatch($(el).parent().next().find("a")[0]?.href, /\d+/)),
         classes: "inline",
         ruleName: "artist re-post",
         css: css`
@@ -59,16 +56,7 @@ export default function initializeWeibo(findAndTranslate: FindAndTranslate) {
     // https://www.weibo.com/u/7500749495
     findAndTranslate("artist", "a", {
         asyncMode: true,
-        predicate: ".popcard > :first-child > :first-child a[class*='PopCard_']",
-        toProfileUrl: (el) =>
-            url(
-                safeMatchMemoized(
-                    $(el)
-                        .parents(".popcard")
-                        .find<HTMLAnchorElement>("a[href^='/u/page/follow/']")[0]?.href,
-                    /\d+/,
-                ),
-            ),
+        predicate: ".popcard > :first-child > :first-child a:first-child + a:not(:has(*))",
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
         css: css`
@@ -81,7 +69,7 @@ export default function initializeWeibo(findAndTranslate: FindAndTranslate) {
 
     // post comment
     // https://www.weibo.com/7500749495/Pg5a5oHtp
-    findAndTranslate("artist", "a[usercard][to]", {
+    findAndTranslate("artist", "a[usercard]", {
         asyncMode: true,
         predicate: "#scroller a",
         classes: "inline",
@@ -107,6 +95,9 @@ export default function initializeWeibo(findAndTranslate: FindAndTranslate) {
         css: css`
             ARTIST_TAG {
                 font-size: 13px;
+                display: block;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
         `,
         ruleName: "sidebar user",

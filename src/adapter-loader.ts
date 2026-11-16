@@ -1,10 +1,40 @@
 import { css, html, unsafeCSS } from "lit";
 import { GM } from "$";
 import { makeRequest } from "./network";
-import { ADAPTERS, adapterCode, SETTINGS } from "./settings";
+import { ADAPTERS, adapterCodes, SETTINGS } from "./settings";
 import { addCss, console, getSafeImageUrl } from "./utils";
 import artistTooltip from "./tooltips/artist-tooltip";
 import * as adapterShared from "./adapters/shared";
+
+// lit caches templates by the strings array identity, so cache processed arrays too
+const trimmedTemplates = new WeakMap<TemplateStringsArray, TemplateStringsArray>();
+
+/** Removes line breaks with indents: around tags completely, otherwise replaces them with a space */
+function removeIndents(str: string) {
+    return str.replace(/(>)?\n\s*(<)?/g, (_, gt?: string, lt?: string) => (
+        gt || lt ? (gt ?? "") + (lt ?? "") : " "
+    ));
+}
+
+function trimStrings(strings: readonly string[]) {
+    const result = strings.map(removeIndents);
+    result[0] = result[0].trimStart();
+    result[result.length - 1] = result.at(-1)!.trimEnd();
+    return result;
+}
+
+/** Lit's `html` that trims whitespaces on the template ends and removes indents */
+const trimmedHtml: typeof html = (strings, ...values) => {
+    let trimmed = trimmedTemplates.get(strings);
+    if (!trimmed) {
+        const result = trimStrings(strings);
+        trimmed = Object.freeze(Object.assign(result, {
+            raw: Object.freeze(trimStrings(strings.raw)),
+        }));
+        trimmedTemplates.set(strings, trimmed);
+    }
+    return html(trimmed, ...values);
+};
 
 // list of adapter module's arguments, MUST BE in sync with src/adapters/adapter.d.ts
 const ARGS = {
@@ -15,7 +45,7 @@ const ARGS = {
     console,
     css,
     getSafeImageUrl,
-    html,
+    html: trimmedHtml,
     makeRequest,
     SETTINGS: new Proxy(SETTINGS, {
         set() {
@@ -104,7 +134,7 @@ export type SourceAdapter = {
 const isDevUrl = (url: string) => url.startsWith("http://127.0.0.1:");
 
 export async function execAdapters(adapters: SourceAdapter[]) {
-    const codes = await adapterCode.get(adapters.map((m) => m.name));
+    const codes = await adapterCodes.get(adapters.map((m) => m.name));
 
     const now = Date.now();
     for (const adapter of adapters) {
@@ -138,7 +168,7 @@ async function updateAdapter(oldAdapter: SourceAdapter, exec: boolean) {
     const tabs = await GM.getTabs();
     for (const k in tabs) {
         if (tabs[k]?.[key] && tabs[k][key] !== lock) {
-            console.log(`Adapter "${name}" is already updating`);
+            console.warn(`Adapter "${name}" is already updating`);
         }
     }
 
@@ -151,9 +181,6 @@ async function updateAdapter(oldAdapter: SourceAdapter, exec: boolean) {
             hasRun = true;
         }
 
-        if (newAdapter.version === oldAdapter.version && !isDevUrl(oldAdapter.codeUrl)) {
-            return;
-        }
         const adapters = SETTINGS.source_adapters;
         if (newAdapter.name !== name) {
             if (adapters.some((a) => a !== oldAdapter && a.name === newAdapter.name)) {
@@ -164,18 +191,21 @@ async function updateAdapter(oldAdapter: SourceAdapter, exec: boolean) {
             }
         }
 
+        // at least need to bump `lastUpdate`
         SETTINGS.source_adapters = adapters.map((adapter) =>
             adapter === oldAdapter ? newAdapter : adapter,
         );
-        adapterCode.set(newAdapter.name, code);
+        if (newAdapter.version !== oldAdapter.version || isDevUrl(oldAdapter.codeUrl)) {
+            adapterCodes.set(newAdapter.name, code);
+        }
         if (newAdapter.name !== name) {
-            adapterCode.delete(name);
+            adapterCodes.delete(name);
         }
     } catch (ex) {
         console.error(`Failed to update adapter "${name}":`, ex);
         if (exec && !hasRun) {
             try {
-                const code = await adapterCode.get(name);
+                const code = await adapterCodes.get(name);
                 if (code) {
                     parseAdapter(code)();
                 }

@@ -1,3 +1,4 @@
+import { css } from "lit";
 import { preventSiteNavigation } from "./shared";
 
 export default function initializeSkeb(findAndTranslate: FindAndTranslate) {
@@ -28,5 +29,14 @@ export default function initializeSkeb(findAndTranslate: FindAndTranslate) {
         classes: "subtitle is-7",
         onadded: preventSiteNavigation,
         ruleName: "artist index page",
+        css: css`
+            div.title:has(~ ARTIST_TAG) {
+                margin: 0;
+            }
+            div.user-card-screen-name:has(+ ARTIST_TAG) {
+                line-height: 1.5 !important;
+                margin: 0 0 -0.35rem;
+            }
+        `,
     });
 }

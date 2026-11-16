@@ -1,8 +1,9 @@
 import $ from "jquery";
-import { console, matchMemoized } from "../utils";
+import { console, match } from "../utils";
 
 export const TAG_SELECTOR = ".tpt-tags, .tpt-artist";
 
+// TODO replace jQuery
 export const TAG_POSITIONS: Record<string, TagPosition> = {
     beforebegin: {
         insertTag: ($container, elem) => $container.before(elem),
@@ -89,8 +90,7 @@ export const getNormalizedHashtagName = (el: HTMLElement) => {
 export const getNormalizedDecentralizedSocNetUrl = (el: HTMLElement) => {
     const fullName = el.textContent?.trim() ?? "";
 
-    const [, name, host = window.location.host] =
-        matchMemoized(fullName, /^@(\w+)(?:@([\w.-]+))?$/) || [];
+    const [, name, host = window.location.host] = match(fullName, /^@(\w+)(?:@([\w.-]+))?$/) || [];
 
     return name ? `https://${host}/@${name}` : null;
 };
@@ -124,7 +124,7 @@ export function watchSiteTheme(
         theme = newTheme;
         document.documentElement.classList.remove("tpt-dark", "tpt-light", "tpt-auto");
         document.documentElement.classList.add(`tpt-${theme}`);
-        console.log(`theme changed to ${theme}`);
+        console.info(`Theme changed to ${theme}`);
     }
 
     // eslint-disable-next-line unicorn/no-array-for-each

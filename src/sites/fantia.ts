@@ -1,5 +1,5 @@
 import { css } from "lit";
-import { linkInChildren, TAG_POSITIONS, TAG_SELECTOR } from "./shared";
+import { linkInChildren, TAG_POSITIONS } from "./shared";
 
 export default function initializeFantia(findAndTranslate: FindAndTranslate) {
     // Artist name on profile/work page
@@ -19,23 +19,31 @@ export default function initializeFantia(findAndTranslate: FindAndTranslate) {
         predicate: (el) =>
             el.matches(".module-author > a:first-of-type") && !!el.getAttribute("href"),
         requiredAttributes: "href",
-        tagPosition: {
-            insertTag: ($container, elem) => $container.prev().append(elem),
-            findTag: ($container) => $container.prev().has(TAG_SELECTOR),
-            getTagContainer: ($elem) => $elem.parent(".module-author").next(".module-author>a"),
-        },
+        tagPosition: TAG_POSITIONS.beforebegin,
         asyncMode: true,
         css: css`
             .module-author {
-                display: flex;
+                display: grid;
+                grid-template-columns: auto 1fr;
                 align-items: center;
-                .fanclub-name {
-                    line-height: unset !important;
+                &::before {
+                    content: none;
+                }
+                .left {
+                    grid-row: 1/3;
+                }
+                .right {
+                    grid-row: 1;
+                    .fanclub-name {
+                        line-height: unset !important;
+                    }
                 }
                 ARTIST_TAG {
+                    grid-column: 2;
                     font-size: 85%;
                     overflow: hidden;
                     text-overflow: ellipsis;
+                    margin-left: 1ch;
                     a {
                         position: relative;
                         z-index: 1000;
@@ -56,7 +64,7 @@ export default function initializeFantia(findAndTranslate: FindAndTranslate) {
             .active > a {
                 filter: brightness(1.2);
             }
-            .active .tpt-tags {
+            .active TPT_TAG {
                 filter: brightness(0.7) contrast(2);
                 text-shadow: 0 0 5px #fff8;
             }

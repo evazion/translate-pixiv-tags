@@ -1,5 +1,5 @@
 import { parse } from "psl";
-import { console, safeMatchMemoized } from "./utils";
+import { console, safeMatch } from "./utils";
 
 /** Checks whether the url is normalized and optionally normalizes */
 interface UrlNormalizer {
@@ -81,7 +81,7 @@ const NORMALIZE_PROFILE_URL: Record<string, UrlNormalizer> = {
     ".artstation.com": {
         path: /^\/[\w-]+$/,
         normalize(url) {
-            const username = safeMatchMemoized(url.hostname, /([\w-]+)\.artstation\.com/, 1);
+            const username = safeMatch(url.hostname, /([\w-]+)\.artstation\.com/, 1);
             return `https://www.artstation.com/${username}`;
         },
     },
@@ -98,7 +98,7 @@ const NORMALIZE_PROFILE_URL: Record<string, UrlNormalizer> = {
     ".deviantart.com": {
         path: /^\/[\w-]+$/,
         normalize(url) {
-            const username = safeMatchMemoized(url.hostname, /([\w-]+)\.deviantart\.com/, 1);
+            const username = safeMatch(url.hostname, /([\w-]+)\.deviantart\.com/, 1);
             return `https://www.deviantart.com/${username}`;
         },
     },
@@ -109,7 +109,7 @@ const NORMALIZE_PROFILE_URL: Record<string, UrlNormalizer> = {
     "www.hentai-foundry.com": {
         path: /^\/user\/[\w-]+$/,
         normalize(url) {
-            const username = safeMatchMemoized(url.pathname, /\/user\/([\w-]+)(\/profile)?/, 1);
+            const username = safeMatch(url.pathname, /\/user\/([\w-]+)(\/profile)?/, 1);
             return `https://www.hentai-foundry.com/user/${username}`;
         },
     },
@@ -141,9 +141,15 @@ const NORMALIZE_PROFILE_URL: Record<string, UrlNormalizer> = {
         normalize(url) {
             const userId =
                 url.pathname === "/member.php"
-                    ? safeMatchMemoized(url.search, /id=(\d+)/, 1)
-                    : safeMatchMemoized(url.pathname, /(?:\/en)?\/users\/(\d+)/, 1);
+                    ? safeMatch(url.search, /id=(\d+)/, 1)
+                    : safeMatch(url.pathname, /(?:\/en)?\/users\/(\d+)/, 1);
             return `https://www.pixiv.net/users/${userId}`;
+        },
+    },
+    "www.rednote.com": {
+        valid: false,
+        normalize(url) {
+            return `https://www.xiaohongshu.com${url.pathname}`;
         },
     },
     "skeb.jp": {
@@ -177,7 +183,7 @@ const NORMALIZE_PROFILE_URL: Record<string, UrlNormalizer> = {
         path: /^\/[\w-]+|\/i\/user\/\d+$/,
     },
     "www.xiaohongshu.com": {
-        valid: false,
+        params: /^$/,
         normalize(url) {
             return `https://www.xiaohongshu.com${url.pathname}`;
         },

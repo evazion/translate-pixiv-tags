@@ -1,3 +1,4 @@
+import { customCssSheet } from "../settings";
 import { chooseBackgroundColorScheme } from "../utils";
 import { css, html, LitElement } from "lit";
 import showSettings, { settingsIcon } from "./settings";
@@ -6,55 +7,58 @@ let messages: TptMessages | null = null;
 
 class TptMessages extends LitElement {
     static get styles() {
-        return css`
-            #ui-message {
-                width: 100vw;
-                height: 0;
-                display: flex;
-                align-items: flex-start;
-                justify-content: center;
-                position: relative;
-                z-index: 3100001;
-            }
-            .container {
-                font-family: Verdana, Helvetica, sans-serif;
-                padding: 20px;
-                font-size: 12px;
-                opacity: 1;
-                transform: translateY(20px);
-                transition: all 0.5s;
-                box-shadow: 0 0 50px #f00;
-            }
-            .hide .container {
-                opacity: 0;
-                transform: translateY(-100%);
-            }
-            :host(.tip-light) .container {
-                background-color: #fff;
-                border: 1px solid #888;
-                color: #222;
-            }
-            :host(.tip-dark) .container {
-                background-color: #222;
-                border: 1px solid #888;
-                color: #fff;
-            }
-            input[type="button"] {
-                margin: 0 5px;
-            }
+        return [
+            css`
+                #tpt-message {
+                    width: 100vw;
+                    height: 0;
+                    display: flex;
+                    align-items: flex-start;
+                    justify-content: center;
+                    position: relative;
+                    z-index: 3100001;
+                }
+                .container {
+                    font-family: Verdana, Helvetica, sans-serif;
+                    padding: 20px;
+                    font-size: 12px;
+                    opacity: 1;
+                    transform: translateY(20px);
+                    transition: all 0.5s;
+                    box-shadow: 0 0 50px #f00;
+                }
+                .hide .container {
+                    opacity: 0;
+                    transform: translateY(-100%);
+                }
+                :host(.tip-light) .container {
+                    background-color: #fff;
+                    border: 1px solid #888;
+                    color: #222;
+                }
+                :host(.tip-dark) .container {
+                    background-color: #222;
+                    border: 1px solid #888;
+                    color: #fff;
+                }
+                input[type="button"] {
+                    margin: 0 5px;
+                }
 
-            .settings-icon svg {
-                position: absolute;
-                top: 5px;
-                right: 5px;
-                width: 16px;
-                height: 16px;
-                cursor: pointer;
-            }
-            .settings-icon path {
-                fill: #888;
-            }
-        `;
+                .settings-icon svg {
+                    position: absolute;
+                    top: 5px;
+                    right: 5px;
+                    width: 16px;
+                    height: 16px;
+                    cursor: pointer;
+                }
+                .settings-icon path {
+                    fill: #888;
+                }
+            `,
+            customCssSheet,
+        ];
     }
 
     static get properties() {
@@ -93,7 +97,7 @@ class TptMessages extends LitElement {
     render() {
         return html`
             <div
-                id="ui-message"
+                id="tpt-message"
                 class="${Object.values(this.messages).every((v) => !v) ? "hide" : ""}"
             >
                 <div class="container">

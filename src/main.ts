@@ -2,7 +2,7 @@ import { IQuery, MutationSummary } from "mutation-summary";
 import $ from "jquery";
 import { css, render } from "lit";
 import { GM } from "$";
-import { ADAPTERS, setOnSettingChange, SETTINGS } from "./settings";
+import { ADAPTERS, customCssSheet, setOnSettingChange, SETTINGS } from "./settings";
 import { addCss, chooseBackgroundColorScheme, console, removeAllCss } from "./utils";
 import { TAG_POSITIONS, TAG_SELECTOR } from "./sites/shared";
 import initializeMastodon from "./sites/mastodon";
@@ -30,7 +30,7 @@ import showSettings from "./tooltips/settings";
 import DanbooruAdapter from "./adapters/booru";
 import { execAdapters } from "./adapter-loader";
 
-const PROGRAM_CSS = css`
+const GLOBAL_CSS = css`
     /* Adapters are expected to define --color for all tags and the icon for artist tag */
     .tpt-tags {
         margin: 0 0.5em;
@@ -147,36 +147,47 @@ let translators: Adapter[];
 
 const loggedMisses = new Set<string>();
 
+/** Params key of the latest translation request per target and container class */
+let translationsRequests = new WeakMap<
+    HTMLElement,
+    { params: string[]; groups: Array<Record<string, Renderable> | undefined>; attr: string | null }
+>();
+
 /**
  * Translate a regular tag on the given element
  * @param target The element to attach translation
- * @param tagName The tag name to translate
+ * @param tagNames The tag name to translate
  * @param options Translation options
  */
-async function translateTag(target: HTMLElement, tagName: string, options: TranslationOptionsFull) {
-    if (!tagName) return;
+async function translateTag(
+    target: HTMLElement,
+    tagNames: string[],
+    options: TranslationOptionsFull,
+) {
+    // Wiki other names cannot contain spaces
+    const normalizedTags = tagNames.map((tag) =>
+        tag.normalize("NFKC").trim().replace(/^#/, "").replaceAll(/\s/g, "_").toLocaleLowerCase(),
+    );
 
-    const normalizedTag = tagName.normalize("NFKC").replace(/^#/, "").trim().replaceAll(/\s/g, "_"); // Wiki other names cannot contain spaces
-
-    /* Don't search for empty tags. */
-    if (normalizedTag.length === 0) {
-        return;
-    }
-
-    translate(target, "translateTag", normalizedTag, "tpt-tags", `Couldn't translate tag`, options);
+    translate(
+        target,
+        "translateTag",
+        normalizedTags,
+        "tpt-tags",
+        `Couldn't translate tag`,
+        options,
+    );
 }
 
 async function translateArtistByName(
     target: HTMLElement,
-    artistName: string,
+    artistNames: string[],
     options: TranslationOptionsFull,
 ) {
-    if (!artistName) return;
-
     translate(
         target,
         "translateArtistByName",
-        artistName,
+        artistNames,
         "tpt-artist",
         "Couldn't find artist",
         options,
@@ -185,18 +196,15 @@ async function translateArtistByName(
 
 async function translateArtistByUrl(
     target: HTMLElement,
-    profileUrl: string,
+    profileUrls: string[],
     options: TranslationOptionsFull,
 ) {
-    if (!profileUrl) return;
-
-    const normalizedUrl = normalizeProfileUrl(profileUrl);
-    if (!normalizedUrl) return;
+    const normalizedUrls = profileUrls.map(normalizeProfileUrl).filter(Boolean);
 
     translate(
         target,
         "translateArtistByUrl",
-        normalizedUrl,
+        normalizedUrls,
         "tpt-artist",
         "Couldn't find artist by url",
         options,
@@ -206,11 +214,14 @@ async function translateArtistByUrl(
 async function translate(
     target: HTMLElement,
     method: "translateTag" | "translateArtistByName" | "translateArtistByUrl",
-    param: string,
+    params: string[],
     containerClass: string,
     errorMsg: string,
     options: TranslationOptionsFull,
 ) {
+    if (params.length === 0) return;
+    if (translators.every((t) => t[method] === null)) return;
+
     const {
         onadded = null,
         tagPosition: {
@@ -221,79 +232,131 @@ async function translate(
     } = options;
     const { classes = "" } = options;
 
-    const key = encodeURI(param);
+    const paramKey = params.join("\0");
+    const attrKey =
+        options.requiredAttributes
+            ?.split(" ")
+            .map((attr) => (attr === "#text" ? target.textContent : target.getAttribute(attr)))
+            .join("\0") ?? null;
 
-    const $target = $(target);
-    const $duplicates = findTag($target).filter(`[data-original="${key}"]`);
-    if ($duplicates.length > 0) return;
+    let translationRequest = translationsRequests.get(target);
+    if (translationRequest?.attr === attrKey) {
+        // already was called with this params
+        if (translationRequest.params.includes(paramKey)) {
+            return;
+        }
+    } else {
+        translationRequest = {
+            attr: attrKey,
+            params: [paramKey],
+            groups: new Array(translators.length),
+        };
+        translationsRequests.set(target, translationRequest);
+    }
+    const groups = translationRequest.groups;
 
-    if (translators.every((t) => t[method] === null)) return;
-
-    const tags = await Promise.all(translators.map((t) => t[method]?.(param, options))).then(
-        (arr) => arr.flat().filter(Boolean),
+    const translations = await Promise.all(
+        translators.map((t) => Promise.all(params.map((param) => t[method]?.(param, options)))),
     );
 
-    if (tags.length === 0) {
-        const msg = `${errorMsg} "${param}", rule "${ruleName}"`;
+    if (translationsRequests.get(target) !== translationRequest) {
+        return;
+    }
+
+    if (translations.flat(2).filter(Boolean).length === 0) {
+        const msg = `${errorMsg} "${params}", rule "${ruleName}"`;
         if (!loggedMisses.has(msg)) {
             loggedMisses.add(msg);
-            console.log(msg);
+            console.info(msg);
         }
         return;
     }
 
-    const template = document.createElement("template");
-    render(tags, template);
+    let changed = false;
+    for (let i = 0; i < translations.length; i++) {
+        const subgroup = (groups[i] ??= {});
+        for (const [name, chunk] of translations[i].filter((t) => t !== undefined).flat()) {
+            if (!subgroup[name]) {
+                subgroup[name] = chunk;
+                changed = true;
+            }
+        }
+    }
+    if (!changed) return;
 
-    // "merge" tags with the same text
-    const groups = new Map<String, Element[]>();
-    for (const tag of Array.from(template.children)) {
-        const name = tag.textContent;
-        const group = groups.get(name);
-        if (group) {
-            tag.textContent = "";
-            group.push(tag);
-        } else {
-            groups.set(name, [tag]);
+    let mergedGroups: Record<string, Renderable[]> = {};
+    for (const subgroup of groups) {
+        for (const name in subgroup) {
+            if (mergedGroups[name]) {
+                mergedGroups[name].push(subgroup[name]);
+            } else {
+                mergedGroups[name] = [subgroup[name]];
+            }
         }
     }
 
-    // flatten groups + add commas between them
-    const content: Array<Element | string> = [];
+    const container = findTag($(target))?.[0] ?? document.createElement("span");
+    container.className = `${containerClass} ${classes}`;
+    container.dataset.rule = ruleName;
+    container.innerHTML = "";
+
+    // add commas only for regular tags
+    const separator = method === "translateTag" ? ", " : " ";
     let first = true;
-    for (const group of groups.values()) {
+    for (const group of Object.values(mergedGroups)) {
+        if (!group) continue;
+
         if (first) {
             first = false;
         } else {
-            content.push(", ");
+            container.append(separator);
         }
-        content.push(...group);
+
+        const template = new DocumentFragment();
+        render(group, template);
+
+        let node = template.firstElementChild?.nextElementSibling;
+        while (node) {
+            if (method !== "translateTag") {
+                // remove repeated text on elements after the first one
+                node.textContent = null;
+            }
+            node.insertAdjacentText("beforebegin", separator);
+            // assume each tag renders only one element
+            node = node.nextElementSibling;
+        }
+
+        container.append(template);
     }
 
-    const container = document.createElement("span");
-    container.className = `${containerClass} ${classes}`;
-    container.dataset.original = key;
-    container.dataset.rule = ruleName;
-    container.append(...content);
-
-    insertTag($target, container);
+    insertTag($(target), container);
 
     onadded?.(container, options);
 }
 
-function patchCss(css: CSSStyleSheet | CSSStyleRule | undefined, newClass: string) {
+function patchCss(css: CSSStyleSheet | CSSStyleRule | undefined, ruleName: string) {
     if (!css) return;
     for (let len = css.cssRules.length, i = 0; i < len; i++) {
         const rule = css.cssRules[i] as CSSStyleRule;
         if (rule.selectorText.includes("ARTIST_TAG")) {
-            rule.selectorText = rule.selectorText.replaceAll("ARTIST_TAG", newClass);
+            rule.selectorText = rule.selectorText.replaceAll(
+                "ARTIST_TAG",
+                `.tpt-artist[data-rule="${ruleName}"]`,
+            );
         }
-        patchCss(rule, newClass);
+        if (rule.selectorText.includes("TPT_TAG")) {
+            rule.selectorText = rule.selectorText.replaceAll(
+                "TPT_TAG",
+                `.tpt-tags[data-rule="${ruleName}"]`,
+            );
+        }
+        patchCss(rule, ruleName);
     }
 }
 
 const mutationObserverQueries: Array<[IQuery, (el: Node) => void]> = [];
 
+// TODO move ruleName to args, reduce predicate
 const findAndTranslate: FindAndTranslate = function findAndTranslate(mode, selector, options) {
     const fullOptions: TranslationOptionsFull = {
         asyncMode: false,
@@ -305,7 +368,6 @@ const findAndTranslate: FindAndTranslate = function findAndTranslate(mode, selec
         classes: "",
         css: null,
         onadded: null,
-        ruleName: "<not provided>",
         mode,
         ...options,
     };
@@ -334,15 +396,13 @@ const findAndTranslate: FindAndTranslate = function findAndTranslate(mode, selec
         if (!(elem instanceof HTMLElement)) return;
         if (!canTranslate(elem)) return;
         const data = getData(elem);
-        if (Array.isArray(data)) {
-            for (const item of data) translate(elem, item, fullOptions);
-        } else if (data) {
-            translate(elem, data, fullOptions);
+        if (data) {
+            translate(elem, Array.isArray(data) ? data : [data], fullOptions);
         }
     };
 
     if (fullOptions.css) {
-        patchCss(fullOptions.css.styleSheet, `.tpt-artist[data-rule="${fullOptions.ruleName}"]`);
+        patchCss(fullOptions.css.styleSheet, fullOptions.ruleName);
         addCss(fullOptions.css);
     }
 
@@ -431,13 +491,14 @@ async function initialize() {
 
     const { theme } = chooseBackgroundColorScheme(document.body);
     document.documentElement.classList.add(`tpt-${theme}`);
-    console.log(`Set ${theme} theme mode`);
+    console.info(`Set ${theme} theme mode`);
 
     start();
 }
 
 function start() {
-    addCss(PROGRAM_CSS);
+    addCss(GLOBAL_CSS);
+    addCss(customCssSheet);
 
     translators = SETTINGS.data_sources.map((source) => {
         if (!ADAPTERS[source.adapter]) {
@@ -474,6 +535,8 @@ function restart() {
     translators.forEach((t) => t.destroy());
     $(TAG_SELECTOR).remove();
     removeAllCss();
+    loggedMisses.clear();
+    translationsRequests = new WeakMap();
 
     start();
 }

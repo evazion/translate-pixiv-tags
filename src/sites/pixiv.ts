@@ -1,6 +1,6 @@
 import $ from "jquery";
 import { css } from "lit";
-import { safeMatchMemoized } from "../utils";
+import { safeMatch } from "../utils";
 import {
     deleteOnUrlChange,
     preventSiteNavigation,
@@ -64,12 +64,12 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
         asyncMode: true,
         css: css`
             /* Prevent adding # to translated tags */
-            span.tpt-tags a::before {
+            TPT_TAG a::before {
                 content: none;
             }
             /* Hide Pixiv's translated tags */
-            .tpt-tags + span .gtm-new-work-romaji-tag-event-click,
-            .tpt-tags + span .gtm-new-work-translate-tag-event-click {
+            TPT_TAG + span .gtm-new-work-romaji-tag-event-click,
+            TPT_TAG + span .gtm-new-work-translate-tag-event-click {
                 display: none;
             }
         `,
@@ -107,10 +107,10 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
         classes: "no-brackets tpt-light",
         css: css`
             /* Hide Pixiv's translated tags */
-            .tpt-tags + :not(:last-child) {
+            TPT_TAG + :not(:last-child) {
                 display: none;
             }
-            .tpt-tags ~ div:last-child {
+            TPT_TAG ~ div:last-child {
                 font-weight: normal;
                 font-size: 10px;
             }
@@ -119,11 +119,11 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
                 & > div:not(#id) {
                     max-width: initial;
                 }
-                & > div > .tpt-tags a:not(#id) {
+                & > div > TPT_TAG a:not(#id) {
                     font-weight: bold;
                     text-shadow: 0 0 5px #fff4;
                     /* make colors more dark */
-                    color: hsl(from var(--color) h s min(l, 25%)) !important;
+                    color: hsl(from var(--color) h s min(l, 30)) !important;
                 }
             }
         `,
@@ -134,9 +134,6 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
             const $tag = $(tag);
             const [category = 2] = $tag.find("a,button")[0]?.className.match(/\d/) ?? [];
             const hue = [230, 5, 0, 300, 110, 50][+category];
-            $tag.closest("section,ul")
-                .find("a:is([color],[data-ga4-label=colorful_tag]):not([style])")
-                .css("background-color", () => `hsl(${Math.random() * 40 + 150}, 35%, 65%)`);
             $tag.closest("a,button").css(
                 "background-color",
                 `hsl(${hue + Math.random() * 40 - 20}, 35%, 65%)`,
@@ -152,10 +149,14 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
         asyncMode: true,
         classes: "no-brackets dark-shadow",
         css: css`
-            ARTIST_TAG {
+            TPT_TAG {
                 text-shadow:
                     0 0 3px #000b,
                     0 0 1px #0008;
+                a {
+                    /* make colors more light */
+                    color: hsl(from var(--color) h s max(l, 45)) !important;
+                }
                 & + div {
                     display: none;
                 }
@@ -267,9 +268,9 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
 
     // Artist profile pages: https://www.pixiv.net/en/users/29310, https://www.pixiv.net/en/users/104471/illustrations
     const normalizePageUrl = () =>
-        `https://www.pixiv.net/en/users/${safeMatchMemoized(window.location.pathname, /\d+/)}`;
+        `https://www.pixiv.net/en/users/${safeMatch(window.location.pathname, /\d+/)}`;
     findAndTranslate("artist", "h1", {
-        predicate: () => !!safeMatchMemoized(window.location.pathname, /^(\/en)?\/users\/\d+/),
+        predicate: () => !!safeMatch(window.location.pathname, /^(\/en)?\/users\/\d+/),
         toProfileUrl: normalizePageUrl,
         asyncMode: true,
         css: css`
@@ -325,6 +326,7 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
     findAndTranslate("artist", `a[data-ga4-label="user_name_link"]`, {
         asyncMode: true,
         predicate: `ol a+a, ul a+div>div>a`,
+        classes: "inline",
         tagPosition: TAG_POSITIONS.afterParent,
         ruleName: "ranking artist",
     });
@@ -347,7 +349,6 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
     // https://www.pixiv.net/ https://www.pixiv.net/en/
     findAndTranslate("artist", "a", {
         predicate: "[data-ga4-label=home_recommend]>div>div>div>[aria-haspopup]>div>a+div>a",
-        tagPosition: TAG_POSITIONS.afterend,
         asyncMode: true,
         ruleName: "index feed",
         css: css`
@@ -364,7 +365,6 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
     // https://www.pixiv.net/ https://www.pixiv.net/en/
     findAndTranslate("artist", "a", {
         predicate: "section>div>div>.sticky [aria-haspopup]>a:first-child+div>a:first-child",
-        tagPosition: TAG_POSITIONS.afterend,
         asyncMode: true,
         ruleName: "recommended artist sidebar",
         css: css`
@@ -377,15 +377,34 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
     // Winners of a contest
     // https://www.pixiv.net/contest/touhoulostword
     findAndTranslate("artist", ".user-info>a>span.user-name", {
-        tagPosition: TAG_POSITIONS.beforeend,
+        classes: "inline",
         ruleName: "contest winner",
+        css: css`
+            .user-view-popup:has(ARTIST_TAG) {
+                display: grid;
+                grid-template-columns: 30px 1fr;
+                > :first-child {
+                    grid-row: 1/3;
+                }
+                > :nth-child(2) {
+                    grid-column-start: 2;
+                    line-height: 15px;
+                }
+                > :last-child {
+                    grid-column-start: 2;
+                    line-height: 15px;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    color: black;
+                }
+            }
+        `,
     });
 
     // Participants of a contest
     // https://www.pixiv.net/contest/touhoulostword
     findAndTranslate("artist", "a", {
         predicate: "._user-icon-container>a",
-        tagPosition: TAG_POSITIONS.afterend,
         classes: "inline",
         asyncMode: true,
         ruleName: "contest participant",

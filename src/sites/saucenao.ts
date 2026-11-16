@@ -3,19 +3,8 @@ import { css } from "lit";
 import { TAG_POSITIONS } from "./shared";
 
 export default function initializeSauceNAO(findAndTranslate: FindAndTranslate) {
-    $(".resulttitle, .resultcontentcolumn")
-        .contents()
-        .filter((_i: number, el: Node) => el.nodeType === 3) // Get text nodes
-        .replaceWith(function fn(this: Node) {
-            return $(this)
-                .text()
-                .split(", ")
-                .map((str) => `<span class="target">${str}</span>`)
-                .join(", ");
-        });
-
-    // http://saucenao.com/search.php?db=999&url=https%3A%2F%2Fraikou4.donmai.us%2Fpreview%2F5e%2F8e%2F5e8e7a03c49906aaad157de8aeb188e4.jpg
-    // http://saucenao.com/search.php?db=999&url=https%3A%2F%2Fraikou4.donmai.us%2Fpreview%2Fad%2F90%2Fad90ad1cc3407f03955f22b427d21707.jpg
+    // http://saucenao.com/search.php?db=999&url=https%3A%2F%2Fcdn.donmai.us%2Fpreview%2F5e%2F8e%2F5e8e7a03c49906aaad157de8aeb188e4.jpg
+    // http://saucenao.com/search.php?db=999&url=https%3A%2F%2Fcdn.donmai.us%2Fpreview%2Fad%2F90%2Fad90ad1cc3407f03955f22b427d21707.jpg
     // https://saucenao.com/search.php?db=999&url=http%3A%2F%2Fmedibangpaint.com%2Fwp-content%2Fuploads%2F2015%2F05%2Fgallerylist-04.jpg
     // https://saucenao.com/search.php?db=999&url=http%3A%2F%2Fpastyle.net%2FPLFG-0001_MelangelicTone%2Fimage%2Fartwork_MelangelicTone.jpg
     findAndTranslate("artist", "a", {
@@ -50,15 +39,19 @@ export default function initializeSauceNAO(findAndTranslate: FindAndTranslate) {
         return node.textContent?.trim() ? node.textContent.split(",") : null;
     }
 
-    function cleanUpFollowingText(el: HTMLElement) {
-        const node = el.nextSibling;
+    function cleanUpFollowingText(tag: HTMLElement) {
+        let node = tag.nextSibling;
         // if not a text node
-        if (!node || node.nodeType !== 3) return;
-        node.textContent =
-            node.textContent
-                ?.replace(el.textContent.trim(), "")
-                .replace(/(, ){2,}/, ", ")
-                .replace(/^, |, $/, "") ?? "";
+        if (!node || node.nodeType !== Node.TEXT_NODE) return;
+
+        let text = node.textContent ?? "";
+        for (const el of Array.from(tag.children)) {
+            text = text.replace(el.textContent.trim(), "");
+        }
+        text = text.replace(/(, ){2,}/, ", ").replace(/^, |, $/, "");
+        if (text[0] !== " ") text = " " + text;
+
+        node.textContent = text;
     }
 
     findAndTranslate("artistByName", "strong", {
@@ -80,7 +73,7 @@ export default function initializeSauceNAO(findAndTranslate: FindAndTranslate) {
     });
 
     findAndTranslate("tag", "strong", {
-        predicate: ".resultcontentcolumn strong",
+        predicate: ".resultcontentcolumn :not(.subtext)>strong",
         tagPosition: TAG_POSITIONS.afterend,
         toTagName: getFollowingText,
         onadded: cleanUpFollowingText,

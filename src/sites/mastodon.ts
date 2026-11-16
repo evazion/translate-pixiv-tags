@@ -14,7 +14,6 @@ export default function initializeMastodon(findAndTranslate: FindAndTranslate) {
     `);
 
     // https://pawoo.net/@yamadorikodi
-    // https://baraag.net/@casytay
     // artist name in channel header
     findAndTranslate("artist", "span", {
         predicate: ".account__header__tabs__name small span",
@@ -23,6 +22,22 @@ export default function initializeMastodon(findAndTranslate: FindAndTranslate) {
         classes: "inline",
         ruleName: "artist profile",
         asyncMode: true,
+    });
+
+    // https://baraag.net/@casytay
+    // artist name in channel header
+    findAndTranslate("artist", "div._comp_account_header__name", {
+        toProfileUrl: (el) =>
+            getNormalizedDecentralizedSocNetUrl(el.nextElementSibling as HTMLElement),
+        tagPosition: TAG_POSITIONS.beforeend,
+        classes: "inline",
+        ruleName: "artist profile",
+        asyncMode: true,
+        css: css`
+            ARTIST_TAG {
+                font-size: 22px;
+            }
+        `,
     });
 
     // Post author, commenter
@@ -49,10 +64,10 @@ export default function initializeMastodon(findAndTranslate: FindAndTranslate) {
 
     // Cards of following users and followers
     // https://pawoo.net/@yamadorikodi/following
-    findAndTranslate("artist", "span.display-name__account", {
-        predicate: "div.account span.display-name__account",
+    findAndTranslate("artist", "span", {
+        predicate:
+            "div.account span.display-name__account, article span._comp_account_list_item__handle",
         toProfileUrl: getNormalizedDecentralizedSocNetUrl,
-        tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",
         ruleName: "artist followers",
         asyncMode: true,
@@ -72,5 +87,12 @@ export default function initializeMastodon(findAndTranslate: FindAndTranslate) {
         ruleName: "tags bar",
         asyncMode: true,
         tagPosition: TAG_POSITIONS.beforeend,
+    });
+
+    // Hover card
+    findAndTranslate("artist", "span.display-name__account", {
+        predicate: "#hover-card span",
+        ruleName: "hover card",
+        asyncMode: true,
     });
 }

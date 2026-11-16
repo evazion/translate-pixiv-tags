@@ -11,7 +11,8 @@ declare module _lit {
 // prevent usage of non-imported jQuery
 declare const $: never;
 
-type Renderable = _lit.Renderable | Array<_lit.Renderable> | Iterable<_lit.Renderable>;
+type Renderable = _lit.Renderable;
+type RenderableChunk = _lit.Renderable | Array<_lit.Renderable> | Iterable<_lit.Renderable>;
 
 type Theme = "dark" | "light" | "auto";
 type Rating = "g" | "s" | "q" | "e";
@@ -32,7 +33,7 @@ interface TranslationOptions {
     ruleName: string;
     /** Watch for new entries to translate, by default - no */
     asyncMode?: boolean;
-    /** Required attributes on the element */
+    /** Required attributes on the element, also used know when the element starts to refer another artist */
     requiredAttributes?: string | null;
     /** Checks whether the element should be translated */
     predicate?: string | ((el: HTMLElement) => boolean) | null;
@@ -45,7 +46,7 @@ interface TranslationOptions {
     tagPosition?: TagPosition;
     /** Extra classes to add to the tag element */
     classes?: string;
-    /** General piece of CSS related to this rule, special selector`ARTIST_TAG` available */
+    /** CSS related to this rule, special selectors `ARTIST_TAG` and `TPT_TAG` will match only this rule's tags */
     css?: _lit.CSSResult | null;
     /** Handler for the added tag elements */
     onadded?: ((el: HTMLElement, options: Required<TranslationOptions>) => void) | null;
@@ -63,9 +64,12 @@ type FindAndTranslate = <T extends TranslationOptions["mode"]>(
     mode: T,
     selector: string | HTMLElement,
     options: T extends "artist"
-        ? Partial<Omit<TranslationOptions, "mode" | "toTagName">>
-        : Partial<Omit<TranslationOptions, "mode" | "toProfileUrl">>,
+        ? Omit<TranslationOptions, "mode" | "toTagName">
+        : Omit<TranslationOptions, "mode" | "toProfileUrl">,
 ) => void;
+
+type TranslatedItem = [string, Renderable];
+type TranslationResult = TranslatedItem[];
 
 class Adapter {
     /** Adapter name */
@@ -78,12 +82,14 @@ class Adapter {
     destroy();
 
     translateArtistByUrl:
-        | ((url: string, options: TranslationOptionsFull) => Promise<Renderable>)
+        | ((url: string, options: TranslationOptionsFull) => Promise<TranslationResult>)
         | null;
 
     translateArtistByName:
-        | ((name: string, options: TranslationOptionsFull) => Promise<Renderable>)
+        | ((name: string, options: TranslationOptionsFull) => Promise<TranslationResult>)
         | null;
 
-    translateTag: ((name: string, options: TranslationOptionsFull) => Promise<Renderable>) | null;
+    translateTag:
+        | ((name: string, options: TranslationOptionsFull) => Promise<TranslationResult>)
+        | null;
 }

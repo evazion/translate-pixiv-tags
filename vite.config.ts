@@ -3,7 +3,7 @@ import minifyHTML from "@lit-labs/rollup-plugin-minify-html-literals";
 import monkey from "vite-plugin-monkey";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode, command }) => ({
     build: {
         minify: mode === "production",
         // terserOptions: {
@@ -42,6 +42,7 @@ export default defineConfig(({ mode }) => ({
                 shouldMinifyCSS: () => false,
             },
         }),
+        // TODO add simple CSS minifier
         monkey({
             entry: "src/main.ts",
             build: {
@@ -51,7 +52,12 @@ export default defineConfig(({ mode }) => ({
             userscript: {
                 name: "TPT",
                 author: "evazion, 7nik, BrokenEagle, hdk5",
-                version: `${new Date().toISOString().replaceAll(/[^\d]/g, "")}`,
+                // must be stable in dev: the header hash is used as the monkeyWindow key,
+                // and the pre-bundled client with the key baked in is cached as immutable
+                version:
+                    command === "build"
+                        ? new Date().toISOString().replaceAll(/[^\d]/g, "")
+                        : "dev+hmr",
                 description:
                     // TODO update
                     "Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.",

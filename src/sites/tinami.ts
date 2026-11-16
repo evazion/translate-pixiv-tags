@@ -1,16 +1,17 @@
 import { css } from "lit";
 import { linkInChildren, TAG_POSITIONS } from "./shared";
+import { addCss } from "../utils";
 
 export default function initializeTinami(findAndTranslate: FindAndTranslate) {
+    addCss(css`
+        .tpt-tags {
+            font-family: Verdana, Helvetica, sans-serif;
+            float: none !important;
+            display: inline !important;
+        }
+    `);
     // http://www.tinami.com/view/1165789
     findAndTranslate("tag", ".tag > span > a:nth-child(2)", {
-        css: css`
-            .tpt-tags {
-                font-family: Verdana, Helvetica, sans-serif;
-                float: none !important;
-                display: inline !important;
-            }
-        `,
         ruleName: "illust tags",
     });
 

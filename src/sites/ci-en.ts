@@ -1,10 +1,10 @@
-import { safeMatchMemoized } from "../utils";
-import { TAG_POSITIONS } from "./shared";
+import { safeMatch } from "../utils";
+import { preventSiteNavigation, TAG_POSITIONS } from "./shared";
 
 export default function initializeCiEn(findAndTranslate: FindAndTranslate) {
     const getNormalizedUrl = (el: HTMLElement) => {
         const a = el as HTMLAnchorElement;
-        return `https://ci-en.net/creator/${safeMatchMemoized(a.href, /\/creator\/(\d+)/, 1)}`;
+        return `https://ci-en.net/creator/${safeMatch(a.href, /\/creator\/(\d+)/, 1)}`;
     };
 
     // Artist name
@@ -18,6 +18,7 @@ export default function initializeCiEn(findAndTranslate: FindAndTranslate) {
         ruleName: "artist profile",
     });
 
+    // TODO check /mypage
     // Artist in article card by followed artists
     // https://ci-en.dlsite.com/mypage
     findAndTranslate("artist", "a", {
@@ -32,7 +33,8 @@ export default function initializeCiEn(findAndTranslate: FindAndTranslate) {
     // https://ci-en.dlsite.com/mypage
     findAndTranslate("artist", "a", {
         asyncMode: true,
-        predicate: ".c-card-article-ranking .c-card-article-ranking-name .l-media-content > a",
+        predicate: ".flex > a + a.text-on-surface-link",
+        classes: "text-body-xs",
         toProfileUrl: getNormalizedUrl,
         ruleName: "artist article ranking card",
     });
@@ -50,12 +52,22 @@ export default function initializeCiEn(findAndTranslate: FindAndTranslate) {
     // Artist in artist card in artist ranking
     // https://ci-en.dlsite.com/mypage
     // https://ci-en.dlsite.com/ranking/creators/daily?categoryId=1
-    findAndTranslate("artist", "a", {
+    findAndTranslate("artist", "a.text-on-surface-link", {
         asyncMode: true,
-        predicate: ".c-card-creator-archives .c-card-creator-archives-name .e-title > a",
+        predicate: ".grid a.text-on-surface-link",
+        classes: "text-title-xs",
         toProfileUrl: getNormalizedUrl,
         tagPosition: TAG_POSITIONS.afterParent,
         ruleName: "artist creator ranking card",
+    });
+
+    // Tags in artist card in artist ranking
+    // https://ci-en.dlsite.com/ranking/creators/daily?categoryId=1
+    findAndTranslate("tag", "span", {
+        asyncMode: true,
+        predicate: "a > i.mgc_hashtag_line + span",
+        onadded: preventSiteNavigation,
+        ruleName: "tag creator ranking card",
     });
 
     // Tags in article
