@@ -1,5 +1,5 @@
-import { memoize } from "underscore";
 import { css } from "lit";
+import { memoize } from "../utils";
 import { preventSiteNavigation, TAG_POSITIONS } from "./shared";
 
 export default function initializeFanbox(findAndTranslate: FindAndTranslate) {

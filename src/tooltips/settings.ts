@@ -1,4 +1,3 @@
-import { isEqual } from "underscore";
 import settingsIconRaw from "../resource/settings-icon.svg?raw";
 import {
     adapterCodes,
@@ -11,7 +10,7 @@ import {
     SETTINGS_SCHEMA,
     customCssSheet,
 } from "../settings";
-import { chooseBackgroundColorScheme, console, self, validateCss } from "../utils";
+import { chooseBackgroundColorScheme, console, isEqual, self, validateCss } from "../utils";
 import { css, html, LitElement } from "lit";
 import { unsafeSVG } from "lit/directives/unsafe-svg.js";
 import { execAdapters, SourceAdapter, loadAdapter } from "../adapter-loader";

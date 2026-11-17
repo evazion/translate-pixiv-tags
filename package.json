@@ -10,8 +10,7 @@
         "floating-ui": "^5.2.8",
         "lit": "^3.3.2",
         "mutation-summary": "^1.0.0",
-        "tldts-icann": "^7.5.4",
-        "underscore": "^1.13.7"
+        "tldts-icann": "^7.5.4"
     },
     "scripts": {
         "dev": "node ./src/adapter-server.js & vite",
@@ -30,7 +29,6 @@
     "homepage": "https://github.com/evazion/translate-pixiv-tags#readme",
     "devDependencies": {
         "@types/tampermonkey": "^5.0.5",
-        "@types/underscore": "1.11",
         "@typescript-eslint/parser": "^8.56.1",
         "eslint": "^8.55.0",
         "eslint-config-airbnb-base": "^15.0.0",

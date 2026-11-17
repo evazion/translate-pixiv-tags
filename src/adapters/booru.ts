@@ -1,9 +1,8 @@
-import { chain, memoize } from "underscore";
 import { css, html, unsafeCSS } from "lit";
 import { until } from "lit/directives/until.js";
 import { makeRequest, MAXIMUM_URI_LENGTH, tooManyNetworkErrors, type UrlParams } from "../network";
 import { SETTINGS } from "../settings";
-import { addCss, memoizeKey, naturalCompare, getSafeImageUrl, console, param } from "../utils";
+import { addCss, memoize, naturalCompare, getSafeImageUrl, console, param } from "../utils";
 import { normalizeSourceUrl } from "../normalize-url";
 import {
     FLASH_FILE,
@@ -335,7 +334,7 @@ function queueNetworkRequest<T extends RequestName>(
 // TODO replace with caching in storage
 const queueNetworkRequestMemoized: typeof queueNetworkRequest = memoize(
     queueNetworkRequest,
-    (queue, type, item) => memoizeKey(queue.host, type, item),
+    (queue, type, item) => [queue.host, type, item].join(""),
 );
 
 function intervalNetworkHandler(queue: RequestQueue) {
@@ -570,16 +569,32 @@ const ARTIST_TOOLTIP_CSS = css`
  * @param artist The artist data
  */
 function buildArtistUrls(artist: TranslatedArtist) {
-    const artistUrls = chain(artist.urls)
-        .uniq("url")
-        .map((artistUrl) => ({ ...artistUrl, siteName: getSiteName(artistUrl.url) }))
-        // @ts-expect-error - incorrect definition in library
-        .sort((u1, u2) => naturalCompare(u1.url, u2.url))
-        .sortBy((artistUrl) => isSecondaryUrl(artistUrl.url))
-        .sortBy((artistUrl) => getSiteDisplayDomain(artistUrl.url))
-        .sortBy((artistUrl) => getSitePriority(artistUrl.siteName))
-        .sortBy((artistUrl) => !artistUrl.is_active)
-        .value();
+    const compare = <T>(a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0);
+    const seenUrls = new Set<string>();
+    const artistUrls = artist.urls
+        .filter(({ url }) => !seenUrls.has(url) && seenUrls.add(url))
+        .map((artistUrl) => {
+            const siteName = getSiteName(artistUrl.url);
+            return {
+                ...artistUrl,
+                siteName,
+                sortKeys: [
+                    !artistUrl.is_active,
+                    getSitePriority(siteName),
+                    getSiteDisplayDomain(artistUrl.url),
+                    isSecondaryUrl(artistUrl.url),
+                ] as const,
+            };
+        })
+        // active first, then by site priority, domain, primary first, and the URL itself
+        .sort(
+            ({ sortKeys: sortKeysA, url: urlA }, { sortKeys: sortKeysB, url: urlB }) =>
+                compare(sortKeysA[0], sortKeysB[0]) ||
+                compare(sortKeysA[1], sortKeysB[1]) ||
+                compare(sortKeysA[2], sortKeysB[2]) ||
+                compare(sortKeysA[3], sortKeysB[3]) ||
+                naturalCompare(urlA, urlB),
+        );
 
     return artistUrls.map((artistUrl) => {
         const normalizedUrl = artistUrl.url.replace(/\/$/, "");
@@ -607,16 +622,15 @@ function buildArtistUrls(artist: TranslatedArtist) {
  * @param post The post data
  */
 function formatTagString(post: ResponsePosts) {
-    return chain([
+    return [
         post.tag_string_artist,
         post.tag_string_copyright,
         post.tag_string_character,
         post.tag_string_meta,
         post.tag_string_general,
-    ])
-        .compact()
-        .join("\n")
-        .value();
+    ]
+        .filter(Boolean)
+        .join("\n");
 }
 
 /**

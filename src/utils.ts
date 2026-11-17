@@ -1,4 +1,3 @@
-import { memoize } from "underscore";
 import { SETTINGS, DOMAIN_USES_CSP, customCssSheet } from "./settings";
 import { GM } from "$";
 import { CSSResult } from "lit";
@@ -38,15 +37,80 @@ export function param(params: object): string {
     return parts.join("&");
 }
 
-export function memoizeKey(...args: object[]) {
-    const paramHash = Object.fromEntries(args.entries());
-    return param(paramHash);
+/**
+ * Caches results of the function
+ * @param fn The function to memoize
+ * @param hasher Computes the cache key from the arguments, by default - the first argument
+ */
+export function memoize<F extends (...args: any[]) => any>(
+    fn: F,
+    hasher: (...args: Parameters<F>) => string = (...args) => args.join("\0"),
+): F {
+    const cache = new Map<string, ReturnType<F>>();
+    return function memoized(this: unknown, ...args: Parameters<F>) {
+        const key = hasher(...args);
+        if (!cache.has(key)) cache.set(key, fn.apply(this, args));
+        return cache.get(key);
+    } as F;
 }
+
+type PlainValue =
+    | string
+    | number
+    | bigint
+    | boolean
+    | null
+    | undefined
+    | readonly PlainValue[]
+    | { readonly [key: string]: PlainValue };
+
+function isPlainObject(value: object) {
+    const proto = Object.getPrototypeOf(value);
+    return proto === Object.prototype || proto === null;
+}
+
+/**
+ * Deeply compares primitives, arrays and plain objects
+ * @throws {TypeError} When a value is an object of another kind (Date, Map, class instance, etc.)
+ */
+export function isEqual(a: PlainValue, b: PlainValue): boolean {
+    if (Object.is(a, b)) return true;
+    if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
+
+    for (const value of [a, b]) {
+        if (!Array.isArray(value) && !isPlainObject(value)) {
+            throw new TypeError("isEqual supports only primitives, arrays and plain objects", {
+                cause: value,
+            });
+        }
+    }
+
+    if (Array.isArray(a) || Array.isArray(b)) {
+        return (
+            Array.isArray(a) &&
+            Array.isArray(b) &&
+            a.length === b.length &&
+            a.every((item, i) => isEqual(item, b[i]))
+        );
+    }
+
+    const objA = a as Record<string, PlainValue>;
+    const objB = b as Record<string, PlainValue>;
+    const keys = Object.keys(objA);
+    return (
+        keys.length === Object.keys(objB).length &&
+        keys.every((key) => Object.hasOwn(objB, key) && isEqual(objA[key], objB[key]))
+    );
+}
+
+// export function memoizeKey(...args: unknown[]) {
+//     const paramHash = Object.fromEntries(args.entries());
+//     return param(paramHash);
+// }
 
 /** Memoized matching the RegExp */
 export const match: (string: string, regex: RegExp) => RegExpMatchArray | null = memoize(
     (string, regex) => string.match(regex),
-    memoizeKey,
 );
 
 /**

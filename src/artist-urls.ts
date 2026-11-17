@@ -1,6 +1,5 @@
 import { GM } from "$";
-import { memoize } from "underscore";
-import { capitalize, memoizeKey } from "./utils";
+import { capitalize, memoize } from "./utils";
 import { getImage } from "./network";
 import { parse } from "tldts-icann";
 
@@ -483,7 +482,7 @@ function getSiteIconUrl_(siteName: string, url: string): Promise<string | null> 
     return getImage(`${SITE_ICON_FOLDER}${fileName}-logo.png`);
 }
 
-export const getSiteIconUrl = memoize(getSiteIconUrl_, memoizeKey);
+export const getSiteIconUrl = memoize(getSiteIconUrl_);
 
 /**
  * @see https://github.com/danbooru/danbooru/blob/848c8fa8e9ecfc46e8c9588ab055e7d5cf4f5de0/app/models/artist_url.rb#L75
