@@ -70,15 +70,12 @@ export default defineConfig(({ mode, command }) => ({
                         ? new Date().toISOString().replaceAll(/[^\d]/g, "")
                         : "dev+hmr",
                 description:
-                    // TODO update
-                    "Translates tags on Pixiv, Nijie, NicoSeiga, Tinami, and BCY to Danbooru tags.",
+                    "Translates tags and look ups artist on Pixiv, Twitter/X, ArtStation, Deviant Art, Fanbox, and others sites using Danbooru or other sites.",
                 homepageURL: "https://github.com/evazion/translate-pixiv-tags",
                 supportURL: "https://github.com/evazion/translate-pixiv-tags/issues",
-                // TODO enable back
-                // updateURL:
-                //     "https://github.com/evazion/translate-pixiv-tags/raw/master/translate-pixiv-tags.meta.js",
-                // downloadURL:
-                //     "https://github.com/evazion/translate-pixiv-tags/raw/master/translate-pixiv-tags.user.js",
+                updateURL: "https://github.com/evazion/translate-pixiv-tags/raw/master/tpt.meta.js",
+                downloadURL:
+                    "https://github.com/evazion/translate-pixiv-tags/raw/master/tpt.user.js",
                 noframes: true,
                 "run-at": "document-start",
                 match: [

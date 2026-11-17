@@ -25,7 +25,6 @@ import {
 } from "../artist-urls";
 import artistTooltip, { type ArtistTooltipParams } from "../tooltips/artist-tooltip";
 import showMessage from "../tooltips/message";
-import { GM } from "$";
 
 // Setting this to the maximum since batches could return more than the amount being queried
 const API_LIMIT = 1000;
@@ -367,15 +366,6 @@ function intervalNetworkHandler(queue: RequestQueue) {
                 });
             }
         } else if (type === "url") {
-            // TODO remove me
-            const size = requests.length;
-            GM.getValue("max_urls_at_once", 0).then((s) => {
-                if (s < size) {
-                    GM.setValue("max_urls_at_once", size);
-                    console.log("new urls number record:", size);
-                }
-            });
-
             while (requests.length) {
                 // TODO generalize
                 const batch = requests.splice(0, 10);
