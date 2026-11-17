@@ -91,7 +91,8 @@ interface RequestDefinition<Resp extends Record<string, any>> {
     params: (requests: string[]) => UrlParams;
     matches: (response: Single<Resp>, request: string) => boolean;
     filter?: (responses: Resp) => Resp;
-    limit?: number;
+    responseLimit?: number;
+    requestLimit?: number;
 }
 interface ResponseWiki {
     title: string;
@@ -217,6 +218,7 @@ const NETWORK_REQUEST_DICT: { [N in RequestName]: RequestDefinition<DBResponse<N
         matches(data, item) {
             return REQUEST_DATA_MATCHERS.string(data.name, item);
         },
+        requestLimit: 10,
     },
     tag: {
         url: "/tags",
@@ -268,6 +270,7 @@ const NETWORK_REQUEST_DICT: { [N in RequestName]: RequestDefinition<DBResponse<N
                 item,
             );
         },
+        requestLimit: 10,
     },
     // This can only be used as a single use and not as part a group
     post: {
@@ -302,13 +305,17 @@ const NETWORK_REQUEST_DICT: { [N in RequestName]: RequestDefinition<DBResponse<N
         matches(data, item) {
             return REQUEST_DATA_MATCHERS.string_list(data.tag_string_artist, item.split(" ")[0]);
         },
-        limit: SETTINGS.preview_limit,
+        requestLimit: 1,
+        get responseLimit() {
+            return SETTINGS.preview_limit;
+        },
     },
     count: {
         url: "/counts/posts",
         fields: "",
         params: (tags) => ({ tags: tags.join(" ") }),
         matches: () => true,
+        requestLimit: 1,
     },
 };
 
@@ -355,20 +362,10 @@ function intervalNetworkHandler(queue: RequestQueue) {
             DBResponse<typeof type>
         >;
         const url = `${queue.host}${requestTools.url}.json`;
-        const limitParam = { limit: requestTools.limit ?? API_LIMIT };
-        if (type === "count") {
-            for (const request of requests) {
-                const typeParam = requestTools.params([request.item]);
-                const params = Object.assign(typeParam, limitParam, CACHE_PARAM);
-                getLong(url, params, [request], requestTools).catch(() => {
-                    // in case of error return the request to the queue
-                    queue.q.push(request);
-                });
-            }
-        } else if (type === "url") {
+        const limitParam = { limit: requestTools.responseLimit ?? API_LIMIT };
+        if (requestTools.requestLimit) {
             while (requests.length) {
-                // TODO generalize
-                const batch = requests.splice(0, 10);
+                const batch = requests.splice(0, requestTools.requestLimit);
                 const typeParam = requestTools.params(batch.map((request) => request.item));
                 const params = Object.assign(typeParam, limitParam, CACHE_PARAM);
                 getLong(url, params, batch, requestTools).catch(() => {
