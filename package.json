@@ -8,7 +8,6 @@
         "@fortawesome/fontawesome-free": "^7.1.0",
         "@lit-labs/rollup-plugin-minify-html-literals": "^0.1.1",
         "floating-ui": "^5.2.8",
-        "jquery": "^3.2.1",
         "lit": "^3.3.2",
         "mutation-summary": "^1.0.0",
         "psl": "^1.15.0",
@@ -30,7 +29,6 @@
     },
     "homepage": "https://github.com/evazion/translate-pixiv-tags#readme",
     "devDependencies": {
-        "@types/jquery": "^3.2.1",
         "@types/psl": "^1.1.3",
         "@types/tampermonkey": "^5.0.5",
         "@types/underscore": "1.11",

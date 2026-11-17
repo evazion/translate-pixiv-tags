@@ -1,4 +1,4 @@
-import $ from "jquery";
+import $ from "../dom";
 import { GM } from "$";
 import { css } from "lit";
 import { MutationSummary } from "mutation-summary";
@@ -108,7 +108,7 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
     const userIdFromSchema = (screenName: string) => {
         try {
             const { mainEntity } = JSON.parse(
-                $("script[data-testid='UserProfileSchema-test']").text(),
+                $("script[data-testid='UserProfileSchema-test']")[0]?.textContent ?? "",
             );
             if (mainEntity?.additionalName?.toLowerCase() === screenName.toLowerCase()) {
                 return String(mainEntity.identifier);
@@ -134,7 +134,7 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
     };
     const channelNameSelector = "div[data-testid='primaryColumn']>div>:first-child h2>div>div>div";
     const translateChannelName = (elem: HTMLElement) => {
-        TAG_POSITIONS.afterend.findTag($(elem)).remove();
+        $(elem).nextAll(TAG_SELECTOR).remove();
         const channel = () => safeMatch(window.location.pathname, /\w+/);
         const currentChannel = channel();
         findAndTranslate("artist", elem, {
@@ -143,8 +143,8 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
             classes: "inline",
             ruleName: "channel header",
             // The response may arrive after switching to another channel
-            onadded: ($tag) => {
-                if (channel() !== currentChannel) $tag.remove();
+            onadded: (tag) => {
+                if (channel() !== currentChannel) tag.remove();
             },
         });
     };
@@ -163,7 +163,7 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
             callback: () => translateChannelName(elem),
         });
     };
-    $(channelNameSelector).each((_i, elem) => watchForChanges(elem));
+    $(channelNameSelector).forEach(watchForChanges);
     new MutationSummary({
         queries: [{ element: "div" }],
         // eslint-disable-next-line unicorn/no-array-for-each
@@ -173,13 +173,13 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
     // so translate the channel name again once the schema is available
     let lastSchema = "";
     new MutationObserver(() => {
-        const schema = $("script[data-testid='UserProfileSchema-test']").text();
+        const schema = $("script[data-testid='UserProfileSchema-test']")[0]?.textContent ?? "";
         if (schema === lastSchema) return;
         lastSchema = schema;
         if (!schema) return;
         $(channelNameSelector)
-            .not(TAG_SELECTOR)
-            .each((_i, elem) => translateChannelName(elem));
+            .filter((elem) => !elem.matches(TAG_SELECTOR))
+            .forEach(translateChannelName);
     }).observe(document.head, { childList: true, subtree: true, characterData: true });
 
     // Deleted channel https://x.com/6o2_iii

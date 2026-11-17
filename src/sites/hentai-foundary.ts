@@ -8,7 +8,8 @@ export default function initializeHentaiFoundry(findAndTranslate: FindAndTransla
     });
 
     // Profile tab https://www.hentai-foundry.com/user/DrGraevling/profile
-    findAndTranslate("artist", ".breadcrumbs a:contains('Users') + span", {
+    findAndTranslate("artist", ".breadcrumbs a + span", {
+        predicate: (el) => !!el.previousElementSibling?.textContent?.includes("Users"),
         toProfileUrl: () => window.location.href,
         tagPosition: TAG_POSITIONS.beforeend,
         classes: "inline",

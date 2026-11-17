@@ -1,4 +1,3 @@
-import $ from "jquery";
 import { css } from "lit";
 import { TAG_POSITIONS } from "./shared";
 
@@ -8,15 +7,15 @@ export default function initializeSauceNAO(findAndTranslate: FindAndTranslate) {
     // https://saucenao.com/search.php?db=999&url=http%3A%2F%2Fmedibangpaint.com%2Fwp-content%2Fuploads%2F2015%2F05%2Fgallerylist-04.jpg
     // https://saucenao.com/search.php?db=999&url=http%3A%2F%2Fpastyle.net%2FPLFG-0001_MelangelicTone%2Fimage%2Fartwork_MelangelicTone.jpg
     findAndTranslate("artist", "a", {
-        predicate: (el) =>
-            $(el).is(
-                [
-                    "strong:contains('Member:')+a",
-                    "strong:contains('Author:')+a",
-                    "strong:contains('Twitter:')+a",
-                    "strong:contains('User ID:')+a",
-                ].join(","),
-            ),
+        predicate: (el) => {
+            const label = el.previousElementSibling;
+            return (
+                label?.tagName === "STRONG" &&
+                ["Member:", "Author:", "Twitter:", "User ID:"].some((text) =>
+                    label.textContent?.includes(text),
+                )
+            );
+        },
         classes: "inline",
         ruleName: "artist by link",
         asyncMode: true,

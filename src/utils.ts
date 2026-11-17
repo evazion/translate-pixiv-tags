@@ -1,4 +1,3 @@
-import $ from "jquery";
 import { memoize } from "underscore";
 import { SETTINGS, DOMAIN_USES_CSP, customCssSheet } from "./settings";
 import { GM } from "$";
@@ -14,9 +13,34 @@ export const console: Console = {
     error: konsole.error.bind(konsole, "[TPT]:"),
 };
 
+/**
+ * Serializes params into a query string the same way as `jQuery.param`:
+ * nested objects and arrays use the bracket notation, e.g. `search[name]=x&ids[]=1`
+ */
+export function param(params: object): string {
+    const parts: string[] = [];
+    const add = (key: string, value: unknown) => {
+        if (Array.isArray(value)) {
+            for (const [i, item] of value.entries()) {
+                if (key.endsWith("[]")) {
+                    add(key, String(item));
+                } else {
+                    add(`${key}[${typeof item === "object" && item !== null ? i : ""}]`, item);
+                }
+            }
+        } else if (Object.prototype.toString.call(value) === "[object Object]") {
+            for (const [k, v] of Object.entries(value as object)) add(`${key}[${k}]`, v);
+        } else {
+            parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value ?? ""))}`);
+        }
+    };
+    for (const [key, value] of Object.entries(params)) add(key, value);
+    return parts.join("&");
+}
+
 export function memoizeKey(...args: object[]) {
     const paramHash = Object.fromEntries(args.entries());
-    return $.param(paramHash);
+    return param(paramHash);
 }
 
 /** Memoized matching the RegExp */

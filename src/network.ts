@@ -1,8 +1,7 @@
 import { GM } from "$";
-import $ from "jquery";
 import { SETTINGS } from "./settings";
 import showMessage from "./tooltips/message";
-import { console } from "./utils";
+import { console, param } from "./utils";
 
 // The maximum size of a URL before using a POST request.
 // The actual limit is 8154, but setting it lower accounts for the rest of the URL as well.
@@ -70,9 +69,9 @@ export async function makeRequest(method: string, url: string, params: UrlParams
     let errorMsg;
     let data: string | undefined;
     if (method.toUpperCase() === "GET") {
-        url = `${url}${url.includes("?") ? "&" : "?"}${$.param(params)}`;
+        url = `${url}${url.includes("?") ? "&" : "?"}${param(params)}`;
     } else {
-        data = $.param(params);
+        data = param(params);
     }
 
     for (let i = 0; i < MAX_NETWORK_RETRIES; i++) {

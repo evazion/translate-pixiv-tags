@@ -1,5 +1,5 @@
 import { IQuery, MutationSummary } from "mutation-summary";
-import $ from "jquery";
+import $ from "./dom";
 import { css, render } from "lit";
 import { GM } from "$";
 import { ADAPTERS, customCssSheet, setOnSettingChange, SETTINGS } from "./settings";
@@ -309,7 +309,7 @@ async function translate(
         }
     }
 
-    const container = findTag($(target))?.[0] ?? document.createElement("span");
+    const container = findTag(target) ?? document.createElement("span");
     container.className = `${containerClass} ${classes}`;
     container.dataset.rule = ruleName;
     container.innerHTML = "";
@@ -322,7 +322,7 @@ async function translate(
     );
     container.append(template);
 
-    insertTag($(target), container);
+    insertTag(target, container);
 
     onadded?.(container, options);
 }
@@ -399,8 +399,7 @@ const findAndTranslate: FindAndTranslate = function findAndTranslate(mode, selec
         addCss(fullOptions.css);
     }
 
-    // TS is stupid here
-    $(selector as string).each((_i, elem) => tryToTranslate(elem));
+    $(selector).forEach(tryToTranslate);
 
     if (!fullOptions.asyncMode) return;
 

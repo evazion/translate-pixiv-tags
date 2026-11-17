@@ -6,7 +6,7 @@
         "strictFunctionTypes": true,
         "moduleResolution": "bundler",
         "module": "preserve",
-        "lib": ["ESNext", "DOM"],
+        "lib": ["ESNext", "DOM", "DOM.Iterable"],
         "sourceMap": false,
         "inlineSources": false,
         "isolatedModules": true,
@@ -16,13 +16,7 @@
         "noUnusedParameters": true,
         "noImplicitReturns": true,
         "skipLibCheck": true,
-        "checkJs": true,
-        "paths": {
-            "jquery": ["./src/types-jquery.d.ts"],
-            "@types/jquery": ["./src/types-jquery.d.ts"],
-            "@types/jquery/index.d.ts@3.5.33": ["./src/types-jquery.d.ts"],
-            "node_modules/@types/jquery/index.d.ts": ["./src/types-jquery.d.ts"]
-        }
+        "checkJs": true
     },
     "include": ["src"],
     "exclude": [

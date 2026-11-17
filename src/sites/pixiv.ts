@@ -1,4 +1,4 @@
-import $ from "jquery";
+import $ from "../dom";
 import { css } from "lit";
 import { safeMatch } from "../utils";
 import {
@@ -134,10 +134,8 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
             const $tag = $(tag);
             const [category = 2] = $tag.find("a,button")[0]?.className.match(/\d/) ?? [];
             const hue = [230, 5, 0, 300, 110, 50][+category];
-            $tag.closest("a,button").css(
-                "background-color",
-                `hsl(${hue + Math.random() * 40 - 20}, 35%, 65%)`,
-            );
+            const color = `hsl(${hue + Math.random() * 40 - 20}, 35%, 65%)`;
+            for (const el of $tag.closest("a,button")) el.style.backgroundColor = color;
         },
         ruleName: "related tag",
     });
@@ -189,9 +187,11 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
         predicate: "main+aside>section>h2>div>div>a, main>section h2>div>div>a",
         requiredAttributes: "href",
         tagPosition: {
-            insertTag: ($container, elem) => $container.closest("h2").prepend(elem),
-            findTag: ($container) => $container.closest("h2").find(TAG_SELECTOR),
-            getTagContainer: ($elem) => $elem.parent().find("div>div>a"),
+            insertTag: (container, elem) => container.closest("h2")?.prepend(elem),
+            findTag: (container) =>
+                container.closest("h2")?.querySelector<HTMLElement>(TAG_SELECTOR) ?? null,
+            getTagContainer: (elem) =>
+                elem.parentElement?.querySelector<HTMLElement>(":scope div>div>a") ?? null,
         },
         asyncMode: true,
         onadded: deleteOnUrlChange,

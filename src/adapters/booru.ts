@@ -1,10 +1,9 @@
-import $ from "jquery";
 import { chain, memoize } from "underscore";
 import { css, html, unsafeCSS } from "lit";
 import { until } from "lit/directives/until.js";
 import { makeRequest, MAXIMUM_URI_LENGTH, tooManyNetworkErrors, type UrlParams } from "../network";
 import { SETTINGS } from "../settings";
-import { addCss, memoizeKey, naturalCompare, getSafeImageUrl, console } from "../utils";
+import { addCss, memoizeKey, naturalCompare, getSafeImageUrl, console, param } from "../utils";
 import { normalizeSourceUrl } from "../normalize-url";
 import {
     FLASH_FILE,
@@ -394,7 +393,7 @@ async function getLong<T extends RequestName>(
     let method = "get";
     let finalParams = params;
     // TODO fix me
-    if ($.param(params).length > MAXIMUM_URI_LENGTH) {
+    if (param(params).length > MAXIMUM_URI_LENGTH) {
         // Use POST requests only when needed
         finalParams = Object.assign(finalParams, { _method: "get" });
         method = "post";
@@ -810,9 +809,10 @@ export default class DanbooruAdapter implements Adapter {
     static async validateParams(booru: string): Promise<void> {
         booru = new URL(booru).origin;
 
-        const tags: { name: string }[] = await $.getJSON(
-            `${booru}/tags.json?search[order]=count&only=name`,
-        );
+        const tags: { name: string }[] = await makeRequest("GET", `${booru}/tags.json`, {
+            search: { order: "count" },
+            only: "name",
+        });
 
         const queue: RequestQueue = { q: [], host: booru };
         const res = Promise.all(

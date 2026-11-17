@@ -1,34 +1,33 @@
-import $ from "jquery";
+import $ from "../dom";
 import { console, match } from "../utils";
 
 export const TAG_SELECTOR = ".tpt-tags, .tpt-artist";
 
-// TODO replace jQuery
 export const TAG_POSITIONS: Record<string, TagPosition> = {
     beforebegin: {
-        insertTag: ($container, elem) => $container.before(elem),
-        findTag: ($container) => $container.prevAll(TAG_SELECTOR),
-        getTagContainer: ($elem) => $elem.next(),
+        insertTag: (container, elem) => container.before(elem),
+        findTag: (container) => $(container).prevAll(TAG_SELECTOR)[0] ?? null,
+        getTagContainer: (elem) => $(elem).next()[0] ?? null,
     },
     afterbegin: {
-        insertTag: ($container, elem) => $container.prepend(elem),
-        findTag: ($container) => $container.find(TAG_SELECTOR),
-        getTagContainer: ($elem) => $elem.parent(),
+        insertTag: (container, elem) => container.prepend(elem),
+        findTag: (container) => container.querySelector<HTMLElement>(TAG_SELECTOR),
+        getTagContainer: (elem) => elem.parentElement,
     },
     beforeend: {
-        insertTag: ($container, elem) => $container.append(elem),
-        findTag: ($container) => $container.find(TAG_SELECTOR),
-        getTagContainer: ($elem) => $elem.parent(),
+        insertTag: (container, elem) => container.append(elem),
+        findTag: (container) => container.querySelector<HTMLElement>(TAG_SELECTOR),
+        getTagContainer: (elem) => elem.parentElement,
     },
     afterend: {
-        insertTag: ($container, elem) => $container.after(elem),
-        findTag: ($container) => $container.nextAll(TAG_SELECTOR),
-        getTagContainer: ($elem) => $elem.prev(),
+        insertTag: (container, elem) => container.after(elem),
+        findTag: (container) => $(container).nextAll(TAG_SELECTOR)[0] ?? null,
+        getTagContainer: (elem) => $(elem).prev()[0] ?? null,
     },
     afterParent: {
-        insertTag: ($container, elem) => $container.parent().after(elem),
-        findTag: ($container) => $container.parent().nextAll(TAG_SELECTOR),
-        getTagContainer: ($elem) => $elem.prev().find("a"),
+        insertTag: (container, elem) => container.parentElement?.after(elem),
+        findTag: (container) => $(container).parent().nextAll(TAG_SELECTOR)[0] ?? null,
+        getTagContainer: (elem) => $(elem).prev().find("a")[0] ?? null,
     },
 };
 
@@ -38,14 +37,15 @@ export const TAG_POSITIONS: Record<string, TagPosition> = {
  * @param options Translation options
  */
 export function deleteOnUrlChange(tag: HTMLElement, options: TranslationOptionsFull) {
-    const $container = options.tagPosition.getTagContainer($(tag));
+    const container = options.tagPosition.getTagContainer(tag);
+    if (!container) return;
     const watcher = new MutationObserver((mutations) => {
         if (mutations.some((mutation) => mutation.attributeName === "href")) {
             tag.remove();
             watcher.disconnect();
         }
     });
-    watcher.observe($container[0], { attributes: true });
+    watcher.observe(container, { attributes: true });
 }
 
 /** When the tag is inside another <a>, prevents soft navigation by the outer link */

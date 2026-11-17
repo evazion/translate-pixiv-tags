@@ -1,4 +1,4 @@
-import $ from "jquery";
+import $ from "../dom";
 import { css } from "lit";
 import { safeMatch } from "../utils";
 import { preventSiteNavigation, TAG_POSITIONS, watchSiteTheme } from "./shared";
@@ -23,7 +23,13 @@ export default function initializeWeibo(findAndTranslate: FindAndTranslate) {
         asyncMode: true,
         predicate: "div[iconclickable='false'] + div>div>:not(:has(*))",
         toProfileUrl: (el) =>
-            url(safeMatch($(el).parent().parent().nextAll("a")[0]?.href, /to_uid=(\d+)/, 1)),
+            url(
+                safeMatch(
+                    ($(el).parent().parent().nextAll("a")[0] as HTMLAnchorElement | undefined)?.href,
+                    /to_uid=(\d+)/,
+                    1,
+                ),
+            ),
         classes: "inline",
         ruleName: "artist profile",
     });
@@ -42,7 +48,13 @@ export default function initializeWeibo(findAndTranslate: FindAndTranslate) {
     findAndTranslate("artist", "a", {
         asyncMode: true,
         predicate: "article header a[href*='/n/']",
-        toProfileUrl: (el) => url(safeMatch($(el).parent().next().find("a")[0]?.href, /\d+/)),
+        toProfileUrl: (el) =>
+            url(
+                safeMatch(
+                    ($(el).parent().next().find("a")[0] as HTMLAnchorElement | undefined)?.href,
+                    /\d+/,
+                ),
+            ),
         classes: "inline",
         ruleName: "artist re-post",
         css: css`

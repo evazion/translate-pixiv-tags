@@ -19,11 +19,11 @@ type Rating = "g" | "s" | "q" | "e";
 
 type TagPosition = {
     /** Adds the tag  around the container */
-    insertTag: ($container: JQuery, elem: JQuery | HTMLElement) => void;
+    insertTag: (container: HTMLElement, elem: HTMLElement) => void;
     /** Finds a tag around the container */
-    findTag: ($container: JQuery) => JQuery;
+    findTag: (container: HTMLElement) => HTMLElement | null;
     /** Get the tag's container */
-    getTagContainer: ($elem: JQuery) => JQuery;
+    getTagContainer: (elem: HTMLElement) => HTMLElement | null;
 };
 
 interface TranslationOptions {

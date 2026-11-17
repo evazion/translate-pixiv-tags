@@ -9,7 +9,6 @@
         // "es2017": true,
         "browser": true,
         "greasemonkey": true,
-        "jquery": true,
     },
     "extends": ["plugin:unicorn/recommended", "plugin:sonarjs/recommended", "airbnb-base"],
     "plugins": ["unicorn", "sonarjs"],
