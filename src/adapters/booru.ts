@@ -859,8 +859,8 @@ export default class DanbooruAdapter implements Adapter {
         getSafeImageUrl(`${booru}/favicon.ico`).then((url) => {
             // minify-html-literals doesn't support dynamic selectors, so plain text
             addCss(/* CSS */ `
-                .tpt-artist .danbooru.db${this.id}::before {
-                    background-image: url("${unsafeCSS(url)}");
+                .danbooru.db${this.id} {
+                    --icon: url("${unsafeCSS(url)}");
                 }
             `);
         });
@@ -872,7 +872,7 @@ export default class DanbooruAdapter implements Adapter {
         delete renderedArtistsCache[this.id];
     }
 
-    renderArtist(rawArtist: ResponseArtist) {
+    renderArtist(rawArtist: ResponseArtist): TranslatedItem {
         const prettyName = rawArtist.name.replaceAll("_", " ");
         const cacheKey = this.booru + rawArtist.id;
         if (cacheKey in renderedArtistsCache[this.id]) {
@@ -885,9 +885,11 @@ export default class DanbooruAdapter implements Adapter {
             encodedName: encodeURIComponent(rawArtist.name),
         };
 
-        const elem = html`
+        const render = (textless: boolean) => html`
             <a
-                class="danbooru db${this.id} ${artist.is_banned ? "banned-artist" : ""}"
+                class="danbooru db${this.id} ${artist.is_banned ? "banned-artist" : ""} ${textless
+                    ? "tpt-textless"
+                    : ""}"
                 href="${this.booru}/artists/${artist.id}"
                 target="_blank"
                 ${artistTooltip(
@@ -896,11 +898,11 @@ export default class DanbooruAdapter implements Adapter {
                     ARTIST_TOOLTIP_CSS,
                 )}
             >
-                ${artist.prettyName}
+                ${textless ? "" : artist.prettyName}
             </a>
         `;
 
-        return (renderedArtistsCache[this.id][cacheKey] = [prettyName, elem]);
+        return (renderedArtistsCache[this.id][cacheKey] = [prettyName, render]);
     }
 
     async translateArtistByName(name: string) {
@@ -936,7 +938,7 @@ export default class DanbooruAdapter implements Adapter {
     async translateTag(tagName: string) {
         const cacheKey = this.booru + tagName;
         if (cacheKey in renderedTagsCache[this.id]) {
-            return Promise.resolve(renderedTagsCache[this.id][cacheKey]);
+            return renderedTagsCache[this.id][cacheKey];
         }
 
         const wikiPages = await queueNetworkRequestMemoized(this.queue, "wiki", tagName);
@@ -969,13 +971,15 @@ export default class DanbooruAdapter implements Adapter {
 
         const elements: TranslationResult = tags.map((tag) => [
             tag.prettyName,
-            html`
+            (textless) => html`
                 <a
-                    class="tpt-tag danbooru category-${tag.category}"
+                    class="tpt-tag danbooru db${this.id} category-${tag.category} ${textless
+                        ? "tpt-textless"
+                        : ""}"
                     href="${this.booru}/posts?tags=${encodeURIComponent(tag.name)}"
                     target="_blank"
                 >
-                    ${tag.prettyName}
+                    ${textless ? "" : tag.prettyName}
                 </a>
             `,
         ]);

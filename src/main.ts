@@ -31,7 +31,7 @@ import DanbooruAdapter from "./adapters/booru";
 import { execAdapters } from "./adapter-loader";
 
 const GLOBAL_CSS = css`
-    /* Adapters are expected to define --color for all tags and the icon for artist tag */
+    /* Adapters are expected to define --color and --icon (an image) for all tags */
     .tpt-tags {
         margin: 0 0.5em;
     }
@@ -61,6 +61,21 @@ const GLOBAL_CSS = css`
     .tpt-tag:not(#id) {
         color: var(--color) !important;
     }
+    /* repeated items of a group, rendered without text and without a separator */
+    .tpt-textless:not(#id) {
+        margin-left: 0.3ch !important;
+    }
+    .tpt-artist a::before,
+    .tpt-tag.tpt-textless::before {
+        content: "";
+        display: inline-block;
+        background-image: var(--icon);
+        background-repeat: no-repeat;
+        background-size: 0.8em;
+        width: 0.8em;
+        height: 0.8em;
+        vertical-align: middle;
+    }
     .tpt-artist {
         white-space: nowrap;
     }
@@ -72,15 +87,8 @@ const GLOBAL_CSS = css`
         color: var(--color) !important;
         text-decoration: none;
     }
-    .tpt-artist a::before {
-        content: "";
-        display: inline-block;
-        background-repeat: no-repeat;
-        background-size: 0.8em;
-        width: 0.8em;
-        height: 0.8em;
+    .tpt-artist a:not(.tpt-textless)::before {
         margin-right: 0.3ch;
-        vertical-align: middle;
     }
     .tpt-artist a.banned-artist::after {
         content: " (banned)";
@@ -150,7 +158,12 @@ const loggedMisses = new Set<string>();
 /** Params key of the latest translation request per target and container class */
 let translationsRequests = new WeakMap<
     HTMLElement,
-    { params: string[]; groups: Array<Record<string, Renderable> | undefined>; attr: string | null }
+    {
+        params: string[];
+        /** Per translator: item name -> its renderer */
+        groups: Array<Map<string, TranslatedItem[1]>>;
+        attr: string | null;
+    }
 >();
 
 /**
@@ -249,7 +262,7 @@ async function translate(
         translationRequest = {
             attr: attrKey,
             params: [paramKey],
-            groups: new Array(translators.length),
+            groups: translators.map(() => new Map()),
         };
         translationsRequests.set(target, translationRequest);
     }
@@ -274,23 +287,24 @@ async function translate(
 
     let changed = false;
     for (let i = 0; i < translations.length; i++) {
-        const subgroup = (groups[i] ??= {});
-        for (const [name, chunk] of translations[i].filter((t) => t !== undefined).flat()) {
-            if (!subgroup[name]) {
-                subgroup[name] = chunk;
-                changed = true;
-            }
+        const subgroup = groups[i];
+        for (const [name, render] of translations[i].flatMap((items) => items ?? [])) {
+            if (subgroup.has(name)) continue;
+            subgroup.set(name, render);
+            changed = true;
         }
     }
     if (!changed) return;
 
-    let mergedGroups: Record<string, Renderable[]> = {};
+    // items with the same name from different translators show the name only once
+    const mergedGroups = new Map<string, Renderable[]>();
     for (const subgroup of groups) {
-        for (const name in subgroup) {
-            if (mergedGroups[name]) {
-                mergedGroups[name].push(subgroup[name]);
+        for (const [name, render] of subgroup) {
+            const group = mergedGroups.get(name);
+            if (group) {
+                group.push(render(true));
             } else {
-                mergedGroups[name] = [subgroup[name]];
+                mergedGroups.set(name, [render(false)]);
             }
         }
     }
@@ -300,34 +314,13 @@ async function translate(
     container.dataset.rule = ruleName;
     container.innerHTML = "";
 
-    // add commas only for regular tags
-    const separator = method === "translateTag" ? ", " : " ";
-    let first = true;
-    for (const group of Object.values(mergedGroups)) {
-        if (!group) continue;
-
-        if (first) {
-            first = false;
-        } else {
-            container.append(separator);
-        }
-
-        const template = new DocumentFragment();
-        render(group, template);
-
-        let node = template.firstElementChild?.nextElementSibling;
-        while (node) {
-            if (method !== "translateTag") {
-                // remove repeated text on elements after the first one
-                node.textContent = null;
-            }
-            node.insertAdjacentText("beforebegin", separator);
-            // assume each tag renders only one element
-            node = node.nextElementSibling;
-        }
-
-        container.append(template);
-    }
+    // items within a group are spaced via CSS
+    const template = new DocumentFragment();
+    render(
+        [...mergedGroups.values()].flatMap((group, i) => (i === 0 ? group : [", ", ...group])),
+        template,
+    );
+    container.append(template);
 
     insertTag($(target), container);
 

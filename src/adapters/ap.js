@@ -415,8 +415,8 @@ class AnimePictureAdapter {
 
         getSafeImageUrl(`${AP_SITE}/favicon.ico`).then((url) => {
             addCss(css`
-                .tpt-artist .ap::before {
-                    background-image: url("${unsafeCSS(url)}");
+                .ap {
+                    --icon: url("${unsafeCSS(url)}");
                 }
             `);
         });
@@ -425,11 +425,11 @@ class AnimePictureAdapter {
     destroy() {
         running = false;
     }
+
     /**
      * @param {string} rawUrl
      * @returns {Promise<TranslationResult>}
      */
-
     async translateArtistByUrl(rawUrl) {
         // FIXME some links are still HTTP
         const url = rawUrl.replace("https://x.com/", "https://twitter.com/").replace(/^https?/, "");
@@ -462,9 +462,10 @@ class AnimePictureAdapter {
             return renderedArtistsCache[cacheKey];
         }
 
-        const elem = html`
+        /** @param {boolean} textless */
+        const render = (textless) => html`
             <a
-                class="ap"
+                class="ap ${textless ? "tpt-textless" : ""}"
                 href="${AP_SITE}/posts?search_tag=${artist.tag}"
                 target="_blank"
                 ${artistTooltip(
@@ -472,12 +473,12 @@ class AnimePictureAdapter {
                     () => buildArtistTooltip(artist),
                     ARTIST_TOOLTIP_CSS,
                 )}
-                >${artist.tag}</a
+                >${textless ? "" : artist.tag}</a
             >
         `;
 
         // eslint-disable-next-line no-return-assign
-        return (renderedArtistsCache[cacheKey] = [artist.tag, elem]);
+        return (renderedArtistsCache[cacheKey] = [artist.tag, render]);
     }
 
     /**
@@ -496,12 +497,14 @@ class AnimePictureAdapter {
         /** @type {TranslationResult} */
         const elements = tags.map((tag) => [
             tag.tag,
-            html`
+            (textless) => html`
                 <a
-                    class="tpt-tag ap category-${TAG_CSS_TYPE[tag.type]}"
+                    class="tpt-tag ap category-${TAG_CSS_TYPE[tag.type]} ${textless
+                        ? "tpt-textless"
+                        : ""}"
                     href="${AP_SITE}/posts?search_tag=${encodeURIComponent(tag.tag)}"
                     target="_blank"
-                    >${tag.tag}</a
+                    >${textless ? "" : tag.tag}</a
                 >
             `,
         ]);

@@ -68,7 +68,8 @@ type FindAndTranslate = <T extends TranslationOptions["mode"]>(
         : Omit<TranslationOptions, "mode" | "toProfileUrl">,
 ) => void;
 
-type TranslatedItem = [string, Renderable];
+/** Item name and its renderer, which omits the text when `textless` is true */
+type TranslatedItem = [string, (textless: boolean) => Renderable];
 type TranslationResult = TranslatedItem[];
 
 class Adapter {
