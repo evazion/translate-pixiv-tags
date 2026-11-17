@@ -2,7 +2,7 @@ import { GM } from "$";
 import { memoize } from "underscore";
 import { capitalize, memoizeKey } from "./utils";
 import { getImage } from "./network";
-import { parse } from "psl"; // TODO try replace with tldts-icann
+import { parse } from "tldts-icann";
 
 // https://github.com/danbooru/danbooru/blob/69dc86865679f8affc31547b57c3af6c5406a827/app/models/artist_url.rb#L97
 /* spell-checker: disable */
@@ -89,15 +89,15 @@ const SITE_RULES = [
     { name: "ArtStation", domain: "artstation.com" },
     { name: "ArtStreet", domain: "medibang.com" },
     { name: "BCY", domain: "bcy.net" },
-    { name: "Blogger", tld: "blogspot.com" },
-    { name: "Blogger", tld: "blogspot.ca" },
-    { name: "Blogger", tld: "blogspot.de" },
-    { name: "Blogger", tld: "blogspot.jp" },
-    { name: "Blogger", tld: "blogspot.kr" },
-    { name: "Blogger", tld: "blogspot.tw" },
+    { name: "Blogger", domain: "blogspot.com" },
+    { name: "Blogger", domain: "blogspot.ca" },
+    { name: "Blogger", domain: "blogspot.de" },
+    { name: "Blogger", domain: "blogspot.jp" },
+    { name: "Blogger", domain: "blogspot.kr" },
+    { name: "Blogger", domain: "blogspot.tw" },
     { name: "Bluesky", domain: "bsky.app" },
-    { name: "Carrd", tld: "carrd.co" },
-    { name: "Carrd", tld: "crd.co" },
+    { name: "Carrd", domain: "carrd.co" },
+    { name: "Carrd", domain: "crd.co" },
     { name: "Ci-En", domain: "ci-en.net" },
     { name: "Danbooru", domain: "donmai.us" },
     { name: "Deviant Art", domain: "deviantart.com" },
@@ -439,25 +439,22 @@ export function getSitePriority(siteName: string) {
 export function getSiteName(siteUrl: string) {
     const { hostname, pathname } = new URL(siteUrl);
     const url = parse(hostname);
-    if (url.error) throw new Error(url.error.message + "");
 
     const match = SITE_RULES.find(
         (rule) =>
-            (rule.hostname || rule.domain || rule.tld || rule.pathname) &&
+            (rule.hostname || rule.domain || rule.pathname) &&
             (!rule.hostname || rule.hostname === hostname) &&
             (!rule.domain || rule.domain === url.domain) &&
-            (!rule.tld || rule.tld === url.tld) &&
             (!rule.pathname || pathname.includes(rule.pathname)),
     );
 
-    return match ? match.name : capitalize(url.sld || url.tld || hostname);
+    return match ? match.name : capitalize(url.domainWithoutSuffix || url.publicSuffix || hostname);
 }
 
 export function getSiteDisplayDomain(siteUrl: string) {
     const { hostname } = new URL(siteUrl);
     const url = parse(hostname);
-    if (url.error) throw new Error(url.error.message + "");
-    return url.domain || url.tld || hostname;
+    return url.domain || url.publicSuffix || hostname;
 }
 
 const SITE_ICON_FOLDER =

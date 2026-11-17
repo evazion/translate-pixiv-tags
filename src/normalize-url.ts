@@ -1,4 +1,4 @@
-import { parse } from "psl";
+import { parse } from "tldts-icann";
 import { console, safeMatch } from "./utils";
 
 /** Checks whether the url is normalized and optionally normalizes */
@@ -324,7 +324,6 @@ function rubyArraySwitch<C extends Array<(arr: string[]) => any>>(
 function splitUrl(url: URL) {
     const pathSegments = url.pathname.split("/").filter(Boolean);
     const parsed = parse(url.hostname);
-    if (parsed.error) throw new Error(parsed.error.message + "");
     return {
         subdomain: parsed.subdomain ?? "",
         domain: parsed.domain ?? "",

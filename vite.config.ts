@@ -6,6 +6,13 @@ import monkey from "vite-plugin-monkey";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode, command }) => ({
+    resolve: {
+        alias: {
+            // The minifier inlines the ~40KB suffix list string into each of its 3 usages,
+            // the prebuilt minified version doesn't have this issue.
+            "tldts-icann": "tldts-icann/dist/index.esm.min.js",
+        },
+    },
     build: {
         minify: mode === "production",
         // terserOptions: {
