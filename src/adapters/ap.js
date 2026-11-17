@@ -1,6 +1,6 @@
 // @tpt-adapter
 // @name Anime-Pictures
-// @version 26.11.12
+// @version 26.11.17
 
 /* eslint-disable no-undef, class-methods-use-this */
 

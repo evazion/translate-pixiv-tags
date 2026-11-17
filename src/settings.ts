@@ -110,6 +110,11 @@ export function setOnSettingChange(fn: () => void) {
     onChange = fn;
 }
 
+/** Restarts the app as if a setting has changed */
+export function requestRestart() {
+    onChange?.();
+}
+
 type SettingsSchema = typeof SETTINGS_SCHEMA;
 export type SettingName = keyof SettingsSchema;
 

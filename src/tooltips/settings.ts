@@ -4,6 +4,7 @@ import {
     adapterCodes,
     ADAPTERS,
     DataSource,
+    requestRestart,
     Setting,
     SettingName,
     SETTINGS,
@@ -135,14 +136,17 @@ class TptSettings extends LitElement {
                 }
                 .adapters-list {
                     display: grid;
-                    grid-template-columns: repeat(3, auto);
+                    grid-template-columns: repeat(4, auto);
                     align-items: center;
                     gap: 0.5rem;
                     padding: 0.5rem;
                     border: 1px solid gray;
+                    input {
+                        grid-column: span 2;
+                    }
                 }
                 .validate-msg {
-                    grid-column: 2 / -1;
+                    grid-column: 1 / -1;
                 }
                 .css-editor {
                     width: min(700px, 80vw);
@@ -167,7 +171,7 @@ class TptSettings extends LitElement {
             changed: { state: true },
             changes: { state: true },
             sourceParamError: { state: true },
-            adapterUrlError: { state: true },
+            adapterMsg: { state: true },
             cssError: { state: true },
             tab: { state: true },
         };
@@ -178,10 +182,12 @@ class TptSettings extends LitElement {
     declare changed: boolean;
     declare changes: Partial<typeof SETTINGS>;
     declare sourceParamError: string;
-    declare adapterUrlError: string;
+    declare adapterMsg: string;
     declare cssError: string;
     declare tab: Tab;
     destroy: () => void;
+    /** Downloaded adapter updates to apply on saving, by adapter name */
+    pendingAdapterUpdates = new Map<string, Awaited<ReturnType<typeof loadAdapter>>>();
 
     constructor() {
         super();
@@ -190,7 +196,7 @@ class TptSettings extends LitElement {
         this.changed = false;
         this.changes = {};
         this.sourceParamError = "";
-        this.adapterUrlError = "";
+        this.adapterMsg = "";
         this.cssError = "";
         this.tab = "general";
         this.destroy = destroy;
@@ -239,10 +245,72 @@ class TptSettings extends LitElement {
                 await adapterCodes.delete(adapter.name);
             }
         }
+        const updatedAdapters = this.applyAdapterUpdates();
         Object.assign(SETTINGS, this.changes);
+        if (updatedAdapters) {
+            // the translators have to be recreated from the updated adapters
+            requestRestart();
+        }
         this.settings = { ...SETTINGS };
         this.changes = {};
         this.changed = false;
+    }
+
+    /**
+     * Replaces the adapters in ADAPTERS with the downloaded updates
+     * @returns Whether any adapter was updated
+     */
+    applyAdapterUpdates() {
+        let updated = false;
+        const list = this.changes.source_adapters;
+        for (const [name, { code, run, meta }] of this.pendingAdapterUpdates) {
+            const index = list?.findIndex((a) => a.name === name && a.version === meta.version);
+            if (index === undefined || index < 0) continue;
+
+            const oldAdapter = ADAPTERS[name];
+            delete ADAPTERS[name];
+            try {
+                run();
+                if (!ADAPTERS[name]) {
+                    throw new Error("The adapter wasn't registered");
+                }
+                adapterCodes.set(name, code);
+            } catch (ex) {
+                console.error(`Failed to apply update of adapter "${name}":`, ex);
+                ADAPTERS[name] = oldAdapter;
+                // keep the old version
+                const oldMeta = this.settings.source_adapters.find((a) => a.name === name);
+                if (oldMeta) list![index] = oldMeta;
+                continue;
+            }
+            updated = true;
+        }
+        this.pendingAdapterUpdates.clear();
+        return updated;
+    }
+
+    async checkAdapterUpdate(adapter: SourceAdapter, list: SourceAdapter[], i: number) {
+        try {
+            this.adapterMsg = `Checking update of "${adapter.name}"...`;
+            const update = await loadAdapter(
+                adapter.codeUrl,
+                list.filter((a) => a !== adapter).map((a) => a.name),
+            );
+            if (update.meta.name !== adapter.name) {
+                throw new Error(
+                    `The adapter changed its name to "${update.meta.name}", re-add it instead.`,
+                );
+            }
+            if (update.meta.version === adapter.version) {
+                this.adapterMsg = `"${adapter.name}" is already the latest version ${adapter.version}.`;
+                return;
+            }
+            this.pendingAdapterUpdates.set(adapter.name, update);
+            this.addChange("source_adapters", list.with(i, update.meta));
+            this.adapterMsg = `"${adapter.name}" will be updated to ${update.meta.version} on applying the changes.`;
+        } catch (ex) {
+            this.adapterMsg = `Failed to check update of "${adapter.name}": ${(ex as Error).message}`;
+        }
     }
 
     settingToInput(setting: Setting, name: SettingName) {
@@ -364,7 +432,7 @@ class TptSettings extends LitElement {
                                 this.addChange(name, list.toSpliced(i, 1));
                             }}
                         >
-                            X
+                            ✕
                         </button>
                     `,
                 );
@@ -443,6 +511,13 @@ class TptSettings extends LitElement {
                             ${adapter.codeUrl || "built-in"}
                         </div>
                         <button
+                            @click=${() => this.checkAdapterUpdate(adapter, list, i)}
+                            ?disabled="${!adapter.codeUrl}"
+                            title="Check for updates"
+                        >
+                            ⟳
+                        </button>
+                        <button
                             @click=${() => {
                                 this.addChange(name, list.toSpliced(i, 1));
                                 const sources = (
@@ -452,7 +527,7 @@ class TptSettings extends LitElement {
                             }}
                             ?disabled="${!adapter.codeUrl}"
                         >
-                            X
+                            ✕
                         </button>
                     `,
                 );
@@ -470,22 +545,22 @@ class TptSettings extends LitElement {
                             class="add-btn"
                             @click=${async () => {
                                 try {
-                                    this.adapterUrlError = "checking...";
+                                    this.adapterMsg = "checking...";
                                     const newAdapter = await loadAdapter(
                                         newAdapterUrl,
                                         list.map((meta) => meta.name),
                                     );
-                                    this.adapterUrlError = "";
+                                    this.adapterMsg = "";
                                     this.addChange(name, list.concat([newAdapter.meta]));
                                 } catch (ex) {
-                                    this.adapterUrlError = (ex as Error).message;
+                                    this.adapterMsg = (ex as Error).message;
                                 }
                             }}
                         >
                             Add
                         </button>
 
-                        <div class="validate-msg">${this.adapterUrlError || null}</div>
+                        <div class="validate-msg">${this.adapterMsg || null}</div>
                     </div>
                 `;
             }
