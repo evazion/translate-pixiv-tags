@@ -1,5 +1,7 @@
 import { defineConfig } from "vite";
 import minifyHTML from "@lit-labs/rollup-plugin-minify-html-literals";
+import { defaultStrategy } from "@lit-labs/rollup-plugin-minify-html-literals/lib/strategy.js";
+import { transform } from "lightningcss";
 import monkey from "vite-plugin-monkey";
 
 // https://vitejs.dev/config/
@@ -38,11 +40,20 @@ export default defineConfig(({ mode, command }) => ({
         minifyHTML({
             failOnError: true,
             options: {
-                // breaks nesting https://github.com/lit/lit/issues/5207
-                shouldMinifyCSS: () => false,
+                // the default clean-css breaks nesting https://github.com/lit/lit/issues/5207
+                strategy: {
+                    ...defaultStrategy,
+                    minifyCSS(code: string) {
+                        const result = transform({
+                            filename: "inline.css",
+                            code: new TextEncoder().encode(code),
+                            minify: true,
+                        });
+                        return new TextDecoder().decode(result.code);
+                    },
+                },
             },
         }),
-        // TODO add simple CSS minifier
         monkey({
             entry: "src/main.ts",
             build: {
