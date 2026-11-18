@@ -6,30 +6,37 @@ export default function initializeSauceNAO(findAndTranslate: FindAndTranslate) {
     // http://saucenao.com/search.php?db=999&url=https%3A%2F%2Fcdn.donmai.us%2Fpreview%2Fad%2F90%2Fad90ad1cc3407f03955f22b427d21707.jpg
     // https://saucenao.com/search.php?db=999&url=http%3A%2F%2Fmedibangpaint.com%2Fwp-content%2Fuploads%2F2015%2F05%2Fgallerylist-04.jpg
     // https://saucenao.com/search.php?db=999&url=http%3A%2F%2Fpastyle.net%2FPLFG-0001_MelangelicTone%2Fimage%2Fartwork_MelangelicTone.jpg
-    findAndTranslate("artist", "a", {
-        predicate: (el) => {
-            const label = el.previousElementSibling;
-            return (
-                label?.tagName === "STRONG" &&
-                ["Member:", "Author:", "Twitter:", "User ID:"].some((text) =>
-                    label.textContent?.includes(text),
-                )
-            );
+    findAndTranslate(
+        "artist",
+        "a",
+        {
+            predicate: (el) => {
+                const label = el.previousElementSibling;
+                return (
+                    label?.tagName === "STRONG" &&
+                    ["Member:", "Author:", "Twitter:", "User ID:"].includes(
+                        label.textContent?.trim(),
+                    )
+                );
+            },
+            classes: "inline",
+            asyncMode: true,
+            toProfileUrl: (el) => {
+                const a = el as HTMLAnchorElement;
+                if (
+                    a.href.startsWith("https://twitter.com/") ||
+                    a.href.startsWith("https://x.com/")
+                ) {
+                    return [
+                        `https://x.com/${a.textContent?.slice(1)}`,
+                        `https://x.com/i/user/${a.href.match(/\d+/)?.[0]}`,
+                    ];
+                }
+                return a.href;
+            },
         },
-        classes: "inline",
-        ruleName: "artist by link",
-        asyncMode: true,
-        toProfileUrl: (el) => {
-            const a = el as HTMLAnchorElement;
-            if (a.href.startsWith("https://twitter.com/") || a.href.startsWith("https://x.com/")) {
-                return [
-                    `https://x.com/${a.textContent?.slice(1)}`,
-                    `https://x.com/i/user/${a.href.match(/\d+/)?.[0]}`,
-                ];
-            }
-            return a.href;
-        },
-    });
+        "artist by link",
+    );
 
     function getFollowingText(el: HTMLElement) {
         const node = el.nextSibling;
@@ -53,60 +60,69 @@ export default function initializeSauceNAO(findAndTranslate: FindAndTranslate) {
         node.textContent = text;
     }
 
-    findAndTranslate("artistByName", "strong", {
-        predicate: ".resulttitle strong",
-        tagPosition: TAG_POSITIONS.afterend,
-        toTagName: getFollowingText,
-        onadded: cleanUpFollowingText,
-        asyncMode: true,
-        classes: "inline comma",
-        css: css`
-            .ex-artist-tag + .target {
-                display: none;
-            }
-            .ex-artist-tag.comma::after {
-                content: ", ";
-            }
-        `,
-        ruleName: "artist by name",
-    });
+    findAndTranslate(
+        "artistByName",
+        ".resulttitle strong",
+        {
+            tagPosition: TAG_POSITIONS.afterend,
+            toTagName: getFollowingText,
+            onadded: cleanUpFollowingText,
+            asyncMode: true,
+            classes: "inline comma",
+            css: css`
+                .ex-artist-tag + .target {
+                    display: none;
+                }
+                .ex-artist-tag.comma::after {
+                    content: ", ";
+                }
+            `,
+        },
+        "artist by name",
+    );
 
-    findAndTranslate("tag", "strong", {
-        predicate: ".resultcontentcolumn :not(.subtext)>strong",
-        tagPosition: TAG_POSITIONS.afterend,
-        toTagName: getFollowingText,
-        onadded: cleanUpFollowingText,
-        asyncMode: true,
-        classes: "no-brackets comma",
-        css: css`
-            .ex-translated-tags {
-                margin: 0;
-            }
-            .ex-translated-tags + .target {
-                display: none;
-            }
-            .ex-translated-tags.comma::after {
-                content: ", ";
-            }
-        `,
-        ruleName: "tags strong",
-    });
+    findAndTranslate(
+        "tag",
+        ".resultcontentcolumn :not(.subtext)>strong",
+        {
+            tagPosition: TAG_POSITIONS.afterend,
+            toTagName: getFollowingText,
+            onadded: cleanUpFollowingText,
+            asyncMode: true,
+            classes: "no-brackets comma",
+            css: css`
+                .ex-translated-tags {
+                    margin: 0;
+                }
+                .ex-translated-tags + .target {
+                    display: none;
+                }
+                .ex-translated-tags.comma::after {
+                    content: ", ";
+                }
+            `,
+        },
+        "tags strong",
+    );
 
-    findAndTranslate("tag", "br", {
-        predicate: ".resultcontentcolumn br",
-        tagPosition: TAG_POSITIONS.afterend,
-        toTagName: getFollowingText,
-        onadded: (el) => el.nextSibling?.remove(),
-        asyncMode: true,
-        classes: "no-brackets",
-        css: css`
-            .ex-translated-tags {
-                margin: 0;
-            }
-            .ex-translated-tags + .target {
-                display: none;
-            }
-        `,
-        ruleName: "tags br",
-    });
+    findAndTranslate(
+        "tag",
+        ".resultcontentcolumn br",
+        {
+            tagPosition: TAG_POSITIONS.afterend,
+            toTagName: getFollowingText,
+            onadded: (el) => el.nextSibling?.remove(),
+            asyncMode: true,
+            classes: "no-brackets",
+            css: css`
+                .ex-translated-tags {
+                    margin: 0;
+                }
+                .ex-translated-tags + .target {
+                    display: none;
+                }
+            `,
+        },
+        "tags br",
+    );
 }

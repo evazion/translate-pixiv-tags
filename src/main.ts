@@ -29,6 +29,7 @@ import { normalizeProfileUrl } from "./normalize-url";
 import showSettings from "./tooltips/settings";
 import DanbooruAdapter from "./adapters/booru";
 import { execAdapters } from "./adapter-loader";
+import simplifySelector from "./simplify-selector";
 
 const GLOBAL_CSS = css`
     /* Adapters are expected to define --color and --icon (an image) for all tags */
@@ -349,8 +350,12 @@ function patchCss(css: CSSStyleSheet | CSSStyleRule | undefined, ruleName: strin
 
 const mutationObserverQueries: Array<[IQuery, (el: Node) => void]> = [];
 
-// TODO move ruleName to args, reduce predicate
-const findAndTranslate: FindAndTranslate = function findAndTranslate(mode, selector, options) {
+const findAndTranslate: FindAndTranslate = function findAndTranslate(
+    mode,
+    selector,
+    options,
+    ruleName,
+) {
     const fullOptions: TranslationOptionsFull = {
         asyncMode: false,
         requiredAttributes: null,
@@ -363,12 +368,12 @@ const findAndTranslate: FindAndTranslate = function findAndTranslate(mode, selec
         onadded: null,
         mode,
         ...options,
+        ruleName,
     };
 
-    const canTranslate =
-        typeof fullOptions.predicate === "string"
-            ? (el: HTMLElement) => el.matches(fullOptions.predicate as string)
-            : (fullOptions.predicate ?? (() => true));
+    const { predicate } = fullOptions;
+    const canTranslate = (el: HTMLElement) =>
+        el.matches(selector as string) && (!predicate || predicate(el));
 
     const { translate, getData } = {
         artist: {
@@ -403,7 +408,7 @@ const findAndTranslate: FindAndTranslate = function findAndTranslate(mode, selec
 
     if (!fullOptions.asyncMode) return;
 
-    const query: IQuery = { element: selector as string };
+    const query: IQuery = { element: simplifySelector(selector as string) };
     if (fullOptions.requiredAttributes) query.elementAttributes = fullOptions.requiredAttributes;
     mutationObserverQueries.push([query, tryToTranslate]);
 };

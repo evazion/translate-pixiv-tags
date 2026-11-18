@@ -19,99 +19,120 @@ export default function initializeWeibo(findAndTranslate: FindAndTranslate) {
 
     // Profile page
     // https://www.weibo.com/u/7500749495
-    findAndTranslate("artist", "div", {
-        asyncMode: true,
-        predicate: "div[iconclickable='false'] + div>div>:not(:has(*))",
-        toProfileUrl: (el) =>
-            url(
-                safeMatch(
-                    ($(el).parent().parent().nextAll("a")[0] as HTMLAnchorElement | undefined)?.href,
-                    /to_uid=(\d+)/,
-                    1,
+    findAndTranslate(
+        "artist",
+        "div[iconclickable='false'] + div>div>div:not(:has(*))",
+        {
+            asyncMode: true,
+            toProfileUrl: (el) =>
+                url(
+                    safeMatch(
+                        ($(el).parent().parent().nextAll("a")[0] as HTMLAnchorElement | undefined)?.href,
+                        /to_uid=(\d+)/,
+                        1,
+                    ),
                 ),
-            ),
-        classes: "inline",
-        ruleName: "artist profile",
-    });
+            classes: "inline",
+        },
+        "artist profile",
+    );
 
     // feed post, post page
     // https://www.weibo.com/u/7500749495
-    findAndTranslate("artist", "a", {
-        asyncMode: true,
-        predicate: "article header a[usercard][href*='/u/']:not([aria-label])",
-        classes: "inline",
-        ruleName: "artist post",
-    });
+    findAndTranslate(
+        "artist",
+        "article header a[usercard][href*='/u/']:not([aria-label])",
+        {
+            asyncMode: true,
+            classes: "inline",
+        },
+        "artist post",
+    );
 
     // feed re-post
     // https://www.weibo.com/u/7500749495
-    findAndTranslate("artist", "a", {
-        asyncMode: true,
-        predicate: "article header a[href*='/n/']",
-        toProfileUrl: (el) =>
-            url(
-                safeMatch(
-                    ($(el).parent().next().find("a")[0] as HTMLAnchorElement | undefined)?.href,
-                    /\d+/,
+    findAndTranslate(
+        "artist",
+        "article header a[href*='/n/']",
+        {
+            asyncMode: true,
+            toProfileUrl: (el) =>
+                url(
+                    safeMatch(
+                        ($(el).parent().next().find("a")[0] as HTMLAnchorElement | undefined)?.href,
+                        /\d+/,
+                    ),
                 ),
-            ),
-        classes: "inline",
-        ruleName: "artist re-post",
-        css: css`
-            ARTIST_TAG {
-                margin-right: 1ch;
-            }
-        `,
-    });
+            classes: "inline",
+            css: css`
+                ARTIST_TAG {
+                    margin-right: 1ch;
+                }
+            `,
+        },
+        "artist re-post",
+    );
 
     // user popup
     // https://www.weibo.com/u/7500749495
-    findAndTranslate("artist", "a", {
-        asyncMode: true,
-        predicate: ".popcard > :first-child > :first-child a:first-child + a:not(:has(*))",
-        tagPosition: TAG_POSITIONS.beforeend,
-        classes: "inline",
-        css: css`
-            ARTIST_TAG {
-                text-shadow: 0 0 5px black;
-            }
-        `,
-        ruleName: "artist popup",
-    });
+    findAndTranslate(
+        "artist",
+        ".popcard > :first-child > :first-child a:first-child + a:not(:has(*))",
+        {
+            asyncMode: true,
+            tagPosition: TAG_POSITIONS.beforeend,
+            classes: "inline",
+            css: css`
+                ARTIST_TAG {
+                    text-shadow: 0 0 5px black;
+                }
+            `,
+        },
+        "artist popup",
+    );
 
     // post comment
     // https://www.weibo.com/7500749495/Pg5a5oHtp
-    findAndTranslate("artist", "a[usercard]", {
-        asyncMode: true,
-        predicate: "#scroller a",
-        classes: "inline",
-        ruleName: "post commenter",
-    });
+    findAndTranslate(
+        "artist",
+        "#scroller a[usercard]",
+        {
+            asyncMode: true,
+            classes: "inline",
+        },
+        "post commenter",
+    );
 
     // post tag
     // https://www.weibo.com/7500749495/Pg2WWBzUr
-    findAndTranslate("tag", "a[target]", {
-        asyncMode: true,
-        predicate: ":is(.wbpro-feed-content, .retweet) a[href*='/weibo?q=']",
-        toTagName: (el) => el.textContent?.slice(1, -1) || "",
-        classes: "inline",
-        ruleName: "post tag",
-    });
+    findAndTranslate(
+        "tag",
+        ":is(.wbpro-feed-content, .retweet) a[target][href*='/weibo?q=']",
+        {
+            asyncMode: true,
+            toTagName: (el) => el.textContent?.slice(1, -1) || "",
+            classes: "inline",
+        },
+        "post tag",
+    );
 
     // recommended user on sidebar
     // https://www.weibo.com/u/7500749495
-    findAndTranslate("artist", "a", {
-        asyncMode: true,
-        predicate: ".wbpro-side[page='profileRecom'] a + div > a:first-child",
-        onadded: preventSiteNavigation,
-        css: css`
-            ARTIST_TAG {
-                font-size: 13px;
-                display: block;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-        `,
-        ruleName: "sidebar user",
-    });
+    findAndTranslate(
+        "artist",
+        ".wbpro-side[page='profileRecom'] a + div > a:first-child",
+        {
+            asyncMode: true,
+            onadded: preventSiteNavigation,
+            css: css`
+                ARTIST_TAG {
+                    font-size: 13px;
+                    display: block;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+            `,
+        },
+        "sidebar user",
+    );
 }

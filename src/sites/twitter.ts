@@ -89,12 +89,15 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
     `);
 
     // Tags https://x.com/mugosatomi/status/1173231575959363584
-    findAndTranslate("tag", "a[role='link']", {
-        predicate: "a[href^='/hashtag/']",
-        asyncMode: true,
-        toTagName: getNormalizedHashtagName,
-        ruleName: "tags",
-    });
+    findAndTranslate(
+        "tag",
+        "a[role='link'][href^='/hashtag/']",
+        {
+            asyncMode: true,
+            toTagName: getNormalizedHashtagName,
+        },
+        "tags",
+    );
 
     // Artists who changed their username are still findable by the intent URL
     const withIntentUrl = (profileUrl: string, userId?: string | null) => {
@@ -137,16 +140,20 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
         $(elem).nextAll(TAG_SELECTOR).remove();
         const channel = () => safeMatch(window.location.pathname, /\w+/);
         const currentChannel = channel();
-        findAndTranslate("artist", elem, {
-            requiredAttributes: "#text",
-            toProfileUrl: URLfromLocation,
-            classes: "inline",
-            ruleName: "channel header",
-            // The response may arrive after switching to another channel
-            onadded: (tag) => {
-                if (channel() !== currentChannel) tag.remove();
+        findAndTranslate(
+            "artist",
+            elem,
+            {
+                requiredAttributes: "#text",
+                toProfileUrl: URLfromLocation,
+                classes: "inline",
+                // The response may arrive after switching to another channel
+                onadded: (tag) => {
+                    if (channel() !== currentChannel) tag.remove();
+                },
             },
-        });
+            "channel header",
+        );
     };
     // On switching to a channel from another channel, Twitter updates only text nodes
     // so, for correct work, it's required to watch for
@@ -183,57 +190,69 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
     }).observe(document.head, { childList: true, subtree: true, characterData: true });
 
     // Deleted channel https://x.com/6o2_iii
-    findAndTranslate("artist", "span.r-qvutc0", {
-        predicate: `[data-testid="emptyState"] div.r-1vr29t4 > .r-qvutc0:not(:empty)`,
-        toProfileUrl: URLfromLocation,
-        classes: "inline",
-        asyncMode: true,
-        ruleName: "delete artist profile",
-    });
+    findAndTranslate(
+        "artist",
+        `[data-testid="emptyState"] div.r-1vr29t4 > span.r-qvutc0:not(:empty)`,
+        {
+            toProfileUrl: URLfromLocation,
+            classes: "inline",
+            asyncMode: true,
+        },
+        "delete artist profile",
+    );
 
     // Tweet, expanded tweet, comment authors, "in this photo", people in sidebar
     // https://x.com/mugosatomi/status/1173231575959363584
     // https://x.com/Merryweatherey/status/1029008151411023872/media_tags
-    findAndTranslate("artist", "div.r-1wbh5a2.r-18u37iz", {
-        predicate: `div:has(>div>a.r-1wbh5a2[tabindex])`,
-        toProfileUrl: (el) => withIntentUrl(linkInChildren(el), userIdFromFollowButton(el)),
-        asyncMode: true,
-        classes: "inline",
-        css: css`
-            /* "in this photo", people in sidebar */
-            [data-testid="UserCell"] ARTIST_TAG {
-                display: block;
-                margin-left: 0;
-            }
-            /* prevent overlaying twitter handle and pub.time with the tag */
-            div:has(> ARTIST_TAG) {
-                flex-shrink: 0;
-            }
-        `,
-        ruleName: "tweet/comment author",
-    });
+    findAndTranslate(
+        "artist",
+        "div.r-1wbh5a2.r-18u37iz:has(>div>a.r-1wbh5a2[tabindex])",
+        {
+            toProfileUrl: (el) => withIntentUrl(linkInChildren(el), userIdFromFollowButton(el)),
+            asyncMode: true,
+            classes: "inline",
+            css: css`
+                /* "in this photo", people in sidebar */
+                [data-testid="UserCell"] ARTIST_TAG {
+                    display: block;
+                    margin-left: 0;
+                }
+                /* prevent overlaying twitter handle and pub.time with the tag */
+                div:has(> ARTIST_TAG) {
+                    flex-shrink: 0;
+                }
+            `,
+        },
+        "tweet/comment author",
+    );
 
     // Quoted tweets https://x.com/Murata_Range/status/1108340994557140997
-    findAndTranslate("artist", "div.r-1wvb978", {
-        predicate: "[data-testid=User-Name] [tabindex]:not([role]) > div",
-        toProfileUrl: (el) => withIntentUrl(`https://x.com/${el.textContent?.slice(1)}`),
-        asyncMode: true,
-        classes: "inline",
-        css: css`
-            [data-testid="User-Name"] [tabindex]:not([role]) {
-                flex-direction: row;
-            }
-        `,
-        ruleName: "quoted tweet author",
-    });
+    findAndTranslate(
+        "artist",
+        "[data-testid=User-Name] [tabindex]:not([role]) > div.r-1wvb978",
+        {
+            toProfileUrl: (el) => withIntentUrl(`https://x.com/${el.textContent?.slice(1)}`),
+            asyncMode: true,
+            classes: "inline",
+            css: css`
+                [data-testid="User-Name"] [tabindex]:not([role]) {
+                    flex-direction: row;
+                }
+            `,
+        },
+        "quoted tweet author",
+    );
 
     // User card info
-    findAndTranslate("artist", "a", {
-        predicate: "div.r-nsbfu8 a + div a",
-        toProfileUrl: (el) =>
-            withIntentUrl((el as HTMLAnchorElement).href, userIdFromFollowButton(el)),
-        tagPosition: TAG_POSITIONS.afterParent,
-        asyncMode: true,
-        ruleName: "artist popup",
-    });
+    findAndTranslate(
+        "artist",
+        "div.r-nsbfu8 a + div a",
+        {
+            toProfileUrl: (el) =>
+                withIntentUrl((el as HTMLAnchorElement).href, userIdFromFollowButton(el)),
+            tagPosition: TAG_POSITIONS.afterParent,
+            asyncMode: true,
+        },
+        "artist popup",
+    );
 }

@@ -29,14 +29,12 @@ type TagPosition = {
 interface TranslationOptions {
     /** Method of translating */
     mode: "tag" | "artist" | "artistByName";
-    /** Just a name of rule for translations */
-    ruleName: string;
     /** Watch for new entries to translate, by default - no */
     asyncMode?: boolean;
     /** Required attributes on the element, also used know when the element starts to refer another artist */
     requiredAttributes?: string | null;
-    /** Checks whether the element should be translated */
-    predicate?: string | ((el: HTMLElement) => boolean) | null;
+    /** Checks whether the element, matching the selector, should be translated */
+    predicate?: ((el: HTMLElement) => boolean) | null;
     /** Extracts the link to the profile from the element, by default - `href` from closest `<a>` */
     toProfileUrl?: (el: HTMLElement) => string | string[] | null;
     /** Extracts the tag name from the element, by default - the element's text */
@@ -49,23 +47,31 @@ interface TranslationOptions {
     /** CSS related to this rule, special selectors `ARTIST_TAG` and `TPT_TAG` will match only this rule's tags */
     css?: _lit.CSSResult | null;
     /** Handler for the added tag elements */
-    onadded?: ((el: HTMLElement, options: Required<TranslationOptions>) => void) | null;
+    onadded?: ((el: HTMLElement, options: TranslationOptionsFull) => void) | null;
 }
-type TranslationOptionsFull = Required<TranslationOptions>;
+type TranslationOptionsFull = Required<TranslationOptions> & {
+    /** Name of rule, also used to unequally select the tag */
+    ruleName: string;
+};
 
 /**
  * Add translations to the matched elements
  * @param mode Method of translating the element
- * @param selector Simple selector of the translated element.
- *  Max example: `div.class#id[attr][attr2=val], *[attr3~="part"][attr4='val']`
- * @param [options] Extra options for translating
+ * @param selector CSS selector or the element to translate.
+ *  In `asyncMode`, new elements are watched by a simplified version of the selector
+ *  (see `simplifySelector`) and then checked against the full selector.
+ * @param options Extra options for translating
+ * @param ruleName Just a name of rule for translations
  */
-type FindAndTranslate = <T extends TranslationOptions["mode"]>(
-    mode: T,
-    selector: string | HTMLElement,
-    options: T extends "artist"
-        ? Omit<TranslationOptions, "mode" | "toTagName">
-        : Omit<TranslationOptions, "mode" | "toProfileUrl">,
+type FindAndTranslate = <M extends TranslationOptions["mode"], S extends string | HTMLElement>(
+    mode: M,
+    selector: S,
+    options: M extends "artist"
+        ? Omit<TranslationOptions, "mode" | "toTagName"> &
+              (S extends HTMLElement ? { asyncMode?: false } : { asyncMode?: boolean })
+        : Omit<TranslationOptions, "mode" | "toProfileUrl"> &
+              (S extends HTMLElement ? { asyncMode?: false } : { asyncMode?: boolean }),
+    ruleName: string,
 ) => void;
 
 /** Item name and its renderer, which omits the text when `textless` is true */

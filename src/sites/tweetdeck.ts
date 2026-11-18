@@ -14,24 +14,34 @@ export default function initializeTweetDeck(findAndTranslate: FindAndTranslate) 
     `);
     // https://tweetdeck.twitter.com/
 
-    findAndTranslate("tag", "span.link-complex-target", {
-        predicate: "a[rel='hashtag'] span.link-complex-target",
-        asyncMode: true,
-        toTagName: getNormalizedHashtagName,
-        ruleName: "tags",
-    });
+    findAndTranslate(
+        "tag",
+        "a[rel='hashtag'] span.link-complex-target",
+        {
+            asyncMode: true,
+            toTagName: getNormalizedHashtagName,
+        },
+        "tags",
+    );
 
     // User card info
-    findAndTranslate("artist", "p.username", {
-        asyncMode: true,
-        ruleName: "artist info",
-    });
+    findAndTranslate(
+        "artist",
+        "p.username",
+        {
+            asyncMode: true,
+        },
+        "artist info",
+    );
 
     // Tweet authors and comments
-    findAndTranslate("artist", "a.account-link", {
-        predicate: "a:has(.username)",
-        asyncMode: true,
-        classes: "inline",
-        ruleName: "tweet/comment author",
-    });
+    findAndTranslate(
+        "artist",
+        "a.account-link:has(.username)",
+        {
+            asyncMode: true,
+            classes: "inline",
+        },
+        "tweet/comment author",
+    );
 }

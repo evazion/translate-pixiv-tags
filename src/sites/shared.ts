@@ -3,7 +3,7 @@ import { console, match } from "../utils";
 
 export const TAG_SELECTOR = ".tpt-tags, .tpt-artist";
 
-export const TAG_POSITIONS: Record<string, TagPosition> = {
+export const TAG_POSITIONS = {
     beforebegin: {
         insertTag: (container, elem) => container.before(elem),
         findTag: (container) => $(container).prevAll(TAG_SELECTOR)[0] ?? null,
@@ -29,7 +29,7 @@ export const TAG_POSITIONS: Record<string, TagPosition> = {
         findTag: (container) => $(container).parent().nextAll(TAG_SELECTOR)[0] ?? null,
         getTagContainer: (elem) => $(elem).prev().find("a")[0] ?? null,
     },
-};
+} satisfies Record<string, TagPosition>;
 
 /**
  * Delete the tag element when the target element will change its url (`href`)

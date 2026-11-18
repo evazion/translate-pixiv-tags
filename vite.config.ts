@@ -80,9 +80,14 @@ export default defineConfig(({ mode, command }) => ({
                     "Translates tags and look ups artist on Pixiv, Twitter/X, ArtStation, Deviant Art, Fanbox, and others sites using Danbooru or other sites.",
                 homepageURL: "https://github.com/evazion/translate-pixiv-tags",
                 supportURL: "https://github.com/evazion/translate-pixiv-tags/issues",
-                updateURL: "https://github.com/evazion/translate-pixiv-tags/raw/master/tpt.meta.js",
+                updateURL:
+                    mode === "production"
+                        ? "https://github.com/evazion/translate-pixiv-tags/raw/master/tpt.meta.js"
+                        : undefined,
                 downloadURL:
-                    "https://github.com/evazion/translate-pixiv-tags/raw/master/tpt.user.js",
+                    mode === "production"
+                        ? "https://github.com/evazion/translate-pixiv-tags/raw/master/tpt.user.js"
+                        : undefined,
                 noframes: true,
                 "run-at": "document-start",
                 match: [

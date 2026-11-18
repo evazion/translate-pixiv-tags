@@ -11,21 +11,27 @@ export default function initializeTinami(findAndTranslate: FindAndTranslate) {
         }
     `);
     // http://www.tinami.com/view/1165789
-    findAndTranslate("tag", ".tag > span > a:nth-child(2)", {
-        ruleName: "illust tags",
-    });
+    findAndTranslate("tag", ".tag > span > a:nth-child(2)", {}, "illust tags");
 
     // Triggers on http://www.tinami.com/creator/profile/10262
-    findAndTranslate("artist", "div.cre_name h1", {
-        toProfileUrl: () => window.location.href,
-        tagPosition: TAG_POSITIONS.beforeend,
-        classes: "inline",
-        ruleName: "artist profile",
-    });
+    findAndTranslate(
+        "artist",
+        "div.cre_name h1",
+        {
+            toProfileUrl: () => window.location.href,
+            tagPosition: TAG_POSITIONS.beforeend,
+            classes: "inline",
+        },
+        "artist profile",
+    );
 
     // Triggers on http://www.tinami.com/view/934323
-    findAndTranslate("artist", "p:has(>a[href^='/creator/profile/'])", {
-        toProfileUrl: linkInChildren,
-        ruleName: "illust artist",
-    });
+    findAndTranslate(
+        "artist",
+        "p:has(>a[href^='/creator/profile/'])",
+        {
+            toProfileUrl: linkInChildren,
+        },
+        "illust artist",
+    );
 }

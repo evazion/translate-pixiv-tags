@@ -30,64 +30,81 @@ export default function initializeArtStation(findAndTranslate: FindAndTranslate)
 
     // https://www.artstation.com/jubi
     // https://www.artstation.com/jubi/*
-    findAndTranslate("artist", "h1", {
-        predicate: ".user-info > h1",
-        toProfileUrl: toFullURL,
-        asyncMode: true,
-        css: css`
-            ARTIST_TAG {
-                margin: -8px 0 2px;
-            }
-        `,
-        ruleName: "artist profile",
-        // The artist name is removed when the profile page is a bit scrolled
-        onadded: (tag) => {
-            const h1 = tag.previousElementSibling!;
-            const container = tag.parentElement!;
-            new MutationObserver((_, observer) => {
-                if (!container.contains(h1)) {
-                    tag.remove();
-                    observer.disconnect();
+    findAndTranslate(
+        "artist",
+        ".user-info > h1",
+        {
+            toProfileUrl: toFullURL,
+            asyncMode: true,
+            css: css`
+                ARTIST_TAG {
+                    margin: -8px 0 2px;
                 }
-            }).observe(container, { childList: true });
+            `,
+            // The artist name is removed when the profile page is a bit scrolled
+            onadded: (tag) => {
+                const h1 = tag.previousElementSibling!;
+                const container = tag.parentElement!;
+                new MutationObserver((_, observer) => {
+                    if (!container.contains(h1)) {
+                        tag.remove();
+                        observer.disconnect();
+                    }
+                }).observe(container, { childList: true });
+            },
         },
-    });
+        "artist profile",
+    );
 
     // https://www.artstation.com/artwork/0X40zG
-    findAndTranslate("artist", "h3", {
-        predicate: ".project-author-name > h3:has(a)",
-        toProfileUrl: linkInChildren,
-        asyncMode: true,
-        ruleName: "illust artist",
-    });
+    findAndTranslate(
+        "artist",
+        ".project-author-name > h3:has(a)",
+        {
+            toProfileUrl: linkInChildren,
+            asyncMode: true,
+        },
+        "illust artist",
+    );
 
-    findAndTranslate("tag", ".label-tag", {
-        tagPosition: TAG_POSITIONS.beforeend,
-        asyncMode: true,
-        ruleName: "tags",
-    });
+    findAndTranslate(
+        "tag",
+        ".label-tag",
+        {
+            tagPosition: TAG_POSITIONS.beforeend,
+            asyncMode: true,
+        },
+        "tags",
+    );
 
     // Hover card
-    findAndTranslate("artist", "a", {
-        requiredAttributes: "href",
-        predicate: (el) => el.matches(".hover-card-name > a:first-child"),
-        asyncMode: true,
-        css: css`
-            ARTIST_TAG {
-                font-size: 12pt;
-                margin-top: -10px;
-            }
-        `,
-        ruleName: "artist popup",
-    });
+    findAndTranslate(
+        "artist",
+        ".hover-card-name > a:first-child",
+        {
+            requiredAttributes: "href",
+            asyncMode: true,
+            css: css`
+                ARTIST_TAG {
+                    font-size: 12pt;
+                    margin-top: -10px;
+                }
+            `,
+        },
+        "artist popup",
+    );
 
     // https://www.artstation.com/jubi/following
     // https://www.artstation.com/jubi/followers
-    findAndTranslate("artist", "h3.user-name", {
-        asyncMode: true,
-        classes: "inline",
-        ruleName: "artist followers",
-    });
+    findAndTranslate(
+        "artist",
+        "h3.user-name",
+        {
+            asyncMode: true,
+            classes: "inline",
+        },
+        "artist followers",
+    );
 
     // Default personal websites:
     // https://jubi.artstation.com/
@@ -97,18 +114,22 @@ export default function initializeArtStation(findAndTranslate: FindAndTranslate)
     // https://kastep.artstation.com/
     // https://tinadraw.artstation.com/
     // https://dylan-kowalski.artstation.com/
-    findAndTranslate("artist", ".site-title a", {
-        toProfileUrl: toFullURL,
-        css: css`
-            ARTIST_TAG {
-                font-size: 12pt;
-                line-height: 100%;
-                margin-top: -10px;
-                a {
+    findAndTranslate(
+        "artist",
+        ".site-title a",
+        {
+            toProfileUrl: toFullURL,
+            css: css`
+                ARTIST_TAG {
                     font-size: 12pt;
+                    line-height: 100%;
+                    margin-top: -10px;
+                    a {
+                        font-size: 12pt;
+                    }
                 }
-            }
-        `,
-        ruleName: "personal sites",
-    });
+            `,
+        },
+        "personal sites",
+    );
 }
