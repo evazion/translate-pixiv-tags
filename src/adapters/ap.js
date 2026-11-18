@@ -411,6 +411,8 @@ class AnimePictureAdapter {
         }
         running = true;
 
+        ajax.setThrottle(AP_API, 600, 120);
+
         addCss(TAGS_CSS);
 
         getSafeImageUrl(`${AP_SITE}/favicon.ico`).then((url) => {

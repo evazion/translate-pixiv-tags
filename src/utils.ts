@@ -12,6 +12,11 @@ export const console: Console = {
     error: konsole.error.bind(konsole, "[TPT]:"),
 };
 
+export const sleep = (ms: number) =>
+    new Promise((resolve) => {
+        setTimeout(resolve, ms);
+    });
+
 /**
  * Serializes params into a query string the same way as `jQuery.param`:
  * nested objects and arrays use the bracket notation, e.g. `search[name]=x&ids[]=1`

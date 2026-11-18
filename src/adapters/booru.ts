@@ -862,8 +862,8 @@ export default class DanbooruAdapter implements Adapter {
         renderedTagsCache[this.id] = {};
         renderedArtistsCache[this.id] = {};
 
-        // Danbooru limits 10 req/sec, but let's have 8 leeway
-        ajax.setThrottle(this.booru, 8, 1);
+        // Danbooru limits 10 req/sec, but let's have 9 leeway
+        ajax.setThrottle(this.booru, 9, 1);
         // Check for new network requests every half-second
         this.timer = setInterval(intervalNetworkHandler, REQUEST_INTERVAL, this.queue);
 

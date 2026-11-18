@@ -1,7 +1,7 @@
 import { GM } from "$";
 import { SETTINGS } from "./settings";
 import showMessage from "./tooltips/message";
-import { console, param } from "./utils";
+import { console, param, sleep } from "./utils";
 
 // The maximum size of a URL before using a POST request.
 // The actual limit is 8154, but setting it lower accounts for the rest of the URL as well.
@@ -47,29 +47,47 @@ function tooManyNetworkErrors(domain: string, logError: boolean = false) {
     return true;
 }
 
-const throttles: Record<
-    string,
-    { amount: number; period: number; times: number[]; queue: Promise<void> }
-> = {};
+const THROTTLE_KEY_PREFIX = "throttle:";
+const throttles: Record<string, { amount: number; period: number; queue: Promise<void> }> = {};
 
-/** Waits until a request to the host is allowed by its throttle settings */
+/**
+ * Waits until a request to the host is allowed by its throttle settings.
+ * The log of reserved request slots is kept in the GM storage to be shared across tabs.
+ */
 function throttle(host: string): Promise<void> {
     const t = throttles[host];
     if (!t) return Promise.resolve();
-    // chain the requests so they acquire slots in order
+    const key = THROTTLE_KEY_PREFIX + host;
+    // chain the requests of this tab so they don't race each other
     const slot = t.queue.then(async () => {
-        const now = Date.now();
-        while (t.times.length > 0 && t.times[0] <= now - t.period) t.times.shift();
-        if (t.times.length >= t.amount) {
-            const wait = t.times[0] + t.period - now;
-            await new Promise((resolve) => {
-                setTimeout(resolve, wait);
-            });
-            t.times.shift();
+        let slotTime: number;
+        // the GM storage has no atomic operations, so if another tab
+        // overwrote the log at the same time, reserve a slot again
+        for (;;) {
+            const now = Date.now();
+            // eslint-disable-next-line no-await-in-loop
+            const times = (await GM.getValue<number[]>(key, []))
+                .filter((time) => time > now - t.period)
+                .sort((a, b) => a - b);
+            slotTime =
+                times.length < t.amount
+                    ? now
+                    : Math.max(now, times[times.length - t.amount] + t.period);
+            // a fraction of ms to make the entry unique
+            slotTime += Math.random();
+            times.push(slotTime);
+            // eslint-disable-next-line no-await-in-loop
+            await GM.setValue(key, times);
+            // eslint-disable-next-line no-await-in-loop
+            if ((await GM.getValue<number[]>(key, [])).includes(slotTime)) break;
         }
-        t.times.push(Date.now());
+        const wait = slotTime - Date.now();
+        if (wait > 0) {
+            await sleep(wait);
+        }
     });
-    t.queue = slot;
+    // don't break the chain on a storage error
+    t.queue = slot.catch(() => {});
     return slot;
 }
 
@@ -83,10 +101,6 @@ export async function ajax<M extends string>(
     headers?: Record<string, string>,
 ) {
     const domain = new URL(url).hostname;
-    const sleep = () =>
-        new Promise((resolve) => {
-            setTimeout(resolve, 1000);
-        });
     if (tooManyNetworkErrors(domain)) {
         throw new Error(`${domain} had too many network errors`);
     }
@@ -138,7 +152,7 @@ export async function ajax<M extends string>(
                 showMessage(errorMsg, domain);
             }
             // eslint-disable-next-line no-await-in-loop
-            await sleep();
+            await sleep(1000);
         }
     }
     throw new Error(errorMsg);
@@ -156,7 +170,7 @@ ajax.ready = (url: string): boolean => {
 };
 
 /**
- * Limits requests to the host to `amount` per `period` seconds
+ * Limits requests to the host to `amount` per `period` seconds across all tabs
  * @param host - the hostname
  * @param amount - max number of requests per period
  * @param period - the period in seconds
@@ -166,7 +180,6 @@ ajax.setThrottle = (host: string, amount: number, period: number): void => {
     throttles[host] = {
         amount,
         period: period * 1000,
-        times: throttles[host]?.times ?? [],
         queue: throttles[host]?.queue ?? Promise.resolve(),
     };
 };
