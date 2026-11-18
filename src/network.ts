@@ -27,7 +27,7 @@ export async function getImage(imageUrl: string): Promise<string> {
 const networkErrors: Record<string, { error: number }> = {};
 
 /** Checks whether the number of failed requests to the domain reached the limit */
-export function tooManyNetworkErrors(domain: string, logError: boolean = false) {
+function tooManyNetworkErrors(domain: string, logError: boolean = false) {
     const data = networkErrors[domain] ?? (networkErrors[domain] = { error: 0 });
 
     if (logError) {
@@ -47,15 +47,41 @@ export function tooManyNetworkErrors(domain: string, logError: boolean = false) 
     return true;
 }
 
+const throttles: Record<
+    string,
+    { amount: number; period: number; times: number[]; queue: Promise<void> }
+> = {};
+
+/** Waits until a request to the host is allowed by its throttle settings */
+function throttle(host: string): Promise<void> {
+    const t = throttles[host];
+    if (!t) return Promise.resolve();
+    // chain the requests so they acquire slots in order
+    const slot = t.queue.then(async () => {
+        const now = Date.now();
+        while (t.times.length > 0 && t.times[0] <= now - t.period) t.times.shift();
+        if (t.times.length >= t.amount) {
+            const wait = t.times[0] + t.period - now;
+            await new Promise((resolve) => {
+                setTimeout(resolve, wait);
+            });
+            t.times.shift();
+        }
+        t.times.push(Date.now());
+    });
+    t.queue = slot;
+    return slot;
+}
+
 export type UrlParams = { [k: string]: string | number | boolean | string[] | UrlParams };
 
-/**
- * @param method
- * @param url
- * @param params
- */
 // eslint-disable-next-line sonarjs/cognitive-complexity
-export async function makeRequest(method: string, url: string, params: UrlParams) {
+export async function ajax<M extends string>(
+    method: M,
+    url: string,
+    params?: Uppercase<M> extends "GET" | "HEAD" ? UrlParams : BodyInit,
+    headers?: Record<string, string>,
+) {
     const domain = new URL(url).hostname;
     const sleep = () =>
         new Promise((resolve) => {
@@ -67,21 +93,24 @@ export async function makeRequest(method: string, url: string, params: UrlParams
     let status = -1;
     let statusText = "";
     let errorMsg;
-    let data: string | undefined;
-    if (method.toUpperCase() === "GET") {
-        url = `${url}${url.includes("?") ? "&" : "?"}${param(params)}`;
-    } else {
-        data = param(params);
+    let data: BodyInit | string | undefined;
+    if (params && ["GET", "HEAD"].includes(method.toUpperCase())) {
+        url = `${url}${url.includes("?") ? "&" : "?"}${param(params as UrlParams)}`;
+    } else if (params) {
+        data = params as BodyInit;
     }
 
     for (let i = 0; i < MAX_NETWORK_RETRIES; i++) {
         try {
+            // eslint-disable-next-line no-await-in-loop
+            await throttle(domain);
             // eslint-disable-next-line no-await-in-loop
             const resp = await GM.xmlHttpRequest({
                 url,
                 method,
                 responseType: "json",
                 data,
+                headers,
             });
             showMessage("", domain);
             return resp.response;
@@ -114,3 +143,30 @@ export async function makeRequest(method: string, url: string, params: UrlParams
     }
     throw new Error(errorMsg);
 }
+
+/** Checks whether a request to the URL can be made right now */
+ajax.ready = (url: string): boolean => {
+    if (!navigator.onLine) {
+        if (SETTINGS.display_network_errors) {
+            showMessage("No Internet connection", "");
+        }
+        return false;
+    }
+    return !tooManyNetworkErrors(new URL(url).hostname);
+};
+
+/**
+ * Limits requests to the host to `amount` per `period` seconds
+ * @param host - the hostname
+ * @param amount - max number of requests per period
+ * @param period - the period in seconds
+ */
+ajax.setThrottle = (host: string, amount: number, period: number): void => {
+    host = new URL(host).hostname;
+    throttles[host] = {
+        amount,
+        period: period * 1000,
+        times: throttles[host]?.times ?? [],
+        queue: throttles[host]?.queue ?? Promise.resolve(),
+    };
+};

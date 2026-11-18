@@ -1,6 +1,6 @@
 import { css, html, unsafeCSS } from "lit";
 import { GM } from "$";
-import { makeRequest } from "./network";
+import { ajax } from "./network";
 import { ADAPTERS, adapterCodes, SETTINGS } from "./settings";
 import { addCss, console, getSafeImageUrl } from "./utils";
 import artistTooltip from "./tooltips/artist-tooltip";
@@ -11,9 +11,9 @@ const trimmedTemplates = new WeakMap<TemplateStringsArray, TemplateStringsArray>
 
 /** Removes line breaks with indents: around tags completely, otherwise replaces them with a space */
 function removeIndents(str: string) {
-    return str.replace(/(>)?\n\s*(<)?/g, (_, gt?: string, lt?: string) => (
-        gt || lt ? (gt ?? "") + (lt ?? "") : " "
-    ));
+    return str.replace(/(>)?\n\s*(<)?/g, (_, gt?: string, lt?: string) =>
+        gt || lt ? (gt ?? "") + (lt ?? "") : " ",
+    );
 }
 
 function trimStrings(strings: readonly string[]) {
@@ -28,9 +28,11 @@ const trimmedHtml: typeof html = (strings, ...values) => {
     let trimmed = trimmedTemplates.get(strings);
     if (!trimmed) {
         const result = trimStrings(strings);
-        trimmed = Object.freeze(Object.assign(result, {
-            raw: Object.freeze(trimStrings(strings.raw)),
-        }));
+        trimmed = Object.freeze(
+            Object.assign(result, {
+                raw: Object.freeze(trimStrings(strings.raw)),
+            }),
+        );
         trimmedTemplates.set(strings, trimmed);
     }
     return html(trimmed, ...values);
@@ -46,7 +48,7 @@ const ARGS = {
     css,
     getSafeImageUrl,
     html: trimmedHtml,
-    makeRequest,
+    ajax,
     SETTINGS: new Proxy(SETTINGS, {
         set() {
             // forbid changing settings

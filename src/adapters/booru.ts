@@ -1,6 +1,6 @@
 import { css, html, unsafeCSS } from "lit";
 import { until } from "lit/directives/until.js";
-import { makeRequest, MAXIMUM_URI_LENGTH, tooManyNetworkErrors, type UrlParams } from "../network";
+import { ajax, MAXIMUM_URI_LENGTH, type UrlParams } from "../network";
 import { SETTINGS } from "../settings";
 import { addCss, memoize, naturalCompare, getSafeImageUrl, console, param } from "../utils";
 import { normalizeSourceUrl } from "../normalize-url";
@@ -22,10 +22,11 @@ import {
     isSecondaryUrl,
 } from "../artist-urls";
 import artistTooltip, { type ArtistTooltipParams } from "../tooltips/artist-tooltip";
-import showMessage from "../tooltips/message";
 
 // Setting this to the maximum since batches could return more than the amount being queried
 const API_LIMIT = 1000;
+/** For GET-endpoints Danbooru accepts at most 16kB even over POST, plus some leeway */
+const MAXIMUM_PARAMS_LENGTH = 16_000;
 const REQUEST_INTERVAL = 500; // in ms
 
 const TAGS_CSS = css`
@@ -84,12 +85,19 @@ type Single<T extends object | object[]> = T extends object[] ? T[number] : T;
 
 type RequestName = "wiki" | "artist" | "tag" | "alias" | "url" | "post" | "count";
 interface RequestDefinition<Resp extends Record<string, any>> {
+    /** Endpoint url */
     url: string;
+    /** What server should return */
     fields: string;
+    /** Build request params */
     params: (requests: string[]) => UrlParams;
+    /** Check whether the response item is for this request item */
     matches: (response: Single<Resp>, request: string) => boolean;
+    /** Filter response items */
     filter?: (responses: Resp) => Resp;
+    /** Max amount of items in the response */
     responseLimit?: number;
+    /** Max request items per one network call */
     requestLimit?: number;
 }
 interface ResponseWiki {
@@ -338,16 +346,8 @@ const queueNetworkRequestMemoized: typeof queueNetworkRequest = memoize(
 );
 
 function intervalNetworkHandler(queue: RequestQueue) {
-    if (queue.q.length === 0) return;
-    // TODO move to networking
-    if (!navigator.onLine) {
-        if (SETTINGS.display_network_errors) {
-            showMessage("No Internet connection", "");
-        }
-        return;
-    }
-    // TODO move to networking
-    if (tooManyNetworkErrors(new URL(queue.host).hostname)) return;
+    if (queue.q.length === 0 || !ajax.ready(queue.host)) return;
+
     const allRequests = queue.q.splice(0);
 
     const CACHE_PARAM = { expires_in: SETTINGS.cache_lifetime };
@@ -361,44 +361,53 @@ function intervalNetworkHandler(queue: RequestQueue) {
         >;
         const url = `${queue.host}${requestTools.url}.json`;
         const limitParam = { limit: requestTools.responseLimit ?? API_LIMIT };
-        if (requestTools.requestLimit) {
-            while (requests.length) {
-                const batch = requests.splice(0, requestTools.requestLimit);
-                const typeParam = requestTools.params(batch.map((request) => request.item));
-                const params = Object.assign(typeParam, limitParam, CACHE_PARAM);
-                getLong(url, params, batch, requestTools).catch(() => {
-                    // in case of error return requests to the queue
-                    queue.q.push(...batch);
-                });
-            }
-        } else {
-            const typeParam = requestTools.params(requests.map((request) => request.item));
-            const params = Object.assign(typeParam, limitParam, CACHE_PARAM);
-            getLong(url, params, requests, requestTools).catch(() => {
+        const requestLimit = requestTools.requestLimit ?? Infinity;
+        const buildParams = (batch: typeof requests): UrlParams => ({
+            ...requestTools.params(batch.map((request) => request.item)),
+            ...limitParam,
+            ...CACHE_PARAM,
+        });
+        const send = (batch: typeof requests) => {
+            const params = buildParams(batch);
+            sendRequests(url, params, batch, requestTools).catch(() => {
                 // in case of error return requests to the queue
-                queue.q.push(...requests);
+                queue.q.push(...batch);
             });
+        };
+
+        // split requests into batches by the number of items and the params length
+        let batch: typeof requests = [];
+        for (const request of requests) {
+            const extended = [...batch, request];
+            if (
+                batch.length > 0 &&
+                (batch.length >= requestLimit ||
+                    param(buildParams(extended)).length > MAXIMUM_PARAMS_LENGTH)
+            ) {
+                send(batch);
+                batch = [request];
+            } else {
+                batch = extended;
+            }
         }
+        if (batch.length > 0) send(batch);
     }
 }
 
-async function getLong<T extends RequestName>(
+async function sendRequests<T extends RequestName>(
     url: string,
     params: UrlParams,
     requests: RequestPromise<T>[],
     tools: RequestDefinition<DBResponse<T>>,
 ) {
-    // Default to GET requests
-    let method = "get";
-    let finalParams = params;
-    // TODO fix me
-    if (param(params).length > MAXIMUM_URI_LENGTH) {
-        // Use POST requests only when needed
-        finalParams = Object.assign(finalParams, { _method: "get" });
-        method = "post";
-    }
-
-    let resp: DBResponse<T> = await makeRequest(method, url, finalParams);
+    const urlParams = param(params);
+    let resp: DBResponse<T> =
+        urlParams.length < MAXIMUM_URI_LENGTH
+            ? await ajax("GET", url, params)
+            : await ajax("POST", url, urlParams, {
+                  "Content-Type": "application/x-www-form-urlencoded",
+                  "X-HTTP-Method-Override": "GET",
+              });
     // Do any necessary filtering after the network request completes
     if (tools.filter) resp = tools.filter(resp);
 
@@ -823,7 +832,7 @@ export default class DanbooruAdapter implements Adapter {
     static async validateParams(booru: string): Promise<void> {
         booru = new URL(booru).origin;
 
-        const tags: { name: string }[] = await makeRequest("GET", `${booru}/tags.json`, {
+        const tags: { name: string }[] = await ajax("GET", `${booru}/tags.json`, {
             search: { order: "count" },
             only: "name",
         });
@@ -852,6 +861,9 @@ export default class DanbooruAdapter implements Adapter {
 
         renderedTagsCache[this.id] = {};
         renderedArtistsCache[this.id] = {};
+
+        // Danbooru limits 10 req/sec, but let's have 8 leeway
+        ajax.setThrottle(this.booru, 8, 1);
         // Check for new network requests every half-second
         this.timer = setInterval(intervalNetworkHandler, REQUEST_INTERVAL, this.queue);
 
