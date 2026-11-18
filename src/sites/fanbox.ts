@@ -35,6 +35,7 @@ export default function initializeFanbox(findAndTranslate: FindAndTranslate) {
                 el,
                 {
                     ...options,
+                    asyncMode: false,
                     toProfileUrl: () => pixivLink,
                 },
                 ruleName,
