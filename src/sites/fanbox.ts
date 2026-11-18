@@ -3,14 +3,13 @@ import { memoize } from "../utils";
 import { preventSiteNavigation, TAG_POSITIONS } from "./shared";
 
 export default function initializeFanbox(findAndTranslate: FindAndTranslate) {
-    const getPixivLink = async (userNick: string) => {
+    const getPixivLink = memoize(async (userNick: string) => {
         // Use direct query
         const resp = await fetch(`https://api.fanbox.cc/creator.get?creatorId=${userNick}`).then(
             (r) => r.json(),
         );
         return `https://www.pixiv.net/users/${resp.body.user.userId}`;
-    };
-    const getPixivLinkMemoized = memoize(getPixivLink);
+    });
 
     /**
      * Translates the artist by their pixiv profile as well
@@ -29,7 +28,7 @@ export default function initializeFanbox(findAndTranslate: FindAndTranslate) {
                 ? url.pathname.match(/[\w-]+/)?.[0]
                 : url.host.match(/[\w-]+/)?.[0];
         if (!userNick) return null;
-        getPixivLinkMemoized(userNick).then((pixivLink) =>
+        getPixivLink(userNick).then((pixivLink) =>
             findAndTranslate(
                 "artist",
                 el,

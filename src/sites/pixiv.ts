@@ -1,4 +1,3 @@
-import $ from "../dom";
 import { css } from "lit";
 import { safeMatch } from "../utils";
 import {
@@ -141,12 +140,11 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
             // Fix bad contrast of tag color over colored bg
             onadded: (tag) => {
                 preventSiteNavigation(tag);
-                // TODO generalize
-                const $tag = $(tag);
-                const [category = 2] = $tag.find("a,button")[0]?.className.match(/\d/) ?? [];
+                const [category = 2] = tag.querySelector("a,button")?.className.match(/\d/) ?? [];
                 const hue = [230, 5, 0, 300, 110, 50][+category];
                 const color = `hsl(${hue + Math.random() * 40 - 20}, 35%, 65%)`;
-                for (const el of $tag.closest("a,button")) el.style.backgroundColor = color;
+                const container = tag.closest("a,button") as HTMLElement | null;
+                if (container) container.style.backgroundColor = color;
             },
         },
         "related tag",
@@ -343,7 +341,7 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
     //     {
     //         asyncMode: true,
     //         // Trigger only on profile page
-    //         toProfileUrl: () => (safeMatchMemoized(window.location.pathname, /^\/(en\/)?users/)
+    //         toProfileUrl: () => (safeMatch(window.location.pathname, /^\/(en\/)?users/)
     //             ? normalizePageUrl()
     //             : ""),
     //         tagPosition: TAG_POSITIONS.beforebegin,
