@@ -28,6 +28,7 @@ import initializeFanbox from "./sites/fanbox";
 import { normalizeProfileUrl } from "./normalize-url";
 import showSettings from "./tooltips/settings";
 import DanbooruAdapter from "./adapters/booru";
+import { cleanupCache } from "./cache";
 import { execAdapters } from "./adapter-loader";
 import simplifySelector from "./simplify-selector";
 
@@ -470,6 +471,8 @@ const SITES: Record<string, (fn: FindAndTranslate) => void> = {
 };
 
 async function initialize() {
+    cleanupCache();
+
     let restartScheduled = false;
     setOnSettingChange(() => {
         if (restartScheduled) return;

@@ -22,6 +22,7 @@ import {
     isSecondaryUrl,
 } from "../artist-urls";
 import artistTooltip, { type ArtistTooltipParams } from "../tooltips/artist-tooltip";
+import { cache } from "../cache";
 
 // Setting this to the maximum since batches could return more than the amount being queried
 const API_LIMIT = 1000;
@@ -325,23 +326,27 @@ const NETWORK_REQUEST_DICT: { [N in RequestName]: RequestDefinition<DBResponse<N
     },
 };
 
-function queueNetworkRequest<T extends RequestName>(
+const queueNetworkRequest: <T extends RequestName>(
     queue: RequestQueue,
     type: T,
     item: string,
-): Promise<DBResponse<T>> {
-    const { promise, resolve } = Promise.withResolvers();
-    queue.q.push({
-        type,
-        item,
-        resolve,
-    });
-    return promise as Promise<DBResponse<T>>;
-}
-
-// TODO replace with caching in storage
-const queueNetworkRequestMemoized: typeof queueNetworkRequest = memoize(
-    queueNetworkRequest,
+) => Promise<DBResponse<T>> = memoize(
+    cache(
+        function queueNetworkRequest_<T extends RequestName>(
+            queue: RequestQueue,
+            type: T,
+            item: string,
+        ): Promise<DBResponse<T>> {
+            const { promise, resolve } = Promise.withResolvers();
+            queue.q.push({
+                type,
+                item,
+                resolve,
+            });
+            return promise as Promise<DBResponse<T>>;
+        },
+        (queue, type, item) => [queue.host, type, item].join(""),
+    ),
     (queue, type, item) => [queue.host, type, item].join(""),
 );
 
@@ -803,7 +808,7 @@ function buildPostPreview(post: ResponsePosts, booru: string) {
  * @param page The page number to load
  */
 async function loadNextPage(queue: RequestQueue, tag: string, page: number) {
-    const waitPosts = queueNetworkRequestMemoized(queue, "post", `${tag} ${page}`);
+    const waitPosts = queueNetworkRequest(queue, "post", `${tag} ${page}`);
     // Process the queue immediately
     intervalNetworkHandler(queue);
     const posts = await waitPosts;
@@ -838,9 +843,7 @@ export default class DanbooruAdapter implements Adapter {
         });
 
         const queue: RequestQueue = { q: [], host: booru };
-        const res = Promise.all(
-            tags.map(({ name }) => queueNetworkRequestMemoized(queue, "tag", name)),
-        );
+        const res = Promise.all(tags.map(({ name }) => queueNetworkRequest(queue, "tag", name)));
         // invoke immediately, plus timer may not be running for this booru
         intervalNetworkHandler(queue);
         // TODO better API check???
@@ -919,17 +922,13 @@ export default class DanbooruAdapter implements Adapter {
     }
 
     async translateArtistByName(name: string) {
-        const artists = await queueNetworkRequestMemoized(
-            this.queue,
-            "artist",
-            name.replaceAll(" ", "_"),
-        );
+        const artists = await queueNetworkRequest(this.queue, "artist", name.replaceAll(" ", "_"));
 
         return artists.map((artist) => this.renderArtist(artist));
     }
 
     async translateArtistByUrl(url: string) {
-        const artists = await queueNetworkRequestMemoized(this.queue, "url", url);
+        const artists = await queueNetworkRequest(this.queue, "url", url);
 
         let filteredArtists = artists;
         if (artists.length > 1) {
@@ -954,7 +953,7 @@ export default class DanbooruAdapter implements Adapter {
             return renderedTagsCache[this.id][cacheKey];
         }
 
-        const wikiPages = await queueNetworkRequestMemoized(this.queue, "wiki", tagName);
+        const wikiPages = await queueNetworkRequest(this.queue, "wiki", tagName);
 
         let tags: TranslatedTag[] = [];
         if (wikiPages?.length > 0) {
@@ -970,9 +969,9 @@ export default class DanbooruAdapter implements Adapter {
         } else if (/^[\u0020-\u0024\u0026-\u0029+\u002D-\u007F]+$/.test(tagName)) {
             // The server is already converting the values to
             // lowercase on its end so no need to do it here
-            let rawTags = await queueNetworkRequestMemoized(this.queue, "tag", tagName);
+            let rawTags = await queueNetworkRequest(this.queue, "tag", tagName);
             if (rawTags.length === 0) {
-                const aliases = await queueNetworkRequestMemoized(this.queue, "alias", tagName);
+                const aliases = await queueNetworkRequest(this.queue, "alias", tagName);
                 rawTags = aliases.map((alias) => alias.consequent_tag);
             }
             tags = rawTags.map((tag) => ({
@@ -1006,19 +1005,15 @@ export default class DanbooruAdapter implements Adapter {
             ? "rating:g"
             : "";
 
-        const waitPosts = queueNetworkRequestMemoized(this.queue, "post", `${artist.name} 1`);
-        const waitTotalPostCount = queueNetworkRequestMemoized(
+        const waitPosts = queueNetworkRequest(this.queue, "post", `${artist.name} 1`);
+        const waitTotalPostCount = queueNetworkRequest(
             this.queue,
             "count",
             `${artist.name} status:any`,
         );
         const waitVisiblePostCount = artist.is_banned
             ? Promise.resolve({ counts: { posts: 0 } })
-            : queueNetworkRequestMemoized(
-                  this.queue,
-                  "count",
-                  `${artist.name} ${status} ${rating}`.trim(),
-              );
+            : queueNetworkRequest(this.queue, "count", `${artist.name} ${status} ${rating}`.trim());
 
         // Process the queue immediately
         intervalNetworkHandler(this.queue);

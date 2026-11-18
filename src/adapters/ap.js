@@ -5,8 +5,7 @@
 /* eslint-disable no-undef, class-methods-use-this */
 
 /**
- * @import { TemplateResult } from "lit"
- * @import { ArtistTooltipParams } from "./adapter"
+ * @import { ArtistTooltipParams, UrlParams } from "./adapter"
  */
 
 const AP_SITE = "https://anime-pictures.net";
@@ -111,6 +110,16 @@ const POST_STATUS = {
  * @prop {string} pubtime
  */
 
+const get = cache(
+    /**
+     * @param {string} path
+     * @param {UrlParams} params
+     * @return {Promise<any>}
+     */
+    (path, params) => ajax("GET", AP_API + path, params),
+    (path, params) => path + Object.entries(params).join("\0"),
+);
+
 // #region tooltip
 
 const ARTIST_TOOLTIP_CSS = css`
@@ -165,7 +174,7 @@ async function buildArtistTooltip(artist) {
         posts,
         posts_count: postsCount,
         max_pages: lastPage,
-    } = await ajax("GET", `${AP_API}/api/v3/posts`, {
+    } = await get(`/api/v3/posts`, {
         page: 0,
         search_tag: artist.tag,
         posts_per_page: SETTINGS.preview_limit,
@@ -244,7 +253,7 @@ function buildArtistUrls(artist) {
  * @param {number} page - the browsed page
  */
 async function loadNextPage(tag, page) {
-    const { posts } = await ajax("GET", `${AP_API}/api/v3/posts`, {
+    const { posts } = await get(`/api/v3/posts`, {
         page,
         search_tag: tag,
         posts_per_page: SETTINGS.preview_limit,
@@ -331,9 +340,7 @@ function buildPostPreview(post) {
 /** @param {APTag} tag */
 function dealiasTag(tag) {
     if (!tag.alias) return tag;
-    return ajax("GET", `${AP_API}/api/v3/tags/${tag.alias}`, {}).then(
-        (data) => /** @type {APTag} */ (data.tag),
-    );
+    return get(`/api/v3/tags/${tag.alias}`, {}).then((data) => /** @type {APTag} */ (data.tag));
 }
 
 /**
@@ -342,9 +349,8 @@ function dealiasTag(tag) {
  */
 async function findTagByName(name, type) {
     /** @type {{ tags: APTag[] }} */
-    const { tags } = await ajax(
-        "GET",
-        `${AP_API}/api/v3/tags`,
+    const { tags } = await get(
+        `/api/v3/tags`,
         type ? { "tag:smart": name, type } : { "tag:smart": name },
     );
     return Promise.all(tags.map(dealiasTag));
@@ -356,9 +362,8 @@ async function findTagByName(name, type) {
  */
 async function findTagByDescription(descr, type) {
     /** @type {{ tags: APTag[] }} */
-    const { tags } = await ajax(
-        "GET",
-        `${AP_API}/api/v3/tags`,
+    const { tags } = await get(
+        `/api/v3/tags`,
         type ? { "description:smart_like": descr, type } : { "description:smart_like": descr },
     );
     return Promise.all(tags.map(dealiasTag));

@@ -2,9 +2,10 @@ import { css, html, unsafeCSS } from "lit";
 import { GM } from "$";
 import { ajax } from "./network";
 import { ADAPTERS, adapterCodes, SETTINGS } from "./settings";
-import { addCss, console, getSafeImageUrl } from "./utils";
+import { addCss, console, getSafeImageUrl, memoize } from "./utils";
 import artistTooltip from "./tooltips/artist-tooltip";
 import * as adapterShared from "./adapters/shared";
+import { cache } from "./cache";
 
 // lit caches templates by the strings array identity, so cache processed arrays too
 const trimmedTemplates = new WeakMap<TemplateStringsArray, TemplateStringsArray>();
@@ -43,12 +44,14 @@ const ARGS = {
     adapterShared,
     addAdapter,
     addCss,
+    ajax,
     artistTooltip,
+    cache,
     console,
     css,
     getSafeImageUrl,
     html: trimmedHtml,
-    ajax,
+    memoize,
     SETTINGS: new Proxy(SETTINGS, {
         set() {
             // forbid changing settings
