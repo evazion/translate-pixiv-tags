@@ -83,7 +83,7 @@ export function cache<F extends (...args: any[]) => Promise<any>>(
             }
             let value: any;
             try {
-                value = await fn();
+                value = await fn(...args);
             } catch (error) {
                 if (item) {
                     console.warn("Failed to get a fresh value, using the cached one", key, error);

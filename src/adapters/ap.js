@@ -1,6 +1,6 @@
 // @tpt-adapter
 // @name Anime-Pictures
-// @version 26.11.26
+// @version 26.11.26-2
 
 /* eslint-disable no-undef, class-methods-use-this */
 
@@ -110,15 +110,14 @@ const POST_STATUS = {
  * @prop {string} pubtime
  */
 
-const get = cache(
-    /**
-     * @param {string} path
-     * @param {UrlParams} params
-     * @return {Promise<any>}
-     */
-    (path, params) => ajax("GET", AP_API + path, params),
-    (path, params) => path + Object.entries(params).join("\0"),
-);
+/**
+ * @param {string} path
+ * @param {UrlParams} params
+ * @return {Promise<any>}
+ */
+function get(path, params) {
+    return ajax("GET", AP_API + path, params);
+}
 
 // #region tooltip
 
@@ -163,6 +162,23 @@ const ARTIST_TOOLTIP_CSS = css`
     }
 `;
 
+const getPosts = cache(
+    /**
+     * Get posts of posts
+     * @param {string} query - the tag to browse
+     * @param {number} page - the browsed page
+     * @returns {Promise<{ posts: APPost[], posts_count: number, max_pages: number }>}
+     */
+    (query, page) =>
+        // eslint-disable-next-line implicit-arrow-linebreak
+        get(`/api/v3/posts`, {
+            page,
+            search_tag: query,
+            posts_per_page: SETTINGS.preview_limit,
+        }),
+    (query, page) => `ap_posts_${query}_${page}`,
+);
+
 /**
  * Builds artist tooltip content
  * @param {APTag} artist The artist data
@@ -170,15 +186,7 @@ const ARTIST_TOOLTIP_CSS = css`
  */
 async function buildArtistTooltip(artist) {
     const encodedName = encodeURIComponent(artist.tag).replaceAll("%20", " ");
-    const {
-        posts,
-        posts_count: postsCount,
-        max_pages: lastPage,
-    } = await get(`/api/v3/posts`, {
-        page: 0,
-        search_tag: artist.tag,
-        posts_per_page: SETTINGS.preview_limit,
-    });
+    const { posts, posts_count: postsCount, max_pages: lastPage } = await getPosts(artist.tag, 0);
 
     const otherNames = [artist.tag_ru, artist.tag_jp]
         .filter((name) => name !== null)
@@ -253,11 +261,7 @@ function buildArtistUrls(artist) {
  * @param {number} page - the browsed page
  */
 async function loadNextPage(tag, page) {
-    const { posts } = await get(`/api/v3/posts`, {
-        page,
-        search_tag: tag,
-        posts_per_page: SETTINGS.preview_limit,
-    });
+    const { posts } = await getPosts(tag, page);
     return posts.map(buildPostPreview);
 }
 
@@ -343,31 +347,37 @@ function dealiasTag(tag) {
     return get(`/api/v3/tags/${tag.alias}`, {}).then((data) => /** @type {APTag} */ (data.tag));
 }
 
-/**
- * @param {string} name
- * @param {number} [type]
- */
-async function findTagByName(name, type) {
-    /** @type {{ tags: APTag[] }} */
-    const { tags } = await get(
-        `/api/v3/tags`,
-        type ? { "tag:smart": name, type } : { "tag:smart": name },
-    );
-    return Promise.all(tags.map(dealiasTag));
-}
+const findTagByName = cache(
+    /**
+     * @param {string} name
+     * @param {number} [type]
+     */
+    async (name, type) => {
+        /** @type {{ tags: APTag[] }} */
+        const { tags } = await get(
+            `/api/v3/tags`,
+            type ? { "tag:smart": name, type } : { "tag:smart": name },
+        );
+        return Promise.all(tags.map(dealiasTag));
+    },
+    (name, type) => `ap_tagName_${name}_${type ?? ""}`,
+);
 
-/**
- * @param {string} descr
- * @param {number} [type]
- */
-async function findTagByDescription(descr, type) {
-    /** @type {{ tags: APTag[] }} */
-    const { tags } = await get(
-        `/api/v3/tags`,
-        type ? { "description:smart_like": descr, type } : { "description:smart_like": descr },
-    );
-    return Promise.all(tags.map(dealiasTag));
-}
+const findTagByDescription = cache(
+    /**
+     * @param {string} descr
+     * @param {number} [type]
+     */
+    async (descr, type) => {
+        /** @type {{ tags: APTag[] }} */
+        const { tags } = await get(
+            `/api/v3/tags`,
+            type ? { "description:smart_like": descr, type } : { "description:smart_like": descr },
+        );
+        return Promise.all(tags.map(dealiasTag));
+    },
+    (descr, type) => `ap_tagDescr_${descr}_${type ?? ""}`,
+);
 
 /**
  * Whether the description contains the url

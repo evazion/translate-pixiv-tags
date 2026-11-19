@@ -95,6 +95,9 @@ const GLOBAL_CSS = css`
     .tpt-artist a.banned-artist::after {
         content: " (banned)";
     }
+    .tpt-artist a.tpt-textless.banned-artist::after {
+        content: "(banned)";
+    }
 
     .loading-data,
     .loading-data a {
@@ -329,23 +332,28 @@ async function translate(
     onadded?.(container, options);
 }
 
-function patchCss(css: CSSStyleSheet | CSSStyleRule | undefined, ruleName: string) {
+function patchCss(css: CSSStyleSheet | CSSGroupingRule | undefined, ruleName: string) {
     if (!css) return;
     for (let len = css.cssRules.length, i = 0; i < len; i++) {
-        const rule = css.cssRules[i] as CSSStyleRule;
-        if (rule.selectorText.includes("ARTIST_TAG")) {
-            rule.selectorText = rule.selectorText.replaceAll(
-                "ARTIST_TAG",
-                `.tpt-artist[data-rule="${ruleName}"]`,
-            );
-        }
-        if (rule.selectorText.includes("TPT_TAG")) {
-            rule.selectorText = rule.selectorText.replaceAll(
-                "TPT_TAG",
-                `.tpt-tags[data-rule="${ruleName}"]`,
-            );
-        }
-        patchCss(rule, ruleName);
+        const rule = css.cssRules[i];
+        // at-rules like @media have no selector, but may contain style rules
+        if ("selectorText" in rule) patchSelector(rule as CSSStyleRule, ruleName);
+        if ("cssRules" in rule) patchCss(rule as CSSGroupingRule, ruleName);
+    }
+}
+
+function patchSelector(rule: CSSStyleRule, ruleName: string) {
+    if (rule.selectorText.includes("ARTIST_TAG")) {
+        rule.selectorText = rule.selectorText.replaceAll(
+            "ARTIST_TAG",
+            `.tpt-artist[data-rule="${ruleName}"]`,
+        );
+    }
+    if (rule.selectorText.includes("TPT_TAG")) {
+        rule.selectorText = rule.selectorText.replaceAll(
+            "TPT_TAG",
+            `.tpt-tags[data-rule="${ruleName}"]`,
+        );
     }
 }
 
@@ -374,7 +382,8 @@ const findAndTranslate: FindAndTranslate = function findAndTranslate(
 
     const { predicate } = fullOptions;
     const canTranslate = (el: HTMLElement) =>
-        el.matches(selector as string) && (!predicate || predicate(el));
+        (typeof selector === "string" ? el.matches(selector) : el === selector) &&
+        (!predicate || predicate(el));
 
     const { translate, getData } = {
         artist: {
@@ -500,10 +509,10 @@ function start() {
     addCss(GLOBAL_CSS);
     addCss(customCssSheet);
 
-    translators = SETTINGS.data_sources.map((source) => {
+    translators = SETTINGS.data_sources.flatMap((source) => {
         if (!ADAPTERS[source.adapter]) {
             console.error(`Missing ${source.adapter} adapter!`);
-            return {} as Adapter;
+            return [];
         }
         const translator = new ADAPTERS[source.adapter](source.param);
         if (!source.translateArtist) {

@@ -126,6 +126,8 @@ export async function ajax<M extends string>(
                 data,
                 headers,
             });
+            // the request resolves on any HTTP status, only network errors reject it
+            if (resp.status >= 400) throw resp;
             showMessage("", domain);
             return resp.response;
         } catch (error) {
@@ -151,8 +153,12 @@ export async function ajax<M extends string>(
             if (SETTINGS.display_network_errors) {
                 showMessage(errorMsg, domain);
             }
-            // eslint-disable-next-line no-await-in-loop
-            await sleep(1000);
+            // retrying a client error won't help, except timeout and rate limit
+            if (status >= 400 && status < 500 && status !== 408 && status !== 429) break;
+            if (i < MAX_NETWORK_RETRIES - 1) {
+                // eslint-disable-next-line no-await-in-loop
+                await sleep(1000);
+            }
         }
     }
     throw new Error(errorMsg);

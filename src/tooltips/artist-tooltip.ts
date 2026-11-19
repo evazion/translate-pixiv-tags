@@ -355,7 +355,7 @@ class TptArtistTooltipContent extends LitElement implements Partial<ArtistToolti
             this.page = page;
             // try to preload the next page
             const nextPage = page + 1;
-            if (!(nextPage in this.pages) && nextPage < this.lastPage!) {
+            if (!(nextPage in this.pages) && nextPage <= this.lastPage!) {
                 this.pages[nextPage] = this.loadNextPage(nextPage).catch(() => {
                     // do not keep failed pages
                     delete this.pages[nextPage];
@@ -465,13 +465,18 @@ export default function artistTooltip(
 ) {
     return tooltip(async ({ tooltip, content, target }) => {
         if (!(key in renderedTooltipsCache)) {
-            renderedTooltipsCache[key] = getData().then((data) => {
+            const promise = getData().then((data) => {
                 const elem = document.createElement(
                     "tpt-artist-tooltip",
                 ) as TptArtistTooltipContent;
                 Object.assign(elem, data);
                 elem.customCss = css;
                 return elem;
+            });
+            renderedTooltipsCache[key] = promise;
+            // do not keep failed tooltips, so they can be retried on the next hover
+            promise.catch(() => {
+                if (renderedTooltipsCache[key] === promise) delete renderedTooltipsCache[key];
             });
         }
 
@@ -484,9 +489,12 @@ export default function artistTooltip(
         }
 
         target.classList.add("loading-data");
-        let tipContent = await renderedTooltipsCache[key];
-        tipContent.className = content.className;
-        content.append(tipContent);
-        target.classList.remove("loading-data");
+        try {
+            const tipContent = await renderedTooltipsCache[key];
+            tipContent.className = content.className;
+            content.append(tipContent);
+        } finally {
+            target.classList.remove("loading-data");
+        }
     });
 }

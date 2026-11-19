@@ -9,6 +9,7 @@ import {
 } from "@floating-ui/dom";
 import { noChange } from "lit";
 import { directive, Directive, ElementPart, Part, PartInfo, PartType } from "lit/directive.js";
+import { console } from "../utils";
 
 export type TooltipInstance = {
     tooltip: HTMLElement;
@@ -57,7 +58,7 @@ function tooltipGenerator(params: Partial<Params>) {
 
     function startHiding() {
         if (fullParams.hideDelay) {
-            closingTimer = setTimeout(hide, 200);
+            closingTimer = setTimeout(hide, fullParams.hideDelay);
         } else {
             hide();
         }
@@ -146,7 +147,9 @@ function tooltipGenerator(params: Partial<Params>) {
 
     function attach(elem: HTMLElement, content: (tip: TooltipInstance) => void) {
         elem.addEventListener("mouseenter", () => {
-            show(elem, content);
+            show(elem, content).catch((error) => {
+                console.error("Failed to show the tooltip", error);
+            });
         });
     }
 

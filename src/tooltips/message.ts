@@ -106,6 +106,9 @@ class TptMessages extends LitElement {
                         class="close"
                         type="button"
                         value="Close"
+                        @click=${() => {
+                            this.messages = {};
+                        }}
                     />
                     <span
                         class="settings-icon"
