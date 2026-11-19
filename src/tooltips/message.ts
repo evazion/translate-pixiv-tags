@@ -75,6 +75,9 @@ class TptMessages extends LitElement {
     }
 
     setMessage(message: string, key: string) {
+        if (key in this.messages && this.messages[key] === message) {
+            return;
+        }
         if (key && "" in this.messages) {
             delete this.messages[""];
             this.messages = { [key]: message };
