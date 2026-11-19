@@ -29,6 +29,8 @@ const API_LIMIT = 1000;
 /** For GET-endpoints Danbooru accepts at most 16kB even over POST, plus some leeway */
 const MAXIMUM_PARAMS_LENGTH = 16_000;
 const REQUEST_INTERVAL = 500; // in ms
+/** Booru mirrors that show only general-rated posts */
+const KNOWN_SFW_BOORUS = ["https://safebooru.donmai.us", "https://donmai.moe"];
 
 const TAGS_CSS = css`
     :root,
@@ -333,33 +335,36 @@ const NETWORK_REQUEST_DICT: { [N in RequestName]: RequestDefinition<DBResponse<N
     },
 };
 
+/** Cache key of a request; must include the settings the request depends on */
+function requestKey(queue: RequestQueue, type: RequestName, item: string) {
+    const settings = type === "post" ? `${SETTINGS.show_deleted}/${SETTINGS.preview_limit}` : "";
+    return [queue.host, type, item, settings].join("\0");
+}
+
 const queueNetworkRequest: <T extends RequestName>(
     queue: RequestQueue,
     type: T,
     item: string,
 ) => Promise<DBResponse<T>> = memoize(
-    cache(
-        function queueNetworkRequest_<T extends RequestName>(
-            queue: RequestQueue,
-            type: T,
-            item: string,
-        ): Promise<DBResponse<T>> {
-            const { promise, resolve } = Promise.withResolvers();
-            queue.q.push({
-                type,
-                item,
-                resolve,
-            });
-            // Single-item requests can't be batched with anything, so don't wait for the timer.
-            // It must be done here: the item is pushed only after the cache lookup.
-            if (NETWORK_REQUEST_DICT[type].requestLimit === 1) {
-                intervalNetworkHandler(queue);
-            }
-            return promise as Promise<DBResponse<T>>;
-        },
-        (queue, type, item) => [queue.host, type, item].join(""),
-    ),
-    (queue, type, item) => [queue.host, type, item].join(""),
+    cache(function queueNetworkRequest_<T extends RequestName>(
+        queue: RequestQueue,
+        type: T,
+        item: string,
+    ): Promise<DBResponse<T>> {
+        const { promise, resolve } = Promise.withResolvers();
+        queue.q.push({
+            type,
+            item,
+            resolve,
+        });
+        // Single-item requests can't be batched with anything, so don't wait for the timer.
+        // It must be done here: the item is pushed only after the cache lookup.
+        if (NETWORK_REQUEST_DICT[type].requestLimit === 1) {
+            intervalNetworkHandler(queue);
+        }
+        return promise as Promise<DBResponse<T>>;
+    }, requestKey),
+    requestKey,
 );
 
 function intervalNetworkHandler(queue: RequestQueue) {
@@ -1033,9 +1038,7 @@ export default class DanbooruAdapter implements Adapter {
 
     async buildArtistTooltip(artist: TranslatedArtist): Promise<ArtistTooltipParams> {
         const status = SETTINGS.show_deleted ? "status:any" : "-status:deleted";
-        const rating = ["https://safebooru.donmai.us", "https://donmai.moe/"].includes(this.booru)
-            ? "rating:g"
-            : "";
+        const rating = KNOWN_SFW_BOORUS.includes(this.booru) ? "rating:g" : "";
 
         const waitPosts = queueNetworkRequest(this.queue, "post", `${artist.name} 1`);
         const waitTotalPostCount = queueNetworkRequest(

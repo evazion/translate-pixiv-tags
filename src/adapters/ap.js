@@ -1,6 +1,6 @@
 // @tpt-adapter
 // @name Anime-Pictures
-// @version 26.11.26-2
+// @version 26.11.26-3
 
 /* eslint-disable no-undef, class-methods-use-this */
 
@@ -176,7 +176,7 @@ const getPosts = cache(
             search_tag: query,
             posts_per_page: SETTINGS.preview_limit,
         }),
-    (query, page) => `ap_posts_${query}_${page}`,
+    (query, page) => `ap_posts_${query}_${page}_${SETTINGS.preview_limit}`,
 );
 
 /**

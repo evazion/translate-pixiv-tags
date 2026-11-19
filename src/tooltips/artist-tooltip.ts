@@ -452,6 +452,11 @@ customElements.define("tpt-artist-tooltip", TptArtistTooltipContent);
 
 const renderedTooltipsCache: Record<string, Promise<HTMLElement>> = {};
 
+/** Drops the rendered tooltips, as they may depend on the changed settings */
+export function clearTooltipCache() {
+    for (const key of Object.keys(renderedTooltipsCache)) delete renderedTooltipsCache[key];
+}
+
 /**
  * Attach the artist tooltip to the tag
  * @param key Unique key (adapter + artist names)

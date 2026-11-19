@@ -27,6 +27,7 @@ import initializeArtStation from "./sites/artstation";
 import initializeFanbox from "./sites/fanbox";
 import { normalizeProfileUrl } from "./normalize-url";
 import showSettings from "./tooltips/settings";
+import { clearTooltipCache } from "./tooltips/artist-tooltip";
 import DanbooruAdapter from "./adapters/booru";
 import { cleanupCache } from "./cache";
 import { execAdapters } from "./adapter-loader";
@@ -546,6 +547,7 @@ function restart() {
     removeAllCss();
     loggedMisses.clear();
     translationsRequests = new WeakMap();
+    clearTooltipCache();
 
     start();
 }
