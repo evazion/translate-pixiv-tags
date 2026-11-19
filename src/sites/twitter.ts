@@ -6,6 +6,7 @@ import { addCss, chooseBackgroundColorScheme, safeMatch } from "../utils";
 import {
     getNormalizedHashtagName,
     linkInChildren,
+    onRestart,
     TAG_POSITIONS,
     TAG_SELECTOR,
     watchSiteTheme,
@@ -158,28 +159,40 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
     // On switching to a channel from another channel, Twitter updates only text nodes
     // so, for correct work, it's required to watch for
     // the channel name regardless whether it was translated
+    // The per-element watchers stop themselves after restart, so they aren't kept alive till then
+    let disposed = false;
+    onRestart(() => {
+        disposed = true;
+    });
     const watchForChanges = (elem: Node) => {
         if (!(elem instanceof HTMLElement)) return;
         if (!elem.matches(channelNameSelector) || elem.matches(TAG_SELECTOR)) {
             return;
         }
         translateChannelName(elem);
-        new MutationSummary({
+        const watcher = new MutationSummary({
             rootNode: elem,
             queries: [{ characterData: true }],
-            callback: () => translateChannelName(elem),
+            callback: () => {
+                if (disposed) {
+                    watcher.disconnect();
+                    return;
+                }
+                translateChannelName(elem);
+            },
         });
     };
     $(channelNameSelector).forEach(watchForChanges);
-    new MutationSummary({
+    const channelNameWatcher = new MutationSummary({
         queries: [{ element: "div" }],
         // eslint-disable-next-line unicorn/no-array-for-each
         callback: ([summary]) => summary.added.forEach(watchForChanges),
     });
+    onRestart(() => channelNameWatcher.disconnect());
     // The profile schema is added to <head> after the channel name is rendered,
     // so translate the channel name again once the schema is available
     let lastSchema = "";
-    new MutationObserver(() => {
+    const schemaWatcher = new MutationObserver(() => {
         const schema = $("script[data-testid='UserProfileSchema-test']")[0]?.textContent ?? "";
         if (schema === lastSchema) return;
         lastSchema = schema;
@@ -187,7 +200,9 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
         $(channelNameSelector)
             .filter((elem) => !elem.matches(TAG_SELECTOR))
             .forEach(translateChannelName);
-    }).observe(document.head, { childList: true, subtree: true, characterData: true });
+    });
+    schemaWatcher.observe(document.head, { childList: true, subtree: true, characterData: true });
+    onRestart(() => schemaWatcher.disconnect());
 
     // Deleted channel https://x.com/6o2_iii
     findAndTranslate(

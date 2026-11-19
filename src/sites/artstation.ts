@@ -28,6 +28,9 @@ export default function initializeArtStation(findAndTranslate: FindAndTranslate)
         return `https://www.artstation.com/${artistName}`;
     }
 
+    /** Tags of the artist profile watched for removing the artist name */
+    const watchedTags = new WeakSet<HTMLElement>();
+
     // https://www.artstation.com/jubi
     // https://www.artstation.com/jubi/*
     findAndTranslate(
@@ -43,10 +46,14 @@ export default function initializeArtStation(findAndTranslate: FindAndTranslate)
             `,
             // The artist name is removed when the profile page is a bit scrolled
             onadded: (tag) => {
+                // `translate()` reuses the tag on re-render
+                if (watchedTags.has(tag)) return;
+                watchedTags.add(tag);
                 const h1 = tag.previousElementSibling!;
                 const container = tag.parentElement!;
                 new MutationObserver((_, observer) => {
-                    if (!container.contains(h1)) {
+                    // the tag may be removed already, e.g. on restart
+                    if (!tag.isConnected || !container.contains(h1)) {
                         tag.remove();
                         observer.disconnect();
                     }

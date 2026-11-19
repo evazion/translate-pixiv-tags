@@ -1,6 +1,6 @@
 // @tpt-adapter
 // @name Anime-Pictures
-// @version 26.11.26-3
+// @version 26.11.26-4
 
 /* eslint-disable no-undef, class-methods-use-this */
 
@@ -397,11 +397,11 @@ function containsUrl(descr, url) {
 /**
  * @type {Record<string, TranslationResult>}
  */
-const renderedTagsCache = {};
+let renderedTagsCache = {};
 /**
  * @type {Record<string, TranslatedItem>}
  */
-const renderedArtistsCache = {};
+let renderedArtistsCache = {};
 
 let running = false;
 
@@ -441,6 +441,8 @@ class AnimePictureAdapter {
 
     destroy() {
         running = false;
+        renderedArtistsCache = {};
+        renderedTagsCache = {};
     }
 
     /**

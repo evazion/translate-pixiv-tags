@@ -31,21 +31,40 @@ export const TAG_POSITIONS = {
     },
 } satisfies Record<string, TagPosition>;
 
+const cleanups: Array<() => void> = [];
+
+/**
+ * Registers a function that undoes a part of the site setup on restart.
+ * Not for per-tag resources: the registry keeps them alive until the restart.
+ */
+export function onRestart(fn: () => void) {
+    cleanups.push(fn);
+}
+
+/** Runs and forgets the registered cleanup functions */
+export function runRestartCleanups() {
+    for (const fn of cleanups.splice(0)) fn();
+}
+
+/** Tags whose target's url is watched; `translate()` reuses the tag on re-render */
+const urlWatchedTags = new WeakSet<HTMLElement>();
+
 /**
  * Delete the tag element when the target element will change its url (`href`)
  * @param tag The tag to remove
  * @param options Translation options
  */
 export function deleteOnUrlChange(tag: HTMLElement, options: TranslationOptionsFull) {
+    if (urlWatchedTags.has(tag)) return;
     const container = options.tagPosition.getTagContainer(tag);
     if (!container) return;
-    const watcher = new MutationObserver((mutations) => {
-        if (mutations.some((mutation) => mutation.attributeName === "href")) {
-            tag.remove();
-            watcher.disconnect();
-        }
+    urlWatchedTags.add(tag);
+    const watcher = new MutationObserver(() => {
+        // the tag may be removed already, e.g. on restart
+        if (tag.isConnected) tag.remove();
+        watcher.disconnect();
     });
-    watcher.observe(container, { attributes: true });
+    watcher.observe(container, { attributeFilter: ["href"] });
 }
 
 /** When the tag is inside another <a>, prevents soft navigation by the outer link */
@@ -127,9 +146,8 @@ export function watchSiteTheme(
         console.info(`Theme changed to ${theme}`);
     }
 
-    // eslint-disable-next-line unicorn/no-array-for-each
-    new MutationObserver((mutations) => mutations.forEach(updateTheme)).observe(elem, {
-        attributeFilter: [attr],
-    });
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(elem, { attributeFilter: [attr] });
+    onRestart(() => observer.disconnect());
     updateTheme();
 }

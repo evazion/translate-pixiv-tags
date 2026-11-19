@@ -4,7 +4,7 @@ import { css, render } from "lit";
 import { GM } from "$";
 import { ADAPTERS, customCssSheet, setOnSettingChange, SETTINGS } from "./settings";
 import { addCss, chooseBackgroundColorScheme, console, removeAllCss } from "./utils";
-import { TAG_POSITIONS, TAG_SELECTOR } from "./sites/shared";
+import { runRestartCleanups, TAG_POSITIONS, TAG_SELECTOR } from "./sites/shared";
 import initializeMastodon from "./sites/mastodon";
 import initializeBluesky from "./sites/bsky";
 import initializeCiEn from "./sites/ci-en";
@@ -542,6 +542,7 @@ function start() {
 function restart() {
     mutationObserverQueries.length = 0;
     mutationObserver?.disconnect();
+    runRestartCleanups();
     translators.forEach((t) => t.destroy());
     $(TAG_SELECTOR).remove();
     removeAllCss();
