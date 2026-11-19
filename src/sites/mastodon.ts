@@ -29,23 +29,23 @@ export default function initializeMastodon(findAndTranslate: FindAndTranslate) {
 
     // https://baraag.net/@casytay
     // artist name in channel header
-    findAndTranslate(
-        "artist",
-        "div._comp_account_header__name",
-        {
-            toProfileUrl: (el) =>
-                getNormalizedDecentralizedSocNetUrl(el.nextElementSibling as HTMLElement),
-            tagPosition: TAG_POSITIONS.beforeend,
-            classes: "inline",
-            asyncMode: true,
-            css: css`
-                ARTIST_TAG {
-                    font-size: 22px;
-                }
-            `,
-        },
-        "artist profile",
-    );
+    // findAndTranslate(
+    //     "artist",
+    //     "div._comp_account_header__name",
+    //     {
+    //         toProfileUrl: (el) =>
+    //             getNormalizedDecentralizedSocNetUrl(el.nextElementSibling as HTMLElement),
+    //         tagPosition: TAG_POSITIONS.beforeend,
+    //         classes: "inline",
+    //         asyncMode: true,
+    //         css: css`
+    //             ARTIST_TAG {
+    //                 font-size: 22px;
+    //             }
+    //         `,
+    //     },
+    //     "artist profile",
+    // );
 
     // Post author, commenter
     // can include re-posted messages from other ActivityPub sites
@@ -101,23 +101,23 @@ export default function initializeMastodon(findAndTranslate: FindAndTranslate) {
 
     // Tags bar
     // https://baraag.net/@casytay/111370093922321621
-    findAndTranslate(
-        "tag",
-        ".hashtag-bar a[href^='/tags/']",
-        {
-            asyncMode: true,
-            tagPosition: TAG_POSITIONS.beforeend,
-        },
-        "tags bar",
-    );
+    // findAndTranslate(
+    //     "tag",
+    //     ".hashtag-bar a[href^='/tags/']",
+    //     {
+    //         asyncMode: true,
+    //         tagPosition: TAG_POSITIONS.beforeend,
+    //     },
+    //     "tags bar",
+    // );
 
     // Hover card
-    findAndTranslate(
-        "artist",
-        "#hover-card span.display-name__account",
-        {
-            asyncMode: true,
-        },
-        "hover card",
-    );
+    // findAndTranslate(
+    //     "artist",
+    //     "#hover-card span.display-name__account",
+    //     {
+    //         asyncMode: true,
+    //     },
+    //     "hover card",
+    // );
 }

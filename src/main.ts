@@ -451,7 +451,7 @@ function startFindAndTranslate() {
 
 const SITES: Record<string, (fn: FindAndTranslate) => void> = {
     "artstation.com": initializeArtStation,
-    "baraag.net": initializeMastodon,
+    // "baraag.net": initializeMastodon,
     "bsky.app": initializeBluesky,
     "ci-en.net": initializeCiEn,
     "ci-en.dlsite.com": initializeCiEn,

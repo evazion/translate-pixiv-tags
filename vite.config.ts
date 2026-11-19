@@ -80,6 +80,7 @@ export default defineConfig(({ mode, command }) => ({
                     "Translates tags and look ups artist on Pixiv, Twitter/X, ArtStation, Deviant Art, Fanbox, and others sites using Danbooru or other sites.",
                 homepageURL: "https://github.com/evazion/translate-pixiv-tags",
                 supportURL: "https://github.com/evazion/translate-pixiv-tags/issues",
+                // prevent updating the dev script into prod one
                 updateURL:
                     mode === "production"
                         ? "https://github.com/evazion/translate-pixiv-tags/raw/master/tpt.meta.js"
@@ -92,7 +93,7 @@ export default defineConfig(({ mode, command }) => ({
                 "run-at": "document-start",
                 match: [
                     "*://*.artstation.com/*",
-                    "*://baraag.net/*",
+                    // "*://baraag.net/*",
                     "*://bsky.app/*",
                     "*://ci-en.net/*",
                     "*://ci-en.dlsite.com/*",
