@@ -485,7 +485,13 @@ function getSiteIconUrl_(siteName: string, url: string): Promise<string> {
     return getImage(`${SITE_ICON_FOLDER}${fileName}-logo.png`, globeIcon);
 }
 
-export const getSiteIconUrl = memoize(getSiteIconUrl_);
+/**
+ * Known sites share the icon by the site name, unknown ones get it by the hostname,
+ * as their names are derived from the domain and may collide.
+ */
+export const getSiteIconUrl = memoize(getSiteIconUrl_, (siteName, url) =>
+    SITE_RULES.some((site) => site.name === siteName) ? siteName : `host:${new URL(url).hostname}`,
+);
 
 /**
  * @see https://github.com/danbooru/danbooru/blob/848c8fa8e9ecfc46e8c9588ab055e7d5cf4f5de0/app/models/artist_url.rb#L75
