@@ -18,8 +18,32 @@ const MAX_NETWORK_ERRORS = 12;
 const MAX_NETWORK_RETRIES = 3;
 const RETRY_REQUEST_INTERVAL = 30_000; // in ms
 
+// native base64 encoding is too new for TS
+type Base64Uint8Array = Uint8Array<ArrayBuffer> & { toBase64?: () => string };
+
+function bytesToBase64(bytes: Base64Uint8Array): string {
+    if (bytes.toBase64) return bytes.toBase64();
+    // convert by chunks, as too many arguments overflow the call stack
+    const CHUNK_SIZE = 0x8000;
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK_SIZE));
+    }
+    return btoa(binary);
+}
+
 /**
- * Get the image as blob-link in CORS-safe way
+ * Converts the image data to a data URL, which, unlike a blob URL, needs no revoking
+ * @param data - the image data
+ * @param responseHeaders - the response headers to take the image type from
+ */
+export function toDataUrl(data: ArrayBuffer, responseHeaders: string) {
+    const type = /^content-type:\s*(image\/[^;\s]+)/im.exec(responseHeaders)?.[1] ?? "image/png";
+    return `data:${type};base64,${bytesToBase64(new Uint8Array(data))}`;
+}
+
+/**
+ * Get the image as a data URL in CORS-safe way
  * @param imageUrl - the image to load
  * @param fallback - the image url to return if failed to load the image
  */
@@ -31,10 +55,10 @@ export async function getImage(
         const resp = await GM.xmlHttpRequest({
             method: "GET",
             url: imageUrl,
-            responseType: "blob",
+            responseType: "arraybuffer",
         });
         if (resp.status >= 400) throw new Error(`${resp.status} ${resp.statusText}`);
-        return URL.createObjectURL(resp.response);
+        return toDataUrl(resp.response, resp.responseHeaders);
     } catch (error) {
         console.error("Failed to load image", imageUrl, error);
         return fallback;
@@ -207,65 +231,31 @@ ajax.setThrottle = (host: string, amount: number, period: number): void => {
     };
 };
 
-// native base64 methods are too new for TS
-type Base64Uint8Array = Uint8Array<ArrayBuffer> & { toBase64?: () => string };
-const Base64Uint8Array = Uint8Array as typeof Uint8Array & {
-    fromBase64?: (str: string) => Uint8Array<ArrayBuffer>;
-};
-
-function bytesToBase64(bytes: Base64Uint8Array): string {
-    if (bytes.toBase64) return bytes.toBase64();
-    // convert by chunks, as too many arguments overflow the call stack
-    const CHUNK_SIZE = 0x8000;
-    let binary = "";
-    for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
-        binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK_SIZE));
-    }
-    return btoa(binary);
-}
-
-function base64ToBytes(str: string): Uint8Array<ArrayBuffer> {
-    if (Base64Uint8Array.fromBase64) return Base64Uint8Array.fromBase64(str);
-    return Uint8Array.from(atob(str), (char) => char.charCodeAt(0));
-}
+const IMAGE_CACHE_PREFIX = "tptImageData:";
 
 /**
- * Get CSP-safe url to an image
+ * Get CSP-safe url to an image, caches the image in the local storage
  * @param url - original url
  * @returns - safe url, or a transparent image if failed to load the image
  */
 export async function getSafeImageUrl(url: string): Promise<string> {
     if (!DOMAIN_USES_CSP) return url;
 
-    const key = `tptImageCache:${url}`;
-
-    const cached = localStorage.getItem(key);
-    if (cached !== null) {
-        try {
-            return URL.createObjectURL(new Blob([base64ToBytes(cached)]));
-        } catch (error) {
-            console.warn("Corrupted cached image, refetching", url, error);
-            localStorage.removeItem(key);
-        }
-    }
-
-    let res;
+    const key = IMAGE_CACHE_PREFIX + url;
     try {
-        res = await GM.xmlHttpRequest({
-            url,
-            responseType: "arraybuffer",
-        });
-        if (res.status >= 400) throw new Error(`${res.status} ${res.statusText}`);
+        const cached = localStorage.getItem(key);
+        if (cached?.startsWith("data:image/")) return cached;
     } catch (error) {
-        console.error("Failed to load image", url, error);
-        return TRANSPARENT_IMAGE;
+        console.warn("Failed to read the image cache", url, error);
     }
 
+    const image = await getImage(url);
+    if (image === TRANSPARENT_IMAGE) return image;
     try {
-        localStorage.setItem(key, bytesToBase64(new Uint8Array(res.response)));
+        localStorage.setItem(key, image);
     } catch (error) {
         // e.g. the storage quota is exceeded, the image works without caching anyway
         console.warn("Failed to cache image", url, error);
     }
-    return URL.createObjectURL(new Blob([res.response]));
+    return image;
 }

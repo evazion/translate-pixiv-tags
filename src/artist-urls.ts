@@ -1,6 +1,6 @@
 import { GM } from "$";
 import { capitalize, memoize } from "./utils";
-import { getImage } from "./network";
+import { getImage, toDataUrl } from "./network";
 import { globeIcon } from "./adapters/shared";
 import { parse } from "tldts-icann";
 
@@ -467,11 +467,11 @@ function getSiteIconUrl_(siteName: string, url: string): Promise<string> {
             GM.xmlHttpRequest({
                 method: "GET",
                 url: `https://icons.duckduckgo.com/ip3/${new URL(url).hostname}.ico`,
-                responseType: "blob",
+                responseType: "arraybuffer",
                 onload: (xhr) => {
                     // for unresolved icons the response is 404 + fallback icon
                     if (xhr.status === 200) {
-                        resolve(window.URL.createObjectURL(xhr.response));
+                        resolve(toDataUrl(xhr.response, xhr.responseHeaders));
                     } else {
                         resolve(globeIcon);
                     }
