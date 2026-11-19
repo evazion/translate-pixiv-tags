@@ -66,7 +66,7 @@ const ARTIST_TOOLTIP_CSS = css`
     }
     .artist-url-icon {
         display: inline-block;
-        width: 1.5em;
+        width: 1.8em;
     }
     .artist-url-icon * {
         width: 1.5em;
