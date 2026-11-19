@@ -8,6 +8,7 @@ import {
     FLASH_FILE,
     formatBytes,
     formatDuration,
+    globeIcon,
     FALLBACK_PREVIEW,
     soundIcon,
     timeToAgo,
@@ -629,8 +630,8 @@ function buildArtistUrls(artist: TranslatedArtist) {
     return artistUrls.map((artistUrl) => {
         const normalizedUrl = artistUrl.url.replace(/\/$/, "");
         const urlClass = artistUrl.is_active ? "artist-url-active" : "artist-url-inactive";
-        const icon = getSiteIconUrl(artistUrl.siteName, artistUrl.url).then(
-            (url) => html`<img src="${url}" />`,
+        const icon = getSiteIconUrl(artistUrl.siteName, artistUrl.url).then((url) =>
+            url ? html`<img src="${url}" />` : globeIcon,
         );
 
         return html`

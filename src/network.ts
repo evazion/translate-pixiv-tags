@@ -45,12 +45,9 @@ export function toDataUrl(data: ArrayBuffer, responseHeaders: string) {
 /**
  * Get the image as a data URL in CORS-safe way
  * @param imageUrl - the image to load
- * @param fallback - the image url to return if failed to load the image
+ * @returns the data URL, or null if failed to load the image
  */
-export async function getImage(
-    imageUrl: string,
-    fallback: string = TRANSPARENT_IMAGE,
-): Promise<string> {
+export async function getImage(imageUrl: string): Promise<string | null> {
     try {
         const resp = await GM.xmlHttpRequest({
             method: "GET",
@@ -61,7 +58,7 @@ export async function getImage(
         return toDataUrl(resp.response, resp.responseHeaders);
     } catch (error) {
         console.error("Failed to load image", imageUrl, error);
-        return fallback;
+        return null;
     }
 }
 
@@ -250,7 +247,7 @@ export async function getSafeImageUrl(url: string): Promise<string> {
     }
 
     const image = await getImage(url);
-    if (image === TRANSPARENT_IMAGE) return image;
+    if (!image) return TRANSPARENT_IMAGE;
     try {
         localStorage.setItem(key, image);
     } catch (error) {
