@@ -1,14 +1,13 @@
 import { css, html, unsafeCSS } from "lit";
 import { until } from "lit/directives/until.js";
-import { ajax, MAXIMUM_URI_LENGTH, type UrlParams } from "../network";
+import { ajax, getSafeImageUrl, MAXIMUM_URI_LENGTH, type UrlParams } from "../network";
 import { SETTINGS } from "../settings";
-import { addCss, memoize, naturalCompare, getSafeImageUrl, console, param } from "../utils";
+import { addCss, memoize, naturalCompare, console, param } from "../utils";
 import { normalizeSourceUrl } from "../normalize-url";
 import {
     FLASH_FILE,
     formatBytes,
     formatDuration,
-    globeIcon,
     FALLBACK_PREVIEW,
     soundIcon,
     timeToAgo,
@@ -630,8 +629,8 @@ function buildArtistUrls(artist: TranslatedArtist) {
     return artistUrls.map((artistUrl) => {
         const normalizedUrl = artistUrl.url.replace(/\/$/, "");
         const urlClass = artistUrl.is_active ? "artist-url-active" : "artist-url-inactive";
-        const icon = getSiteIconUrl(artistUrl.siteName, artistUrl.url)?.then((url) =>
-            url ? html`<img src="${url}" />` : globeIcon,
+        const icon = getSiteIconUrl(artistUrl.siteName, artistUrl.url).then(
+            (url) => html`<img src="${url}" />`,
         );
 
         return html`

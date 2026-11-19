@@ -1,8 +1,8 @@
 import { css, html, unsafeCSS } from "lit";
 import { GM } from "$";
-import { ajax } from "./network";
+import { ajax, getSafeImageUrl } from "./network";
 import { ADAPTERS, adapterCodes, SETTINGS } from "./settings";
-import { addCss, console, getSafeImageUrl, memoize } from "./utils";
+import { addCss, console, memoize } from "./utils";
 import artistTooltip from "./tooltips/artist-tooltip";
 import * as adapterShared from "./adapters/shared";
 import { cache } from "./cache";

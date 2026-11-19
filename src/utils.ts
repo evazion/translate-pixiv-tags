@@ -1,5 +1,4 @@
-import { SETTINGS, DOMAIN_USES_CSP, customCssSheet } from "./settings";
-import { GM } from "$";
+import { SETTINGS, customCssSheet } from "./settings";
 import { CSSResult } from "lit";
 
 const konsole = globalThis.console;
@@ -332,40 +331,4 @@ export function removeAllCss() {
         (sheet) => !sheets.includes(sheet),
     );
     sheets = [];
-}
-
-/**
- * Get CSP-safe url to an image
- * @param url - original url
- * @returns - safe url
- */
-export async function getSafeImageUrl(url: string) {
-    if (!DOMAIN_USES_CSP) return url;
-
-    const key = `tptImageCache:${url}`;
-
-    if (key in localStorage) {
-        const str = localStorage[key];
-        let buffer: Uint8Array<any>;
-        if ("fromBase64" in Uint8Array) {
-            // too new for TS
-            buffer = (Uint8Array.fromBase64 as any)(str);
-        } else {
-            const len = str.length;
-            // @ts-ignore
-            buffer = new Uint8Array(len);
-            for (let i = 0; i < len; i++) {
-                buffer[i] = str.fromCharAt(i);
-            }
-        }
-        return URL.createObjectURL(new Blob([buffer]));
-    }
-
-    const res = await GM.xmlHttpRequest({
-        url,
-        responseType: "arraybuffer",
-    });
-
-    localStorage[key] = btoa(String.fromCharCode.apply(null, new Uint8Array(res.response) as any));
-    return URL.createObjectURL(new Blob([res.response]));
 }

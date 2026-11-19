@@ -2,15 +2,19 @@ import globeRaw from "@fortawesome/fontawesome-free/svgs/solid/globe.svg?raw";
 import soundRaw from "@fortawesome/fontawesome-free/svgs/solid/volume-high.svg?raw";
 import { unsafeSVG } from "lit/directives/unsafe-svg.js";
 import { until } from "lit/directives/until.js";
-import { getImage } from "../network";
+import { getImage, TRANSPARENT_IMAGE } from "../network";
 import { DOMAIN_USES_CSP } from "../settings";
 
-export const globeIcon = unsafeSVG(globeRaw);
-export const soundIcon = unsafeSVG(soundRaw);
+export { TRANSPARENT_IMAGE };
 
-/** transparent 1x1 image */
-export const TRANSPARENT_IMAGE =
-    "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+/**
+ * Generic site icon as an image url.
+ * Within an image `currentColor` is always black, so use gray to fit both light and dark themes.
+ */
+export const globeIcon = `data:image/svg+xml,${encodeURIComponent(
+    globeRaw.replaceAll("currentColor", "#888"),
+)}`;
+export const soundIcon = unsafeSVG(soundRaw);
 /** danbooru's fallback image with "Download" text */
 export const FALLBACK_PREVIEW = `data:image/svg+xml,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 75 75"%3e%3cdefs%3e%3clinearGradient id="a" gradientTransform="rotate(90)"%3e%3cstop offset="0%25" stop-color="white"/%3e%3cstop offset="100%25" stop-color="%23dedede"/%3e%3c/linearGradient%3e%3c/defs%3e%3cpath fill="url(%23a)" stroke="%23929292" d="M0 0h75v75H0z"/%3e%3ctext x="12" y="42" font-family="sans-serif" font-size="10" font-weight="900"%3eDownload%3c/text%3e%3c/svg%3e`;
 /** image of flash file icon */

@@ -1,6 +1,7 @@
 import { GM } from "$";
 import { capitalize, memoize } from "./utils";
 import { getImage } from "./network";
+import { globeIcon } from "./adapters/shared";
 import { parse } from "tldts-icann";
 
 // https://github.com/danbooru/danbooru/blob/69dc86865679f8affc31547b57c3af6c5406a827/app/models/artist_url.rb#L97
@@ -459,8 +460,8 @@ export function getSiteDisplayDomain(siteUrl: string) {
 const SITE_ICON_FOLDER =
     "https://raw.githubusercontent.com/danbooru/danbooru/22e1b4d3bf0a8776dbac282f4e3a83d62facc537/public/images/";
 
-/** Try to resolve the site icon */
-function getSiteIconUrl_(siteName: string, url: string): Promise<string | null> {
+/** Resolve the site icon, falls back to the generic icon */
+function getSiteIconUrl_(siteName: string, url: string): Promise<string> {
     if (SITE_RULES.every((site) => site.name !== siteName)) {
         return new Promise((resolve) => {
             GM.xmlHttpRequest({
@@ -472,14 +473,16 @@ function getSiteIconUrl_(siteName: string, url: string): Promise<string | null> 
                     if (xhr.status === 200) {
                         resolve(window.URL.createObjectURL(xhr.response));
                     } else {
-                        resolve(null);
+                        resolve(globeIcon);
                     }
                 },
+                onerror: () => resolve(globeIcon),
+                ontimeout: () => resolve(globeIcon),
             });
         });
     }
     const fileName = siteName.toLowerCase().replaceAll(/[^\w.]/g, "-");
-    return getImage(`${SITE_ICON_FOLDER}${fileName}-logo.png`);
+    return getImage(`${SITE_ICON_FOLDER}${fileName}-logo.png`, globeIcon);
 }
 
 export const getSiteIconUrl = memoize(getSiteIconUrl_);
