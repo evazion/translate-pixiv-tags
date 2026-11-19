@@ -343,6 +343,11 @@ const queueNetworkRequest: <T extends RequestName>(
                 item,
                 resolve,
             });
+            // Single-item requests can't be batched with anything, so don't wait for the timer.
+            // It must be done here: the item is pushed only after the cache lookup.
+            if (NETWORK_REQUEST_DICT[type].requestLimit === 1) {
+                intervalNetworkHandler(queue);
+            }
             return promise as Promise<DBResponse<T>>;
         },
         (queue, type, item) => [queue.host, type, item].join(""),
@@ -808,10 +813,7 @@ function buildPostPreview(post: ResponsePosts, booru: string) {
  * @param page The page number to load
  */
 async function loadNextPage(queue: RequestQueue, tag: string, page: number) {
-    const waitPosts = queueNetworkRequest(queue, "post", `${tag} ${page}`);
-    // Process the queue immediately
-    intervalNetworkHandler(queue);
-    const posts = await waitPosts;
+    const posts = await queueNetworkRequest(queue, "post", `${tag} ${page}`);
     return posts.map((post) => buildPostPreview(post, queue.host));
 }
 
@@ -842,10 +844,24 @@ export default class DanbooruAdapter implements Adapter {
             only: "name",
         });
 
-        const queue: RequestQueue = { q: [], host: booru };
-        const res = Promise.all(tags.map(({ name }) => queueNetworkRequest(queue, "tag", name)));
-        // invoke immediately, plus timer may not be running for this booru
-        intervalNetworkHandler(queue);
+        // Send the request directly instead of via the queue: no timer may process a queue
+        // of this booru, and these results aren't worth caching
+        const tools = NETWORK_REQUEST_DICT.tag;
+        const requests: Array<RequestPromise<"tag">> = [];
+        const res = Promise.all(
+            tags.map(
+                ({ name }) =>
+                    new Promise<ResponseTag[]>((resolve) => {
+                        requests.push({ type: "tag", item: name, resolve });
+                    }),
+            ),
+        );
+        await sendRequests(
+            `${booru}${tools.url}.json`,
+            { ...tools.params(tags.map(({ name }) => name)), limit: API_LIMIT },
+            requests,
+            tools,
+        );
         // TODO better API check???
         if ((await res).flat().length !== tags.length) {
             throw new Error(`${booru}/ doesn't seem to be a Danbooru instance`);
@@ -1015,8 +1031,6 @@ export default class DanbooruAdapter implements Adapter {
             ? Promise.resolve({ counts: { posts: 0 } })
             : queueNetworkRequest(this.queue, "count", `${artist.name} ${status} ${rating}`.trim());
 
-        // Process the queue immediately
-        intervalNetworkHandler(this.queue);
         const [
             { counts: { posts: visiblePostsCount } } = { counts: { posts: 0 } },
             { counts: { posts: totalPostsCount } } = { counts: { posts: 0 } },
