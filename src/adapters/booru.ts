@@ -180,7 +180,14 @@ interface RequestPromise<N extends RequestName> {
     resolve: (data: DBResponse<N>) => void;
 }
 
-type RequestQueue = { q: Array<RequestPromise<RequestName>>; host: string };
+type RequestQueue = {
+    q: Array<RequestPromise<RequestName>>;
+    host: string;
+    /** The timer processing the queue, runs while the queue has users */
+    timer?: number;
+    /** Number of adapter instances using the queue */
+    users: number;
+};
 
 const REQUEST_DATA_MATCHERS = {
     /** Case-insensitive comparing strings */
@@ -831,6 +838,11 @@ type TranslatedArtist = ResponseArtist & {
 // separate cache of each instance
 const renderedTagsCache: Record<string, Record<string, TranslationResult>> = {};
 const renderedArtistsCache: Record<string, Record<string, TranslatedItem>> = {};
+/**
+ * Request queues by booru, shared between instances: a queued request is memoized
+ * by the host, so it must still be processed after the app restarts
+ */
+const queues: Record<string, RequestQueue> = {};
 let id = 1;
 
 export default class DanbooruAdapter implements Adapter {
@@ -870,13 +882,13 @@ export default class DanbooruAdapter implements Adapter {
 
     booru: string;
     id: number;
-    timer: number;
     queue: RequestQueue;
 
     constructor(booru: string) {
         this.id = id++;
         this.booru = new URL(booru).origin;
-        this.queue = { q: [], host: this.booru };
+        this.queue = queues[this.booru] ??= { q: [], host: this.booru, users: 0 };
+        this.queue.users += 1;
 
         renderedTagsCache[this.id] = {};
         renderedArtistsCache[this.id] = {};
@@ -884,7 +896,7 @@ export default class DanbooruAdapter implements Adapter {
         // Danbooru limits 10 req/sec, but let's have 9 leeway
         ajax.setThrottle(this.booru, 9, 1);
         // Check for new network requests every half-second
-        this.timer = setInterval(intervalNetworkHandler, REQUEST_INTERVAL, this.queue);
+        this.queue.timer ??= setInterval(intervalNetworkHandler, REQUEST_INTERVAL, this.queue);
 
         addCss(TAGS_CSS);
 
@@ -899,7 +911,11 @@ export default class DanbooruAdapter implements Adapter {
     }
 
     destroy() {
-        clearInterval(this.timer);
+        this.queue.users -= 1;
+        if (this.queue.users === 0) {
+            clearInterval(this.queue.timer);
+            delete this.queue.timer;
+        }
         delete renderedTagsCache[this.id];
         delete renderedArtistsCache[this.id];
     }
