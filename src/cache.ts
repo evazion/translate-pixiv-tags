@@ -37,24 +37,93 @@ function openDB(): Promise<IDBDatabase> {
     return dbPromise;
 }
 
-async function getItem<T>(key: string): Promise<CacheItem<T> | undefined> {
+type ReadCallback = (item: CacheItem | undefined) => void;
+
+/** Keys to read in the next batch, with the callbacks waiting for them */
+let pendingReads: Map<string, ReadCallback[]> | null = null;
+
+/**
+ * Reads the item from the cache.
+ * The reads requested within the same tick are done in a single transaction.
+ */
+function getItem<T>(key: string): Promise<CacheItem<T> | undefined> {
+    return new Promise((resolve) => {
+        if (!pendingReads) {
+            pendingReads = new Map();
+            queueMicrotask(flushReads);
+        }
+        const callbacks = pendingReads.get(key);
+        if (callbacks) {
+            callbacks.push(resolve as ReadCallback);
+        } else {
+            pendingReads.set(key, [resolve as ReadCallback]);
+        }
+    });
+}
+
+async function flushReads() {
+    if (!pendingReads) return;
+    const reads = pendingReads;
+    pendingReads = null;
     try {
         const db = await openDB();
         const store = db.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME);
-        return await promisify<CacheItem<T> | undefined>(store.get(key));
+        // all the requests are made synchronously, while the transaction is active
+        await Promise.all(
+            [...reads].map(async ([key, callbacks]) => {
+                const item = await promisify<CacheItem | undefined>(store.get(key));
+                for (const callback of callbacks) callback(item);
+            }),
+        );
     } catch (error) {
-        console.error("Failed to read from the cache", key, error);
-        return undefined;
+        console.error("Failed to read from the cache", [...reads.keys()], error);
+        // treat as missing, resolving the already resolved ones is a no-op
+        for (const callbacks of reads.values()) {
+            for (const callback of callbacks) callback(undefined);
+        }
     }
 }
 
-async function setItem<T>(key: string, value: T): Promise<void> {
+/** Items to write in the next batch, by key */
+let pendingWrites: Map<string, CacheItem> | null = null;
+/** Delay before writing, to gather more items in a batch, in ms */
+const WRITE_DELAY = 100;
+
+/**
+ * Writes the item to the cache in background.
+ * The writes requested within a short period are done in a single transaction.
+ */
+function setItem<T>(key: string, value: T) {
+    if (!pendingWrites) {
+        pendingWrites = new Map();
+        setTimeout(flushWrites, WRITE_DELAY);
+    }
+    pendingWrites.set(key, { key, time: Date.now(), value });
+}
+
+async function flushWrites() {
+    if (!pendingWrites) return;
+    const writes = pendingWrites;
+    pendingWrites = null;
     try {
         const db = await openDB();
-        const store = db.transaction(STORE_NAME, "readwrite").objectStore(STORE_NAME);
-        await promisify(store.put({ key, time: Date.now(), value } satisfies CacheItem<T>));
+        const transaction = db.transaction(STORE_NAME, "readwrite");
+        const store = transaction.objectStore(STORE_NAME);
+        for (const item of writes.values()) {
+            try {
+                store.put(item);
+            } catch (error) {
+                // e.g. the value isn't structured-cloneable, skip only this item
+                console.error("Failed to write to the cache", item.key, error);
+            }
+        }
+        await new Promise((resolve, reject) => {
+            transaction.addEventListener("complete", resolve);
+            transaction.addEventListener("error", () => reject(transaction.error));
+            transaction.addEventListener("abort", () => reject(transaction.error));
+        });
     } catch (error) {
-        console.error("Failed to write to the cache", key, error);
+        console.error("Failed to write to the cache", [...writes.keys()], error);
     }
 }
 
@@ -91,7 +160,7 @@ export function cache<F extends (...args: any[]) => Promise<any>>(
                 }
                 throw error;
             }
-            await setItem(key, value);
+            setItem(key, value);
             return value;
         })().finally(() => pending.delete(key));
 
