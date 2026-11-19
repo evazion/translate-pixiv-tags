@@ -6,7 +6,7 @@ export const TAG_SELECTOR = ".tpt-tags, .tpt-artist";
 export const TAG_POSITIONS = {
     beforebegin: {
         insertTag: (container, elem) => container.before(elem),
-        findTag: (container) => $(container).prevAll(TAG_SELECTOR)[0] ?? null,
+        findTag: (container) => $(container).prev(TAG_SELECTOR)[0] ?? null,
         getTagContainer: (elem) => $(elem).next()[0] ?? null,
     },
     afterbegin: {
@@ -21,12 +21,12 @@ export const TAG_POSITIONS = {
     },
     afterend: {
         insertTag: (container, elem) => container.after(elem),
-        findTag: (container) => $(container).nextAll(TAG_SELECTOR)[0] ?? null,
+        findTag: (container) => $(container).next(TAG_SELECTOR)[0] ?? null,
         getTagContainer: (elem) => $(elem).prev()[0] ?? null,
     },
     afterParent: {
         insertTag: (container, elem) => container.parentElement?.after(elem),
-        findTag: (container) => $(container).parent().nextAll(TAG_SELECTOR)[0] ?? null,
+        findTag: (container) => $(container).parent().next(TAG_SELECTOR)[0] ?? null,
         getTagContainer: (elem) => $(elem).prev().find("a")[0] ?? null,
     },
 } satisfies Record<string, TagPosition>;
