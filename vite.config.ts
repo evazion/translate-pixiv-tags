@@ -15,12 +15,6 @@ export default defineConfig(({ mode, command }) => ({
     },
     build: {
         minify: mode === "production",
-        // terserOptions: {
-        //     mangle: {
-        //         // do not minify top-level variable names
-        //         toplevel: false,
-        //     },
-        // },
     },
     plugins: [
         {
@@ -68,7 +62,7 @@ export default defineConfig(({ mode, command }) => ({
                 metaFileName: true,
             },
             userscript: {
-                name: "TPT",
+                name: "translate-pixiv-tags",
                 author: "evazion, 7nik, BrokenEagle, hdk5",
                 // must be stable in dev: the header hash is used as the monkeyWindow key,
                 // and the pre-bundled client with the key baked in is cached as immutable
@@ -83,11 +77,11 @@ export default defineConfig(({ mode, command }) => ({
                 // prevent updating the dev script into prod one
                 updateURL:
                     mode === "production"
-                        ? "https://github.com/evazion/translate-pixiv-tags/raw/master/tpt.meta.js"
+                        ? "https://github.com/evazion/translate-pixiv-tags/releases/latest/download/tpt.meta.js"
                         : undefined,
                 downloadURL:
                     mode === "production"
-                        ? "https://github.com/evazion/translate-pixiv-tags/raw/master/tpt.user.js"
+                        ? "https://github.com/evazion/translate-pixiv-tags/releases/latest/download/tpt.user.js"
                         : undefined,
                 noframes: true,
                 "run-at": "document-start",

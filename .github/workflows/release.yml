@@ -1,0 +1,54 @@
+name: Build and release userscript
+on:
+  push:
+    branches: [master]
+    paths: ["src/**"]
+  workflow_dispatch:
+
+# don't let two releases race each other
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Get version
+        id: version
+        run: |
+          version=$(grep -oP '^// @version\s+\K\S+' dist/tpt.meta.js)
+          if [ -z "$version" ]; then
+            echo "Version not found in dist/tpt.meta.js" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh release create "$VERSION" dist/tpt.user.js dist/tpt.meta.js \
+            --target "$GITHUB_SHA" \
+            --title "$VERSION" \
+            --generate-notes \
+            --latest
