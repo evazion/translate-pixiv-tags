@@ -69,7 +69,10 @@ export function deleteOnUrlChange(tag: HTMLElement, options: TranslationOptionsF
 
 /** When the tag is inside another <a>, prevents soft navigation by the outer link */
 export const preventSiteNavigation = (el: HTMLElement) =>
-    el.addEventListener("click", (ev) => ev.stopPropagation());
+    // the same listener is added only once, so it's safe to call on every re-render
+    el.addEventListener("click", stopPropagation);
+
+const stopPropagation = (ev: Event) => ev.stopPropagation();
 
 /** Find and get link in child elements */
 export function linkInChildren(el: HTMLElement): string {
