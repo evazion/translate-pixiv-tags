@@ -200,7 +200,8 @@ async function updateAdapter(oldAdapter: SourceAdapter, exec: boolean) {
         SETTINGS.source_adapters = adapters.map((adapter) =>
             adapter === oldAdapter ? newAdapter : adapter,
         );
-        if (newAdapter.version !== oldAdapter.version || isDevUrl(oldAdapter.codeUrl)) {
+        // `exec` means there is no stored code yet, e.g. the adapter was just added
+        if (exec || newAdapter.version !== oldAdapter.version) {
             adapterCodes.set(newAdapter.name, code);
         }
         if (newAdapter.name !== name) {
