@@ -65,8 +65,6 @@
 // @run-at       document-start
 // ==/UserScript==
 
-export {};
-
 /* spell-checker: enable */
 // cSpell:ignoreRegExp [-\.#]\w+
 
@@ -75,7 +73,7 @@ export {};
 // @ts-expect-error - it has no exports or import but types are get correctly
 /** @typedef {import("./node_modules/mutation-summary/src/mutation-summary")} */
 
-("use strict");
+"use strict";
 
 /**
  * @template {string} N, T
