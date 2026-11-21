@@ -103,6 +103,8 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
         "search tag",
     );
 
+    /** Boxes of related tags already colored */
+    const coloredTagBoxes = new WeakSet<HTMLElement>();
     // Tags in box:
     // Search page: https://www.pixiv.net/en/tags/%E6%9D%B1%E6%96%B9project/artworks
     // The index page: https://www.pixiv.net/ https://www.pixiv.net/en/
@@ -140,11 +142,15 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
             // Fix bad contrast of tag color over colored bg
             onadded: (tag) => {
                 preventSiteNavigation(tag);
-                const [category = 2] = tag.querySelector("a,button")?.className.match(/\d/) ?? [];
-                const hue = [230, 5, 0, 300, 110, 50][+category];
-                const color = `hsl(${hue + Math.random() * 40 - 20}, 35%, 65%)`;
                 const container = tag.closest("a,button") as HTMLElement | null;
-                if (container) container.style.backgroundColor = color;
+                const link = tag.querySelector("a");
+                // color only once, otherwise it changes on every re-render
+                if (!container || !link || coloredTagBoxes.has(container)) return;
+                coloredTagBoxes.add(container);
+                // take the hue of the first tag's color, whichever adapter rendered it
+                const tagColor = getComputedStyle(link).color;
+                const hueShift = Math.round(Math.random() * 40 - 20);
+                container.style.backgroundColor = `hsl(from ${tagColor} calc(h + ${hueShift}) 35% 65%)`;
             },
         },
         "related tag",
