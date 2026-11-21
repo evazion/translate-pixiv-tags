@@ -2,7 +2,7 @@ import { css, html, unsafeCSS } from "lit";
 import { until } from "lit/directives/until.js";
 import { ajax, getSafeImageUrl, MAXIMUM_URI_LENGTH, type UrlParams } from "../network";
 import { SETTINGS } from "../settings";
-import { addCss, memoize, naturalCompare, console, param } from "../utils";
+import { addCss, naturalCompare, console, param } from "../utils";
 import { normalizeSourceUrl } from "../normalize-url";
 import {
     FLASH_FILE,
@@ -180,6 +180,9 @@ interface RequestPromise<N extends RequestName> {
     type: N;
     item: string;
     resolve: (data: DBResponse<N>) => void;
+    reject?: (reason: unknown) => void;
+    /** Aborted when nobody waits for the result anymore */
+    signal?: AbortSignal;
 }
 
 type RequestQueue = {
@@ -341,31 +344,43 @@ function requestKey(queue: RequestQueue, type: RequestName, item: string) {
     return [queue.host, type, item, settings].join("\0");
 }
 
-const queueNetworkRequest: <T extends RequestName>(
+/**
+ * Queues the request item, the same items are shared between the callers.
+ * The item is dropped from the queue when all its callers abort their signals.
+ */
+const queueNetworkRequest = cache(function queueNetworkRequest_(
+    queue: RequestQueue,
+    type: RequestName,
+    item: string,
+    signal: AbortSignal,
+): Promise<DBResponse<RequestName>> {
+    // could be aborted during the cache lookup
+    if (signal.aborted) return Promise.reject(signal.reason);
+    const { promise, resolve, reject } = Promise.withResolvers<DBResponse<RequestName>>();
+    const request: RequestPromise<RequestName> = { type, item, resolve, reject, signal };
+    queue.q.push(request);
+    const onAbort = () => {
+        // a request already sent can't be canceled, and its result is still worth caching
+        const index = queue.q.indexOf(request);
+        if (index < 0) return;
+        queue.q.splice(index, 1);
+        reject(signal.reason);
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+    const cleanup = () => signal.removeEventListener("abort", onAbort);
+    promise.then(cleanup, cleanup);
+    // Single-item requests can't be batched with anything, so don't wait for the timer.
+    // It must be done here: the item is pushed only after the cache lookup.
+    if (NETWORK_REQUEST_DICT[type].requestLimit === 1) {
+        intervalNetworkHandler(queue);
+    }
+    return promise;
+}, requestKey) as <T extends RequestName>(
     queue: RequestQueue,
     type: T,
     item: string,
-) => Promise<DBResponse<T>> = memoize(
-    cache(function queueNetworkRequest_<T extends RequestName>(
-        queue: RequestQueue,
-        type: T,
-        item: string,
-    ): Promise<DBResponse<T>> {
-        const { promise, resolve } = Promise.withResolvers();
-        queue.q.push({
-            type,
-            item,
-            resolve,
-        });
-        // Single-item requests can't be batched with anything, so don't wait for the timer.
-        // It must be done here: the item is pushed only after the cache lookup.
-        if (NETWORK_REQUEST_DICT[type].requestLimit === 1) {
-            intervalNetworkHandler(queue);
-        }
-        return promise as Promise<DBResponse<T>>;
-    }, requestKey),
-    requestKey,
-);
+    signal: AbortSignal | null,
+) => Promise<DBResponse<T>>;
 
 function intervalNetworkHandler(queue: RequestQueue) {
     if (queue.q.length === 0 || !ajax.ready(queue.host)) return;
@@ -392,8 +407,14 @@ function intervalNetworkHandler(queue: RequestQueue) {
         const send = (batch: typeof requests) => {
             const params = buildParams(batch);
             sendRequests(url, params, batch, requestTools).catch(() => {
-                // in case of error return requests to the queue
-                queue.q.push(...batch);
+                // in case of error return requests to the queue, except the ones nobody waits for
+                for (const request of batch) {
+                    if (request.signal?.aborted) {
+                        request.reject?.(request.signal.reason);
+                    } else {
+                        queue.q.push(request);
+                    }
+                }
             });
         };
 
@@ -825,7 +846,7 @@ function buildPostPreview(post: ResponsePosts, booru: string) {
  * @param page The page number to load
  */
 async function loadNextPage(queue: RequestQueue, tag: string, page: number) {
-    const posts = await queueNetworkRequest(queue, "post", `${tag} ${page}`);
+    const posts = await queueNetworkRequest(queue, "post", `${tag} ${page}`, null);
     return posts.map((post) => buildPostPreview(post, queue.host));
 }
 
@@ -958,14 +979,19 @@ export default class DanbooruAdapter implements Adapter {
         return (renderedArtistsCache[this.id][cacheKey] = [prettyName, render]);
     }
 
-    async translateArtistByName(name: string) {
-        const artists = await queueNetworkRequest(this.queue, "artist", name.replaceAll(" ", "_"));
+    async translateArtistByName(name: string, options: TranslatorOptions) {
+        const artists = await queueNetworkRequest(
+            this.queue,
+            "artist",
+            name.replaceAll(" ", "_"),
+            options.signal,
+        );
 
         return artists.map((artist) => this.renderArtist(artist));
     }
 
-    async translateArtistByUrl(url: string) {
-        const artists = await queueNetworkRequest(this.queue, "url", url);
+    async translateArtistByUrl(url: string, options: TranslatorOptions) {
+        const artists = await queueNetworkRequest(this.queue, "url", url, options.signal);
 
         let filteredArtists = artists;
         if (artists.length > 1) {
@@ -984,13 +1010,14 @@ export default class DanbooruAdapter implements Adapter {
         return filteredArtists.map((artist) => this.renderArtist(artist));
     }
 
-    async translateTag(tagName: string) {
+    async translateTag(tagName: string, options: TranslatorOptions) {
+        const { signal } = options;
         const cacheKey = this.booru + tagName;
         if (cacheKey in renderedTagsCache[this.id]) {
             return renderedTagsCache[this.id][cacheKey];
         }
 
-        const wikiPages = await queueNetworkRequest(this.queue, "wiki", tagName);
+        const wikiPages = await queueNetworkRequest(this.queue, "wiki", tagName, signal);
 
         let tags: TranslatedTag[] = [];
         if (wikiPages?.length > 0) {
@@ -1006,9 +1033,9 @@ export default class DanbooruAdapter implements Adapter {
         } else if (/^[\u0020-\u0024\u0026-\u0029+\u002D-\u007F]+$/.test(tagName)) {
             // The server is already converting the values to
             // lowercase on its end so no need to do it here
-            let rawTags = await queueNetworkRequest(this.queue, "tag", tagName);
+            let rawTags = await queueNetworkRequest(this.queue, "tag", tagName, signal);
             if (rawTags.length === 0) {
-                const aliases = await queueNetworkRequest(this.queue, "alias", tagName);
+                const aliases = await queueNetworkRequest(this.queue, "alias", tagName, signal);
                 rawTags = aliases.map((alias) => alias.consequent_tag);
             }
             tags = rawTags.map((tag) => ({
@@ -1022,9 +1049,9 @@ export default class DanbooruAdapter implements Adapter {
             tag.prettyName,
             (textless) => html`
                 <a
-                    class="tpt-tag danbooru db${this.id} category-${tag.category} ${textless
-                        ? "tpt-textless"
-                        : ""}"
+                    class="tpt-tag danbooru db${this.id} category-${tag.category} ${
+                        textless ? "tpt-textless" : ""
+                    }"
                     href="${this.booru}/posts?tags=${encodeURIComponent(tag.name)}"
                     target="_blank"
                 >
@@ -1040,15 +1067,21 @@ export default class DanbooruAdapter implements Adapter {
         const status = SETTINGS.show_deleted ? "status:any" : "-status:deleted";
         const rating = KNOWN_SFW_BOORUS.includes(this.booru) ? "rating:g" : "";
 
-        const waitPosts = queueNetworkRequest(this.queue, "post", `${artist.name} 1`);
+        const waitPosts = queueNetworkRequest(this.queue, "post", `${artist.name} 1`, null);
         const waitTotalPostCount = queueNetworkRequest(
             this.queue,
             "count",
             `${artist.name} status:any`,
+            null,
         );
         const waitVisiblePostCount = artist.is_banned
             ? Promise.resolve({ counts: { posts: 0 } })
-            : queueNetworkRequest(this.queue, "count", `${artist.name} ${status} ${rating}`.trim());
+            : queueNetworkRequest(
+                  this.queue,
+                  "count",
+                  `${artist.name} ${status} ${rating}`.trim(),
+                  null,
+              );
 
         const [
             { counts: { posts: visiblePostsCount } } = { counts: { posts: 0 } },

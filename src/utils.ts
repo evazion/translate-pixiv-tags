@@ -11,9 +11,26 @@ export const console: Console = {
     error: konsole.error.bind(konsole, "[TPT]:"),
 };
 
-export const sleep = (ms: number) =>
-    new Promise((resolve) => {
-        setTimeout(resolve, ms);
+/**
+ * Waits the given time
+ * @param ms - the time to wait
+ * @param signal - rejects with the abort reason when aborted
+ */
+export const sleep = (ms: number, signal?: AbortSignal | null) =>
+    new Promise<void>((resolve, reject) => {
+        if (signal?.aborted) {
+            reject(signal.reason);
+            return;
+        }
+        const onAbort = () => {
+            clearTimeout(timer);
+            reject(signal!.reason);
+        };
+        const timer = setTimeout(() => {
+            signal?.removeEventListener("abort", onAbort);
+            resolve();
+        }, ms);
+        signal?.addEventListener("abort", onAbort, { once: true });
     });
 
 /**

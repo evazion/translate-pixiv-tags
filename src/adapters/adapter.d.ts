@@ -16,5 +16,6 @@ declare global {
     var html: typeof import("lit").html;
     var memoize: typeof import("../utils").memoize;
     var SETTINGS: Readonly<typeof import("../settings").SETTINGS>;
+    var sleep: typeof import("../utils").sleep;
     var unsafeCSS: typeof import("lit").unsafeCSS;
 }

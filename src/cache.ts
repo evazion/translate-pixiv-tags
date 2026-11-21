@@ -127,46 +127,126 @@ async function flushWrites() {
     }
 }
 
-const pending = new Map<string, Promise<unknown>>();
+type CacheEntry = {
+    promise: Promise<unknown>;
+    controller: AbortController;
+    /** Number of the callers with a signal, that still wait for the value */
+    waiters: number;
+    /** Whether a caller without a signal waits, then the call can't be aborted */
+    unabortable: boolean;
+    settled: boolean;
+};
+
+/** Running calls and the got values, by key */
+const entries = new Map<string, CacheEntry>();
 
 /**
+ * Wraps `fn` with a persistent cache and shares the calls with the same key between the callers.
+ *
  * Returns the cached value if it isn't older than `SETTINGS.cache_lifetime`,
  * otherwise gets a fresh value with `fn` and caches it.
  * If `fn` throws, falls back to the stale cached value if any.
+ * The got values are also kept in memory till the page reload.
+ *
+ * The abort signal is always the last argument: the callers pass theirs (or `null` for none),
+ * `fn` gets the signal of the shared call, and `hasher` gets the arguments without it.
+ * A caller stops waiting when its signal is aborted,
+ * and the shared call is aborted when all its callers have aborted.
  * @param fn - the function to get a fresh value, the value must be structured-cloneable
  * @param hasher - the function to build cache key
  */
-export function cache<F extends (...args: any[]) => Promise<any>>(
-    fn: F,
-    hasher: (...args: Parameters<F>) => string = (...args) => args.join("\0"),
-): F {
-    return function (...args: Parameters<F>) {
-        const key = hasher(...args);
-        // deduplicate simultaneous requests of the same key
-        if (pending.has(key)) return pending.get(key);
+export function cache<A extends unknown[], R>(
+    fn: (...args: [...A, AbortSignal]) => Promise<R>,
+    hasher: (...args: A) => string = (...args) => args.join("\0"),
+): (...args: [...A, AbortSignal | null | undefined]) => Promise<R> {
+    return (...argsWithSignal) => {
+        const args = argsWithSignal.slice(0, -1) as A;
+        const signal = argsWithSignal.at(-1) as AbortSignal | null | undefined;
+        if (signal?.aborted) return Promise.reject(signal.reason);
 
-        const promise = (async () => {
-            const item = await getItem(key);
-            if (item && Date.now() - item.time <= SETTINGS.cache_lifetime * 1000) {
+        const key = hasher(...args);
+        const entry = entries.get(key) ?? load(key, (callSignal) => fn(...args, callSignal));
+        return wait(entry, key, signal) as Promise<R>;
+    };
+}
+
+/** Starts the shared call: reads the cache, and gets a fresh value if needed */
+function load(key: string, getFresh: (signal: AbortSignal) => Promise<unknown>): CacheEntry {
+    const controller = new AbortController();
+    const lifetime = SETTINGS.cache_lifetime * 1000;
+
+    const promise = (async () => {
+        const item = await getItem(key);
+        if (item && Date.now() - item.time <= lifetime) return item.value;
+        // could be aborted during the cache lookup
+        controller.signal.throwIfAborted();
+        let value: unknown;
+        try {
+            value = await getFresh(controller.signal);
+        } catch (error) {
+            // nobody waits for the value
+            if (controller.signal.aborted) throw error;
+            if (item) {
+                console.warn("Failed to get a fresh value, using the cached one", key, error);
                 return item.value;
             }
-            let value: any;
-            try {
-                value = await fn(...args);
-            } catch (error) {
-                if (item) {
-                    console.warn("Failed to get a fresh value, using the cached one", key, error);
-                    return item.value;
-                }
-                throw error;
-            }
-            setItem(key, value);
-            return value;
-        })().finally(() => pending.delete(key));
+            throw error;
+        }
+        setItem(key, value);
+        return value;
+    })();
 
-        pending.set(key, promise);
-        return promise;
-    } as F;
+    const entry: CacheEntry = {
+        promise,
+        controller,
+        waiters: 0,
+        unabortable: false,
+        settled: false,
+    };
+    entries.set(key, entry);
+
+    promise.then(
+        () => {
+            entry.settled = true;
+        },
+        () => {
+            entry.settled = true;
+            // let the next caller retry, unless a newer call has replaced this one
+            if (entries.get(key) === entry) entries.delete(key);
+        },
+    );
+    return entry;
+}
+
+/** Waits for the shared call, or till the caller's signal is aborted */
+function wait(entry: CacheEntry, key: string, signal: AbortSignal | null | undefined) {
+    if (!signal || entry.settled) {
+        if (!signal) entry.unabortable = true;
+        return entry.promise;
+    }
+
+    entry.waiters += 1;
+    return new Promise((resolve, reject) => {
+        const onAbort = () => {
+            reject(signal.reason);
+            entry.waiters -= 1;
+            if (entry.waiters > 0 || entry.unabortable || entry.settled) return;
+            // nobody waits for the value anymore, the next caller starts a new call
+            if (entries.get(key) === entry) entries.delete(key);
+            entry.controller.abort(signal.reason);
+        };
+        signal.addEventListener("abort", onAbort, { once: true });
+        entry.promise.then(
+            (value) => {
+                signal.removeEventListener("abort", onAbort);
+                resolve(value);
+            },
+            (error) => {
+                signal.removeEventListener("abort", onAbort);
+                reject(error);
+            },
+        );
+    });
 }
 
 /** Removes the items older than 7 days from the cache */

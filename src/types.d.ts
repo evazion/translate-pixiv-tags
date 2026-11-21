@@ -54,6 +54,16 @@ type TranslationOptionsFull = Required<TranslationOptions> & {
     ruleName: string;
 };
 
+/** Options passed to the translators (adapters) */
+type TranslatorOptions = {
+    /**
+     * Aborted when the translation isn't needed anymore:
+     * the target was removed from the page or its translation was replaced by a newer one.
+     * Translators should stop (re)sending requests needed only for this translation.
+     */
+    signal: AbortSignal;
+};
+
 /**
  * Add translations to the matched elements
  * @param mode Method of translating the element
@@ -89,14 +99,14 @@ class Adapter {
     destroy();
 
     translateArtistByUrl:
-        | ((url: string, options: TranslationOptionsFull) => Promise<TranslationResult>)
+        | ((url: string, options: TranslatorOptions) => Promise<TranslationResult>)
         | null;
 
     translateArtistByName:
-        | ((name: string, options: TranslationOptionsFull) => Promise<TranslationResult>)
+        | ((name: string, options: TranslatorOptions) => Promise<TranslationResult>)
         | null;
 
     translateTag:
-        | ((name: string, options: TranslationOptionsFull) => Promise<TranslationResult>)
+        | ((name: string, options: TranslatorOptions) => Promise<TranslationResult>)
         | null;
 }

@@ -3,7 +3,7 @@ import { GM } from "$";
 import { DEV } from "esm-env";
 import { ajax, getSafeImageUrl } from "./network";
 import { ADAPTERS, adapterCodes, SETTINGS } from "./settings";
-import { addCss, console, memoize } from "./utils";
+import { addCss, console, memoize, sleep } from "./utils";
 import artistTooltip from "./tooltips/artist-tooltip";
 import * as adapterShared from "./adapters/shared";
 import { cache } from "./cache";
@@ -59,6 +59,7 @@ const ARGS = {
             return false;
         },
     }),
+    sleep,
     unsafeCSS,
 };
 

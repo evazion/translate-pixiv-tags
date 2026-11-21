@@ -131,16 +131,26 @@ function throttle(host: string): Promise<void> {
 
 export type UrlParams = { [k: string]: string | number | boolean | string[] | UrlParams };
 
+/** Error of a failed request, `status` is 0 when the server wasn't reached */
+export type RequestError = Error & { status: number };
+
+function requestError(message: string, status: number): RequestError {
+    return Object.assign(new Error(message), { status });
+}
+
 // eslint-disable-next-line sonarjs/cognitive-complexity
 export async function ajax<M extends string>(
     method: M,
     url: string,
     params?: Uppercase<M> extends "GET" | "HEAD" ? UrlParams : BodyInit,
     headers?: Record<string, string>,
+    /** Stops sending (but not a request already sent), rejects with the abort reason */
+    signal?: AbortSignal | null,
 ) {
+    signal?.throwIfAborted();
     const domain = new URL(url).hostname;
     if (tooManyNetworkErrors(domain)) {
-        throw new Error(`${domain} had too many network errors`);
+        throw requestError(`${domain} had too many network errors`, 0);
     }
     let status = -1;
     let statusText = "";
@@ -156,6 +166,8 @@ export async function ajax<M extends string>(
         try {
             // eslint-disable-next-line no-await-in-loop
             await throttle(domain);
+            // the request may be not needed anymore after waiting
+            signal?.throwIfAborted();
             // eslint-disable-next-line no-await-in-loop
             const resp = await GM.xmlHttpRequest({
                 url,
@@ -169,6 +181,7 @@ export async function ajax<M extends string>(
             showMessage("", domain);
             return resp.response;
         } catch (error) {
+            if (signal?.aborted) throw signal.reason;
             tooManyNetworkErrors(domain, true);
             ({ status, statusText } = error as XMLHttpRequest);
             console.error(
@@ -195,12 +208,26 @@ export async function ajax<M extends string>(
             if (status >= 400 && status < 500 && status !== 408 && status !== 429) break;
             if (i < MAX_NETWORK_RETRIES - 1) {
                 // eslint-disable-next-line no-await-in-loop
-                await sleep(1000);
+                await sleep(1000, signal);
             }
         }
     }
-    throw new Error(errorMsg);
+    const reached = status > 0 && !statusText?.startsWith("NetworkError");
+    console.log(errorMsg, status, statusText);
+    throw requestError(errorMsg!, reached ? status : 0);
 }
+
+/**
+ * Whether the request may succeed if sent later:
+ * on network errors, timeout, rate limit, and server errors
+ */
+ajax.isRetriable = (error: unknown): boolean => {
+    const status = (error as Partial<RequestError> | null)?.status;
+    return (
+        typeof status === "number" &&
+        (status === 0 || status === 408 || status === 429 || status >= 500)
+    );
+};
 
 /** Checks whether a request to the URL can be made right now */
 ajax.ready = (url: string): boolean => {

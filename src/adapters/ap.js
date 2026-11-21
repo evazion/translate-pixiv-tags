@@ -1,6 +1,6 @@
 // @tpt-adapter
 // @name Anime-Pictures
-// @version 26.11.26-5
+// @version 26.11.26-6
 
 /* eslint-disable no-undef, class-methods-use-this */
 
@@ -110,13 +110,27 @@ const POST_STATUS = {
  * @prop {string} pubtime
  */
 
+/** Delay before resending a failed request, in ms */
+const RETRY_DELAY = 5000;
+
 /**
+ * Sends the request, resends it on network and server errors until the signal is aborted
  * @param {string} path
  * @param {UrlParams} params
+ * @param {AbortSignal | null} [signal]
  * @return {Promise<any>}
  */
-function get(path, params) {
-    return ajax("GET", AP_API + path, params);
+async function get(path, params, signal) {
+    for (;;) {
+        try {
+            // eslint-disable-next-line no-await-in-loop
+            return await ajax("GET", AP_API + path, params, undefined, signal);
+        } catch (error) {
+            if (signal?.aborted || !ajax.isRetriable(error)) throw error;
+        }
+        // eslint-disable-next-line no-await-in-loop
+        await sleep(RETRY_DELAY, signal);
+    }
 }
 
 // #region tooltip
@@ -167,15 +181,20 @@ const getPosts = cache(
      * Get posts of posts
      * @param {string} query - the tag to browse
      * @param {number} page - the browsed page
+     * @param {AbortSignal} signal
      * @returns {Promise<{ posts: APPost[], posts_count: number, max_pages: number }>}
      */
-    (query, page) =>
+    (query, page, signal) =>
         // eslint-disable-next-line implicit-arrow-linebreak
-        get(`/api/v3/posts`, {
-            page,
-            search_tag: query,
-            posts_per_page: SETTINGS.preview_limit,
-        }),
+        get(
+            `/api/v3/posts`,
+            {
+                page,
+                search_tag: query,
+                posts_per_page: SETTINGS.preview_limit,
+            },
+            signal,
+        ),
     (query, page) => `ap_posts_${query}_${page}_${SETTINGS.preview_limit}`,
 );
 
@@ -186,7 +205,11 @@ const getPosts = cache(
  */
 async function buildArtistTooltip(artist) {
     const encodedName = encodeURIComponent(artist.tag).replaceAll("%20", " ");
-    const { posts, posts_count: postsCount, max_pages: lastPage } = await getPosts(artist.tag, 0);
+    const {
+        posts,
+        posts_count: postsCount,
+        max_pages: lastPage,
+    } = await getPosts(artist.tag, 0, null);
 
     const otherNames = [artist.tag_ru, artist.tag_jp]
         .filter((name) => name !== null)
@@ -261,7 +284,7 @@ function buildArtistUrls(artist) {
  * @param {number} page - the browsed page
  */
 async function loadNextPage(tag, page) {
-    const { posts } = await getPosts(tag, page);
+    const { posts } = await getPosts(tag, page, null);
     return posts.map(buildPostPreview);
 }
 
@@ -341,42 +364,63 @@ function buildPostPreview(post) {
 // #endregion
 // #region adapter
 
-/** @param {APTag} tag */
-function dealiasTag(tag) {
+/**
+ * @param {APTag} tag
+ * @param {AbortSignal} signal
+ */
+function dealiasTag(tag, signal) {
     if (!tag.alias) return tag;
-    return get(`/api/v3/tags/${tag.alias}`, {}).then((data) => /** @type {APTag} */ (data.tag));
+    return get(`/api/v3/tags/${tag.alias}`, {}, signal).then(
+        (data) => /** @type {APTag} */ (data.tag),
+    );
 }
 
+/** @type {(name: string, type: number | undefined) => string} */
+const tagNameKey = (name, type) => `ap_tagName_${name}_${type ?? ""}`;
+/**
+ * Finds tags by name, the requests are shared between the callers
+ * and stop being resent when all the callers abort
+ */
 const findTagByName = cache(
     /**
      * @param {string} name
-     * @param {number} [type]
+     * @param {number | undefined} type
+     * @param {AbortSignal} signal
      */
-    async (name, type) => {
+    async (name, type, signal) => {
         /** @type {{ tags: APTag[] }} */
         const { tags } = await get(
             `/api/v3/tags`,
             type ? { "tag:smart": name, type } : { "tag:smart": name },
+            signal,
         );
-        return Promise.all(tags.map(dealiasTag));
+        return Promise.all(tags.map((tag) => dealiasTag(tag, signal)));
     },
-    (name, type) => `ap_tagName_${name}_${type ?? ""}`,
+    tagNameKey,
 );
 
+/** @type {(descr: string, type: number | undefined) => string} */
+const tagDescrKey = (descr, type) => `ap_tagDescr_${descr}_${type ?? ""}`;
+/**
+ * Finds tags by description, the requests are shared between the callers
+ * and stop being resent when all the callers abort
+ */
 const findTagByDescription = cache(
     /**
      * @param {string} descr
-     * @param {number} [type]
+     * @param {number | undefined} type
+     * @param {AbortSignal} signal
      */
-    async (descr, type) => {
+    async (descr, type, signal) => {
         /** @type {{ tags: APTag[] }} */
         const { tags } = await get(
             `/api/v3/tags`,
             type ? { "description:smart_like": descr, type } : { "description:smart_like": descr },
+            signal,
         );
-        return Promise.all(tags.map(dealiasTag));
+        return Promise.all(tags.map((tag) => dealiasTag(tag, signal)));
     },
-    (descr, type) => `ap_tagDescr_${descr}_${type ?? ""}`,
+    tagDescrKey,
 );
 
 /**
@@ -447,13 +491,14 @@ class AnimePictureAdapter {
 
     /**
      * @param {string} rawUrl
+     * @param {TranslatorOptions} options
      * @returns {Promise<TranslationResult>}
      */
-    async translateArtistByUrl(rawUrl) {
+    async translateArtistByUrl(rawUrl, options) {
         // FIXME some links are still HTTP
         const url = rawUrl.replace("https://x.com/", "https://twitter.com/").replace(/^https?/, "");
 
-        const artists = await findTagByDescription(url, TAG_TYPE.author);
+        const artists = await findTagByDescription(url, TAG_TYPE.author, options.signal);
         return (
             artists
                 // api does search by plain includes, so do a proper check
@@ -464,10 +509,11 @@ class AnimePictureAdapter {
 
     /**
      * @param {string} name
+     * @param {TranslatorOptions} options
      * @returns {Promise<TranslationResult>}
      */
-    async translateArtistByName(name) {
-        const artists = await findTagByName(name, TAG_TYPE.author);
+    async translateArtistByName(name, options) {
+        const artists = await findTagByName(name, TAG_TYPE.author, options.signal);
         return artists.map((artist) => this.renderArtist(artist));
     }
 
@@ -502,25 +548,26 @@ class AnimePictureAdapter {
 
     /**
      * @param {string} rawName
+     * @param {TranslatorOptions} options
      * @returns {Promise<TranslationResult>}
      */
-    async translateTag(rawName) {
+    async translateTag(rawName, options) {
         const name = rawName.replaceAll("_", " ");
         const cacheKey = name;
         if (cacheKey in renderedTagsCache) {
             return renderedTagsCache[cacheKey];
         }
 
-        const tags = await findTagByName(name);
+        const tags = await findTagByName(name, undefined, options.signal);
 
         /** @type {TranslationResult} */
         const elements = tags.map((tag) => [
             tag.tag,
             (textless) => html`
                 <a
-                    class="tpt-tag ap category-${TAG_CSS_TYPE[tag.type]} ${textless
-                        ? "tpt-textless"
-                        : ""}"
+                    class="tpt-tag ap category-${TAG_CSS_TYPE[tag.type]} ${
+                        textless ? "tpt-textless" : ""
+                    }"
                     href="${AP_SITE}/posts?search_tag=${encodeURIComponent(tag.tag)}"
                     target="_blank"
                     >${textless ? "" : tag.tag}</a

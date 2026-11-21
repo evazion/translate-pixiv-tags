@@ -161,16 +161,56 @@ let translators: Adapter[];
 
 const loggedMisses = new Set<string>();
 
+type TranslationRequest = {
+    params: string[];
+    /** Per translator: item name -> its renderer */
+    groups: Array<Map<string, TranslatedItem[1]>>;
+    attr: string | null;
+    /** Aborted when the translation isn't needed anymore, its signal is passed to translators */
+    controller: AbortController;
+    /** Number of the translations still waiting for the translators */
+    pending: number;
+};
+
 /** Params key of the latest translation request per target and container class */
-let translationsRequests = new WeakMap<
-    HTMLElement,
-    {
-        params: string[];
-        /** Per translator: item name -> its renderer */
-        groups: Array<Map<string, TranslatedItem[1]>>;
-        attr: string | null;
+let translationsRequests = new WeakMap<HTMLElement, TranslationRequest>();
+
+/** How often to check whether the targets of pending translations are still in the page, in ms */
+const SWEEP_INTERVAL = 2000;
+/** Targets of the translations waiting for the translators */
+const pendingTranslations = new Map<HTMLElement, TranslationRequest>();
+let sweepTimer: number | null = null;
+
+/** Aborts the pending translations whose targets were removed from the page */
+function sweepRemovedTargets() {
+    for (const [target, request] of pendingTranslations) {
+        if (target.isConnected) continue;
+        pendingTranslations.delete(target);
+        // translate the target again if it's inserted back
+        if (translationsRequests.get(target) === request) translationsRequests.delete(target);
+        request.controller.abort();
     }
->();
+    if (pendingTranslations.size === 0) stopSweep();
+}
+
+function stopSweep() {
+    if (sweepTimer === null) return;
+    clearInterval(sweepTimer);
+    sweepTimer = null;
+}
+
+function trackPending(target: HTMLElement, request: TranslationRequest) {
+    request.pending += 1;
+    pendingTranslations.set(target, request);
+    sweepTimer ??= setInterval(sweepRemovedTargets, SWEEP_INTERVAL);
+}
+
+function untrackPending(target: HTMLElement, request: TranslationRequest) {
+    request.pending -= 1;
+    if (request.pending > 0 || pendingTranslations.get(target) !== request) return;
+    pendingTranslations.delete(target);
+    if (pendingTranslations.size === 0) stopSweep();
+}
 
 /**
  * Translate a regular tag on the given element
@@ -259,24 +299,47 @@ async function translate(
             .join("\0") ?? null;
 
     let translationRequest = translationsRequests.get(target);
+    let replacedRequest: TranslationRequest | undefined;
     if (translationRequest?.attr === attrKey) {
         // already was called with this params
         if (translationRequest.params.includes(paramKey)) {
             return;
         }
     } else {
+        replacedRequest = translationRequest;
         translationRequest = {
             attr: attrKey,
             params: [paramKey],
             groups: translators.map(() => new Map()),
+            controller: new AbortController(),
+            pending: 0,
         };
         translationsRequests.set(target, translationRequest);
     }
     const groups = translationRequest.groups;
+    const { signal } = translationRequest.controller;
+    const translatorOptions: TranslatorOptions = { signal };
 
-    const translations = await Promise.all(
-        translators.map((t) => Promise.all(params.map((param) => t[method]?.(param, options)))),
+    trackPending(target, translationRequest);
+    const waitTranslations = Promise.all(
+        translators.map((t) =>
+            Promise.all(params.map((param) => t[method]?.(param, translatorOptions))),
+        ),
     );
+    // Abort the replaced translation only after the new one is requested,
+    // so the shared requests needed by both aren't dropped
+    replacedRequest?.controller.abort();
+
+    let translations;
+    try {
+        translations = await waitTranslations;
+    } catch (error) {
+        // the translation isn't needed anymore
+        if (signal.aborted) return;
+        throw error;
+    } finally {
+        untrackPending(target, translationRequest);
+    }
 
     if (translationsRequests.get(target) !== translationRequest) {
         return;
@@ -550,6 +613,11 @@ function start() {
 }
 
 function restart() {
+    // abort them after the restart, so the shared requests needed again aren't dropped
+    const abandoned = [...pendingTranslations.values()];
+    pendingTranslations.clear();
+    stopSweep();
+
     mutationObserverQueries.length = 0;
     mutationObserver?.disconnect();
     runRestartCleanups();
@@ -561,6 +629,8 @@ function restart() {
     clearTooltipCache();
 
     start();
+
+    for (const request of abandoned) request.controller.abort();
 }
 
 //------------------------
