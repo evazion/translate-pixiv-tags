@@ -334,7 +334,7 @@ class TptSettings extends LitElement {
                     ([val, descr]) => html`
                         <option
                             value="${val}"
-                            ${val === value ? "selected" : ""}
+                            ?selected=${val === value}
                         >
                             ${descr}
                         </option>
