@@ -375,10 +375,22 @@ class TptSettings extends LitElement {
                         <input
                             placeholder="https://example.com/"
                             .value=${source.param}
-                            @change=${(ev: Event) => {
-                                const s = { ...source };
-                                s.param = (ev.currentTarget as HTMLInputElement).value;
-                                this.addChange(name, list.with(i, s));
+                            @change=${async (ev: Event) => {
+                                const param = (ev.currentTarget as HTMLInputElement).value;
+                                // an invalid param would break creating the translator
+                                try {
+                                    this.sourceParamError = "checking...";
+                                    await ADAPTERS[source.adapter]?.validateParams(param);
+                                } catch (ex) {
+                                    this.sourceParamError = `${source.adapter} #${i + 1}: ${(ex as Error).message}`;
+                                    return;
+                                }
+                                this.sourceParamError = "";
+                                // the list could change during the validation
+                                const current = this.changes.data_sources ?? this.settings.data_sources;
+                                const index = current.indexOf(source);
+                                if (index < 0) return;
+                                this.addChange(name, current.with(index, { ...source, param }));
                             }}
                         />
                         <label>

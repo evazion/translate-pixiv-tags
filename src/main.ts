@@ -515,7 +515,14 @@ function start() {
             console.error(`Missing ${source.adapter} adapter!`);
             return [];
         }
-        const translator = new ADAPTERS[source.adapter](source.param);
+        let translator: Adapter;
+        try {
+            translator = new ADAPTERS[source.adapter](source.param);
+        } catch (error) {
+            // e.g. an invalid param, skip only this source
+            console.error(`Failed to create ${source.adapter} adapter:`, error);
+            return [];
+        }
         if (!source.translateArtist) {
             translator.translateArtistByName = null;
             translator.translateArtistByUrl = null;
