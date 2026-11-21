@@ -62,7 +62,7 @@ const TAGS_CSS = css`
         }
     }
 
-    .tpt-artist .danbooru {
+    .tpt-artist.danbooru {
         --color: var(--tpt-danbooru-artist);
     }
     .tpt-tag.danbooru.category-5 {
@@ -961,9 +961,9 @@ export default class DanbooruAdapter implements Adapter {
 
         const render = (textless: boolean) => html`
             <a
-                class="danbooru db${this.id} ${artist.is_banned ? "banned-artist" : ""} ${textless
-                    ? "tpt-textless"
-                    : ""}"
+                class="tpt-artist danbooru db${this.id} ${artist.is_banned
+                    ? "banned-artist"
+                    : ""} ${textless ? "tpt-textless" : ""}"
                 href="${this.booru}/artists/${artist.id}"
                 target="_blank"
                 ${artistTooltip(
@@ -1049,9 +1049,9 @@ export default class DanbooruAdapter implements Adapter {
             tag.prettyName,
             (textless) => html`
                 <a
-                    class="tpt-tag danbooru db${this.id} category-${tag.category} ${
-                        textless ? "tpt-textless" : ""
-                    }"
+                    class="tpt-tag danbooru db${this.id} category-${tag.category} ${textless
+                        ? "tpt-textless"
+                        : ""}"
                     href="${this.booru}/posts?tags=${encodeURIComponent(tag.name)}"
                     target="_blank"
                 >

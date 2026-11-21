@@ -1,6 +1,6 @@
 // @tpt-adapter
 // @name Anime-Pictures
-// @version 26.11.26-6
+// @version 26.11.26-7
 
 /* eslint-disable no-undef, class-methods-use-this */
 
@@ -36,7 +36,7 @@ const TAGS_CSS = css`
         }
     }
 
-    .tpt-artist .ap {
+    .tpt-artist.ap {
         --color: var(--tpt-ap-artist);
     }
     .tpt-tag.ap.category-gen {
@@ -530,7 +530,7 @@ class AnimePictureAdapter {
         /** @param {boolean} textless */
         const render = (textless) => html`
             <a
-                class="ap ${textless ? "tpt-textless" : ""}"
+                class="tpt-artist ap ${textless ? "tpt-textless" : ""}"
                 href="${AP_SITE}/posts?search_tag=${encodeURIComponent(artist.tag)}"
                 target="_blank"
                 ${artistTooltip(
@@ -565,9 +565,9 @@ class AnimePictureAdapter {
             tag.tag,
             (textless) => html`
                 <a
-                    class="tpt-tag ap category-${TAG_CSS_TYPE[tag.type]} ${
-                        textless ? "tpt-textless" : ""
-                    }"
+                    class="tpt-tag ap category-${TAG_CSS_TYPE[tag.type]} ${textless
+                        ? "tpt-textless"
+                        : ""}"
                     href="${AP_SITE}/posts?search_tag=${encodeURIComponent(tag.tag)}"
                     target="_blank"
                     >${textless ? "" : tag.tag}</a

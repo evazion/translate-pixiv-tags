@@ -493,13 +493,13 @@ export default function artistTooltip(
             tooltip.style.setProperty("--bg", adjustedColor);
         }
 
-        target.classList.add("loading-data");
+        target.classList.add("tpt-loading-data");
         try {
             const tipContent = await renderedTooltipsCache[key];
             tipContent.className = content.className;
             content.append(tipContent);
         } finally {
-            target.classList.remove("loading-data");
+            target.classList.remove("tpt-loading-data");
         }
     });
 }

@@ -1,7 +1,7 @@
 import $ from "../dom";
 import { console, match } from "../utils";
 
-export const TAG_SELECTOR = ".tpt-tags, .tpt-artist";
+export const TAG_SELECTOR = ".tpt-tags, .tpt-artists";
 
 export const TAG_POSITIONS = {
     beforebegin: {

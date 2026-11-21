@@ -8,7 +8,7 @@ export default function initializeDeviantArt(findAndTranslate: FindAndTranslate)
     );
 
     addCss(css`
-        .tpt-artist {
+        .tpt-artists {
             font-weight: bold;
         }
     `);

@@ -62,7 +62,7 @@ export default defineConfig(({ mode, command }) => ({
                 metaFileName: true,
             },
             userscript: {
-                name: "translate-pixiv-tags",
+                name: "Translate Pixiv Tags",
                 author: "evazion, 7nik, BrokenEagle, hdk5",
                 // must be stable in dev: the header hash is used as the monkeyWindow key,
                 // and the pre-bundled client with the key baked in is cached as immutable

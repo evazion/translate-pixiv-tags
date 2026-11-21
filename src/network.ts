@@ -213,7 +213,6 @@ export async function ajax<M extends string>(
         }
     }
     const reached = status > 0 && !statusText?.startsWith("NetworkError");
-    console.log(errorMsg, status, statusText);
     throw requestError(errorMsg!, reached ? status : 0);
 }
 

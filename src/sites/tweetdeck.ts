@@ -8,7 +8,7 @@ export default function initializeTweetDeck(findAndTranslate: FindAndTranslate) 
     );
 
     addCss(css`
-        .tweet .tpt-artist {
+        .tweet .tpt-artists {
             flex-grow: 100;
         }
     `);

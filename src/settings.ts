@@ -132,7 +132,6 @@ customCssSheet.replaceSync(settings.custom_css);
 
 export const SETTINGS = new Proxy(settings, {
     set(target, prop, value) {
-        console.log("Setting change", prop, value);
         GM.setValue(prop as string, value);
         if (Reflect.set(target, prop, value)) {
             // the sheet is adopted everywhere, so it applies live

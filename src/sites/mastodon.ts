@@ -8,7 +8,7 @@ export default function initializeMastodon(findAndTranslate: FindAndTranslate) {
     );
 
     addCss(css`
-        .tpt-artist {
+        .tpt-artists {
             line-height: 100%;
         }
     `);

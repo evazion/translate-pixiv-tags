@@ -37,6 +37,7 @@ const GLOBAL_CSS = css`
     /* Adapters are expected to define --color and --icon (an image) for all tags */
     .tpt-tags {
         margin: 0 0.5em;
+        display: inline-flex;
     }
     .tpt-tags * {
         display: inline !important;
@@ -68,7 +69,38 @@ const GLOBAL_CSS = css`
     .tpt-textless:not(#id) {
         margin-left: 0.3ch !important;
     }
-    .tpt-artist a::before,
+    .tpt-artists {
+        display: inline-flex;
+    }
+    .tpt-artist:not(#id) {
+        color: var(--color) !important;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+    .tpt-artist.banned-artist::after {
+        content: " (banned)";
+    }
+    .tpt-artist.tpt-textless.banned-artist::after {
+        content: "(banned)";
+    }
+
+    :is(.tpt-tags, .tpt-artists).inline {
+        margin-left: 0.5em;
+    }
+    :is(.tpt-tag, .tpt-artist):not(.tpt-textless) {
+        flex-shrink: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-height: 1.3em;
+    }
+    :is(.tpt-tag, .tpt-artist):not(.tpt-textless) ~ :not(.tpt-textless) {
+        margin-left: 0.3ch;
+        flex-shrink: 10;
+    }
+    :is(.tpt-tag, .tpt-artist):not(.tpt-textless) ~ :not(.tpt-textless) ~ :not(.tpt-textless) {
+        flex-shrink: 100;
+    }
+    .tpt-artist::before,
     .tpt-tag.tpt-textless::before {
         content: "";
         display: inline-block;
@@ -79,29 +111,12 @@ const GLOBAL_CSS = css`
         height: 0.8em;
         vertical-align: middle;
     }
-    .tpt-artist {
-        white-space: nowrap;
-    }
-    .tpt-artist.inline {
-        display: inline-block;
-        margin-left: 0.5em;
-    }
-    .tpt-artist a:not(#id) {
-        color: var(--color) !important;
-        text-decoration: none;
-    }
-    .tpt-artist a:not(.tpt-textless)::before {
+    .tpt-artist:not(.tpt-textless)::before {
         margin-right: 0.3ch;
     }
-    .tpt-artist a.banned-artist::after {
-        content: " (banned)";
-    }
-    .tpt-artist a.tpt-textless.banned-artist::after {
-        content: "(banned)";
-    }
 
-    .loading-data,
-    .loading-data a {
+    .tpt-loading-data,
+    .tpt-loading-data a {
         cursor: wait;
     }
 
@@ -247,7 +262,7 @@ async function translateArtistByName(
         target,
         "translateArtistByName",
         artistNames,
-        "tpt-artist",
+        "tpt-artists",
         "Couldn't find artist",
         options,
     );
@@ -264,7 +279,7 @@ async function translateArtistByUrl(
         target,
         "translateArtistByUrl",
         normalizedUrls,
-        "tpt-artist",
+        "tpt-artists",
         "Couldn't find artist by url",
         options,
     );
@@ -413,7 +428,7 @@ function patchSelector(rule: CSSStyleRule, ruleName: string) {
     if (rule.selectorText.includes("ARTIST_TAG")) {
         rule.selectorText = rule.selectorText.replaceAll(
             "ARTIST_TAG",
-            `.tpt-artist[data-rule="${ruleName}"]`,
+            `.tpt-artists[data-rule="${ruleName}"]`,
         );
     }
     if (rule.selectorText.includes("TPT_TAG")) {

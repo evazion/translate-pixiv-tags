@@ -114,7 +114,7 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
     watchSiteTheme(document.body, "style", (body) => chooseBackgroundColorScheme(body).theme);
 
     addCss(css`
-        .tpt-artist {
+        .tpt-artists {
             font-family:
                 system-ui,
                 -apple-system,
