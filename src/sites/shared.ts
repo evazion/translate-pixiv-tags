@@ -11,12 +11,12 @@ export const TAG_POSITIONS = {
     },
     afterbegin: {
         insertTag: (container, elem) => container.prepend(elem),
-        findTag: (container) => container.querySelector<HTMLElement>(TAG_SELECTOR),
+        findTag: (container) => $(container).children(TAG_SELECTOR)[0] ?? null,
         getTagContainer: (elem) => elem.parentElement,
     },
     beforeend: {
         insertTag: (container, elem) => container.append(elem),
-        findTag: (container) => container.querySelector<HTMLElement>(TAG_SELECTOR),
+        findTag: (container) => $(container).children(TAG_SELECTOR).at(-1) ?? null,
         getTagContainer: (elem) => elem.parentElement,
     },
     afterend: {

@@ -905,7 +905,7 @@ export default class DanbooruAdapter implements Adapter {
 
         addCss(TAGS_CSS);
 
-        getSafeImageUrl(`${booru}/favicon.ico`).then((url) => {
+        getSafeImageUrl(`${this.booru}/favicon.ico`).then((url) => {
             // minify-html-literals doesn't support dynamic selectors, so plain text
             addCss(/* CSS */ `
                 .danbooru.db${this.id} {

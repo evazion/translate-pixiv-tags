@@ -1,6 +1,6 @@
 // @tpt-adapter
 // @name Anime-Pictures
-// @version 26.11.26-4
+// @version 26.11.26-5
 
 /* eslint-disable no-undef, class-methods-use-this */
 
@@ -485,7 +485,7 @@ class AnimePictureAdapter {
         const render = (textless) => html`
             <a
                 class="ap ${textless ? "tpt-textless" : ""}"
-                href="${AP_SITE}/posts?search_tag=${artist.tag}"
+                href="${AP_SITE}/posts?search_tag=${encodeURIComponent(artist.tag)}"
                 target="_blank"
                 ${artistTooltip(
                     `AP:${artist.tag}`,

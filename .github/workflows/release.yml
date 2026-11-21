@@ -2,7 +2,8 @@ name: Build and release userscript
 on:
   push:
     branches: [master]
-    paths: ["src/**"]
+    # the .js files are external adapters and the dev server, not part of the userscript
+    paths: ["src/**", "!src/**/*.js"]
   workflow_dispatch:
 
 # don't let two releases race each other
