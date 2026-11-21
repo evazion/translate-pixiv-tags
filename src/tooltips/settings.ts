@@ -13,6 +13,7 @@ import {
 import { chooseBackgroundColorScheme, console, isEqual, self, validateCss } from "../utils";
 import { css, html, LitElement } from "lit";
 import { unsafeSVG } from "lit/directives/unsafe-svg.js";
+import { live } from "lit/directives/live.js";
 import { execAdapters, SourceAdapter, loadAdapter } from "../adapter-loader";
 
 export const settingsIcon = unsafeSVG(settingsIconRaw);
@@ -34,6 +35,16 @@ function getSettingTab(setting: SettingName): Tab {
         default:
             return "general";
     }
+}
+
+/** Initial values of the row for adding a data source */
+function emptySource(): DataSource {
+    return {
+        adapter: "Danbooru",
+        param: "",
+        translateArtist: false,
+        translateTag: false,
+    };
 }
 
 class TptSettings extends LitElement {
@@ -187,6 +198,10 @@ class TptSettings extends LitElement {
     destroy: () => void;
     /** Downloaded adapter updates to apply on saving, by adapter name */
     pendingAdapterUpdates = new Map<string, Awaited<ReturnType<typeof loadAdapter>>>();
+    /** Values of the row for adding a data source, kept between renders */
+    newSource: DataSource = emptySource();
+    /** Value of the input for adding an adapter, kept between renders */
+    newAdapterUrl = "";
 
     constructor() {
         super();
@@ -447,24 +462,27 @@ class TptSettings extends LitElement {
                         </button>
                     `,
                 );
-                const newSource = {
-                    adapter: "Danbooru",
-                    param: "",
-                    translateArtist: false,
-                    translateTag: false,
-                };
+                const { newSource } = this;
                 return html`
                     <div class="sources-list">
                         ${rows}
 
                         <select
+                            .value=${live(newSource.adapter)}
                             @change=${(ev: Event) => {
                                 newSource.adapter = (ev.currentTarget as HTMLSelectElement).value;
                             }}
                         >
-                            ${Object.keys(ADAPTERS).map((name) => html`<option>${name}</option>`)}
+                            ${Object.keys(ADAPTERS).map(
+                                (adapterName) => html`
+                                    <option ?selected=${adapterName === newSource.adapter}>
+                                        ${adapterName}
+                                    </option>
+                                `,
+                            )}
                         </select>
                         <input
+                            .value=${live(newSource.param)}
                             @change=${(ev: Event) => {
                                 newSource.param = (ev.currentTarget as HTMLInputElement).value;
                             }}
@@ -472,6 +490,7 @@ class TptSettings extends LitElement {
                         <label>
                             <input
                                 type="checkbox"
+                                .checked=${live(newSource.translateArtist)}
                                 @change=${(ev: Event) => {
                                     newSource.translateArtist = (
                                         ev.currentTarget as HTMLInputElement
@@ -483,6 +502,7 @@ class TptSettings extends LitElement {
                         <label>
                             <input
                                 type="checkbox"
+                                .checked=${live(newSource.translateTag)}
                                 @change=${(ev: Event) => {
                                     newSource.translateTag = (
                                         ev.currentTarget as HTMLInputElement
@@ -494,15 +514,22 @@ class TptSettings extends LitElement {
                         <button
                             class="add-btn"
                             @click=${async () => {
-                                const adapter = ADAPTERS[newSource.adapter];
+                                // copy, as the inputs keep changing the original object
+                                const source = { ...newSource };
                                 try {
                                     this.sourceParamError = "checking...";
-                                    await adapter.validateParams(newSource.param);
-                                    this.addChange(name, list.concat([newSource]));
-                                    this.sourceParamError = "";
+                                    await ADAPTERS[source.adapter].validateParams(source.param);
                                 } catch (ex) {
                                     this.sourceParamError = (ex as Error).message;
+                                    return;
                                 }
+                                this.sourceParamError = "";
+                                // the list could change during the validation
+                                const current =
+                                    this.changes.data_sources ?? this.settings.data_sources;
+                                this.addChange(name, current.concat([source]));
+                                // clear the row, the inputs follow via live()
+                                this.newSource = emptySource();
                             }}
                         >
                             Add
@@ -513,7 +540,6 @@ class TptSettings extends LitElement {
                 `;
             }
             case "adapters": {
-                let newAdapterUrl = "";
                 const list = this.changes.source_adapters ?? (value as SourceAdapter[]);
                 const rows = list.map(
                     (adapter, i) => html`
@@ -548,24 +574,36 @@ class TptSettings extends LitElement {
                         <div></div>
                         <input
                             placeholder="URL of adapter"
+                            .value=${live(this.newAdapterUrl)}
                             @change=${(ev: Event) => {
-                                newAdapterUrl = (ev.target as HTMLInputElement).value;
+                                this.newAdapterUrl = (ev.target as HTMLInputElement).value;
                             }}
                         />
                         <button
                             class="add-btn"
                             @click=${async () => {
+                                let newAdapter;
                                 try {
                                     this.adapterMsg = "checking...";
-                                    const newAdapter = await loadAdapter(
-                                        newAdapterUrl,
+                                    newAdapter = await loadAdapter(
+                                        this.newAdapterUrl,
                                         list.map((meta) => meta.name),
                                     );
-                                    this.adapterMsg = "";
-                                    this.addChange(name, list.concat([newAdapter.meta]));
                                 } catch (ex) {
                                     this.adapterMsg = (ex as Error).message;
+                                    return;
                                 }
+                                this.adapterMsg = "";
+                                // the list could change during the loading
+                                const current =
+                                    this.changes.source_adapters ?? this.settings.source_adapters;
+                                if (current.some((meta) => meta.name === newAdapter.meta.name)) {
+                                    this.adapterMsg = `Adapter "${newAdapter.meta.name}" is already added.`;
+                                    return;
+                                }
+                                this.addChange(name, current.concat([newAdapter.meta]));
+                                // clear the input, it follows via live()
+                                this.newAdapterUrl = "";
                             }}
                         >
                             Add
