@@ -38,6 +38,9 @@ export default function initializeSauceNAO(findAndTranslate: FindAndTranslate) {
         "artist by link",
     );
 
+    /** Tags whose original text was removed */
+    const cleanedTags = new WeakSet<HTMLElement>();
+
     function getFollowingText(el: HTMLElement) {
         const node = el.nextSibling;
         // if not a text node
@@ -111,7 +114,12 @@ export default function initializeSauceNAO(findAndTranslate: FindAndTranslate) {
         {
             tagPosition: TAG_POSITIONS.afterend,
             toTagName: getFollowingText,
-            onadded: (el) => el.nextSibling?.remove(),
+            // remove the original text only once, the next time it would be other content
+            onadded: (el) => {
+                if (cleanedTags.has(el)) return;
+                cleanedTags.add(el);
+                el.nextSibling?.remove();
+            },
             asyncMode: true,
             classes: "no-brackets",
             css: css`
