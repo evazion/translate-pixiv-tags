@@ -1,7 +1,6 @@
 import $ from "../dom";
 import { GM } from "$";
 import { css } from "lit";
-import { MutationSummary } from "mutation-summary";
 import { addCss, chooseBackgroundColorScheme, safeMatch } from "../utils";
 import {
     getNormalizedHashtagName,
@@ -164,30 +163,43 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
     onRestart(() => {
         disposed = true;
     });
-    const watchForChanges = (elem: Node) => {
-        if (!(elem instanceof HTMLElement)) return;
-        if (!elem.matches(channelNameSelector) || elem.matches(TAG_SELECTOR)) {
-            return;
-        }
+    /** Channel names already watched, Twitter may insert the same element again */
+    const watchedChannelNames = new WeakSet<HTMLElement>();
+    const watchForChanges = (elem: HTMLElement) => {
+        if (watchedChannelNames.has(elem) || elem.matches(TAG_SELECTOR)) return;
+        watchedChannelNames.add(elem);
         translateChannelName(elem);
-        const watcher = new MutationSummary({
-            rootNode: elem,
-            queries: [{ characterData: true }],
-            callback: () => {
-                if (disposed) {
-                    watcher.disconnect();
-                    return;
-                }
-                translateChannelName(elem);
-            },
+        const watcher = new MutationObserver(() => {
+            if (disposed) {
+                watcher.disconnect();
+                return;
+            }
+            translateChannelName(elem);
         });
+        watcher.observe(elem, { characterData: true, subtree: true });
+    };
+    /**
+     * Finds channel names in the inserted subtree. The name is always `h2>div>div>div`,
+     * so check only the headers instead of matching every inserted element.
+     */
+    const findChannelNames = (node: Node) => {
+        if (!(node instanceof HTMLElement)) return;
+        // the node is either inside a header or may contain headers
+        const header = node.closest("h2");
+        const headers = header ? [header] : node.getElementsByTagName("h2");
+        for (const h2 of headers) {
+            for (const elem of h2.querySelectorAll<HTMLElement>(":scope>div>div>div")) {
+                if (elem.matches(channelNameSelector)) watchForChanges(elem);
+            }
+        }
     };
     $(channelNameSelector).forEach(watchForChanges);
-    const channelNameWatcher = new MutationSummary({
-        queries: [{ element: "div" }],
-        // eslint-disable-next-line unicorn/no-array-for-each
-        callback: ([summary]) => summary.added.forEach(watchForChanges),
+    const channelNameWatcher = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+            for (const node of mutation.addedNodes) findChannelNames(node);
+        }
     });
+    channelNameWatcher.observe(document.body, { childList: true, subtree: true });
     onRestart(() => channelNameWatcher.disconnect());
     // The profile schema is added to <head> after the channel name is rendered,
     // so translate the channel name again once the schema is available
