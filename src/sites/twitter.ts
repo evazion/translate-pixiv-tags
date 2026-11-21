@@ -11,6 +11,8 @@ import {
     watchSiteTheme,
 } from "./shared";
 
+// #region hook and utils
+
 /** @type {Map<string, string>} Twitter user IDs by lowercased screen name */
 const TWITTER_USER_IDS = new Map();
 
@@ -71,6 +73,43 @@ async function hookTwitterApi() {
 // Not in initializeTwitter, as Twitter's async scripts may send requests before DOMContentLoaded
 if (window.location.host === "x.com") hookTwitterApi();
 
+// Artists who changed their username are still findable by the intent URL
+const withIntentUrl = (profileUrl: string, userId?: string | null) => {
+    if (!profileUrl) return null;
+    const screenName = safeMatch(profileUrl, /\/(\w+)$/, 1).toLowerCase();
+    const id = userId || TWITTER_USER_IDS.get(screenName);
+    return id ? [profileUrl, `https://x.com/i/user/${id}`] : profileUrl;
+};
+
+// User ID from the profile's schema, only if it belongs to the current page
+const userIdFromSchema = (screenName: string) => {
+    try {
+        const { mainEntity } = JSON.parse(
+            $("script[data-testid='UserProfileSchema-test']")[0]?.textContent ?? "",
+        );
+        if (mainEntity?.additionalName?.toLowerCase() === screenName.toLowerCase()) {
+            return String(mainEntity.identifier);
+        }
+    } catch {}
+    return null;
+};
+
+// User ID from the follow button of a user cell or a hover card
+const userIdFromFollowButton = (el: HTMLElement) =>
+    safeMatch(
+        $(el)
+            .closest("[data-testid='UserCell'], [data-testid='HoverCard']")
+            .find("[data-testid$='-follow'], [data-testid$='-unfollow']")[0]?.dataset.testid ?? "",
+        /^\d+/,
+    );
+
+const URLfromLocation = () => {
+    const screenName = safeMatch(window.location.pathname, /\w+/);
+    return withIntentUrl(`https://x.com/${screenName}`, userIdFromSchema(screenName));
+};
+
+// #endregion
+
 export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
     watchSiteTheme(document.body, "style", (body) => chooseBackgroundColorScheme(body).theme);
 
@@ -99,43 +138,11 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
         "tags",
     );
 
-    // Artists who changed their username are still findable by the intent URL
-    const withIntentUrl = (profileUrl: string, userId?: string | null) => {
-        if (!profileUrl) return null;
-        const screenName = safeMatch(profileUrl, /\/(\w+)$/, 1).toLowerCase();
-        const id = userId || TWITTER_USER_IDS.get(screenName);
-        return id ? [profileUrl, `https://x.com/i/user/${id}`] : profileUrl;
-    };
-
-    // User ID from the profile's schema, only if it belongs to the current page
-    const userIdFromSchema = (screenName: string) => {
-        try {
-            const { mainEntity } = JSON.parse(
-                $("script[data-testid='UserProfileSchema-test']")[0]?.textContent ?? "",
-            );
-            if (mainEntity?.additionalName?.toLowerCase() === screenName.toLowerCase()) {
-                return String(mainEntity.identifier);
-            }
-        } catch {}
-        return null;
-    };
-
-    // User ID from the follow button of a user cell or a hover card
-    const userIdFromFollowButton = (el: HTMLElement) =>
-        safeMatch(
-            $(el)
-                .closest("[data-testid='UserCell'], [data-testid='HoverCard']")
-                .find("[data-testid$='-follow'], [data-testid$='-unfollow']")[0]?.dataset.testid ??
-                "",
-            /^\d+/,
-        );
-
     // Floating name of a channel https://x.com/mugosatomi
-    const URLfromLocation = () => {
-        const screenName = safeMatch(window.location.pathname, /\w+/);
-        return withIntentUrl(`https://x.com/${screenName}`, userIdFromSchema(screenName));
-    };
     const channelNameSelector = "div[data-testid='primaryColumn']>div>:first-child h2>div>div>div";
+
+    // #region floating channel
+
     const translateChannelName = (elem: HTMLElement) => {
         $(elem).nextAll(TAG_SELECTOR).remove();
         const channel = () => safeMatch(window.location.pathname, /\w+/);
@@ -215,6 +222,8 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
     });
     schemaWatcher.observe(document.head, { childList: true, subtree: true, characterData: true });
     onRestart(() => schemaWatcher.disconnect());
+
+    // #endregion
 
     // Deleted channel https://x.com/6o2_iii
     findAndTranslate(
