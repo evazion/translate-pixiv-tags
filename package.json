@@ -7,6 +7,7 @@
         "@floating-ui/dom": "^1.7.4",
         "@fortawesome/fontawesome-free": "^7.1.0",
         "@lit-labs/rollup-plugin-minify-html-literals": "^0.1.1",
+        "esm-env": "^1.2.2",
         "floating-ui": "^5.2.8",
         "lit": "^3.3.2",
         "mutation-summary": "^1.0.0",

@@ -1,5 +1,6 @@
 import { css, html, unsafeCSS } from "lit";
 import { GM } from "$";
+import { DEV } from "esm-env";
 import { ajax, getSafeImageUrl } from "./network";
 import { ADAPTERS, adapterCodes, SETTINGS } from "./settings";
 import { addCss, console, memoize } from "./utils";
@@ -136,18 +137,18 @@ export type SourceAdapter = {
     lastUpdate: number;
 };
 
-const isDevUrl = (url: string) => url.startsWith("http://127.0.0.1:");
-
 export async function execAdapters(adapters: SourceAdapter[]) {
     const codes = await adapterCodes.get(adapters.map((m) => m.name));
 
     const now = Date.now();
     for (const adapter of adapters) {
         if (adapter.name === "Danbooru") continue;
-        const alwaysUpdateAndExec = isDevUrl(adapter.codeUrl);
-        if (codes[adapter.name] && !alwaysUpdateAndExec) {
+        // in development, always run the latest code of the adapters from the local adapter server
+        let hasRun = DEV && adapter.codeUrl.startsWith("http://127.0.0.1:");
+        if (codes[adapter.name] && !hasRun) {
             try {
                 parseAdapter(codes[adapter.name])();
+                hasRun = true;
             } catch (ex) {
                 console.error(
                     `An error occurred during execution of the adapter "${adapter.name}":`,
@@ -155,9 +156,10 @@ export async function execAdapters(adapters: SourceAdapter[]) {
                 );
             }
         }
-        const shouldExec = !codes[adapter.name] || alwaysUpdateAndExec;
-        if (adapter.lastUpdate + ADAPTER_UPDATE_PERIOD < now || shouldExec) {
-            await updateAdapter(adapter, shouldExec);
+        if (!hasRun) {
+            await updateAdapter(adapter, true);
+        } else if (adapter.lastUpdate + ADAPTER_UPDATE_PERIOD < now) {
+            updateAdapter(adapter, false);
         }
     }
 }
