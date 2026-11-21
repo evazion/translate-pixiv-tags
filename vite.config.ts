@@ -68,7 +68,7 @@ export default defineConfig(({ mode, command }) => ({
                 // and the pre-bundled client with the key baked in is cached as immutable
                 version:
                     command === "build"
-                        ? new Date().toISOString().replaceAll(/[^\d]/g, "")
+                        ? new Date().toISOString().replaceAll(/[^\d]/g, "").slice(0, 14)
                         : "dev+hmr",
                 description:
                     "Translates tags and look ups artist on Pixiv, Twitter/X, ArtStation, Deviant Art, Fanbox, and others sites using Danbooru or other sites.",
