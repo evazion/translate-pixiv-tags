@@ -431,7 +431,7 @@ class TptArtistTooltipContent extends LitElement implements Partial<ArtistToolti
                         </div>
                         <div
                             class="post-list scrollable"
-                            style="width: ${this.width}px"
+                            style="width: ${this.width + "px"}"
                             part="post-list"
                         >
                             ${this.postPreviews}
