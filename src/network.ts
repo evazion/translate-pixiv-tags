@@ -193,7 +193,7 @@ export async function ajax<M extends string>(
                 params,
                 "\nHTTP Error:",
                 status,
-                statusText,
+                statusText ?? (status === undefined ? error : undefined),
             );
             errorMsg =
                 !status || statusText?.startsWith("NetworkError")
