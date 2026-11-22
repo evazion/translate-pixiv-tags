@@ -2,7 +2,7 @@ name: Bump userscript version
 on:
   push:
     branches: [ master ]
-    path: [ translate-pixiv-tags.user.js ]
+    paths: [ translate-pixiv-tags.user.js ]
 
 jobs:
   run:
