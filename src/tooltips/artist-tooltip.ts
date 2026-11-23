@@ -4,6 +4,7 @@ import showSettings, { settingsIcon } from "./settings";
 import { tooltip } from "./shared";
 import { html } from "lit-html";
 import { ShadowComponent, type ChangedProperties } from "./component";
+import { addCleanup } from "../cleanup";
 
 const ARTIST_TOOLTIP_CSS = css`
     article.container {
@@ -447,9 +448,9 @@ class TptArtistTooltipContent extends ShadowComponent implements Partial<ArtistT
 const renderedTooltipsCache: Record<string, Promise<HTMLElement>> = {};
 
 /** Drops the rendered tooltips, as they may depend on the changed settings */
-export function clearTooltipCache() {
+addCleanup(() => {
     for (const key of Object.keys(renderedTooltipsCache)) delete renderedTooltipsCache[key];
-}
+});
 
 /**
  * Attach the artist tooltip to the tag

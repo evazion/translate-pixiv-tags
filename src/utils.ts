@@ -1,3 +1,4 @@
+import { addCleanup } from "./cleanup";
 import { SETTINGS, customCssSheet } from "./settings";
 
 export { css, unsafeCSS } from "@lit/reactive-element/css-tag.js";
@@ -344,9 +345,9 @@ function lineOf(text: string, index: number) {
 /**
  * Removes all the CSS added to the page
  */
-export function removeAllCss() {
+addCleanup(() => {
     document.adoptedStyleSheets = document.adoptedStyleSheets.filter(
         (sheet) => !sheets.includes(sheet),
     );
     sheets = [];
-}
+});

@@ -1,3 +1,4 @@
+import { addCleanup } from "../cleanup";
 import $ from "../dom";
 import { console, match } from "../utils";
 
@@ -31,19 +32,12 @@ export const TAG_POSITIONS = {
     },
 } satisfies Record<string, TagPosition>;
 
-const cleanups: Array<() => void> = [];
-
 /**
  * Registers a function that undoes a part of the site setup on restart.
  * Not for per-tag resources: the registry keeps them alive until the restart.
  */
 export function onRestart(fn: () => void) {
-    cleanups.push(fn);
-}
-
-/** Runs and forgets the registered cleanup functions */
-export function runRestartCleanups() {
-    for (const fn of cleanups.splice(0)) fn();
+    addCleanup(fn, true);
 }
 
 /** Tags whose target's url is watched; `translate()` reuses the tag on re-render */
