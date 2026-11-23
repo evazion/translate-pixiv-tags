@@ -1,76 +1,67 @@
 import { customCssSheet } from "../settings";
 import { chooseBackgroundColorScheme } from "../utils";
-import { css, html, LitElement } from "lit";
+import { css, html } from "lit";
+import { ShadowComponent } from "./component";
 import showSettings, { settingsIcon } from "./settings";
 
 let messages: TptMessages | null = null;
 
-class TptMessages extends LitElement {
-    static get styles() {
-        return [
-            css`
-                #tpt-message {
-                    width: 100vw;
-                    height: 0;
-                    display: flex;
-                    align-items: flex-start;
-                    justify-content: center;
-                    position: relative;
-                    z-index: 3100001;
-                }
-                .container {
-                    font-family: Verdana, Helvetica, sans-serif;
-                    padding: 20px;
-                    font-size: 12px;
-                    opacity: 1;
-                    transform: translateY(20px);
-                    transition: all 0.5s;
-                    box-shadow: 0 0 50px #f00;
-                }
-                .hide .container {
-                    opacity: 0;
-                    transform: translateY(-100%);
-                }
-                :host(.tip-light) .container {
-                    background-color: #fff;
-                    border: 1px solid #888;
-                    color: #222;
-                }
-                :host(.tip-dark) .container {
-                    background-color: #222;
-                    border: 1px solid #888;
-                    color: #fff;
-                }
-                input[type="button"] {
-                    margin: 0 5px;
-                }
-
-                .settings-icon svg {
-                    position: absolute;
-                    top: 5px;
-                    right: 5px;
-                    width: 16px;
-                    height: 16px;
-                    cursor: pointer;
-                }
-                .settings-icon path {
-                    fill: #888;
-                }
-            `,
-            customCssSheet,
-        ];
+const MESSAGES_CSS = css`
+    #tpt-message {
+        width: 100vw;
+        height: 0;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        position: relative;
+        z-index: 3100001;
+    }
+    .container {
+        font-family: Verdana, Helvetica, sans-serif;
+        padding: 20px;
+        font-size: 12px;
+        opacity: 1;
+        transform: translateY(20px);
+        transition: all 0.5s;
+        box-shadow: 0 0 50px #f00;
+    }
+    .hide .container {
+        opacity: 0;
+        transform: translateY(-100%);
+    }
+    :host(.tip-light) .container {
+        background-color: #fff;
+        border: 1px solid #888;
+        color: #222;
+    }
+    :host(.tip-dark) .container {
+        background-color: #222;
+        border: 1px solid #888;
+        color: #fff;
+    }
+    input[type="button"] {
+        margin: 0 5px;
     }
 
-    static get properties() {
-        return {
-            messages: { state: true },
-        };
+    .settings-icon svg {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
     }
+    .settings-icon path {
+        fill: #888;
+    }
+`;
 
+class TptMessages extends ShadowComponent {
     declare messages: Record<string, string>;
 
     constructor() {
-        super();
+        super([MESSAGES_CSS, customCssSheet]);
+        this.reactive("messages");
         this.messages = {};
     }
 
@@ -97,7 +88,7 @@ class TptMessages extends LitElement {
         return entires[0][1];
     }
 
-    render() {
+    protected render() {
         return html`
             <div
                 id="tpt-message"
@@ -125,8 +116,6 @@ class TptMessages extends LitElement {
     }
 }
 
-customElements.define("tpt-messages", TptMessages);
-
 /**
  * Display a message
  * @param message the message to display
@@ -138,9 +127,9 @@ export default function showMessage(message: string, key: string) {
         container.id = "tpt-message";
         document.body.append(container);
 
-        messages = document.createElement("tpt-messages") as TptMessages;
-        messages.className = `tip-${chooseBackgroundColorScheme(document.body).theme}`;
-        container.append(messages);
+        messages = new TptMessages();
+        messages.host.className = `tip-${chooseBackgroundColorScheme(document.body).theme}`;
+        container.append(messages.host);
     }
 
     messages.setMessage(message, key);

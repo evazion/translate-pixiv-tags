@@ -2,7 +2,8 @@ import { customCssSheet, SETTINGS } from "../settings";
 import { chooseBackgroundColorScheme } from "../utils";
 import showSettings, { settingsIcon } from "./settings";
 import { tooltip } from "./shared";
-import { css, CSSResult, html, LitElement, PropertyValues } from "lit";
+import { css, CSSResult, html } from "lit";
+import { ShadowComponent, type ChangedProperties } from "./component";
 
 const ARTIST_TOOLTIP_CSS = css`
     article.container {
@@ -264,28 +265,7 @@ export type ArtistTooltipParams = {
     loadNextPage: (page: number) => Promise<Renderable[]>;
 };
 
-class TptArtistTooltipContent extends LitElement implements Partial<ArtistTooltipParams> {
-    static get styles() {
-        return [ARTIST_TOOLTIP_CSS, customCssSheet];
-    }
-
-    static properties = {
-        page: { state: true },
-        loadingPage: { state: true },
-
-        artistName: { type: Object, property: true },
-        artistEditUrl: { type: String, property: true },
-        artistPageUrl: { type: String, property: true },
-        artistPostsUrl: { type: String, property: true },
-        artistUrls: { type: Object, property: true },
-        postCount: { type: Object, property: true },
-        otherNames: { type: Object, property: true },
-        firstPage: { type: Number, property: true },
-        lastPage: { type: Number, property: true },
-        postPreviews: { type: Array, property: true },
-        customCss: { type: Object, property: true },
-    };
-
+class TptArtistTooltipContent extends ShadowComponent implements Partial<ArtistTooltipParams> {
     declare artistName?: Renderable;
     declare artistEditUrl?: string;
     declare artistPageUrl?: string;
@@ -305,14 +285,29 @@ class TptArtistTooltipContent extends LitElement implements Partial<ArtistToolti
     width: number;
 
     constructor() {
-        super();
+        super([ARTIST_TOOLTIP_CSS, customCssSheet]);
+        this.reactive(
+            "page",
+            "loadingPage",
+            "artistName",
+            "artistEditUrl",
+            "artistPageUrl",
+            "artistPostsUrl",
+            "artistUrls",
+            "postCount",
+            "otherNames",
+            "firstPage",
+            "lastPage",
+            "postPreviews",
+            "customCss",
+        );
         this.page = -1;
         this.pages = {};
         this.loadingPage = false;
         this.width = 0;
     }
 
-    protected willUpdate(changedProperties: PropertyValues): void {
+    protected override willUpdate(changedProperties: ChangedProperties): void {
         if (!this.width) {
             this.width =
                 Math.min(this.postPreviews?.length || 1, SETTINGS.preview_limit, 3) * 194 - 8;
@@ -323,16 +318,16 @@ class TptArtistTooltipContent extends LitElement implements Partial<ArtistToolti
                 this.pages[this.page] = Promise.resolve(this.postPreviews!);
             }
         }
-        if (changedProperties.has("customCss") && this.shadowRoot) {
+        if (changedProperties.has("customCss")) {
             const prev = changedProperties.get("customCss") as CSSResult | undefined;
-            const sheets = this.shadowRoot!.adoptedStyleSheets.filter(
-                (sheet) => sheet !== prev?.styleSheet,
-            );
+            // modify the array in place, see ShadowComponent's constructor
+            const sheets = this.renderRoot.adoptedStyleSheets;
+            const prevIndex = prev?.styleSheet ? sheets.indexOf(prev.styleSheet) : -1;
+            if (prevIndex >= 0) sheets.splice(prevIndex, 1);
             // insert the adapter's CSS before the user's custom CSS
             if (this.customCss?.styleSheet) {
                 sheets.splice(sheets.indexOf(customCssSheet), 0, this.customCss.styleSheet);
             }
-            this.shadowRoot!.adoptedStyleSheets = sheets;
         }
     }
 
@@ -367,7 +362,7 @@ class TptArtistTooltipContent extends LitElement implements Partial<ArtistToolti
         }
     }
 
-    render() {
+    protected render() {
         return html`
             <article
                 id="tpt-artist-tooltip"
@@ -448,7 +443,6 @@ class TptArtistTooltipContent extends LitElement implements Partial<ArtistToolti
         `;
     }
 }
-customElements.define("tpt-artist-tooltip", TptArtistTooltipContent);
 
 const renderedTooltipsCache: Record<string, Promise<HTMLElement>> = {};
 
@@ -471,12 +465,10 @@ export default function artistTooltip(
     return tooltip(async ({ tooltip, content, target }) => {
         if (!(key in renderedTooltipsCache)) {
             const promise = getData().then((data) => {
-                const elem = document.createElement(
-                    "tpt-artist-tooltip",
-                ) as TptArtistTooltipContent;
-                Object.assign(elem, data);
-                elem.customCss = css;
-                return elem;
+                const component = new TptArtistTooltipContent();
+                Object.assign(component, data);
+                component.customCss = css;
+                return component.host;
             });
             renderedTooltipsCache[key] = promise;
             // do not keep failed tooltips, so they can be retried on the next hover

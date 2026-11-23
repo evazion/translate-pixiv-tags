@@ -11,7 +11,8 @@ import {
     customCssSheet,
 } from "../settings";
 import { chooseBackgroundColorScheme, console, isEqual, self, validateCss } from "../utils";
-import { css, html, LitElement } from "lit";
+import { css, html } from "lit";
+import { ShadowComponent } from "./component";
 import { unsafeSVG } from "lit/directives/unsafe-svg.js";
 import { live } from "lit/directives/live.js";
 import { execAdapters, SourceAdapter, loadAdapter } from "../adapter-loader";
@@ -47,146 +48,130 @@ function emptySource(): DataSource {
     };
 }
 
-class TptSettings extends LitElement {
-    static get styles() {
-        return [
-            css`
-                #tpt-settings {
-                    width: 100vw;
-                    height: 100vh;
-                    background: rgba(0, 0, 0, 0.25);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    position: relative;
-                    z-index: 3100000;
-                }
-                :host(.tip-dark) #tpt-settings {
-                    background: rgba(0, 0, 0, 0.75);
-                }
-                .container {
-                    font-family: Verdana, Helvetica, sans-serif;
-                    padding: 20px;
-                    display: grid;
-                    grid-template-columns: 1fr 300px;
-                    align-items: center;
-                    grid-gap: 10px;
-                    font-size: 12px;
-                    min-width: min(760px, 90vw);
-
-                    > div {
-                        display: flex;
-                        flex-direction: column-reverse;
-                    }
-                    :host(.tip-light) & {
-                        background-color: #fff;
-                        color: #222;
-                    }
-                    :host(.tip-dark) & {
-                        background-color: #222;
-                        color: #fff;
-                    }
-                    h2,
-                    div:has(div),
-                    div:has(+ div > div) {
-                        grid-column: span 2;
-                        margin: auto;
-                    }
-                    div:has(+ div > div) {
-                        font-weight: bold;
-                        font-size: 125%;
-                    }
-                }
-                input[type="button"] {
-                    margin: 0 5px;
-                }
-                nav {
-                    grid-column: span 2;
-                    display: flex;
-                    justify-content: center;
-                    gap: 2px;
-                    border-bottom: 1px solid gray;
-                    button {
-                        padding: 6px 14px;
-                        border: 1px solid transparent;
-                        border-bottom: none;
-                        border-radius: 4px 4px 0 0;
-                        background: none;
-                        color: inherit;
-                        font: inherit;
-                        cursor: pointer;
-                        margin-bottom: -1px;
-                        opacity: 0.7;
-                        &:hover {
-                            opacity: 1;
-                        }
-                        &.active {
-                            border-color: gray;
-                            opacity: 1;
-                            font-weight: bold;
-                            :host(.tip-light) & {
-                                background-color: #fff;
-                            }
-                            :host(.tip-dark) & {
-                                background-color: #222;
-                            }
-                        }
-                    }
-                }
-                .sources-list {
-                    display: grid;
-                    grid-template-columns: repeat(7, auto);
-                    align-items: center;
-                    gap: 0.5rem;
-                    padding: 0.5rem 0.5rem 0;
-                    border: 1px solid gray;
-                    .add-btn {
-                        grid-column: span 3;
-                    }
-                }
-                .adapters-list {
-                    display: grid;
-                    grid-template-columns: repeat(4, auto);
-                    align-items: center;
-                    gap: 0.5rem;
-                    padding: 0.5rem;
-                    border: 1px solid gray;
-                    input {
-                        grid-column: span 2;
-                    }
-                }
-                .validate-msg {
-                    grid-column: 1 / -1;
-                }
-                .css-editor {
-                    width: min(700px, 80vw);
-                    textarea {
-                        width: 100%;
-                        min-height: 16em;
-                        box-sizing: border-box;
-                        font-family: monospace;
-                        resize: vertical;
-                    }
-                    .validate-msg {
-                        color: red;
-                    }
-                }
-            `,
-            customCssSheet,
-        ];
+const SETTINGS_CSS = css`
+    #tpt-settings {
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        z-index: 3100000;
     }
-
-    static get properties() {
-        return {
-            changed: { state: true },
-            changes: { state: true },
-            sourceParamError: { state: true },
-            adapterMsg: { state: true },
-            cssError: { state: true },
-            tab: { state: true },
-        };
+    :host(.tip-dark) #tpt-settings {
+        background: rgba(0, 0, 0, 0.75);
     }
+    .container {
+        font-family: Verdana, Helvetica, sans-serif;
+        padding: 20px;
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        align-items: center;
+        grid-gap: 10px;
+        font-size: 12px;
+        min-width: min(760px, 90vw);
 
+        > div {
+            display: flex;
+            flex-direction: column-reverse;
+        }
+        :host(.tip-light) & {
+            background-color: #fff;
+            color: #222;
+        }
+        :host(.tip-dark) & {
+            background-color: #222;
+            color: #fff;
+        }
+        h2,
+        div:has(div),
+        div:has(+ div > div) {
+            grid-column: span 2;
+            margin: auto;
+        }
+        div:has(+ div > div) {
+            font-weight: bold;
+            font-size: 125%;
+        }
+    }
+    input[type="button"] {
+        margin: 0 5px;
+    }
+    nav {
+        grid-column: span 2;
+        display: flex;
+        justify-content: center;
+        gap: 2px;
+        border-bottom: 1px solid gray;
+        button {
+            padding: 6px 14px;
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            background: none;
+            color: inherit;
+            font: inherit;
+            cursor: pointer;
+            margin-bottom: -1px;
+            opacity: 0.7;
+            &:hover {
+                opacity: 1;
+            }
+            &.active {
+                border-color: gray;
+                opacity: 1;
+                font-weight: bold;
+                :host(.tip-light) & {
+                    background-color: #fff;
+                }
+                :host(.tip-dark) & {
+                    background-color: #222;
+                }
+            }
+        }
+    }
+    .sources-list {
+        display: grid;
+        grid-template-columns: repeat(7, auto);
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.5rem 0;
+        border: 1px solid gray;
+        .add-btn {
+            grid-column: span 3;
+        }
+    }
+    .adapters-list {
+        display: grid;
+        grid-template-columns: repeat(4, auto);
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        border: 1px solid gray;
+        input {
+            grid-column: span 2;
+        }
+    }
+    .validate-msg {
+        grid-column: 1 / -1;
+    }
+    .css-editor {
+        width: min(700px, 80vw);
+        textarea {
+            width: 100%;
+            min-height: 16em;
+            box-sizing: border-box;
+            font-family: monospace;
+            resize: vertical;
+        }
+        .validate-msg {
+            color: red;
+        }
+    }
+`;
+
+class TptSettings extends ShadowComponent {
     // ensure these aren't declared as native class fields
     declare settings: typeof SETTINGS;
     declare changed: boolean;
@@ -196,6 +181,8 @@ class TptSettings extends LitElement {
     declare cssError: string;
     declare tab: Tab;
     destroy: () => void;
+    /** Called when the settings are closed */
+    onclose: (() => void) | null = null;
     /** Downloaded adapter updates to apply on saving, by adapter name */
     pendingAdapterUpdates = new Map<string, Awaited<ReturnType<typeof loadAdapter>>>();
     /** Values of the row for adding a data source, kept between renders */
@@ -204,7 +191,8 @@ class TptSettings extends LitElement {
     newAdapterUrl = "";
 
     constructor() {
-        super();
+        super([SETTINGS_CSS, customCssSheet]);
+        this.reactive("changed", "changes", "sourceParamError", "adapterMsg", "cssError", "tab");
 
         this.settings = { ...SETTINGS };
         this.changed = false;
@@ -220,7 +208,7 @@ class TptSettings extends LitElement {
         const self = this;
         function destroy() {
             document.removeEventListener("keydown", closeOnEscape);
-            self.onclose?.(new Event("close"));
+            self.onclose?.();
         }
 
         function closeOnEscape(ev: KeyboardEvent) {
@@ -402,7 +390,8 @@ class TptSettings extends LitElement {
                                 }
                                 this.sourceParamError = "";
                                 // the list could change during the validation
-                                const current = this.changes.data_sources ?? this.settings.data_sources;
+                                const current =
+                                    this.changes.data_sources ?? this.settings.data_sources;
                                 const index = current.indexOf(source);
                                 if (index < 0) return;
                                 this.addChange(name, current.with(index, { ...source, param }));
@@ -691,18 +680,16 @@ class TptSettings extends LitElement {
     }
 }
 
-customElements.define("tpt-settings", TptSettings);
-
 export default function showSettings() {
     const container = document.createElement("div");
     container.id = "tpt-settings";
     document.body.append(container);
 
-    const settings = document.createElement("tpt-settings");
+    const settings = new TptSettings();
     settings.onclose = () => {
         container.remove();
     };
-    settings.className = `tip-${chooseBackgroundColorScheme(document.body).theme}`;
+    settings.host.className = `tip-${chooseBackgroundColorScheme(document.body).theme}`;
 
-    container.append(settings);
+    container.append(settings.host);
 }
