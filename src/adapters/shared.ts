@@ -1,7 +1,7 @@
 import globeRaw from "@fortawesome/fontawesome-free/svgs/solid/globe.svg?raw";
 import soundRaw from "@fortawesome/fontawesome-free/svgs/solid/volume-high.svg?raw";
-import { unsafeSVG } from "lit/directives/unsafe-svg.js";
-import { until } from "lit/directives/until.js";
+import { unsafeSVG } from "lit-html/directives/unsafe-svg.js";
+import { until } from "lit-html/directives/until.js";
 import { getImage, TRANSPARENT_IMAGE } from "../network";
 import { DOMAIN_USES_CSP } from "../settings";
 

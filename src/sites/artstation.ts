@@ -1,4 +1,4 @@
-import { css } from "lit";
+import { css } from "../utils";
 import { linkInChildren, TAG_POSITIONS } from "./shared";
 
 export default function initializeArtStation(findAndTranslate: FindAndTranslate) {

@@ -1,9 +1,9 @@
 import { IQuery, MutationSummary } from "mutation-summary";
 import $ from "./dom";
-import { css, render } from "lit";
+import { render } from "lit-html";
 import { GM } from "$";
 import { ADAPTERS, customCssSheet, setOnSettingChange, SETTINGS } from "./settings";
-import { addCss, chooseBackgroundColorScheme, console, removeAllCss } from "./utils";
+import { addCss, chooseBackgroundColorScheme, console, css, removeAllCss } from "./utils";
 import { runRestartCleanups, TAG_POSITIONS, TAG_SELECTOR } from "./sites/shared";
 import initializeMastodon from "./sites/mastodon";
 import initializeBluesky from "./sites/bsky";

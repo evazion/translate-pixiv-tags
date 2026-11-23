@@ -1,8 +1,8 @@
 import { customCssSheet, SETTINGS } from "../settings";
-import { chooseBackgroundColorScheme } from "../utils";
+import { chooseBackgroundColorScheme, css } from "../utils";
 import showSettings, { settingsIcon } from "./settings";
 import { tooltip } from "./shared";
-import { css, CSSResult, html } from "lit";
+import { html } from "lit-html";
 import { ShadowComponent, type ChangedProperties } from "./component";
 
 const ARTIST_TOOLTIP_CSS = css`

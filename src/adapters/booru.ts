@@ -1,8 +1,8 @@
-import { css, html, unsafeCSS } from "lit";
-import { until } from "lit/directives/until.js";
+import { html } from "lit-html";
+import { until } from "lit-html/directives/until.js";
 import { ajax, getSafeImageUrl, MAXIMUM_URI_LENGTH, type UrlParams } from "../network";
 import { SETTINGS } from "../settings";
-import { addCss, naturalCompare, console, param } from "../utils";
+import { addCss, naturalCompare, console, param, css, unsafeCSS } from "../utils";
 import { normalizeSourceUrl } from "../normalize-url";
 import {
     FLASH_FILE,

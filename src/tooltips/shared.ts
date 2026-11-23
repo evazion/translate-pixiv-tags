@@ -7,8 +7,8 @@ import {
     arrow,
     type Placement,
 } from "@floating-ui/dom";
-import { noChange } from "lit";
-import { directive, Directive, ElementPart, Part, PartInfo, PartType } from "lit/directive.js";
+import { noChange } from "lit-html";
+import { directive, Directive, ElementPart, Part, PartInfo, PartType } from "lit-html/directive.js";
 import { console } from "../utils";
 
 export type TooltipInstance = {

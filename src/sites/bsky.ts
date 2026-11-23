@@ -1,4 +1,4 @@
-import { css } from "lit";
+import { css } from "../utils";
 import { TAG_POSITIONS } from "./shared";
 
 export default function initializeBluesky(findAndTranslate: FindAndTranslate) {

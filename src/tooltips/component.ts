@@ -1,4 +1,4 @@
-import { render, type CSSResult } from "lit";
+import { render } from "lit-html";
 
 export type ChangedProperties = Map<PropertyKey, unknown>;
 

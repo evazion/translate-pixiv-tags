@@ -1,4 +1,4 @@
-import { css } from "lit";
+import { css } from "../utils";
 import { getNormalizedDecentralizedSocNetUrl, TAG_POSITIONS, watchSiteTheme } from "./shared";
 import { addCss } from "../utils";
 

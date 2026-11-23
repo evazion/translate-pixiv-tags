@@ -8,9 +8,7 @@ declare module _lit {
     type CSSResult = _["CSSResult"];
 }
 
-// prevent usage of non-imported jQuery
-declare const $: never;
-
+type CSSResult = _let.CSSResult;
 type Renderable = _lit.Renderable;
 type RenderableChunk = _lit.Renderable | Array<_lit.Renderable> | Iterable<_lit.Renderable>;
 
@@ -106,7 +104,5 @@ class Adapter {
         | ((name: string, options: TranslatorOptions) => Promise<TranslationResult>)
         | null;
 
-    translateTag:
-        | ((name: string, options: TranslatorOptions) => Promise<TranslationResult>)
-        | null;
+    translateTag: ((name: string, options: TranslatorOptions) => Promise<TranslationResult>) | null;
 }

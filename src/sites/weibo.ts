@@ -1,5 +1,5 @@
 import $ from "../dom";
-import { css } from "lit";
+import { css } from "../utils";
 import { safeMatch } from "../utils";
 import { preventSiteNavigation, TAG_POSITIONS, watchSiteTheme } from "./shared";
 
@@ -27,7 +27,8 @@ export default function initializeWeibo(findAndTranslate: FindAndTranslate) {
             toProfileUrl: (el) =>
                 url(
                     safeMatch(
-                        ($(el).parent().parent().nextAll("a")[0] as HTMLAnchorElement | undefined)?.href,
+                        ($(el).parent().parent().nextAll("a")[0] as HTMLAnchorElement | undefined)
+                            ?.href,
                         /to_uid=(\d+)/,
                         1,
                     ),

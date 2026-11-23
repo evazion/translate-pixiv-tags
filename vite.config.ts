@@ -14,30 +14,30 @@ export default defineConfig(({ mode, command }) => ({
         },
     },
     build: {
-        minify: mode === "production",
+        minify: false, // mode === "production",
     },
     plugins: [
-        {
-            // The minifier turns escapes like `\t` inside string/template/regex literals into
-            // raw characters. Trailing whitespace can then be trimmed by an editor or userscript
-            // manager, which silently changes the literal (e.g. breaks lit's attribute parsing).
-            // In the minified output raw tabs and trailing spaces only occur inside literals,
-            // so escaping them back is safe.
-            name: "escape-raw-whitespace",
-            apply: "build",
-            enforce: "post",
-            generateBundle: {
-                order: "post",
-                handler(_options, bundle) {
-                    for (const chunk of Object.values(bundle)) {
-                        if (chunk.type !== "chunk") continue;
-                        chunk.code = chunk.code
-                            .replaceAll("\t", "\\t")
-                            .replace(/ +(?=\r?\n)/g, (m) => "\\x20".repeat(m.length));
-                    }
-                },
-            },
-        },
+        // {
+        //     // The minifier turns escapes like `\t` inside string/template/regex literals into
+        //     // raw characters. Trailing whitespace can then be trimmed by an editor or userscript
+        //     // manager, which silently changes the literal (e.g. breaks lit's attribute parsing).
+        //     // In the minified output raw tabs and trailing spaces only occur inside literals,
+        //     // so escaping them back is safe.
+        //     name: "escape-raw-whitespace",
+        //     apply: "build",
+        //     enforce: "post",
+        //     generateBundle: {
+        //         order: "post",
+        //         handler(_options, bundle) {
+        //             for (const chunk of Object.values(bundle)) {
+        //                 if (chunk.type !== "chunk") continue;
+        //                 chunk.code = chunk.code
+        //                     .replaceAll("\t", "\\t")
+        //                     .replace(/ +(?=\r?\n)/g, (m) => "\\x20".repeat(m.length));
+        //             }
+        //         },
+        //     },
+        // },
         minifyHTML({
             failOnError: true,
             options: {

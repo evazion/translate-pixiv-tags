@@ -10,11 +10,11 @@ import {
     SETTINGS_SCHEMA,
     customCssSheet,
 } from "../settings";
-import { chooseBackgroundColorScheme, console, isEqual, self, validateCss } from "../utils";
-import { css, html } from "lit";
+import { chooseBackgroundColorScheme, console, css, isEqual, self, validateCss } from "../utils";
+import { html } from "lit-html";
 import { ShadowComponent } from "./component";
-import { unsafeSVG } from "lit/directives/unsafe-svg.js";
-import { live } from "lit/directives/live.js";
+import { unsafeSVG } from "lit-html/directives/unsafe-svg.js";
+import { live } from "lit-html/directives/live.js";
 import { execAdapters, SourceAdapter, loadAdapter } from "../adapter-loader";
 
 export const settingsIcon = unsafeSVG(settingsIconRaw);

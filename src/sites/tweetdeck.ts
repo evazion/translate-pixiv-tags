@@ -1,4 +1,4 @@
-import { css } from "lit";
+import { css } from "../utils";
 import { addCss } from "../utils";
 import { getNormalizedHashtagName, watchSiteTheme } from "./shared";
 

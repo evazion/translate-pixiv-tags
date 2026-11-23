@@ -1,5 +1,4 @@
-import { css } from "lit";
-import { safeMatch } from "../utils";
+import { css, safeMatch } from "../utils";
 import {
     deleteOnUrlChange,
     preventSiteNavigation,

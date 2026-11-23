@@ -1,6 +1,6 @@
 import $ from "../dom";
 import { GM } from "$";
-import { css } from "lit";
+import { css } from "../utils";
 import { addCss, chooseBackgroundColorScheme, safeMatch } from "../utils";
 import {
     getNormalizedHashtagName,

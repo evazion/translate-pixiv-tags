@@ -1,6 +1,6 @@
 import { customCssSheet } from "../settings";
-import { chooseBackgroundColorScheme } from "../utils";
-import { css, html } from "lit";
+import { chooseBackgroundColorScheme, css } from "../utils";
+import { html } from "lit-html";
 import { ShadowComponent } from "./component";
 import showSettings, { settingsIcon } from "./settings";
 

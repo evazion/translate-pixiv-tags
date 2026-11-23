@@ -1,5 +1,6 @@
 import { SETTINGS, customCssSheet } from "./settings";
-import { CSSResult } from "lit";
+
+export { css, unsafeCSS } from "@lit/reactive-element/css-tag.js";
 
 const konsole = globalThis.console;
 /** Branded version of the console */

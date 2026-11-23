@@ -1,4 +1,4 @@
-import { css } from "lit";
+import { css } from "../utils";
 import { memoize } from "../utils";
 import { preventSiteNavigation, TAG_POSITIONS } from "./shared";
 

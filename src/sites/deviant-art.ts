@@ -1,4 +1,4 @@
-import { css } from "lit";
+import { css } from "../utils";
 import { addCss } from "../utils";
 import { deleteOnUrlChange, linkInChildren, TAG_POSITIONS, watchSiteTheme } from "./shared";
 

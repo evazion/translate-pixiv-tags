@@ -1,4 +1,4 @@
-import { css } from "lit";
+import { css } from "../utils";
 import { preventSiteNavigation } from "./shared";
 
 export default function initializeSkeb(findAndTranslate: FindAndTranslate) {
