@@ -25,7 +25,9 @@ import artistTooltip, { type ArtistTooltipParams } from "../tooltips/artist-tool
 import { cache } from "../cache";
 
 // Setting this to the maximum since batches could return more than the amount being queried
-const API_LIMIT = 1000;
+const RESPONSE_LIMIT = 1000;
+/** General limit set by Danbooru for for batched requests */
+const REQUEST_LIMIT = 500;
 /** For GET-endpoints Danbooru accepts at most 16kB even over POST, plus some leeway */
 const MAXIMUM_PARAMS_LENGTH = 16_000;
 const REQUEST_INTERVAL = 500; // in ms
@@ -397,8 +399,8 @@ function intervalNetworkHandler(queue: RequestQueue) {
             DBResponse<typeof type>
         >;
         const url = `${queue.host}${requestTools.url}.json`;
-        const limitParam = { limit: requestTools.responseLimit ?? API_LIMIT };
-        const requestLimit = requestTools.requestLimit ?? Infinity;
+        const limitParam = { limit: requestTools.responseLimit ?? RESPONSE_LIMIT };
+        const requestLimit = requestTools.requestLimit ?? REQUEST_LIMIT;
         const buildParams = (batch: typeof requests): UrlParams => ({
             ...requestTools.params(batch.map((request) => request.item)),
             ...limitParam,
@@ -896,7 +898,7 @@ export default class DanbooruAdapter implements Adapter {
         );
         await sendRequests(
             `${booru}${tools.url}.json`,
-            { ...tools.params(tags.map(({ name }) => name)), limit: API_LIMIT },
+            { ...tools.params(tags.map(({ name }) => name)), limit: RESPONSE_LIMIT },
             requests,
             tools,
         );
