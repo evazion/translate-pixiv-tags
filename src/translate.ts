@@ -79,14 +79,18 @@ async function translateTag(
         tag.normalize("NFKC").trim().replace(/^#/, "").replaceAll(/\s/g, "_").toLocaleLowerCase(),
     );
 
-    translate(
-        target,
-        "translateTag",
-        normalizedTags,
-        "tpt-tags",
-        `Couldn't translate tag`,
-        options,
-    );
+    try {
+        await translate(
+            target,
+            "translateTag",
+            normalizedTags,
+            "tpt-tags",
+            `Couldn't translate tag`,
+            options,
+        );
+    } catch (ex) {
+        console.error("Failed to translate tag", normalizedTags, "for", target, ex);
+    }
 }
 
 async function translateArtistByName(
@@ -94,14 +98,18 @@ async function translateArtistByName(
     artistNames: string[],
     options: TranslationOptionsFull,
 ) {
-    translate(
-        target,
-        "translateArtistByName",
-        artistNames,
-        "tpt-artists",
-        "Couldn't find artist",
-        options,
-    );
+    try {
+        await translate(
+            target,
+            "translateArtistByName",
+            artistNames,
+            "tpt-artists",
+            "Couldn't find artist",
+            options,
+        );
+    } catch (ex) {
+        console.error("Failed to translate artist", artistNames, "for", target, ex);
+    }
 }
 
 async function translateArtistByUrl(
@@ -111,14 +119,18 @@ async function translateArtistByUrl(
 ) {
     const normalizedUrls = profileUrls.map(normalizeProfileUrl).filter(Boolean);
 
-    translate(
-        target,
-        "translateArtistByUrl",
-        normalizedUrls,
-        "tpt-artists",
-        "Couldn't find artist by url",
-        options,
-    );
+    try {
+        await translate(
+            target,
+            "translateArtistByUrl",
+            normalizedUrls,
+            "tpt-artists",
+            "Couldn't find artist by url",
+            options,
+        );
+    } catch (ex) {
+        console.error("Failed to translate artist", normalizedUrls, "for", target, ex);
+    }
 }
 
 async function translate(
