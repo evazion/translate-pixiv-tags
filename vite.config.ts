@@ -85,6 +85,7 @@ export default defineConfig(({ mode, command }) => ({
                         : undefined,
                 noframes: true,
                 "run-at": "document-start",
+                sandbox: "DOM",
                 match: [
                     "*://*.artstation.com/*",
                     // "*://baraag.net/*",
