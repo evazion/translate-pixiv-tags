@@ -363,7 +363,7 @@ async function translate(
     if (translations.flat(2).filter(Boolean).length === 0) {
         // do not store misses if logging is disabled
         if (SETTINGS.debug) {
-            const msg = `${errorMsg} "${params}", rule "${ruleName}"`;
+            const msg = `${errorMsg} "${params.join(", ")}", rule "${ruleName}"`;
             if (!loggedMisses.has(msg)) {
                 loggedMisses.add(msg);
                 console.info(msg);
