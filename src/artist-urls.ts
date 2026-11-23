@@ -80,6 +80,7 @@ const SITE_RULES = [
 
     // TwitPic must be before twitter
     { name: "TwitPic", hostname: "twitpic.com" },
+    { name: "Twitter", domain: "twitter.com" },
     { name: "Twitter", domain: "x.com" },
     { name: "Twitter", domain: "t.co" },
 
@@ -499,7 +500,7 @@ export function isSecondaryUrl(siteUrl: string) {
     return [
         /pixiv\.net\/stacc/i,
         /pixiv\.net\/fanbox/i,
-        /twitter\.com\/i\/user/i,
+        /(twitter|x)\.com\/i\/user/i,
         /(www|com|dic)\.nicovideo\.jp/i,
         /pawoo\.net\/web\/accounts/i,
         /misskey\.(io|art|design)\/users/i,
