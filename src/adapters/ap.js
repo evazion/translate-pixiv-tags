@@ -351,7 +351,6 @@ function buildPostPreview(post) {
                     src="${adapterShared.corsSrc(preview.url, true)}"
                     crossorigin="anonymous"
                     referrerpolicy="origin"
-                    part="post-preview rating-${"gsqe"[post.erotics]}"
                 />
             </a>
             <p>${adapterShared.formatBytes(post.size)} ${post.ext}, ${post.width}x${post.height}</p>

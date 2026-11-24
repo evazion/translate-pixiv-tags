@@ -12,6 +12,18 @@ const ARTIST_TOOLTIP_CSS = css`
         padding: 10px;
     }
 
+    .settings-icon svg {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+    }
+    .settings-icon path {
+        fill: #888;
+    }
+
     section {
         margin-bottom: 15px;
         line-height: 12.5px;
@@ -37,43 +49,87 @@ const ARTIST_TOOLTIP_CSS = css`
         line-height: 24px;
         padding: 0px;
         max-height: 48px;
-    }
-
-    ul.other-names li {
-        display: inline-block;
-    }
-
-    ul.other-names li a {
-        background-color: rgba(128, 128, 128, 0.2);
-        padding: 3px 5px;
-        margin: 0 2px;
-        border-radius: 3px;
-        white-space: nowrap;
+        li {
+            display: inline-block;
+        }
+        li a {
+            background-color: rgba(128, 128, 128, 0.2);
+            padding: 3px 5px;
+            margin: 0 2px;
+            border-radius: 3px;
+            white-space: nowrap;
+        }
     }
 
     section.urls ul {
         padding: 0px;
         max-height: 145px;
         line-height: 1.5em;
+        ::marker {
+            font-size: 10px;
+        }
+        li.artist-url-inactive a {
+            color: red;
+            text-decoration: underline;
+            text-decoration-style: dotted;
+        }
+        .artist-url-icon {
+            display: inline-block;
+            width: 1.8em;
+            * {
+                width: 1.5em;
+                fill: currentColor;
+                vertical-align: middle;
+            }
+        }
     }
 
-    section.urls ul ::marker {
-        font-size: 10px;
+    div.post-pager {
+        display: flex;
+        align-items: stretch;
+        gap: 3px;
+        &.loading {
+            opacity: 0.5;
+            cursor: wait;
+            a {
+                cursor: progress;
+            }
+            .btn {
+                cursor: wait;
+            }
+        }
+        .btn {
+            width: 12px;
+            flex-shrink: 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            &.disabled {
+                opacity: 0.5;
+                cursor: default;
+            }
+            &:last-child {
+                justify-content: flex-end;
+            }
+            &:hover {
+                background: #8884;
+                border-radius: 3px;
+            }
+        }
     }
 
-    section.urls ul li.artist-url-inactive a {
-        color: red;
-        text-decoration: underline;
-        text-decoration-style: dotted;
-    }
-    .artist-url-icon {
-        display: inline-block;
-        width: 1.8em;
-    }
-    .artist-url-icon * {
-        width: 1.5em;
-        fill: currentColor;
-        vertical-align: middle;
+    div.post-list {
+        display: grid;
+        grid-template-columns: repeat(3, auto);
+        grid-auto-rows: max-content;
+        max-height: 422px;
+        margin-right: auto;
+        flex-grow: 1;
+        &:empty::after {
+            content: "No posts here";
+            text-align: center;
+            grid-column: 1/4;
+        }
     }
 
     /* Thumbnail styles taken from Danbooru */
@@ -85,126 +141,61 @@ const ARTIST_TOOLTIP_CSS = css`
         overflow: hidden;
         text-align: center;
         position: relative;
-    }
-    article.post-preview:nth-child(3n),
-    article.post-preview:last-child {
-        margin: 0 2px 10px 0;
-    }
+        &:nth-child(3n),
+        &:last-child {
+            margin: 0 2px 10px 0;
+        }
+        &.blur-post img {
+            filter: blur(10px);
+        }
 
-    article.post-preview a.post-link {
-        margin: auto;
-        border: 2px solid transparent;
-        display: inline-block;
-    }
-
-    article.post-preview img {
-        display: block;
-    }
-
-    article.post-preview .post-icon {
-        position: absolute;
-        top: 0;
-        left: 0;
-        color: white;
-        background-color: rgba(0, 0, 0, 0.7);
-        border-radius: 4px;
-        font-size: 11px;
-        font-family: "Arial", "Helvetica", sans-serif;
-        line-height: 1em;
-        padding: 2px 4px;
-        margin: 2px;
-        display: flex;
-        align-items: center;
-        gap: 0.5ch;
-        z-index: 1;
-    }
-    article.post-preview .post-icon.right-icon {
-        left: auto;
-        right: 0;
-    }
-    article.post-preview .post-icon * {
-        height: 1em;
-        line-height: 1em;
-        fill: currentColor;
-        vertical-align: middle;
-    }
-
-    div.post-pager {
-        display: flex;
-        align-items: stretch;
-        gap: 3px;
-    }
-    div.post-pager.loading {
-        opacity: 0.5;
-        cursor: wait;
-    }
-    div.post-pager.loading a {
-        cursor: progress;
-    }
-    div.post-pager .btn {
-        width: 12px;
-        flex-shrink: 0;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-    }
-    div.post-pager .btn.disabled {
-        opacity: 0.5;
-        cursor: default;
-    }
-    div.post-pager.loading .btn {
-        cursor: inherit;
-    }
-    div.post-pager .btn:last-child {
-        justify-content: flex-end;
-    }
-    div.post-pager .btn:hover {
-        background: #8884;
-        border-radius: 3px;
-    }
-
-    div.post-list {
-        display: grid;
-        grid-template-columns: repeat(3, auto);
-        grid-auto-rows: max-content;
-        max-height: 422px;
-        margin-right: auto;
-        flex-grow: 1;
-    }
-    div.post-list:empty::after {
-        content: "No posts here";
-        text-align: center;
-        grid-column: 1/4;
-    }
-
-    article.post-preview a {
-        position: relative;
-        display: inline-block;
-        /*height: 184px;*/
-        overflow: hidden;
-    }
-
-    article.post-preview img {
-        margin-bottom: -2px;
-    }
-
-    article.post-preview p {
-        text-align: center;
-        margin: 0 0 2px 0;
-        letter-spacing: -0.1px;
-    }
-
-    article.post-preview p a {
-        display: inline;
-    }
-
-    article.post-preview.blur-post img {
-        filter: blur(10px);
-    }
-
-    article.post-preview.blur-post:hover img {
-        filter: blur(0px);
-        transition: filter 1s 0.5s;
+        &.blur-post:hover img {
+            filter: blur(0px);
+            transition: filter 1s 0.5s;
+        }
+        a.post-link {
+            position: relative;
+            display: inline-block;
+            overflow: hidden;
+            margin: auto;
+            border: 2px solid transparent;
+        }
+        .post-icon {
+            position: absolute;
+            top: 0;
+            left: 0;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: "Arial", "Helvetica", sans-serif;
+            line-height: 1em;
+            padding: 2px 4px;
+            margin: 2px;
+            display: flex;
+            align-items: center;
+            gap: 0.5ch;
+            z-index: 1;
+            &.right-icon {
+                left: auto;
+                right: 0;
+            }
+            * {
+                height: 1em;
+                line-height: 1em;
+                fill: currentColor;
+                vertical-align: middle;
+            }
+        }
+        img {
+            display: block;
+            margin-bottom: -2px;
+        }
+        p {
+            text-align: center;
+            margin: 0 0 2px 0;
+            letter-spacing: -0.1px;
+        }
     }
 
     .scrollable {
@@ -213,31 +204,17 @@ const ARTIST_TOOLTIP_CSS = css`
         /* Firefox */
         scrollbar-color: rgba(128, 128, 128, 0.4) rgba(128, 128, 128, 0.2);
         scrollbar-width: thin;
-    }
-    .scrollable::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .scrollable::-webkit-scrollbar-track {
-        background-color: rgba(128, 128, 128, 0.2);
-        border-radius: 6px;
-    }
-
-    .scrollable::-webkit-scrollbar-thumb {
-        background-color: rgba(128, 128, 128, 0.4);
-        border-radius: 6px;
-    }
-
-    .settings-icon svg {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        width: 16px;
-        height: 16px;
-        cursor: pointer;
-    }
-    .settings-icon path {
-        fill: #888;
+        &::-webkit-scrollbar {
+            width: 6px;
+        }
+        &::-webkit-scrollbar-track {
+            background-color: rgba(128, 128, 128, 0.2);
+            border-radius: 6px;
+        }
+        &::-webkit-scrollbar-thumb {
+            background-color: rgba(128, 128, 128, 0.4);
+            border-radius: 6px;
+        }
     }
 `;
 
@@ -368,7 +345,6 @@ class TptArtistTooltipContent extends ShadowComponent implements Partial<ArtistT
             <article
                 id="tpt-artist-tooltip"
                 class="container"
-                part="container"
             >
                 <span
                     class="settings-icon"
@@ -386,10 +362,7 @@ class TptArtistTooltipContent extends ShadowComponent implements Partial<ArtistT
                     </a>
                     <span class="post-count"> ${this.postCount} </span>
 
-                    <ul
-                        class="other-names scrollable"
-                        part="other-names"
-                    >
+                    <ul class="other-names scrollable">
                         ${this.otherNames}
                     </ul>
                 </section>
@@ -401,10 +374,7 @@ class TptArtistTooltipContent extends ShadowComponent implements Partial<ArtistT
                             >edit</a
                         >)
                     </h2>
-                    <ul
-                        class="scrollable"
-                        part="url-list"
-                    >
+                    <ul class="scrollable">
                         ${this.artistUrls}
                     </ul>
                 </section>
@@ -428,7 +398,6 @@ class TptArtistTooltipContent extends ShadowComponent implements Partial<ArtistT
                         <div
                             class="post-list scrollable"
                             style="width: ${this.width + "px"}"
-                            part="post-list"
                         >
                             ${this.postPreviews}
                         </div>

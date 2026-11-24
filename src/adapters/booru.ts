@@ -515,18 +515,21 @@ const ARTIST_TOOLTIP_CSS = css`
     a.tag-category-artist:hover {
         color: #ed2426;
     }
-    :host(.tip-content-dark) a:link,
-    :host(.tip-content-dark) a:visited {
-        color: #009be6;
-    }
-    :host(.tip-content-dark) a:hover {
-        color: #4bb4ff;
-    }
-    :host(.tip-content-dark) a.tag-category-artist {
-        color: #ff8a8b;
-    }
-    :host(.tip-content-dark) a.tag-category-artist:hover {
-        color: #ffc3c3;
+    /* keep low specificity */
+    :where(:host(.tip-content-dark)) {
+        a:link,
+        a:visited {
+            color: #009be6;
+        }
+        a:hover {
+            color: #4bb4ff;
+        }
+        a.tag-category-artist {
+            color: #ff8a8b;
+        }
+        a.tag-category-artist:hover {
+            color: #ffc3c3;
+        }
     }
 
     article.post-preview.post-status-has-children a {
@@ -603,18 +606,20 @@ const ARTIST_TOOLTIP_CSS = css`
             var(--preview_banned_color) var(--preview_has_parent_color);
     }
 
-    article.post-preview .post-icon .animation-icon {
-        font-weight: bold;
-    }
-    article.post-preview .post-icon .ai-generated {
-        color: red;
-        font-weight: bold;
-        margin-bottom: -1px;
-    }
-    article.post-preview .post-icon .ai-assisted {
-        color: orange;
-        margin-bottom: -1px;
-        margin-left: -1px;
+    article.post-preview .post-icon {
+        .animation-icon {
+            font-weight: bold;
+        }
+        .ai-generated {
+            color: red;
+            font-weight: bold;
+            margin-bottom: -1px;
+        }
+        .ai-assisted {
+            color: orange;
+            margin-bottom: -1px;
+            margin-left: -1px;
+        }
     }
 `;
 
@@ -829,7 +834,6 @@ function buildPostPreview(post: ResponsePosts, booru: string) {
                     title="${formatTagString(post)}"
                     crossorigin="anonymous"
                     referrerpolicy="origin"
-                    part="post-preview rating-${post.rating}"
                 />
             </a>
             <p>${formatImageInfo(post, booru)}</p>
