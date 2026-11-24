@@ -32,14 +32,6 @@ export const TAG_POSITIONS = {
     },
 } satisfies Record<string, TagPosition>;
 
-/**
- * Registers a function that undoes a part of the site setup on restart.
- * Not for per-tag resources: the registry keeps them alive until the restart.
- */
-export function onRestart(fn: () => void) {
-    addCleanup(fn, true);
-}
-
 /** Tags whose target's url is watched; `translate()` reuses the tag on re-render */
 const urlWatchedTags = new WeakSet<HTMLElement>();
 
@@ -145,6 +137,6 @@ export function watchSiteTheme(
 
     const observer = new MutationObserver(updateTheme);
     observer.observe(elem, { attributeFilter: [attr] });
-    onRestart(() => observer.disconnect());
+    addCleanup(() => observer.disconnect(), true);
     updateTheme();
 }

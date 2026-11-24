@@ -4,12 +4,12 @@ import { addCss, chooseBackgroundColorScheme, safeMatch } from "../utils";
 import {
     getNormalizedHashtagName,
     linkInChildren,
-    onRestart,
     TAG_POSITIONS,
     TAG_SELECTOR,
     watchSiteTheme,
 } from "./shared";
 import { css } from "@lit/reactive-element";
+import { addCleanup } from "../lifecycle";
 
 // #region hook and utils
 
@@ -168,9 +168,7 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
     // the channel name regardless whether it was translated
     // The per-element watchers stop themselves after restart, so they aren't kept alive till then
     let disposed = false;
-    onRestart(() => {
-        disposed = true;
-    });
+    addCleanup(() => (disposed = true), true);
     /** Channel names already watched, Twitter may insert the same element again */
     const watchedChannelNames = new WeakSet<HTMLElement>();
     const watchForChanges = (elem: HTMLElement) => {
@@ -208,7 +206,7 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
         }
     });
     channelNameWatcher.observe(document.body, { childList: true, subtree: true });
-    onRestart(() => channelNameWatcher.disconnect());
+    addCleanup(() => channelNameWatcher.disconnect(), true);
     // The profile schema is added to <head> after the channel name is rendered,
     // so translate the channel name again once the schema is available
     let lastSchema = "";
@@ -222,7 +220,7 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
             .forEach(translateChannelName);
     });
     schemaWatcher.observe(document.head, { childList: true, subtree: true, characterData: true });
-    onRestart(() => schemaWatcher.disconnect());
+    addCleanup(() => schemaWatcher.disconnect(), true);
 
     // #endregion
 
