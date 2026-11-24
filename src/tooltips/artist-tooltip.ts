@@ -4,7 +4,7 @@ import showSettings, { settingsIcon } from "./settings";
 import { tooltip } from "./shared";
 import { html } from "lit-html";
 import { ShadowComponent, type ChangedProperties } from "./component";
-import { addCleanup } from "../cleanup";
+import { addCleanup } from "../lifecycle";
 import { css } from "@lit/reactive-element";
 
 const ARTIST_TOOLTIP_CSS = css`

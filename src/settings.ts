@@ -1,5 +1,6 @@
 import { GM } from "$";
 import { SourceAdapter } from "./adapter-loader";
+import { requestAppRestart } from "./lifecycle";
 
 export type DataSource = {
     adapter: string;
@@ -104,17 +105,6 @@ export const SETTINGS_SCHEMA = {
     },
 } satisfies Record<string, Setting>;
 
-// use setter to prevent circular dependencies
-let onChange: () => void;
-export function setOnSettingChange(fn: () => void) {
-    onChange = fn;
-}
-
-/** Restarts the app as if a setting has changed */
-export function requestRestart() {
-    onChange?.();
-}
-
 type SettingsSchema = typeof SETTINGS_SCHEMA;
 export type SettingName = keyof SettingsSchema;
 
@@ -139,7 +129,7 @@ export const SETTINGS = new Proxy(settings, {
                 customCssSheet.replaceSync(value);
                 // adapter and css changes should not restart app
             } else if (prop !== "source_adapters") {
-                onChange?.();
+                requestAppRestart();
             }
             return true;
         }

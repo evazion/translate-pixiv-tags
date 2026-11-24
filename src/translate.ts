@@ -6,7 +6,7 @@ import { addCss, console } from "./utils";
 import { TAG_POSITIONS, TAG_SELECTOR } from "./sites/shared";
 import { normalizeProfileUrl } from "./normalize-url";
 import simplifySelector from "./simplify-selector";
-import { addCleanup } from "./cleanup";
+import { addCleanup } from "./lifecycle";
 
 let translators: Adapter[];
 

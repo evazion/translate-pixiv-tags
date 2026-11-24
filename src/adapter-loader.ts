@@ -8,6 +8,7 @@ import artistTooltip from "./tooltips/artist-tooltip";
 import * as adapterShared from "./adapters/shared";
 import { cache } from "./cache";
 import { css, unsafeCSS } from "@lit/reactive-element";
+import DanbooruAdapter from "./adapters/booru";
 
 // lit caches templates by the strings array identity, so cache processed arrays too
 const trimmedTemplates = new WeakMap<TemplateStringsArray, TemplateStringsArray>();
@@ -144,7 +145,10 @@ export async function execAdapters(adapters: SourceAdapter[]) {
 
     const now = Date.now();
     for (const adapter of adapters) {
-        if (adapter.name === "Danbooru") continue;
+        if (adapter.name === "Danbooru") {
+            ADAPTERS.Danbooru = DanbooruAdapter;
+            continue;
+        }
         // in development, always run the latest code of the adapters from the local adapter server
         let hasRun = DEV && adapter.codeUrl.startsWith("http://127.0.0.1:");
         if (codes[adapter.name] && !hasRun) {

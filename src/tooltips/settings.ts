@@ -3,7 +3,6 @@ import {
     adapterCodes,
     ADAPTERS,
     DataSource,
-    requestRestart,
     Setting,
     SettingName,
     SETTINGS,
@@ -17,6 +16,7 @@ import { unsafeSVG } from "lit-html/directives/unsafe-svg.js";
 import { live } from "lit-html/directives/live.js";
 import { execAdapters, SourceAdapter, loadAdapter } from "../adapter-loader";
 import { css } from "@lit/reactive-element";
+import { requestAppRestart } from "../lifecycle";
 
 export const settingsIcon = unsafeSVG(settingsIconRaw);
 
@@ -252,7 +252,7 @@ class TptSettings extends ShadowComponent {
         Object.assign(SETTINGS, this.changes);
         if (updatedAdapters) {
             // the translators have to be recreated from the updated adapters
-            requestRestart();
+            requestAppRestart();
         }
         this.settings = { ...SETTINGS };
         this.changes = {};

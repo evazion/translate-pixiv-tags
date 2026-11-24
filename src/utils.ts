@@ -1,4 +1,4 @@
-import { addCleanup } from "./cleanup";
+import { addCleanup } from "./lifecycle";
 import { SETTINGS, customCssSheet } from "./settings";
 
 const konsole = globalThis.console;

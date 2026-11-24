@@ -1,4 +1,4 @@
-import { addCleanup } from "../cleanup";
+import { addCleanup } from "../lifecycle";
 import $ from "../dom";
 import { console, match } from "../utils";
 

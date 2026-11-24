@@ -1,6 +1,9 @@
 import { GM } from "$";
-import { ADAPTERS, customCssSheet, setOnSettingChange, SETTINGS } from "./settings";
+import { css } from "@lit/reactive-element";
+import { addAfterRestart } from "./lifecycle";
+import { customCssSheet, SETTINGS } from "./settings";
 import { addCss, chooseBackgroundColorScheme, console } from "./utils";
+import { findAndTranslate, createTranslators, startFindAndTranslate } from "./translate";
 import initializeMastodon from "./sites/mastodon";
 import initializeBluesky from "./sites/bsky";
 import initializeCiEn from "./sites/ci-en";
@@ -22,12 +25,8 @@ import initializeXiaohongshu from "./sites/xiaohongshu";
 import initializeArtStation from "./sites/artstation";
 import initializeFanbox from "./sites/fanbox";
 import showSettings from "./tooltips/settings";
-import DanbooruAdapter from "./adapters/booru";
 import { cleanupCache } from "./cache";
 import { execAdapters } from "./adapter-loader";
-import { findAndTranslate, createTranslators, startFindAndTranslate } from "./translate";
-import { runCleanups } from "./cleanup";
-import { css } from "@lit/reactive-element";
 
 const GLOBAL_CSS = css`
     /* Adapters are expected to define --color and --icon (an image) for all tags */
@@ -165,9 +164,6 @@ const GLOBAL_CSS = css`
     }
 `;
 
-// define here to prevent circular dependency
-ADAPTERS.Danbooru = DanbooruAdapter;
-
 const SITES: Record<string, (fn: FindAndTranslate) => void> = {
     "artstation.com": initializeArtStation,
     // "baraag.net": initializeMastodon,
@@ -202,16 +198,6 @@ const SITES: Record<string, (fn: FindAndTranslate) => void> = {
 async function initialize() {
     cleanupCache();
 
-    let restartScheduled = false;
-    setOnSettingChange(() => {
-        if (restartScheduled) return;
-        queueMicrotask(() => {
-            restartScheduled = false;
-            restart();
-        });
-        restartScheduled = true;
-    });
-
     if (SETTINGS.show_settings) {
         GM.registerMenuCommand("Settings", showSettings, "S");
     }
@@ -245,11 +231,7 @@ function start() {
     startFindAndTranslate();
 }
 
-function restart() {
-    runCleanups();
-
-    start();
-}
+addAfterRestart(start);
 
 //------------------------
 // Program execution start
