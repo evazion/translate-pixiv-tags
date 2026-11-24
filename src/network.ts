@@ -174,7 +174,10 @@ export async function ajax<M extends string>(
                 method,
                 responseType: "json",
                 data,
-                headers,
+                headers: {
+                    "User-Agent": "tpt",
+                    ...headers,
+                },
             });
             // the request resolves on any HTTP status, only network errors reject it
             if (resp.status >= 400) throw resp;
