@@ -1,14 +1,12 @@
 // we cannot use usual import because then the types won't be global
-declare module _lit {
-    interface _ {
-        CSSResult: import("lit").CSSResult;
-        TemplateResult: import("lit").TemplateResult;
-    }
-    type Renderable = _["TemplateResult"] | string | number | boolean | null | undefined;
-    type CSSResult = _["CSSResult"];
+declare namespace _lit {
+    type CSSResult = import("@lit/reactive-element").CSSResult;
+    type TemplateResult = import("lit-html").TemplateResult;
+    type Renderable = TemplateResult | string | number | boolean | null | undefined;
 }
 
-type CSSResult = _let.CSSResult;
+/** The result returned by `css` or `unsafeCSS` */
+type CSSResult = _lit.CSSResult;
 type Renderable = _lit.Renderable;
 type RenderableChunk = _lit.Renderable | Array<_lit.Renderable> | Iterable<_lit.Renderable>;
 
@@ -43,7 +41,7 @@ interface TranslationOptions {
     /** Extra classes to add to the tag element */
     classes?: string;
     /** CSS related to this rule, special selectors `ARTIST_TAG` and `TPT_TAG` will match only this rule's tags */
-    css?: _lit.CSSResult | null;
+    css?: CSSResult | null;
     /** Handler for the added tag elements */
     onadded?: ((el: HTMLElement, options: TranslationOptionsFull) => void) | null;
 }

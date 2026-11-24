@@ -2,7 +2,7 @@ import { html } from "lit-html";
 import { until } from "lit-html/directives/until.js";
 import { ajax, getSafeImageUrl, MAXIMUM_URI_LENGTH, type UrlParams } from "../network";
 import { SETTINGS } from "../settings";
-import { addCss, naturalCompare, console, param, css, unsafeCSS } from "../utils";
+import { addCss, naturalCompare, console, param } from "../utils";
 import { normalizeSourceUrl } from "../normalize-url";
 import {
     FLASH_FILE,
@@ -23,6 +23,7 @@ import {
 } from "../artist-urls";
 import artistTooltip, { type ArtistTooltipParams } from "../tooltips/artist-tooltip";
 import { cache } from "../cache";
+import { css, unsafeCSS } from "@lit/reactive-element";
 
 // Setting this to the maximum since batches could return more than the amount being queried
 const RESPONSE_LIMIT = 1000;

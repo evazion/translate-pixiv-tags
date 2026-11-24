@@ -1,8 +1,6 @@
 import { addCleanup } from "./cleanup";
 import { SETTINGS, customCssSheet } from "./settings";
 
-export { css, unsafeCSS } from "@lit/reactive-element/css-tag.js";
-
 const konsole = globalThis.console;
 /** Branded version of the console */
 export const console: Console = {

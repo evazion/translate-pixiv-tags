@@ -1,4 +1,4 @@
-import { css } from "../utils";
+import { css } from "@lit/reactive-element";
 import { getNormalizedDecentralizedSocNetUrl, getNormalizedHashtagName } from "./shared";
 
 export default function initializeMisskey(findAndTranslate: FindAndTranslate) {

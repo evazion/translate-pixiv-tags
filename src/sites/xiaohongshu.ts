@@ -1,4 +1,4 @@
-import { css } from "../utils";
+import { css } from "@lit/reactive-element";
 import { TAG_POSITIONS } from "./shared";
 
 // www.xiaohongshu.com is Chinese (canonical), www.rednote.com is English mirror

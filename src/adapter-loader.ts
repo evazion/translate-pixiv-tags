@@ -3,10 +3,11 @@ import { GM } from "$";
 import { DEV } from "esm-env";
 import { ajax, getSafeImageUrl } from "./network";
 import { ADAPTERS, adapterCodes, SETTINGS } from "./settings";
-import { addCss, console, css, memoize, sleep, unsafeCSS } from "./utils";
+import { addCss, console, memoize, sleep } from "./utils";
 import artistTooltip from "./tooltips/artist-tooltip";
 import * as adapterShared from "./adapters/shared";
 import { cache } from "./cache";
+import { css, unsafeCSS } from "@lit/reactive-element";
 
 // lit caches templates by the strings array identity, so cache processed arrays too
 const trimmedTemplates = new WeakMap<TemplateStringsArray, TemplateStringsArray>();

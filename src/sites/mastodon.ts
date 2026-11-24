@@ -1,6 +1,6 @@
-import { css } from "../utils";
 import { getNormalizedDecentralizedSocNetUrl, TAG_POSITIONS, watchSiteTheme } from "./shared";
 import { addCss } from "../utils";
+import { css } from "@lit/reactive-element";
 
 export default function initializeMastodon(findAndTranslate: FindAndTranslate) {
     watchSiteTheme(document.body, "class", (body) =>

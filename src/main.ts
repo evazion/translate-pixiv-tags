@@ -1,6 +1,6 @@
 import { GM } from "$";
 import { ADAPTERS, customCssSheet, setOnSettingChange, SETTINGS } from "./settings";
-import { addCss, chooseBackgroundColorScheme, console, css } from "./utils";
+import { addCss, chooseBackgroundColorScheme, console } from "./utils";
 import initializeMastodon from "./sites/mastodon";
 import initializeBluesky from "./sites/bsky";
 import initializeCiEn from "./sites/ci-en";
@@ -27,6 +27,7 @@ import { cleanupCache } from "./cache";
 import { execAdapters } from "./adapter-loader";
 import { findAndTranslate, createTranslators, startFindAndTranslate } from "./translate";
 import { runCleanups } from "./cleanup";
+import { css } from "@lit/reactive-element";
 
 const GLOBAL_CSS = css`
     /* Adapters are expected to define --color and --icon (an image) for all tags */
@@ -204,14 +205,12 @@ async function initialize() {
     let restartScheduled = false;
     setOnSettingChange(() => {
         if (restartScheduled) return;
-        Promise.resolve().then(() => {
+        queueMicrotask(() => {
             restartScheduled = false;
             restart();
         });
         restartScheduled = true;
     });
-
-    await execAdapters(SETTINGS.source_adapters);
 
     if (SETTINGS.show_settings) {
         GM.registerMenuCommand("Settings", showSettings, "S");
@@ -220,6 +219,8 @@ async function initialize() {
     const { theme } = chooseBackgroundColorScheme(document.body);
     document.documentElement.classList.add(`tpt-${theme}`);
     console.info(`Set ${theme} theme mode`);
+
+    await execAdapters(SETTINGS.source_adapters);
 
     start();
 }
@@ -240,6 +241,7 @@ function start() {
     } else {
         console.warn(`Unsupported domain ${domain} (${window.location.host})`);
     }
+
     startFindAndTranslate();
 }
 

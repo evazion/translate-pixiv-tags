@@ -1,8 +1,9 @@
 import { customCssSheet } from "../settings";
-import { chooseBackgroundColorScheme, css } from "../utils";
+import { chooseBackgroundColorScheme } from "../utils";
 import { html } from "lit-html";
 import { ShadowComponent } from "./component";
 import showSettings, { settingsIcon } from "./settings";
+import { css } from "@lit/reactive-element";
 
 let messages: TptMessages | null = null;
 

@@ -1,4 +1,4 @@
-import { css } from "../utils";
+import { css } from "@lit/reactive-element";
 import { addCss } from "../utils";
 import { deleteOnUrlChange, linkInChildren, TAG_POSITIONS, watchSiteTheme } from "./shared";
 

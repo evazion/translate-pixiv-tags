@@ -1,4 +1,4 @@
-import { css } from "../utils";
+import { css } from "@lit/reactive-element";
 import { memoize } from "../utils";
 import { preventSiteNavigation, TAG_POSITIONS } from "./shared";
 

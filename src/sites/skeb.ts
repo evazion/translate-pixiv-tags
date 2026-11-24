@@ -1,4 +1,4 @@
-import { css } from "../utils";
+import { css } from "@lit/reactive-element";
 import { preventSiteNavigation } from "./shared";
 
 export default function initializeSkeb(findAndTranslate: FindAndTranslate) {

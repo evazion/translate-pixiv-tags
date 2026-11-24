@@ -1,4 +1,5 @@
-import { css, safeMatch } from "../utils";
+import { css } from "@lit/reactive-element";
+import { safeMatch } from "../utils";
 import {
     deleteOnUrlChange,
     preventSiteNavigation,

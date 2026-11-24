@@ -1,6 +1,5 @@
 import $ from "../dom";
 import { GM } from "$";
-import { css } from "../utils";
 import { addCss, chooseBackgroundColorScheme, safeMatch } from "../utils";
 import {
     getNormalizedHashtagName,
@@ -10,9 +9,11 @@ import {
     TAG_SELECTOR,
     watchSiteTheme,
 } from "./shared";
+import { css } from "@lit/reactive-element";
 
 // #region hook and utils
 
+// TODO fix
 /** @type {Map<string, string>} Twitter user IDs by lowercased screen name */
 const TWITTER_USER_IDS = new Map();
 

@@ -1,5 +1,5 @@
+import { css } from "@lit/reactive-element";
 import $ from "../dom";
-import { css } from "../utils";
 import { safeMatch } from "../utils";
 import { preventSiteNavigation, TAG_POSITIONS, watchSiteTheme } from "./shared";
 

@@ -1,4 +1,4 @@
-import { css } from "../utils";
+import { css } from "@lit/reactive-element";
 import { TAG_POSITIONS } from "./shared";
 
 export default function initializeSauceNAO(findAndTranslate: FindAndTranslate) {

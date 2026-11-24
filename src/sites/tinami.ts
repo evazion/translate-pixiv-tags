@@ -1,6 +1,6 @@
-import { css } from "../utils";
 import { linkInChildren, TAG_POSITIONS } from "./shared";
 import { addCss } from "../utils";
+import { css } from "@lit/reactive-element";
 
 export default function initializeTinami(findAndTranslate: FindAndTranslate) {
     addCss(css`

@@ -1,10 +1,11 @@
 import { customCssSheet, SETTINGS } from "../settings";
-import { chooseBackgroundColorScheme, css } from "../utils";
+import { chooseBackgroundColorScheme } from "../utils";
 import showSettings, { settingsIcon } from "./settings";
 import { tooltip } from "./shared";
 import { html } from "lit-html";
 import { ShadowComponent, type ChangedProperties } from "./component";
 import { addCleanup } from "../cleanup";
+import { css } from "@lit/reactive-element";
 
 const ARTIST_TOOLTIP_CSS = css`
     article.container {
