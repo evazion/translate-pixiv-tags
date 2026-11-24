@@ -1,11 +1,8 @@
 import { GM } from "$";
+import { TRANSPARENT_IMAGE } from "./resource/assets";
 import { DOMAIN_USES_CSP, SETTINGS } from "./settings";
 import showMessage from "./tooltips/message";
 import { console, param, sleep } from "./utils";
-
-/** transparent 1x1 image */
-export const TRANSPARENT_IMAGE =
-    "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
 // The maximum size of a URL before using a POST request.
 // The actual limit is 8154, but setting it lower accounts for the rest of the URL as well.

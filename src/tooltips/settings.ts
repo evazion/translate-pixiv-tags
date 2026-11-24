@@ -1,4 +1,3 @@
-import settingsIconRaw from "../resource/settings-icon.svg?raw";
 import {
     adapterCodes,
     ADAPTERS,
@@ -12,13 +11,10 @@ import {
 import { chooseBackgroundColorScheme, console, isEqual, self, validateCss } from "../utils";
 import { html } from "lit-html";
 import { ShadowComponent } from "./component";
-import { unsafeSVG } from "lit-html/directives/unsafe-svg.js";
 import { live } from "lit-html/directives/live.js";
 import { execAdapters, SourceAdapter, loadAdapter } from "../adapter-loader";
 import { css } from "@lit/reactive-element";
 import { requestAppRestart } from "../lifecycle";
-
-export const settingsIcon = unsafeSVG(settingsIconRaw);
 
 const TABS = {
     general: "General settings",
