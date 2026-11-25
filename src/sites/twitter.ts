@@ -13,9 +13,9 @@ import { addCleanup } from "../lifecycle";
 
 // #region hook and utils
 
-// TODO fix
-/** @type {Map<string, string>} Twitter user IDs by lowercased screen name */
-const TWITTER_USER_IDS = new Map();
+/** Twitter user IDs by lowercased screen name */
+const TWITTER_USER_IDS = new Map<string, string>();
+const TWITTER_DATA_EVENT = "tpt-twitter-users";
 
 // User IDs are mostly not in the DOM, so collect them from the API responses.
 // Has to be set up before Twitter sends its first requests.
@@ -24,6 +24,7 @@ async function hookTwitterApi() {
     // Can't use anything from the userscript, so the found users are sent back via an event.
     const pageHook = () => {
         document.documentElement.dataset.tptHooked = "";
+        const sent = new Set();
         const { open } = XMLHttpRequest.prototype;
         // @ts-ignore
         XMLHttpRequest.prototype.open = function hookedOpen(...args) {
@@ -36,8 +37,14 @@ async function hookTwitterApi() {
                     const findUsers = (value: any) => {
                         if (!value || typeof value !== "object") return;
                         const screenName = value.core?.screen_name ?? value.legacy?.screen_name;
-                        if (value.__typename === "User" && value.rest_id && screenName) {
+                        if (
+                            value.__typename === "User" &&
+                            value.rest_id &&
+                            screenName &&
+                            !sent.has(value.rest_id)
+                        ) {
                             users[screenName.toLowerCase()] = value.rest_id;
+                            sent.add(value.rest_id);
                         }
                         for (const child of Object.values(value)) findUsers(child);
                     };
@@ -58,16 +65,18 @@ async function hookTwitterApi() {
     };
 
     document.addEventListener("tpt-twitter-users", (ev) => {
-        const users = JSON.parse((ev as CustomEvent).detail);
+        const users: Record<string, string> = JSON.parse((ev as CustomEvent).detail);
         for (const [screenName, id] of Object.entries(users)) TWITTER_USER_IDS.set(screenName, id);
     });
-    // GM_addElement isn't blocked by the site's CSP
+    // Inject via blob link which isn't blocked by CSP
+    const scriptUrl = URL.createObjectURL(
+        new Blob([`(${pageHook})()`.replaceAll("TWITTER_DATA_EVENT", `"${TWITTER_DATA_EVENT}"`)]),
+    );
     try {
-        const elem = await GM.addElement(document.documentElement, "script", {
-            textContent: `(${pageHook})()`,
-        });
+        const elem = await GM.addElement(document.documentElement, "script", { src: scriptUrl });
         elem?.remove();
     } catch {}
+    URL.revokeObjectURL(scriptUrl);
     // If the script still didn't run, hope the userscript isn't sandboxed
     if (!("tptHooked" in document.documentElement.dataset)) pageHook();
 }
