@@ -140,7 +140,7 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
     // Tags https://x.com/mugosatomi/status/1173231575959363584
     findAndTranslate(
         "tag",
-        "a[role='link'][href^='/hashtag/']",
+        "a[href^='/hashtag/']",
         {
             asyncMode: true,
             toTagName: getNormalizedHashtagName,
@@ -233,10 +233,23 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
 
     // #endregion
 
+    findAndTranslate(
+        "artist",
+        // desktop, mobile
+        "main>div>button:first-child+div span>div, h1.text-headline1",
+        {
+            toProfileUrl: URLfromLocation,
+            classes: "inline",
+            asyncMode: true,
+        },
+        "channel header new",
+    );
+
     // Deleted channel https://x.com/6o2_iii
     findAndTranslate(
         "artist",
-        `[data-testid="emptyState"] div.r-1vr29t4 > span.r-qvutc0:not(:empty)`,
+        // old, new desktop, new mobile
+        `[data-testid="emptyState"] div.r-1vr29t4 > span.r-qvutc0:not(:empty), main:not(:has(section, h1)) [data-top-chrome] h2, h2.text-title2:has(+p)`,
         {
             toProfileUrl: URLfromLocation,
             classes: "inline",
@@ -250,12 +263,15 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
     // https://x.com/Merryweatherey/status/1029008151411023872/media_tags
     findAndTranslate(
         "artist",
-        "div.r-1wbh5a2.r-18u37iz:has(>div>a.r-1wbh5a2[tabindex])",
+        "div.r-1wbh5a2.r-18u37iz:has(>div>a.r-1wbh5a2[tabindex]), span:has(>a>span.text-secondary)",
         {
             toProfileUrl: (el) => withIntentUrl(linkInChildren(el), userIdFromFollowButton(el)),
             asyncMode: true,
-            classes: "inline",
+            // classes: "inline",
             css: css`
+                div > ARTIST_TAG {
+                    margin-left: 0.5em;
+                }
                 /* "in this photo", people in sidebar */
                 [data-testid="UserCell"] ARTIST_TAG {
                     display: block;
