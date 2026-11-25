@@ -68,9 +68,9 @@ export default function initializePixiv(findAndTranslate: FindAndTranslate) {
             toTagName: getNormalizedTagName,
             asyncMode: true,
             css: css`
-                /* Prevent adding # to translated tags */
+                /* Prevent adding # to translated tags but keep content for textless tags */
                 TPT_TAG a::before {
-                    content: none;
+                    content: "";
                 }
                 /* Hide Pixiv's translated tags */
                 TPT_TAG + span .gtm-new-work-romaji-tag-event-click,
