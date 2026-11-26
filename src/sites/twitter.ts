@@ -25,56 +25,94 @@ async function hookTwitterApi() {
     const pageHook = () => {
         document.documentElement.dataset.tptHooked = "";
         const sent = new Set();
+        /** Finds the users in the parsed GraphQL response and sends the new ones to the userscript */
+        const processResponse = (data: unknown) => {
+            const users: Record<string, string> = {};
+            const findUsers = (value: any) => {
+                if (!value || typeof value !== "object") return;
+                const screenName = value.core?.screen_name ?? value.legacy?.screen_name;
+                if (
+                    value.__typename === "User" &&
+                    value.rest_id &&
+                    screenName &&
+                    !sent.has(value.rest_id)
+                ) {
+                    users[screenName.toLowerCase()] = value.rest_id;
+                    sent.add(value.rest_id);
+                }
+                for (const child of Object.values(value)) findUsers(child);
+            };
+            try {
+                findUsers(data);
+            } catch {}
+            if (Object.keys(users).length === 0) return;
+            document.dispatchEvent(
+                new CustomEvent(TWITTER_DATA_EVENT, {
+                    detail: JSON.stringify(users),
+                }),
+            );
+        };
+
+        // old twitter
         const { open } = XMLHttpRequest.prototype;
         // @ts-ignore
         XMLHttpRequest.prototype.open = function hookedOpen(...args) {
             if (String(args[1]).includes("/graphql/")) {
                 this.addEventListener("load", () => {
-                    if (this.status !== 200 || typeof this.response !== "string") return;
-                    const users: Record<string, string> = {};
-                    // Not using a JSON.parse reviver, as other scripts may override JSON.parse without it
-                    /** @param {any} value */
-                    const findUsers = (value: any) => {
-                        if (!value || typeof value !== "object") return;
-                        const screenName = value.core?.screen_name ?? value.legacy?.screen_name;
-                        if (
-                            value.__typename === "User" &&
-                            value.rest_id &&
-                            screenName &&
-                            !sent.has(value.rest_id)
-                        ) {
-                            users[screenName.toLowerCase()] = value.rest_id;
-                            sent.add(value.rest_id);
-                        }
-                        for (const child of Object.values(value)) findUsers(child);
-                    };
-                    try {
-                        findUsers(JSON.parse(this.response));
-                    } catch {}
-                    if (Object.keys(users).length === 0) return;
-                    document.dispatchEvent(
-                        new CustomEvent("tpt-twitter-users", {
-                            detail: JSON.stringify(users),
-                        }),
-                    );
+                    if (this.status !== 200) return;
+                    if (this.responseType === "json") {
+                        processResponse(this.response);
+                    } else if (typeof this.response === "string") {
+                        // Not using a JSON.parse reviver, as other scripts may override JSON.parse without it
+                        try {
+                            processResponse(JSON.parse(this.response));
+                        } catch {}
+                    }
                 });
             }
             // @ts-ignore
             return open.apply(this, args);
         };
+
+        // new twitter
+        const { fetch } = window;
+        window.fetch = function hookedFetch(this: unknown, ...args: Parameters<typeof fetch>) {
+            const promise = fetch.apply(this, args);
+            const [input] = args;
+            const url = input instanceof Request ? input.url : String(input);
+            if (!url.includes("/graphql/")) return promise;
+            return promise.then((response) => {
+                if (response.status !== 200) return response;
+                const { json } = response;
+                response.json = async function hookedJson(this: Response) {
+                    const data = await json.call(this);
+                    processResponse(data);
+                    return data;
+                };
+                return response;
+            });
+        };
     };
 
-    document.addEventListener("tpt-twitter-users", (ev) => {
+    document.addEventListener(TWITTER_DATA_EVENT, (ev) => {
         const users: Record<string, string> = JSON.parse((ev as CustomEvent).detail);
         for (const [screenName, id] of Object.entries(users)) TWITTER_USER_IDS.set(screenName, id);
     });
-    // Inject via blob link which isn't blocked by CSP
-    const scriptUrl = URL.createObjectURL(
-        new Blob([`(${pageHook})()`.replaceAll("TWITTER_DATA_EVENT", `"${TWITTER_DATA_EVENT}"`)]),
+    const scriptCode = `(${pageHook})()`.replaceAll(
+        "TWITTER_DATA_EVENT",
+        `"${TWITTER_DATA_EVENT}"`,
     );
+    // Inject via blob link which isn't blocked by CSP
+    const scriptUrl = URL.createObjectURL(new Blob([scriptCode]));
     try {
         const elem = await GM.addElement(document.documentElement, "script", { src: scriptUrl });
         elem?.remove();
+        if (!("tptHooked" in document.documentElement.dataset)) {
+            const elem = await GM.addElement(document.documentElement, "script", {
+                textContent: scriptCode,
+            });
+            elem?.remove();
+        }
     } catch {}
     URL.revokeObjectURL(scriptUrl);
     // If the script still didn't run, hope the userscript isn't sandboxed
