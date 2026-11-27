@@ -273,18 +273,11 @@ function patchCss(css: CSSStyleSheet | CSSGroupingRule | undefined, ruleName: st
 }
 
 function patchSelector(rule: CSSStyleRule, ruleName: string) {
-    if (rule.selectorText.includes("ARTIST_TAG")) {
-        rule.selectorText = rule.selectorText.replaceAll(
-            "ARTIST_TAG",
-            `.tpt-artists[data-rule="${ruleName}"]`,
-        );
-    }
-    if (rule.selectorText.includes("TPT_TAG")) {
-        rule.selectorText = rule.selectorText.replaceAll(
-            "TPT_TAG",
-            `.tpt-tags[data-rule="${ruleName}"]`,
-        );
-    }
+    // Chrome lowercases type selectors, so they are `artist_tag` and `tpt_tag` there
+    const patched = rule.selectorText
+        .replaceAll(/\bartist_tag\b/gi, `.tpt-artists[data-rule="${ruleName}"]`)
+        .replaceAll(/\btpt_tag\b/gi, `.tpt-tags[data-rule="${ruleName}"]`);
+    if (patched !== rule.selectorText) rule.selectorText = patched;
 }
 
 export function createTranslators() {
