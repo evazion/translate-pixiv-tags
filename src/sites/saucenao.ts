@@ -1,7 +1,16 @@
 import { css } from "@lit/reactive-element";
 import { TAG_POSITIONS } from "./shared";
+import { addCss } from "../utils";
 
 export default function initializeSauceNAO(findAndTranslate: FindAndTranslate) {
+    addCss(css`
+        /* Somehow inline-flex brakes position of textless icons only on SauceNAO */
+        .tpt-artists,
+        .tpt-tags {
+            display: inline;
+        }
+    `);
+
     // http://saucenao.com/search.php?db=999&url=https%3A%2F%2Fcdn.donmai.us%2Fpreview%2F5e%2F8e%2F5e8e7a03c49906aaad157de8aeb188e4.jpg
     // http://saucenao.com/search.php?db=999&url=https%3A%2F%2Fcdn.donmai.us%2Fpreview%2Fad%2F90%2Fad90ad1cc3407f03955f22b427d21707.jpg
     // https://saucenao.com/search.php?db=999&url=http%3A%2F%2Fmedibangpaint.com%2Fwp-content%2Fuploads%2F2015%2F05%2Fgallerylist-04.jpg
@@ -38,9 +47,6 @@ export default function initializeSauceNAO(findAndTranslate: FindAndTranslate) {
         "artist by link",
     );
 
-    /** Tags whose original text was removed */
-    const cleanedTags = new WeakSet<HTMLElement>();
-
     function getFollowingText(el: HTMLElement) {
         const node = el.nextSibling;
         // if not a text node
@@ -57,29 +63,22 @@ export default function initializeSauceNAO(findAndTranslate: FindAndTranslate) {
         for (const el of Array.from(tag.children)) {
             text = text.replace(el.textContent.trim(), "");
         }
-        text = text.replace(/(, ){2,}/, ", ").replace(/^, |, $/, "");
+        text = text.replace(/(,\s*){2,}/g, ", ").replace(/^, |, $/g, "");
         if (text[0] !== " ") text = " " + text;
+        if (text.trim()) text = "," + text;
 
         node.textContent = text;
     }
 
     findAndTranslate(
         "artistByName",
-        ".resulttitle strong",
+        ".resulttitle > strong, .resultcontentcolumn > strong",
         {
             tagPosition: TAG_POSITIONS.afterend,
             toTagName: getFollowingText,
             onadded: cleanUpFollowingText,
             asyncMode: true,
-            classes: "inline comma",
-            css: css`
-                .ex-artist-tag + .target {
-                    display: none;
-                }
-                .ex-artist-tag.comma::after {
-                    content: ", ";
-                }
-            `,
+            classes: "inline",
         },
         "artist by name",
     );
@@ -92,21 +91,12 @@ export default function initializeSauceNAO(findAndTranslate: FindAndTranslate) {
             toTagName: getFollowingText,
             onadded: cleanUpFollowingText,
             asyncMode: true,
-            classes: "no-brackets comma",
-            css: css`
-                .ex-translated-tags {
-                    margin: 0;
-                }
-                .ex-translated-tags + .target {
-                    display: none;
-                }
-                .ex-translated-tags.comma::after {
-                    content: ", ";
-                }
-            `,
+            classes: "no-brackets",
         },
         "tags strong",
     );
+
+    const cleanedTags = new WeakSet<HTMLElement>();
 
     findAndTranslate(
         "tag",
@@ -122,14 +112,6 @@ export default function initializeSauceNAO(findAndTranslate: FindAndTranslate) {
             },
             asyncMode: true,
             classes: "no-brackets",
-            css: css`
-                .ex-translated-tags {
-                    margin: 0;
-                }
-                .ex-translated-tags + .target {
-                    display: none;
-                }
-            `,
         },
         "tags br",
     );
