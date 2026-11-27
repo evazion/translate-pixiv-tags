@@ -9,7 +9,7 @@ export function addCleanup(cleanup: () => void, once = false) {
     }
 }
 
-function runCleanups() {
+export function runCleanups() {
     for (const fn of [...oneTimeCleanups, ...permanentCleanups]) {
         try {
             fn();
@@ -22,8 +22,16 @@ function runCleanups() {
 
 const afterRestarts: Array<() => void> = [];
 
+/**
+ * Registers a function to run after the cleanups on restart
+ * @returns function to unregister it
+ */
 export function addAfterRestart(fn: () => void) {
     afterRestarts.push(fn);
+    return () => {
+        const index = afterRestarts.indexOf(fn);
+        if (index >= 0) afterRestarts.splice(index, 1);
+    };
 }
 
 function runAfterRestarts() {
@@ -46,3 +54,6 @@ export function requestAppRestart() {
     });
     restartScheduled = true;
 }
+
+// The registered cleanups would be lost on a hot update of this module, so reload the page
+import.meta.hot?.accept(() => window.location.reload());

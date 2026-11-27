@@ -1,6 +1,6 @@
 import { GM } from "$";
 import { css } from "@lit/reactive-element";
-import { addAfterRestart } from "./lifecycle";
+import { addAfterRestart, runCleanups } from "./lifecycle";
 import { customCssSheet, SETTINGS } from "./settings";
 import { addCss, chooseBackgroundColorScheme, console } from "./utils";
 import { findAndTranslate, createTranslators, startFindAndTranslate } from "./translate";
@@ -196,6 +196,9 @@ const SITES: Record<string, (fn: FindAndTranslate) => void> = {
 };
 
 async function initialize() {
+    // the one-time setup isn't repeated on hot updates
+    if (import.meta.hot) import.meta.hot.data.initialized = true;
+
     cleanupCache();
 
     if (SETTINGS.show_settings) {
@@ -231,13 +234,25 @@ function start() {
     startFindAndTranslate();
 }
 
-addAfterRestart(start);
+const removeStart = addAfterRestart(start);
+
+// In dev, edits are applied without reloading the page: the updated modules are re-executed
+// up to this module, which cleans up the old instance and starts the new one
+if (import.meta.hot) {
+    import.meta.hot.accept();
+    import.meta.hot.dispose(() => {
+        removeStart();
+        runCleanups();
+    });
+}
 
 //------------------------
 // Program execution start
 //------------------------
 
-if (document.readyState === "loading") {
+if (import.meta.hot?.data.initialized) {
+    start();
+} else if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initialize);
 } else {
     initialize();

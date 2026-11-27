@@ -1,6 +1,6 @@
 import { customCssSheet, SETTINGS } from "../settings";
 import { chooseBackgroundColorScheme } from "../utils";
-import showSettings from "./settings";
+import showSettings from "./show-settings";
 import { tooltip } from "./shared";
 import { html } from "lit-html";
 import { ShadowComponent, type ChangedProperties } from "./component";

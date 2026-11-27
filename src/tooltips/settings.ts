@@ -15,6 +15,7 @@ import { live } from "lit-html/directives/live.js";
 import { execAdapters, SourceAdapter, loadAdapter } from "../adapter-loader";
 import { css } from "@lit/reactive-element";
 import { requestAppRestart } from "../lifecycle";
+import { setSettingsOpener } from "./show-settings";
 
 const TABS = {
     general: "General settings",
@@ -690,3 +691,5 @@ export default function showSettings() {
 
     container.append(settings.host);
 }
+
+setSettingsOpener(showSettings);

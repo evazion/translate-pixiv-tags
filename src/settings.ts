@@ -1,5 +1,5 @@
 import { GM } from "$";
-import { SourceAdapter } from "./adapter-loader";
+import type { SourceAdapter } from "./adapter-loader";
 import { requestAppRestart } from "./lifecycle";
 
 export type DataSource = {

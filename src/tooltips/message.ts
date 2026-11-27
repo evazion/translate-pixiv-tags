@@ -2,7 +2,7 @@ import { customCssSheet } from "../settings";
 import { chooseBackgroundColorScheme } from "../utils";
 import { html } from "lit-html";
 import { ShadowComponent } from "./component";
-import showSettings from "./settings";
+import showSettings from "./show-settings";
 import { css } from "@lit/reactive-element";
 import { settingsIcon } from "../resource/assets";
 

@@ -14,7 +14,10 @@ import { addCleanup } from "../lifecycle";
 // #region hook and utils
 
 /** Twitter user IDs by lowercased screen name */
-const TWITTER_USER_IDS = new Map<string, string>();
+const TWITTER_USER_IDS: Map<string, string> = import.meta.hot
+    ? // the page hook doesn't resend the users, so keep them on hot updates
+      (import.meta.hot.data.userIds ??= new Map())
+    : new Map();
 const TWITTER_DATA_EVENT = "tpt-twitter-users";
 
 // User IDs are mostly not in the DOM, so collect them from the API responses.
@@ -118,8 +121,11 @@ async function hookTwitterApi() {
     // If the script still didn't run, hope the userscript isn't sandboxed
     if (!("tptHooked" in document.documentElement.dataset)) pageHook();
 }
-// Not in initializeTwitter, as Twitter's async scripts may send requests before DOMContentLoaded
-if (window.location.host === "x.com") hookTwitterApi();
+// Not in initializeTwitter, as Twitter's async scripts may send requests before DOMContentLoaded.
+// On hot updates, the hook and the listener filling `TWITTER_USER_IDS` already exist.
+if (window.location.host === "x.com" && !("tptHooked" in document.documentElement.dataset)) {
+    hookTwitterApi();
+}
 
 // Artists who changed their username are still findable by the intent URL
 const withIntentUrl = (profileUrl: string, userId?: string | null) => {
