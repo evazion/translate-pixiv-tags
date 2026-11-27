@@ -274,11 +274,19 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
     findAndTranslate(
         "artist",
         // desktop, mobile
-        "main>div>button:first-child+div span>div, h1.text-headline1",
+        "main>div>button:first-child+div span>div:last-child, :is(h1.text-headline1:last-child, h1.text-headline1+div:last-child)",
         {
             toProfileUrl: URLfromLocation,
             classes: "inline",
             asyncMode: true,
+            css: css`
+                /* show only on mobile, desktop has floating header */
+                @media (width >= 512px) {
+                    h1 + ARTIST_TAG {
+                        display: none;
+                    }
+                }
+            `,
         },
         "channel header new",
     );
@@ -316,12 +324,15 @@ export default function initializeTwitter(findAndTranslate: FindAndTranslate) {
                     margin-left: 0;
                 }
                 /* prevent overlaying twitter handle and pub.time with the tag */
-                div:has(> ARTIST_TAG) {
+                div:not(.flex):has(> ARTIST_TAG) {
                     flex-shrink: 0;
+                }
+                span:first-child:has(~ ARTIST_TAG) {
+                    flex-shrink: 1;
                 }
             `,
         },
-        "tweet/comment author",
+        "tweet comment author",
     );
 
     // Quoted tweets https://x.com/Murata_Range/status/1108340994557140997
